@@ -66,7 +66,7 @@ export function NewStoryForm({
     if (!trimmedHeadline) {
       setError(
         locale === 'es'
-          ? 'Ingresa un titular antes de crear la historia.'
+          ? 'Ingresa un título antes de crear el artículo.'
           : 'Enter a headline before creating the story.'
       );
 
@@ -211,6 +211,7 @@ export function NewStoryForm({
         className="
           mt-8
           space-y-6
+          rounded-xl
           border
           border-border
           bg-white
@@ -221,6 +222,7 @@ export function NewStoryForm({
           <div
             role="alert"
             className="
+              rounded-xl
               border
               border-breaking/30
               bg-breaking/5
@@ -278,6 +280,7 @@ export function NewStoryForm({
             className="
               h-12
               w-full
+              rounded-xl
               border
               border-border
               bg-white
@@ -333,6 +336,7 @@ export function NewStoryForm({
             className="
               h-10
               w-full
+              rounded-xl
               border
               border-border
               bg-white
@@ -370,6 +374,7 @@ export function NewStoryForm({
             items-center
             justify-between
             gap-4
+            rounded-lg
             border-t
             border-border
             pt-5
