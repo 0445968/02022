@@ -44,7 +44,7 @@ export default async function NewsroomDashboard() {
         {stats.map((stat) => {
           const Icon = stat.icon;
           return (
-            <div key={stat.key} className="rounded-lg border border-border bg-white p-5">
+            <div key={stat.key} className="rounded-xl border border-border bg-white p-5">
               <div className="flex items-center justify-between">
                 <Icon className="h-5 w-5 text-muted-foreground" aria-hidden />
                 <span className="text-[0.6875rem] font-semibold uppercase tracking-wide text-muted-foreground">
