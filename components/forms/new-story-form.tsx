@@ -398,6 +398,7 @@ export function NewStoryForm({
               items-center
               justify-center
               gap-2
+              rounded-lg
               bg-primary
               px-5
               text-sm
