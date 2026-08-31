@@ -26,19 +26,19 @@ export function StoryStatusBadge({
     string
   > = {
     draft:
-      'rounded-lg border-border bg-surface-muted text-foreground',
+      'rounded-full border-border bg-surface-muted text-foreground',
 
     in_review:
-      'rounded-lg border-highlight/40 bg-highlight/20 text-deep',
+      'rounded-full border-highlight/40 bg-highlight/20 text-deep',
 
     scheduled:
-      'rounded-lg border-primary/30 bg-primary/10 text-primary',
+      'rounded-full border-primary/30 bg-primary/10 text-primary',
 
     published:
       'rounded-full border-live/30 bg-live/10 text-live',
 
     archived:
-      'rounded-lg border-border bg-surface-subtle text-muted-foreground',
+      'rounded-full border-border bg-surface-subtle text-muted-foreground',
   };
 
   return (
