@@ -35,7 +35,7 @@ export function StoryStatusBadge({
       'rounded-lg border-primary/30 bg-primary/10 text-primary',
 
     published:
-      'rounded-lg border-live/30 bg-live/10 text-live',
+      'rounded-full border-live/30 bg-live/10 text-live',
 
     archived:
       'rounded-lg border-border bg-surface-subtle text-muted-foreground',
