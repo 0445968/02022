@@ -124,7 +124,7 @@ export function MediaLibrary({ dict, userId }: MediaLibraryProps) {
           <h1 className="font-headline text-2xl font-bold text-deep">{dict.media.title}</h1>
           <p className="mt-1 text-sm text-muted-foreground">{total} {dict.common.results}</p>
         </div>
-        <label className="inline-flex h-9 cursor-pointer items-center gap-1.5 bg-primary px-4 text-sm font-semibold text-white transition-colors hover:bg-primary/90">
+        <label className="inline-flex h-9 cursor-pointer items-center gap-1.5 rounded-lg bg-primary px-4 text-sm font-semibold text-white transition-colors hover:bg-primary/90">
           <Upload className="h-4 w-4" aria-hidden />
           {dict.media.upload}
           <input type="file" accept={ALLOWED_MIME_TYPES.join(',')} onChange={handleUpload} disabled={uploading} className="hidden" />
