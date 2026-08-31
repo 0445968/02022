@@ -91,7 +91,7 @@ export function StorySettingsPanel({
       <Section title={dict.story.publication}>
         <Field label={dict.story.status}>
           <div className="flex items-center gap-2">
-            <span className="inline-flex items-center rounded-lg border border-border bg-white px-2 py-1 text-xs font-semibold uppercase tracking-wide">
+            <span className="inline-flex items-center rounded-lg border border-border bg-white px-2 py-1 text-xs text-[#00c113] font-semibold uppercase tracking-wide">
               {status}
             </span>
           </div>
