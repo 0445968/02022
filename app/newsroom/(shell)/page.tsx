@@ -60,7 +60,7 @@ export default async function NewsroomDashboard() {
       </div>
 
       {/* Profile summary */}
-      <div className="mt-8 border border-border bg-white p-6">
+      <div className="mt-8 rounded-xl border border-border bg-white p-6">
         <h2 className="font-headline text-lg font-semibold text-deep">
           {dict.account.profile}
         </h2>
