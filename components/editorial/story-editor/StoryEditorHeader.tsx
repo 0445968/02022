@@ -194,6 +194,7 @@ export function StoryEditorHeader({
             h-8
             items-center
             gap-1
+            rounded-lg
             border
             border-border
             bg-white
