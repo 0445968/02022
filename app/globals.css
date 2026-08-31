@@ -1,0 +1,227 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Simply Raizal semantic palette */
+    --color-background: 0 0% 100%;
+    --color-foreground: 222 47% 11%;
+
+    /* Surfaces */
+    --color-surface: 0 0% 100%;
+    --color-surface-muted: 210 20% 97%;
+    --color-surface-subtle: 210 17% 94%;
+
+    /* Brand */
+    --color-deep: 223, 89%, 22%;        /* #062268 deep blue */
+    --color-primary: 210, 93%, 45%;     /* #0872db primary blue */
+    --color-primary-foreground: 0 0% 100%;
+
+    /* Signals */
+    --color-breaking: 0 80% 40%;       /* #BD1212 breaking/urgent */
+    --color-live: 120 76% 49%;         /* #27D12A live/positive */
+    --color-highlight: 51 100% 60%;    /* #FFD735 highlight yellow */
+    --color-highlight-foreground: 222 47% 11%;
+
+    /* Neutrals */
+    --color-border: 210 16% 88%;
+    --color-border-strong: 210 14% 80%;
+    --color-input: 210 16% 88%;
+    --color-ring: 201 100% 36%;
+
+    /* Text */
+    --color-muted-foreground: 215 16% 47%;
+    --color-muted: 210 20% 97%;
+
+    /* shadcn-compatible aliases */
+    --background: var(--color-background);
+    --foreground: var(--color-foreground);
+    --card: var(--color-surface);
+    --card-foreground: var(--color-foreground);
+    --popover: var(--color-surface);
+    --popover-foreground: var(--color-foreground);
+    --primary: var(--color-primary);
+    --primary-foreground: var(--color-primary-foreground);
+    --secondary: var(--color-surface-muted);
+    --secondary-foreground: var(--color-foreground);
+    --accent: var(--color-surface-muted);
+    --accent-foreground: var(--color-deep);
+    --destructive: var(--color-breaking);
+    --destructive-foreground: 0 0% 100%;
+    --border: var(--color-border);
+    --input: var(--color-input);
+    --ring: var(--color-ring);
+
+    --radius: 0.25rem;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  html {
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+  }
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-feature-settings: "kern", "liga", "calt";
+  }
+  ::selection {
+    background-color: hsl(var(--color-highlight));
+    color: hsl(var(--color-highlight-foreground));
+  }
+}
+
+@layer base {
+  /* Typography roles */
+  .font-headline {
+    font-family: var(--font-headline), Georgia, "Times New Roman", serif;
+    font-feature-settings: "kern", "liga", "calt", "onum";
+  }
+  .font-interface {
+    font-family: var(--font-interface), system-ui, -apple-system, sans-serif;
+  }
+  .text-balance {
+    text-wrap: balance;
+  }
+  .font-subheadline {
+  font-family:
+    var(--font-subheadline),
+    Georgia,
+    "Times New Roman",
+    serif;
+  }
+}
+
+@layer components {
+  .container-editorial {
+    @apply mx-auto w-full max-w-[1280px] px-4 sm:px-6 lg:px-8;
+  }
+  .container-wide {
+    @apply mx-auto w-full max-w-[1440px] px-4 sm:px-6 lg:px-8;
+  }
+  .rule {
+    @apply h-px w-full bg-border;
+  }
+  .rule-strong {
+    @apply h-px w-full bg-foreground/80;
+  }
+  .eyebrow {
+    @apply text-[0.6875rem] font-semibold uppercase tracking-[0.14em] text-muted-foreground;
+  }
+  .live-dot {
+    @apply inline-block h-2 w-2 rounded-full;
+    background-color: hsl(var(--color-live));
+    box-shadow: 0 0 0 0 hsl(var(--color-live) / 0.7);
+    animation: live-pulse 2s infinite;
+  }
+}
+
+@keyframes live-pulse {
+  0% {
+    box-shadow: 0 0 0 0 hsl(var(--color-live) / 0.7);
+  }
+  70% {
+    box-shadow: 0 0 0 6px hsl(var(--color-live) / 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 hsl(var(--color-live) / 0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .live-dot {
+    animation: none;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+
+  @layer components {
+  .article-body {
+    @apply text-base leading-8 text-foreground;
+  }
+
+  .article-body p {
+    @apply mb-6;
+  }
+
+  .article-body h2 {
+    @apply mb-4 mt-10 font-headline text-3xl font-bold leading-tight text-deep;
+  }
+
+  .article-body h3 {
+    @apply mb-3 mt-8 font-headline text-2xl font-semibold leading-tight text-deep;
+  }
+
+  .article-body strong {
+    @apply font-bold text-foreground;
+  }
+
+  .article-body em {
+    @apply italic;
+  }
+
+  .article-body u {
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+
+  .article-body a {
+    @apply font-medium text-primary underline;
+    text-underline-offset: 3px;
+  }
+
+  .article-body a:hover {
+    @apply opacity-80;
+  }
+
+  .article-body ul {
+    @apply mb-6 list-disc space-y-2 pl-6;
+  }
+
+  .article-body ol {
+    @apply mb-6 list-decimal space-y-2 pl-6;
+  }
+
+  .article-body li {
+    @apply pl-1 leading-7;
+  }
+
+  .article-body blockquote {
+    @apply my-8 border-l-4 border-primary pl-5 font-headline text-xl italic leading-relaxed text-muted-foreground;
+  }
+
+  .article-body hr {
+    @apply my-10 border-0 border-t border-border;
+  }
+
+  .article-body figure {
+    @apply my-8;
+  }
+
+  .article-body figure img {
+    @apply block h-auto w-full;
+  }
+
+  .article-body figcaption {
+    @apply mt-2 text-xs leading-relaxed text-muted-foreground;
+  }
+
+  .article-body > :first-child {
+    margin-top: 0;
+  }
+
+  .article-body > :last-child {
+    margin-bottom: 0;
+  }
+}
