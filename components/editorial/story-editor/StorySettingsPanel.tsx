@@ -355,6 +355,7 @@ export function StorySettingsPanel({
           className="
             h-9
             w-full
+            rounded-lg
             border
             border-border
             bg-white
@@ -390,6 +391,7 @@ export function StorySettingsPanel({
                 w-full
                 items-center
                 gap-1
+                rounded-lg
                 border
                 border-dashed
                 border-primary
@@ -455,6 +457,7 @@ export function StorySettingsPanel({
                   inline-flex
                   items-center
                   gap-1
+                  rounded-lg
                   border
                   border-primary/30
                   bg-primary/5
@@ -492,6 +495,7 @@ export function StorySettingsPanel({
           className="
             h-9
             w-full
+            rounded-lg
             border
             border-border
             bg-white
@@ -531,6 +535,7 @@ export function StorySettingsPanel({
           className="
             h-9
             w-full
+            rounded-lg
             border
             border-border
             bg-white
@@ -614,6 +619,7 @@ export function StorySettingsPanel({
               w-full
               items-center
               justify-center
+              rounded-lg
               border
               border-dashed
               border-border
@@ -646,6 +652,7 @@ export function StorySettingsPanel({
                 className="
                   h-9
                   w-full
+                  rounded-lg
                   border
                   border-border
                   bg-white
@@ -673,6 +680,7 @@ export function StorySettingsPanel({
                 className="
                   h-9
                   w-full
+                  rounded-lg
                   border
                   border-border
                   bg-white
@@ -707,6 +715,7 @@ export function StorySettingsPanel({
             className="
               h-9
               w-full
+              rounded-lg
               border
               border-border
               bg-white
@@ -745,6 +754,7 @@ export function StorySettingsPanel({
             rows={3}
             className="
               w-full
+              rounded-lg
               border
               border-border
               bg-white
@@ -779,6 +789,7 @@ export function StorySettingsPanel({
           className="
             h-9
             w-full
+            rounded-lg
             border
             border-border
             bg-white
@@ -825,7 +836,7 @@ function Section({
   children: React.ReactNode;
 }) {
   return (
-    <div className="border border-border bg-white p-3">
+    <div className="rounded-lg border border-border bg-white p-3">
       <h3 className="mb-3 text-[0.6875rem] font-bold uppercase tracking-[0.14em] text-deep">
         {title}
       </h3>
