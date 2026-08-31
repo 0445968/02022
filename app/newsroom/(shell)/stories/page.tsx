@@ -72,7 +72,7 @@ export default async function StoriesPage({ searchParams }: PageProps) {
         </div>
         <Link
           href="/newsroom/stories/new"
-          className="inline-flex h-9 items-center gap-1.5 bg-primary px-4 text-sm font-semibold text-white transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          className="inline-flex h-9 items-center gap-1.5 rounded-lgbg-primary px-4 text-sm font-semibold text-white transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >
           <Plus className="h-4 w-4" aria-hidden />
           {dict.stories.newStory}
