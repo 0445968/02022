@@ -63,7 +63,7 @@ export default async function StoriesPage({ searchParams }: PageProps) {
 
   return (
     <div className="mx-auto max-w-7xl px-6 py-8">
-      <div className="flex items-center justify-between rounded-lg border-b border-border pb-5">
+      <div className="flex items-center justify-between border-b border-border pb-5">
         <div>
           <h1 className="font-headline text-2xl font-bold text-deep">{dict.stories.title}</h1>
           <p className="mt-1 text-sm text-muted-foreground">
