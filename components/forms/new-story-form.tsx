@@ -374,7 +374,6 @@ export function NewStoryForm({
             items-center
             justify-between
             gap-4
-            rounded-lg
             border-t
             border-border
             pt-5
