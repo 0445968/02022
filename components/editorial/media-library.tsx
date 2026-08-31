@@ -132,7 +132,7 @@ export function MediaLibrary({ dict, userId }: MediaLibraryProps) {
       </div>
 
       {uploadError && (
-        <div role="alert" className="mt-4 border border-breaking/30 bg-breaking/5 px-4 py-3 text-sm text-breaking">
+        <div role="alert" className="mt-4 rounded-lg border border-breaking/30 bg-breaking/5 px-4 py-3 text-sm text-breaking">
           {uploadError}
         </div>
       )}
@@ -148,7 +148,7 @@ export function MediaLibrary({ dict, userId }: MediaLibraryProps) {
             setPage(1);
           }}
           placeholder={dict.media.searchPlaceholder}
-          className="h-10 w-full border border-border bg-white pl-10 pr-3 text-sm focus:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          className="h-10 w-full rounded-lg border border-border bg-white pl-10 pr-3 text-sm focus:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         />
       </div>
 
