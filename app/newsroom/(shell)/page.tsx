@@ -33,7 +33,7 @@ export default async function NewsroomDashboard() {
         </div>
         <Link
           href="/newsroom/stories/new"
-          className="inline-flex h-9 items-center gap-1.5 bg-primary px-4 text-sm font-semibold text-white transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          className="inline-flex h-9 items-center gap-1.5 rounded[6px] bg-primary px-4 text-sm font-semibold text-white transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >
           + {dict.newsroom.newStory}
         </Link>
