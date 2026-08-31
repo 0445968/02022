@@ -65,7 +65,7 @@ export function NewsroomSidebar({ dict, user }: NewsroomSidebarProps) {
                 <Link
                   href={item.href}
                   className={cn(
-                    'flex items-center gap-2.5 rounded-[10px] px-3 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                    'flex items-center gap-2.5 rounded-[14px] px-3 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
                     active
                       ? 'bg-deep text-white'
                       : 'text-foreground hover:bg-white hover:text-deep'
