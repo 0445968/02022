@@ -111,6 +111,7 @@ export function StorySettingsPanel({
               className="
                 h-9
                 w-full
+                rounded-lg
                 border
                 border-border
                 bg-white
