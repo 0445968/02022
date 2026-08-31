@@ -47,6 +47,7 @@ export function StoryVersionHistory({
                 version.id
               }
               className="
+                rounded-lg
                 border
                 border-border
                 bg-white
