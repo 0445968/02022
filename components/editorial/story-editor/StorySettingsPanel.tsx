@@ -1,6 +1,13 @@
 'use client';
 
-import { X } from 'lucide-react';
+import {
+  useState,
+} from 'react';
+
+import {
+  ExternalLink,
+  X,
+} from 'lucide-react';
 
 import type {
   AccessLevel,
@@ -24,8 +31,43 @@ import {
   StoryVersionHistory,
 } from './StoryVersionHistory';
 
+function getLocalDateTimeValue(
+  date = new Date()
+) {
+  const offset =
+    date.getTimezoneOffset();
+
+  const localDate =
+    new Date(
+      date.getTime() -
+        offset * 60_000
+    );
+
+  return localDate
+    .toISOString()
+    .slice(0, 16);
+}
+
+function getLocalDateValue(
+  date = new Date()
+) {
+  const offset =
+    date.getTimezoneOffset();
+
+  const localDate =
+    new Date(
+      date.getTime() -
+        offset * 60_000
+    );
+
+  return localDate
+    .toISOString()
+    .slice(0, 10);
+}
+
 export function StorySettingsPanel({
   dict,
+  locale,
   language,
   status,
   accessLevel,
@@ -44,7 +86,8 @@ export function StorySettingsPanel({
   seoDescription,
   slug,
   slugLocked,
-  publishedAt,
+  originallyPublishedAt,
+  scheduledAt,
   versions,
   userIsEditor,
   categories,
@@ -57,7 +100,8 @@ export function StorySettingsPanel({
   setPrimaryCategoryId,
   setIsland,
   setSlug,
-  setPublishedAt,
+  setOriginallyPublishedAt,
+  setScheduledAt,
   setImageCaption,
   setImageCredit,
   setSeoTitle,
@@ -70,6 +114,15 @@ export function StorySettingsPanel({
   setMediaPickerOpen,
   handleRestoreVersion,
 }: StorySettingsPanelProps) {
+  const [
+    hasOriginalPublication,
+    setHasOriginalPublication,
+  ] = useState(
+    Boolean(
+      originallyPublishedAt
+    )
+  );
+
   const islandOptions: IslandScope[] = [
     'san_andres',
     'old_providence',
@@ -85,61 +138,404 @@ export function StorySettingsPanel({
     'premium',
   ];
 
+  const scheduleMode:
+    | 'now'
+    | 'later' =
+    scheduledAt
+      ? 'later'
+      : 'now';
+
+  const now =
+    getLocalDateTimeValue();
+
+  const today =
+    getLocalDateValue();
+
+  function selectPublishNow() {
+    setScheduledAt('');
+  }
+
+  function selectPublishLater() {
+    if (!scheduledAt) {
+      setScheduledAt(
+        now
+      );
+    }
+  }
+
+  function handleScheduledChange(
+    value: string
+  ) {
+    if (!value) {
+      setScheduledAt('');
+      return;
+    }
+
+    if (
+      value < now
+    ) {
+      return;
+    }
+
+    setScheduledAt(
+      value
+    );
+  }
+
+  function handleOriginalPublicationToggle(
+    checked: boolean
+  ) {
+    setHasOriginalPublication(
+      checked
+    );
+
+    if (!checked) {
+      setOriginallyPublishedAt(
+        ''
+      );
+    }
+  }
+
+  function handleOriginalPublicationDateChange(
+    value: string
+  ) {
+    if (!value) {
+      setOriginallyPublishedAt(
+        ''
+      );
+      return;
+    }
+
+    if (
+      value > today
+    ) {
+      return;
+    }
+
+    setOriginallyPublishedAt(
+      value
+    );
+  }
+
   return (
     <div className="space-y-6 p-4">
       {/* Publication */}
-      <Section title={dict.story.publication}>
-        <Field label={dict.story.status}>
+      <Section
+        title={
+          dict.story.publication
+        }
+      >
+        {/* Status */}
+        <Field
+          label={
+            dict.story.status
+          }
+        >
           <div className="flex items-center gap-2">
-            <span className="inline-flex items-center rounded-full border border-border bg-white px-2 py-1 text-xs text-[#00c113] font-semibold uppercase tracking-wide">
+            <span className="inline-flex items-center rounded-full border border-border bg-white px-2 py-1 text-xs font-semibold uppercase tracking-wide text-primary">
               {status}
             </span>
+
+            {status ===
+              'published' && (
+              <a
+                href={`/${locale}/article/${slug}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label={
+                  language ===
+                  'es'
+                    ? 'Ver artículo publicado'
+                    : 'View published article'
+                }
+                title={
+                  language ===
+                  'es'
+                    ? 'Ver artículo publicado'
+                    : 'View published article'
+                }
+                className="
+                  inline-flex
+                  h-7
+                  w-7
+                  items-center
+                  justify-center
+                  rounded-lg
+                  border
+                  border-border
+                  bg-white
+                  text-muted-foreground
+                  transition-colors
+                  hover:border-primary
+                  hover:bg-primary/5
+                  hover:text-primary
+                  focus-visible:outline-none
+                  focus-visible:ring-2
+                  focus-visible:ring-ring
+                "
+              >
+                <ExternalLink
+                  className="h-3.5 w-3.5"
+                  aria-hidden
+                />
+              </a>
+            )}
           </div>
         </Field>
 
-        {publishedAt && (
-          <Field label={dict.story.publishedDate}>
+        {/* Originally published */}
+        <Field
+          label={
+            dict.story
+              .originallyPublishedDate
+          }
+          hint={
+            dict.story
+              .originallyPublishedDateHint
+          }
+        >
+          <label
+            className="
+              flex
+              cursor-pointer
+              items-center
+              gap-2
+            "
+          >
             <input
-              type="datetime-local"
-              value={publishedAt}
-              onChange={(event) =>
-                setPublishedAt(
-                  event.target.value
+              type="checkbox"
+              checked={
+                hasOriginalPublication
+              }
+              onChange={(
+                event
+              ) =>
+                handleOriginalPublicationToggle(
+                  event.target
+                    .checked
                 )
               }
-              disabled={!userIsEditor}
               className="
-                h-9
-                w-full
-                rounded-lg
-                border
-                border-border
-                bg-white
-                px-2
-                text-sm
-                text-foreground
-                focus:border-primary
-                focus-visible:outline-none
-                focus-visible:ring-2
-                focus-visible:ring-ring
-                disabled:bg-surface-muted
-                disabled:text-muted-foreground
+                h-4
+                w-4
+                shrink-0
+                accent-primary
               "
             />
-          </Field>
-        )}
+
+            <span className="text-sm text-foreground">
+              {language ===
+              'es'
+                ? 'Este artículo fue publicado anteriormente'
+                : 'This story was published previously'}
+            </span>
+          </label>
+
+          {hasOriginalPublication && (
+            <div className="mt-3">
+              <label className="mb-1 block text-xs font-semibold text-foreground">
+                {language ===
+                'es'
+                  ? 'Fecha original'
+                  : 'Original date'}
+              </label>
+
+              <input
+                type="date"
+                value={
+                  originallyPublishedAt
+                    ? originallyPublishedAt.slice(
+                        0,
+                        10
+                      )
+                    : ''
+                }
+                max={
+                  today
+                }
+                onChange={(
+                  event
+                ) =>
+                  handleOriginalPublicationDateChange(
+                    event.target
+                      .value
+                  )
+                }
+                className="
+                  h-9
+                  w-full
+                  rounded-lg
+                  border
+                  border-border
+                  bg-white
+                  px-2
+                  text-sm
+                  text-foreground
+                  focus:border-primary
+                  focus-visible:outline-none
+                  focus-visible:ring-2
+                  focus-visible:ring-ring
+                "
+              />
+            </div>
+          )}
+        </Field>
+
+        {/* Scheduled for */}
+        <Field
+          label={
+            dict.story
+              .scheduledDate
+          }
+          hint={
+            scheduleMode ===
+            'now'
+              ? language ===
+                'es'
+                ? 'La historia se publicará inmediatamente cuando la publiques.'
+                : 'The story will go live immediately when you publish it.'
+              : language ===
+                  'es'
+                ? 'Elige cuándo debe publicarse la historia.'
+                : 'Choose when the story should go live.'
+          }
+        >
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              type="button"
+              onClick={
+                selectPublishNow
+              }
+              className={cn(
+                `
+                  inline-flex
+                  h-9
+                  items-center
+                  justify-center
+                  rounded-lg
+                  border
+                  px-3
+                  text-sm
+                  font-medium
+                  transition-colors
+                  focus-visible:outline-none
+                  focus-visible:ring-2
+                  focus-visible:ring-ring
+                `,
+                scheduleMode ===
+                  'now'
+                  ? 'border-primary bg-primary text-white'
+                  : 'border-border bg-white text-foreground hover:bg-surface-muted'
+              )}
+            >
+              {language ===
+              'es'
+                ? 'Ahora'
+                : 'Now'}
+            </button>
+
+            <button
+              type="button"
+              onClick={
+                selectPublishLater
+              }
+              className={cn(
+                `
+                  inline-flex
+                  h-9
+                  items-center
+                  justify-center
+                  rounded-lg
+                  border
+                  px-3
+                  text-sm
+                  font-medium
+                  transition-colors
+                  focus-visible:outline-none
+                  focus-visible:ring-2
+                  focus-visible:ring-ring
+                `,
+                scheduleMode ===
+                  'later'
+                  ? 'border-primary bg-primary text-white'
+                  : 'border-border bg-white text-foreground hover:bg-surface-muted'
+              )}
+            >
+              {language ===
+              'es'
+                ? 'Más tarde'
+                : 'Later'}
+            </button>
+          </div>
+
+          {scheduleMode ===
+            'later' && (
+            <div className="mt-3">
+              <label className="mb-1 block text-xs font-semibold text-foreground">
+                {language ===
+                'es'
+                  ? 'Fecha y hora'
+                  : 'Date and time'}
+              </label>
+
+              <input
+                type="datetime-local"
+                value={
+                  scheduledAt
+                }
+                min={
+                  now
+                }
+                onChange={(
+                  event
+                ) =>
+                  handleScheduledChange(
+                    event.target
+                      .value
+                  )
+                }
+                className="
+                  h-9
+                  w-full
+                  rounded-lg
+                  border
+                  border-border
+                  bg-white
+                  px-2
+                  text-sm
+                  text-foreground
+                  focus:border-primary
+                  focus-visible:outline-none
+                  focus-visible:ring-2
+                  focus-visible:ring-ring
+                "
+              />
+            </div>
+          )}
+        </Field>
       </Section>
 
       {/* Language */}
-      <Section title={dict.story.language}>
+      <Section
+        title={
+          dict.story.language
+        }
+      >
         <div className="flex gap-2">
-          {(['en', 'es'] as StoryLanguage[]).map(
+          {(
+            [
+              'en',
+              'es',
+            ] as StoryLanguage[]
+          ).map(
             (item) => (
               <button
                 key={item}
                 type="button"
                 onClick={() =>
-                  setLanguage(item)
+                  setLanguage(
+                    item
+                  )
                 }
                 className={cn(
                   `
@@ -152,14 +548,18 @@ export function StorySettingsPanel({
                     font-medium
                     transition-colors
                   `,
-                  language === item
+                  language ===
+                    item
                     ? 'border-primary bg-primary/5 text-primary'
                     : 'border-border bg-white text-foreground hover:bg-surface-muted'
                 )}
               >
-                {item === 'en'
-                  ? dict.common.languageEN
-                  : dict.common.languageES}
+                {item ===
+                'en'
+                  ? dict.common
+                      .languageEN
+                  : dict.common
+                      .languageES}
               </button>
             )
           )}
@@ -167,16 +567,30 @@ export function StorySettingsPanel({
       </Section>
 
       {/* Author & Editor */}
-      <Section title={dict.story.author}>
-        <Field label={dict.story.author}>
+      <Section
+        title={
+          dict.story.author
+        }
+      >
+        <Field
+          label={
+            dict.story.author
+          }
+        >
           <select
-            value={authorId ?? ''}
+            value={
+              authorId ?? ''
+            }
             onChange={(event) =>
               setAuthorId(
-                event.target.value || null
+                event.target
+                  .value ||
+                  null
               )
             }
-            disabled={!userIsEditor}
+            disabled={
+              !userIsEditor
+            }
             className="
               h-9
               w-full
@@ -195,29 +609,50 @@ export function StorySettingsPanel({
             "
           >
             <option value="">
-              {dict.story.selectAuthor}
+              {
+                dict.story
+                  .selectAuthor
+              }
             </option>
 
-            {authors.map((author) => (
-              <option
-                key={author.id}
-                value={author.id}
-              >
-                {author.name}
-              </option>
-            ))}
+            {authors.map(
+              (author) => (
+                <option
+                  key={
+                    author.id
+                  }
+                  value={
+                    author.id
+                  }
+                >
+                  {
+                    author.name
+                  }
+                </option>
+              )
+            )}
           </select>
         </Field>
 
-        <Field label={dict.story.editor}>
+        <Field
+          label={
+            dict.story.editor
+          }
+        >
           <select
-            value={editorId ?? ''}
+            value={
+              editorId ?? ''
+            }
             onChange={(event) =>
               setEditorId(
-                event.target.value || null
+                event.target
+                  .value ||
+                  null
               )
             }
-            disabled={!userIsEditor}
+            disabled={
+              !userIsEditor
+            }
             className="
               h-9
               w-full
@@ -236,33 +671,55 @@ export function StorySettingsPanel({
             "
           >
             <option value="">
-              {dict.story.selectEditor}
+              {
+                dict.story
+                  .selectEditor
+              }
             </option>
 
-            {editors.map((editor) => (
-              <option
-                key={editor.id}
-                value={editor.id}
-              >
-                {editor.name}
-              </option>
-            ))}
+            {editors.map(
+              (editor) => (
+                <option
+                  key={
+                    editor.id
+                  }
+                  value={
+                    editor.id
+                  }
+                >
+                  {
+                    editor.name
+                  }
+                </option>
+              )
+            )}
           </select>
         </Field>
       </Section>
 
       {/* Categories */}
       <Section
-        title={dict.story.primaryCategory}
+        title={
+          dict.story
+            .primaryCategory
+        }
       >
         <Field
-          label={dict.story.primaryCategory}
+          label={
+            dict.story
+              .primaryCategory
+          }
         >
           <select
-            value={primaryCategoryId ?? ''}
+            value={
+              primaryCategoryId ??
+              ''
+            }
             onChange={(event) =>
               setPrimaryCategoryId(
-                event.target.value || null
+                event.target
+                  .value ||
+                  null
               )
             }
             className="
@@ -282,67 +739,87 @@ export function StorySettingsPanel({
             "
           >
             <option value="">
-              {dict.story.selectCategory}
+              {
+                dict.story
+                  .selectCategory
+              }
             </option>
 
-            {categories.map((category) => (
-              <option
-                key={category.id}
-                value={category.id}
-              >
-                {language === 'es'
-                  ? category.nameEs
-                  : category.nameEn}
-              </option>
-            ))}
+            {categories.map(
+              (category) => (
+                <option
+                  key={
+                    category.id
+                  }
+                  value={
+                    category.id
+                  }
+                >
+                  {language ===
+                  'es'
+                    ? category.nameEs
+                    : category.nameEn}
+                </option>
+              )
+            )}
           </select>
         </Field>
 
         <Field
           label={
-            dict.story.additionalCategories
+            dict.story
+              .additionalCategories
           }
         >
           <div className="max-h-40 overflow-y-auto border border-border bg-white p-2">
-            {categories.map((category) => (
-              <label
-                key={category.id}
-                className="
-                  flex
-                  cursor-pointer
-                  items-center
-                  gap-2
-                  py-1
-                  text-sm
-                  hover:bg-surface-muted
-                "
-              >
-                <input
-                  type="checkbox"
-                  checked={selectedCategoryIds.includes(
+            {categories.map(
+              (category) => (
+                <label
+                  key={
                     category.id
-                  )}
-                  onChange={() =>
-                    toggleCategory(
-                      category.id
-                    )
                   }
-                  className="h-4 w-4 accent-primary"
-                />
+                  className="
+                    flex
+                    cursor-pointer
+                    items-center
+                    gap-2
+                    py-1
+                    text-sm
+                    hover:bg-surface-muted
+                  "
+                >
+                  <input
+                    type="checkbox"
+                    checked={selectedCategoryIds.includes(
+                      category.id
+                    )}
+                    onChange={() =>
+                      toggleCategory(
+                        category.id
+                      )
+                    }
+                    className="h-4 w-4 accent-primary"
+                  />
 
-                <span className="text-foreground">
-                  {language === 'es'
-                    ? category.nameEs
-                    : category.nameEn}
-                </span>
-              </label>
-            ))}
+                  <span className="text-foreground">
+                    {language ===
+                    'es'
+                      ? category.nameEs
+                      : category.nameEn}
+                  </span>
+                </label>
+              )
+            )}
           </div>
         </Field>
       </Section>
 
       {/* Tags */}
-      <Section title={dict.story.tags}>
+      <Section
+        title={
+          dict.story.tags
+        }
+      >
         <input
           type="search"
           value={tagSearch}
@@ -351,7 +828,10 @@ export function StorySettingsPanel({
               event.target.value
             )
           }
-          placeholder={dict.story.searchTags}
+          placeholder={
+            dict.story
+              .searchTags
+          }
           className="
             h-9
             w-full
@@ -370,7 +850,8 @@ export function StorySettingsPanel({
           "
         />
 
-        {tagSearch.trim().length >= 2 &&
+        {tagSearch.trim()
+          .length >= 2 &&
           !allTags.find(
             (tag) =>
               tag.name.toLowerCase() ===
@@ -402,94 +883,126 @@ export function StorySettingsPanel({
                 hover:bg-primary/5
               "
             >
-              + {dict.story.createTag}:{' '}
-              &ldquo;{tagSearch.trim()}&rdquo;
+              +{' '}
+              {
+                dict.story
+                  .createTag
+              }
+              : &ldquo;
+              {tagSearch.trim()}
+              &rdquo;
             </button>
           )}
 
-        {tagSearch.trim().length >= 2 &&
-          allTags.length > 0 && (
+        {tagSearch.trim()
+          .length >= 2 &&
+          allTags.length >
+            0 && (
             <div className="mt-2 max-h-32 overflow-y-auto border border-border bg-white">
               {allTags
                 .filter(
                   (tag) =>
                     !tags.find(
-                      (selectedTag) =>
+                      (
+                        selectedTag
+                      ) =>
                         selectedTag.id ===
                         tag.id
                     )
                 )
-                .slice(0, 10)
-                .map((tag) => (
-                  <button
-                    key={tag.id}
-                    type="button"
-                    onClick={() =>
-                      toggleTag(tag.id)
-                    }
-                    className="
-                      flex
-                      w-full
-                      items-center
-                      px-3
-                      py-1.5
-                      text-sm
-                      text-foreground
-                      hover:bg-surface-muted
-                    "
-                  >
-                    + {tag.name}
-                  </button>
-                ))}
+                .slice(
+                  0,
+                  10
+                )
+                .map(
+                  (tag) => (
+                    <button
+                      key={
+                        tag.id
+                      }
+                      type="button"
+                      onClick={() =>
+                        toggleTag(
+                          tag.id
+                        )
+                      }
+                      className="
+                        flex
+                        w-full
+                        items-center
+                        px-3
+                        py-1.5
+                        text-sm
+                        text-foreground
+                        hover:bg-surface-muted
+                      "
+                    >
+                      +{' '}
+                      {
+                        tag.name
+                      }
+                    </button>
+                  )
+                )}
             </div>
           )}
 
-        {tags.length > 0 && (
+        {tags.length >
+          0 && (
           <div className="mt-2 flex flex-wrap gap-1.5">
-            {tags.map((tag) => (
-              <button
-                key={tag.id}
-                type="button"
-                onClick={() =>
-                  toggleTag(tag.id)
-                }
-                className="
-                  inline-flex
-                  items-center
-                  gap-1
-                  rounded-lg
-                  border
-                  border-primary/30
-                  bg-primary/5
-                  px-2
-                  py-0.5
-                  text-xs
-                  font-medium
-                  text-primary
-                  transition-colors
-                  hover:bg-breaking/5
-                  hover:text-breaking
-                "
-              >
-                {tag.name}
+            {tags.map(
+              (tag) => (
+                <button
+                  key={tag.id}
+                  type="button"
+                  onClick={() =>
+                    toggleTag(
+                      tag.id
+                    )
+                  }
+                  className="
+                    inline-flex
+                    items-center
+                    gap-1
+                    rounded-lg
+                    border
+                    border-primary/30
+                    bg-primary/5
+                    px-2
+                    py-0.5
+                    text-xs
+                    font-medium
+                    text-primary
+                    transition-colors
+                    hover:bg-breaking/5
+                    hover:text-breaking
+                  "
+                >
+                  {tag.name}
 
-                <X
-                  className="h-3 w-3"
-                  aria-hidden
-                />
-              </button>
-            ))}
+                  <X
+                    className="h-3 w-3"
+                    aria-hidden
+                  />
+                </button>
+              )
+            )}
           </div>
         )}
       </Section>
 
       {/* Island */}
-      <Section title={dict.story.island}>
+      <Section
+        title={
+          dict.story.island
+        }
+      >
         <select
           value={island}
           onChange={(event) =>
             setIsland(
-              event.target.value as IslandScope
+              event.target
+                .value as IslandScope
             )
           }
           className="
@@ -508,24 +1021,36 @@ export function StorySettingsPanel({
             focus-visible:ring-ring
           "
         >
-          {islandOptions.map((option) => (
-            <option
-              key={option}
-              value={option}
-            >
-              {islandLabel(
-                option,
-                language
-              )}
-            </option>
-          ))}
+          {islandOptions.map(
+            (option) => (
+              <option
+                key={
+                  option
+                }
+                value={
+                  option
+                }
+              >
+                {islandLabel(
+                  option,
+                  language
+                )}
+              </option>
+            )
+          )}
         </select>
       </Section>
 
       {/* Access */}
-      <Section title={dict.story.access}>
+      <Section
+        title={
+          dict.story.access
+        }
+      >
         <select
-          value={accessLevel}
+          value={
+            accessLevel
+          }
           onChange={(event) =>
             setAccessLevel(
               event.target
@@ -548,35 +1073,52 @@ export function StorySettingsPanel({
             focus-visible:ring-ring
           "
         >
-          {accessOptions.map((option) => (
-            <option
-              key={option}
-              value={option}
-            >
-              {option === 'public'
-                ? dict.story.publicAccess
-                : option === 'registered'
+          {accessOptions.map(
+            (option) => (
+              <option
+                key={
+                  option
+                }
+                value={
+                  option
+                }
+              >
+                {option ===
+                'public'
                   ? dict.story
-                      .registeredAccess
-                  : option === 'subscriber'
+                      .publicAccess
+                  : option ===
+                      'registered'
                     ? dict.story
-                        .subscriberAccess
-                    : dict.story
-                        .premiumAccess}
-            </option>
-          ))}
+                        .registeredAccess
+                    : option ===
+                        'subscriber'
+                      ? dict.story
+                          .subscriberAccess
+                      : dict.story
+                          .premiumAccess}
+              </option>
+            )
+          )}
         </select>
       </Section>
 
       {/* Featured image */}
       <Section
-        title={dict.story.featuredImage}
+        title={
+          dict.story
+            .featuredImage
+        }
       >
         {featuredImage ? (
           <div>
             <img
-              src={featuredImage.url}
-              alt={featuredImage.altText}
+              src={
+                featuredImage.url
+              }
+              alt={
+                featuredImage.altText
+              }
               className="
                 mb-2
                 aspect-video
@@ -590,21 +1132,31 @@ export function StorySettingsPanel({
               <button
                 type="button"
                 onClick={() =>
-                  setMediaPickerOpen(true)
+                  setMediaPickerOpen(
+                    true
+                  )
                 }
                 className="text-xs font-medium text-primary hover:underline"
               >
-                {dict.story.selectFromMedia}
+                {
+                  dict.story
+                    .selectFromMedia
+                }
               </button>
 
               <button
                 type="button"
                 onClick={() =>
-                  setFeaturedImage(null)
+                  setFeaturedImage(
+                    null
+                  )
                 }
                 className="text-xs font-medium text-breaking hover:underline"
               >
-                {dict.story.removeImage}
+                {
+                  dict.story
+                    .removeImage
+                }
               </button>
             </div>
           </div>
@@ -612,7 +1164,9 @@ export function StorySettingsPanel({
           <button
             type="button"
             onClick={() =>
-              setMediaPickerOpen(true)
+              setMediaPickerOpen(
+                true
+              )
             }
             className="
               flex
@@ -632,21 +1186,32 @@ export function StorySettingsPanel({
               hover:text-primary
             "
           >
-            {dict.story.selectFromMedia}
+            {
+              dict.story
+                .selectFromMedia
+            }
           </button>
         )}
 
         {featuredImage && (
           <>
             <Field
-              label={dict.story.imageCaption}
+              label={
+                dict.story
+                  .imageCaption
+              }
             >
               <input
                 type="text"
-                value={imageCaption}
-                onChange={(event) =>
+                value={
+                  imageCaption
+                }
+                onChange={(
+                  event
+                ) =>
                   setImageCaption(
-                    event.target.value
+                    event.target
+                      .value
                   )
                 }
                 className="
@@ -667,14 +1232,22 @@ export function StorySettingsPanel({
             </Field>
 
             <Field
-              label={dict.story.imageCredit}
+              label={
+                dict.story
+                  .imageCredit
+              }
             >
               <input
                 type="text"
-                value={imageCredit}
-                onChange={(event) =>
+                value={
+                  imageCredit
+                }
+                onChange={(
+                  event
+                ) =>
                   setImageCredit(
-                    event.target.value
+                    event.target
+                      .value
                   )
                 }
                 className="
@@ -700,8 +1273,13 @@ export function StorySettingsPanel({
       {/* SEO */}
       <Section title="SEO">
         <Field
-          label={dict.story.seoTitle}
-          hint={dict.story.seoTitleHint}
+          label={
+            dict.story.seoTitle
+          }
+          hint={
+            dict.story
+              .seoTitleHint
+          }
         >
           <input
             type="text"
@@ -729,14 +1307,17 @@ export function StorySettingsPanel({
           />
 
           <CharCount
-            value={seoTitle}
+            value={
+              seoTitle
+            }
             target={60}
           />
         </Field>
 
         <Field
           label={
-            dict.story.seoDescription
+            dict.story
+              .seoDescription
           }
           hint={
             dict.story
@@ -744,7 +1325,9 @@ export function StorySettingsPanel({
           }
         >
           <textarea
-            value={seoDescription}
+            value={
+              seoDescription
+            }
             onChange={(event) =>
               setSeoDescription(
                 event.target.value
@@ -769,14 +1352,20 @@ export function StorySettingsPanel({
           />
 
           <CharCount
-            value={seoDescription}
+            value={
+              seoDescription
+            }
             target={160}
           />
         </Field>
       </Section>
 
       {/* Slug */}
-      <Section title={dict.story.slug}>
+      <Section
+        title={
+          dict.story.slug
+        }
+      >
         <input
           type="text"
           value={slug}
@@ -785,7 +1374,9 @@ export function StorySettingsPanel({
               event.target.value
             )
           }
-          disabled={slugLocked}
+          disabled={
+            slugLocked
+          }
           className="
             h-9
             w-full
@@ -806,19 +1397,27 @@ export function StorySettingsPanel({
 
         {slugLocked && (
           <p className="mt-1 text-xs text-muted-foreground">
-            {dict.story.slugLocked}
+            {
+              dict.story
+                .slugLocked
+            }
           </p>
         )}
       </Section>
 
       {/* Version history */}
       <Section
-        title={dict.story.versionHistory}
+        title={
+          dict.story
+            .versionHistory
+        }
       >
         <StoryVersionHistory
           dict={dict}
           versions={versions}
-          canRestore={userIsEditor}
+          canRestore={
+            userIsEditor
+          }
           onRestore={
             handleRestoreVersion
           }
@@ -883,7 +1482,8 @@ function CharCount({
   value: string;
   target: number;
 }) {
-  const length = value.length;
+  const length =
+    value.length;
 
   const color =
     length === 0

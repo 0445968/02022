@@ -1,5 +1,5 @@
 /**
- * Database type surface for Simply Raizal.
+ * Database type surface for West Island Times.
  *
  * Stage 2:
  * - profiles
@@ -176,6 +176,9 @@ export interface Database {
           seo_description:
             | string
             | null;
+          originally_published_at:
+            | string
+            | null;
           published_at:
             | string
             | null;
@@ -234,6 +237,9 @@ export interface Database {
           seo_description?:
             | string
             | null;
+          originally_published_at?:
+            | string
+            | null;
           published_at?:
             | string
             | null;
@@ -287,6 +293,9 @@ export interface Database {
             | string
             | null;
           seo_description?:
+            | string
+            | null;
+          originally_published_at?:
             | string
             | null;
           published_at?:

@@ -1,32 +1,61 @@
 'use client';
 
+import {
+  useEffect,
+  useRef,
+} from 'react';
+
 import { Save } from 'lucide-react';
 
-import type { Dictionary } from '@/lib/i18n/dictionaries';
-import type { StoryLanguage } from '@/lib/db/database.types';
+import type {
+  Dictionary,
+} from '@/lib/i18n/dictionaries';
 
-import { RichTextEditor } from '@/components/editorial/rich-text-editor';
+import type {
+  StoryLanguage,
+} from '@/lib/db/database.types';
+
+import {
+  RichTextEditor,
+} from '@/components/editorial/rich-text-editor';
 
 interface StoryEditorContentProps {
   dict: Dictionary;
+
   userId: string;
 
   language: StoryLanguage;
 
   headline: string;
+
   subheadline: string;
+
   summary: string;
 
-  body: Record<string, unknown>;
+  body: Record<
+    string,
+    unknown
+  >;
 
   isSaving: boolean;
 
-  setHeadline: (value: string) => void;
-  setSubheadline: (value: string) => void;
-  setSummary: (value: string) => void;
+  setHeadline: (
+    value: string
+  ) => void;
+
+  setSubheadline: (
+    value: string
+  ) => void;
+
+  setSummary: (
+    value: string
+  ) => void;
 
   setBody: (
-    value: Record<string, unknown>
+    value: Record<
+      string,
+      unknown
+    >
   ) => void;
 
   onSaveVersion: () => void;
@@ -47,6 +76,44 @@ export function StoryEditorContent({
   setBody,
   onSaveVersion,
 }: StoryEditorContentProps) {
+  const headlineRef =
+    useRef<HTMLTextAreaElement>(
+      null
+    );
+
+  // --------------------------------------------------
+  // Auto-grow headline
+  // --------------------------------------------------
+
+  useEffect(() => {
+    const textarea =
+      headlineRef.current;
+
+    if (!textarea) {
+      return;
+    }
+
+    textarea.style.height =
+      'auto';
+
+    textarea.style.height =
+      `${textarea.scrollHeight}px`;
+  }, [headline]);
+
+  function handleHeadlineChange(
+    event: React.ChangeEvent<HTMLTextAreaElement>
+  ) {
+    setHeadline(
+      event.target.value
+    );
+
+    event.target.style.height =
+      'auto';
+
+    event.target.style.height =
+      `${event.target.scrollHeight}px`;
+  }
+
   return (
     <div
       className="
@@ -63,8 +130,10 @@ export function StoryEditorContent({
         <div className="mb-4 flex items-center gap-2">
           <span className="eyebrow text-primary">
             {language === 'en'
-              ? dict.common.languageEN
-              : dict.common.languageES}
+              ? dict.common
+                  .languageEN
+              : dict.common
+                  .languageES}
           </span>
 
           <span className="text-xs text-muted-foreground">
@@ -77,32 +146,40 @@ export function StoryEditorContent({
         </div>
 
         {/* Headline */}
-        <input
-          type="text"
+        <textarea
+          ref={headlineRef}
           value={headline}
-          onChange={(event) =>
-            setHeadline(event.target.value)
+          onChange={
+            handleHeadlineChange
           }
           placeholder={
-            dict.story.headlinePlaceholder
+            dict.story
+              .headlinePlaceholder
           }
           aria-label={
-            dict.stories.columns.headline
+            dict.stories.columns
+              .headline
           }
+          rows={1}
           className="
+            block
             w-full
+            resize-none
+            overflow-hidden
             border-none
             bg-transparent
+            p-0
             font-headline
-            text-3xl
-            font-bold
-            leading-tight
+            text-[1.75rem]
+            font-semibold
+            leading-[1.08]
+            tracking-[-0.025em]
             text-deep
             placeholder:text-muted-foreground/40
             focus:outline-none
             focus:ring-0
-            sm:text-4xl
-            lg:text-5xl
+            sm:text-[2rem]
+            lg:text-[2.25rem]
           "
         />
 
@@ -111,16 +188,20 @@ export function StoryEditorContent({
           type="text"
           value={subheadline}
           onChange={(event) =>
-            setSubheadline(event.target.value)
+            setSubheadline(
+              event.target.value
+            )
           }
           placeholder={
-            dict.story.subheadlinePlaceholder
+            dict.story
+              .subheadlinePlaceholder
           }
           aria-label={
-            dict.story.subheadlinePlaceholder
+            dict.story
+              .subheadlinePlaceholder
           }
           className="
-            mt-3
+            mt-4
             w-full
             border-none
             bg-transparent
@@ -140,13 +221,17 @@ export function StoryEditorContent({
         <textarea
           value={summary}
           onChange={(event) =>
-            setSummary(event.target.value)
+            setSummary(
+              event.target.value
+            )
           }
           placeholder={
-            dict.story.summaryPlaceholder
+            dict.story
+              .summaryPlaceholder
           }
           aria-label={
-            dict.story.summaryPlaceholder
+            dict.story
+              .summaryPlaceholder
           }
           rows={2}
           className="
@@ -171,7 +256,8 @@ export function StoryEditorContent({
           content={body}
           onChange={setBody}
           placeholder={
-            dict.story.bodyPlaceholder
+            dict.story
+              .bodyPlaceholder
           }
           dict={dict}
           userId={userId}
@@ -181,13 +267,18 @@ export function StoryEditorContent({
         <div className="mt-6 flex justify-end">
           <button
             type="button"
-            onClick={onSaveVersion}
-            disabled={isSaving}
+            onClick={
+              onSaveVersion
+            }
+            disabled={
+              isSaving
+            }
             className="
               inline-flex
               h-9
               items-center
               gap-1.5
+              rounded-lg
               border
               border-border
               bg-white
@@ -210,7 +301,10 @@ export function StoryEditorContent({
 
             {dict.story.save}
             {' + '}
-            {dict.story.versionHistory}
+            {
+              dict.story
+                .versionHistory
+            }
           </button>
         </div>
       </div>

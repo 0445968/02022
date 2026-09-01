@@ -248,11 +248,35 @@ export function StoryEditor({
   );
 
   const [
+    originallyPublishedAt,
+    setOriginallyPublishedAt,
+  ] = useState(
+    story.originallyPublishedAt
+      ? story.originallyPublishedAt.slice(
+          0,
+          16
+        )
+      : ''
+  );
+
+  const [
     publishedAt,
     setPublishedAt,
   ] = useState(
     story.publishedAt
       ? story.publishedAt.slice(
+          0,
+          16
+        )
+      : ''
+  );
+
+  const [
+    scheduledAt,
+    setScheduledAt,
+  ] = useState(
+    story.scheduledAt
+      ? story.scheduledAt.slice(
           0,
           16
         )
@@ -330,8 +354,15 @@ export function StoryEditor({
 
         slug,
 
+        originallyPublishedAt:
+          originallyPublishedAt ||
+          null,
+
         publishedAt:
           publishedAt || null,
+
+        scheduledAt:
+          scheduledAt || null,
 
         categoryIds:
           selectedCategoryIds,
@@ -358,7 +389,9 @@ export function StoryEditor({
         seoTitle,
         seoDescription,
         slug,
+        originallyPublishedAt,
         publishedAt,
+        scheduledAt,
         selectedCategoryIds,
         tagIds,
       ]
@@ -422,10 +455,6 @@ export function StoryEditor({
   ) {
     setWorkflowError(null);
 
-    /*
-     * First make sure all current writing has
-     * reached the database.
-     */
     const flushed =
       await flushSave();
 
@@ -533,10 +562,6 @@ export function StoryEditor({
       return;
     }
 
-    /*
-     * Avoid restoring over edits which are
-     * still waiting to autosave.
-     */
     const saved =
       await flushSave();
 
@@ -569,13 +594,6 @@ export function StoryEditor({
         );
       }
 
-      /*
-       * Refresh the server data.
-       *
-       * A hard navigation is intentional here
-       * so local React state is rebuilt from the
-       * restored database version as well.
-       */
       window.location.reload();
     } catch (
       restoreError
@@ -878,7 +896,9 @@ export function StoryEditor({
     slug,
     slugLocked,
 
+    originallyPublishedAt,
     publishedAt,
+    scheduledAt,
 
     versions,
 
@@ -900,7 +920,9 @@ export function StoryEditor({
 
     setSlug,
 
+    setOriginallyPublishedAt,
     setPublishedAt,
+    setScheduledAt,
 
     setImageCaption,
     setImageCredit,

@@ -27,64 +27,121 @@ export type SaveState =
   | 'unsaved'
   | 'error';
 
+/* ========================================================= */
+/* EDITOR USER */
+/* ========================================================= */
+
 export interface StoryEditorUser {
   id: string;
+
   profile: {
     isAuthor: boolean;
     isEditor: boolean;
   } | null;
 }
 
+/* ========================================================= */
+/* ROOT EDITOR PROPS */
+/* ========================================================= */
+
 export interface StoryEditorProps {
   dict: Dictionary;
+
   locale: Locale;
+
   story: StoryWithRelations;
+
   user: StoryEditorUser;
+
   categories: Category[];
+
   authors: StaffOption[];
+
   editors: StaffOption[];
+
   versions: StoryVersion[];
 }
+
+/* ========================================================= */
+/* EDITOR STATE */
+/* ========================================================= */
 
 /**
  * Complete editable state for one story.
  *
- * This is the state owned by StoryEditor and shared
- * with the autosave hook and child components.
+ * StoryEditor owns this state and shares it with
+ * autosave plus the editor child components.
  */
 export interface StoryEditorState {
   headline: string;
+
   subheadline: string;
+
   summary: string;
 
-  body: Record<string, unknown>;
+  body: Record<
+    string,
+    unknown
+  >;
 
   language: StoryLanguage;
+
   status: StoryStatus;
+
   accessLevel: AccessLevel;
 
-  authorId: string | null;
-  editorId: string | null;
+  authorId:
+    | string
+    | null;
 
-  primaryCategoryId: string | null;
+  editorId:
+    | string
+    | null;
+
+  primaryCategoryId:
+    | string
+    | null;
+
   selectedCategoryIds: string[];
 
   tagIds: string[];
 
   island: IslandScope;
 
-  featuredImage: MediaAsset | null;
+  featuredImage:
+    | MediaAsset
+    | null;
 
   imageCaption: string;
+
   imageCredit: string;
 
   seoTitle: string;
+
   seoDescription: string;
 
   slug: string;
 
+  /**
+   * Optional historical/original publication date.
+   * This does not control public visibility.
+   */
+  originallyPublishedAt: string;
+
+  /**
+   * Actual publication timestamp.
+   */
   publishedAt: string;
+
+  /**
+   * Future scheduled publication timestamp.
+   */
+  scheduledAt: string;
 }
+
+/* ========================================================= */
+/* AUTOSAVE / UPDATE PAYLOAD */
+/* ========================================================= */
 
 /**
  * Payload sent to:
@@ -94,55 +151,117 @@ export interface StoryEditorState {
 export interface StorySavePayload {
   headline: string;
 
-  subheadline: string | null;
-  summary: string | null;
+  subheadline:
+    | string
+    | null;
 
-  body: Record<string, unknown>;
+  summary:
+    | string
+    | null;
+
+  body: Record<
+    string,
+    unknown
+  >;
 
   language: StoryLanguage;
+
   status: StoryStatus;
+
   accessLevel: AccessLevel;
 
-  authorId: string | null;
-  editorId: string | null;
+  authorId:
+    | string
+    | null;
 
-  primaryCategoryId: string | null;
+  editorId:
+    | string
+    | null;
+
+  primaryCategoryId:
+    | string
+    | null;
 
   island: IslandScope;
 
-  featuredImageId: string | null;
+  featuredImageId:
+    | string
+    | null;
 
-  imageCaption: string | null;
-  imageCredit: string | null;
+  imageCaption:
+    | string
+    | null;
 
-  seoTitle: string | null;
-  seoDescription: string | null;
+  imageCredit:
+    | string
+    | null;
+
+  seoTitle:
+    | string
+    | null;
+
+  seoDescription:
+    | string
+    | null;
 
   slug: string;
 
-  publishedAt: string | null;
+  /**
+   * Historical/original publication timestamp.
+   */
+  originallyPublishedAt:
+    | string
+    | null;
+
+  /**
+   * Actual publication timestamp.
+   */
+  publishedAt:
+    | string
+    | null;
+
+  /**
+   * Future publication timestamp.
+   */
+  scheduledAt:
+    | string
+    | null;
 
   categoryIds: string[];
+
   tagIds: string[];
 
   createVersion: boolean;
 }
 
+/* ========================================================= */
+/* SETTINGS PANEL PROPS */
+/* ========================================================= */
+
 /**
- * Props shared by the desktop and mobile
- * settings panels.
+ * Props shared by desktop and mobile settings panels.
  */
 export interface StorySettingsPanelProps {
   dict: Dictionary;
 
   language: StoryLanguage;
+
   status: StoryStatus;
+
   accessLevel: AccessLevel;
 
-  authorId: string | null;
-  editorId: string | null;
+  authorId:
+    | string
+    | null;
 
-  primaryCategoryId: string | null;
+  editorId:
+    | string
+    | null;
+
+  primaryCategoryId:
+    | string
+    | null;
+
   selectedCategoryIds: string[];
 
   tags: {
@@ -161,25 +280,45 @@ export interface StorySettingsPanelProps {
 
   island: IslandScope;
 
-  featuredImage: MediaAsset | null;
+  featuredImage:
+    | MediaAsset
+    | null;
 
   imageCaption: string;
+
   imageCredit: string;
 
   seoTitle: string;
+
   seoDescription: string;
 
   slug: string;
+
   slugLocked: boolean;
 
+  /**
+   * Historical/original publication timestamp.
+   */
+  originallyPublishedAt: string;
+
+  /**
+   * Actual publication timestamp.
+   */
   publishedAt: string;
+
+  /**
+   * Future scheduled publication timestamp.
+   */
+  scheduledAt: string;
 
   versions: StoryVersion[];
 
   userIsEditor: boolean;
 
   categories: Category[];
+
   authors: StaffOption[];
+
   editors: StaffOption[];
 
   setLanguage: (
@@ -210,7 +349,15 @@ export interface StorySettingsPanelProps {
     value: string
   ) => void;
 
+  setOriginallyPublishedAt: (
+    value: string
+  ) => void;
+
   setPublishedAt: (
+    value: string
+  ) => void;
+
+  setScheduledAt: (
     value: string
   ) => void;
 

@@ -47,10 +47,11 @@ const STORY_SELECT = `
   image_caption,
   image_credit,
   seo_title,
-  seo_description,
-  published_at,
-  scheduled_at,
-  created_by,
+seo_description,
+originally_published_at,
+published_at,
+scheduled_at,
+created_by,
   updated_by,
   created_at,
   updated_at
@@ -100,6 +101,10 @@ interface StoryRow {
   seo_description:
     | string
     | null;
+
+    originally_published_at:
+  | string
+  | null;
 
   published_at:
     | string
@@ -741,6 +746,9 @@ async function resolveStoryRelations(
 
     seoDescription:
       story.seo_description,
+
+      originallyPublishedAt:
+  story.originally_published_at,
 
     publishedAt:
       story.published_at,
@@ -1839,6 +1847,10 @@ export interface UpdateStoryInput {
     | string
     | null;
 
+    originallyPublishedAt?:
+  | string
+  | null;
+
   publishedAt?:
     | string
     | null;
@@ -2006,13 +2018,21 @@ export async function updateStory(
   }
 
   if (
+    input.originallyPublishedAt !==
+    undefined
+  ) {
+    update.originally_published_at =
+      input.originallyPublishedAt;
+  }
+  
+  if (
     input.publishedAt !==
     undefined
   ) {
     update.published_at =
       input.publishedAt;
   }
-
+  
   if (
     input.scheduledAt !==
     undefined

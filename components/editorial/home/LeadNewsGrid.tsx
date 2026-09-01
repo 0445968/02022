@@ -875,7 +875,7 @@ function LatestPodcast({
           text-white/60
         "
       >
-        West Island Times Daily
+        Clear Talks with Peter Bent
       </p>
 
       <Link
