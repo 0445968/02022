@@ -250,6 +250,8 @@ export interface StorySettingsPanelProps {
 
   accessLevel: AccessLevel;
 
+  locale: Locale;
+
   authorId:
     | string
     | null;

@@ -3,21 +3,17 @@
 import {
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from 'react';
-import { useRouter } from 'next/navigation';
-import { X } from 'lucide-react';
 
-import type {
-  AccessLevel,
-  IslandScope,
-  StoryLanguage,
-  StoryStatus,
-} from '@/lib/db/database.types';
+import {
+  useRouter,
+} from 'next/navigation';
 
-import type {
-  MediaAsset,
-} from '@/types/editorial';
+import {
+  X,
+} from 'lucide-react';
 
 import {
   MediaPicker,
@@ -39,9 +35,28 @@ import {
   useStoryAutosave,
 } from '@/components/editorial/story-editor/useStoryAutosave';
 
+import {
+  useStoryEditorState,
+} from '@/components/editorial/story-editor/useStoryEditorState';
+
+import {
+  useStoryMedia,
+} from '@/components/editorial/story-editor/useStoryMedia';
+
+import {
+  useStoryRevision,
+} from '@/components/editorial/story-editor/useStoryRevision';
+
+import {
+  useStoryTaxonomy,
+} from '@/components/editorial/story-editor/useStoryTaxonomy';
+
+import {
+  useStoryWorkflow,
+} from '@/components/editorial/story-editor/useStoryWorkflow';
+
 import type {
   StoryEditorProps,
-  StorySavePayload,
 } from '@/components/editorial/story-editor/types';
 
 export function StoryEditor({
@@ -54,7 +69,12 @@ export function StoryEditor({
   editors,
   versions,
 }: StoryEditorProps) {
-  const router = useRouter();
+  const router =
+    useRouter();
+
+  // ==================================================
+  // Permissions / story mode
+  // ==================================================
 
   const userIsEditor =
     user.profile?.isEditor ??
@@ -64,260 +84,24 @@ export function StoryEditor({
     user.profile?.isAuthor ??
     false;
 
+  /**
+   * This never changes while the editor is open.
+   *
+   * A published story keeps its live version in
+   * public.stories while edits are saved separately
+   * in story_revisions.
+   */
   const isPublishedStory =
     story.status ===
-      'published';
+    'published';
 
   const slugLocked =
-    story.status ===
-      'published' &&
+    isPublishedStory &&
     !userIsEditor;
 
-  // --------------------------------------------------
-  // Story state
-  // --------------------------------------------------
-
-  const [
-    headline,
-    setHeadline,
-  ] = useState(
-    story.headline
-  );
-
-  const [
-    subheadline,
-    setSubheadline,
-  ] = useState(
-    story.subheadline ?? ''
-  );
-
-  const [
-    summary,
-    setSummary,
-  ] = useState(
-    story.summary ?? ''
-  );
-
-  const [
-    body,
-    setBody,
-  ] = useState<
-    Record<string, unknown>
-  >(story.body);
-
-  const [
-    language,
-    setLanguage,
-  ] = useState<StoryLanguage>(
-    story.language
-  );
-
-  const [
-    status,
-    setStatus,
-  ] = useState<StoryStatus>(
-    story.status
-  );
-
-  const [
-    accessLevel,
-    setAccessLevel,
-  ] = useState<AccessLevel>(
-    story.accessLevel
-  );
-
-  const [
-    authorId,
-    setAuthorId,
-  ] = useState<
-    string | null
-  >(
-    story.author?.id ??
-      null
-  );
-
-  const [
-    editorId,
-    setEditorId,
-  ] = useState<
-    string | null
-  >(
-    story.editor?.id ??
-      null
-  );
-
-  const [
-    primaryCategoryId,
-    setPrimaryCategoryId,
-  ] = useState<
-    string | null
-  >(
-    story.primaryCategory
-      ?.id ?? null
-  );
-
-  const [
-    selectedCategoryIds,
-    setSelectedCategoryIds,
-  ] = useState<
-    string[]
-  >(
-    story.categories.map(
-      (category) =>
-        category.id
-    )
-  );
-
-  const [
-    tagIds,
-    setTagIds,
-  ] = useState<
-    string[]
-  >(
-    story.tags.map(
-      (tag) => tag.id
-    )
-  );
-
-  const [
-    tags,
-    setTags,
-  ] = useState(
-    story.tags
-  );
-
-  const [
-    allTags,
-    setAllTags,
-  ] = useState(
-    story.tags
-  );
-
-  const [
-    tagSearch,
-    setTagSearch,
-  ] = useState('');
-
-  const [
-    island,
-    setIsland,
-  ] = useState<IslandScope>(
-    story.island
-  );
-
-  const [
-    featuredImage,
-    setFeaturedImage,
-  ] = useState<
-    MediaAsset | null
-  >(
-    story.featuredImage
-  );
-
-  const [
-    featuredImageId,
-    setFeaturedImageId,
-  ] = useState<
-    string | null
-  >(
-    story.featuredImage?.id ??
-      null
-  );
-
-  const [
-    imageCaption,
-    setImageCaption,
-  ] = useState(
-    story.imageCaption ??
-      ''
-  );
-
-  const [
-    imageCredit,
-    setImageCredit,
-  ] = useState(
-    story.imageCredit ??
-      ''
-  );
-
-  const [
-    seoTitle,
-    setSeoTitle,
-  ] = useState(
-    story.seoTitle ?? ''
-  );
-
-  const [
-    seoDescription,
-    setSeoDescription,
-  ] = useState(
-    story.seoDescription ??
-      ''
-  );
-
-  const [
-    slug,
-    setSlug,
-  ] = useState(
-    story.slug
-  );
-
-  const [
-    originallyPublishedAt,
-    setOriginallyPublishedAt,
-  ] = useState(
-    story.originallyPublishedAt
-      ? story.originallyPublishedAt.slice(
-          0,
-          16
-        )
-      : ''
-  );
-
-  const [
-    publishedAt,
-    setPublishedAt,
-  ] = useState(
-    story.publishedAt
-      ? story.publishedAt.slice(
-          0,
-          16
-        )
-      : ''
-  );
-
-  const [
-    scheduledAt,
-    setScheduledAt,
-  ] = useState(
-    story.scheduledAt
-      ? story.scheduledAt.slice(
-          0,
-          16
-        )
-      : ''
-  );
-
-  function handleSetFeaturedImage(
-    media: MediaAsset | null
-  ) {
-    setFeaturedImage(
-      media
-    );
-  
-    setFeaturedImageId(
-      media?.id ?? null
-    );
-  }
-
-  // --------------------------------------------------
+  // ==================================================
   // Interface state
-  // --------------------------------------------------
-
-  const [
-    mediaPickerOpen,
-    setMediaPickerOpen,
-  ] = useState(false);
+  // ==================================================
 
   const [
     mobileSettingsOpen,
@@ -331,1090 +115,550 @@ export function StoryEditor({
     string | null
   >(null);
 
-  const [
-    revisionLoaded,
-    setRevisionLoaded,
-  ] = useState(
-    !isPublishedStory
-  );
-  
-  const [
-    hasPendingRevision,
-    setHasPendingRevision,
-  ] = useState(false);
+  // ==================================================
+  // Taxonomy
+  // ==================================================
 
-  // --------------------------------------------------
-// Published story revision
-// --------------------------------------------------
+  const taxonomy =
+    useStoryTaxonomy({
+      initialCategoryIds:
+        story.categories.map(
+          (category) =>
+            category.id
+        ),
 
-useEffect(() => {
-  if (
-    !isPublishedStory
-  ) {
-    setRevisionLoaded(
-      true
-    );
+      initialPrimaryCategoryId:
+        story.primaryCategory
+          ?.id ?? null,
 
-    return;
-  }
+      initialTags:
+        story.tags,
+    });
 
-  let cancelled = false;
+  // ==================================================
+  // Featured media
+  // ==================================================
 
-  async function loadRevision() {
-    try {
-      const response =
-        await fetch(
-          `/api/stories/${story.id}/revision`,
-          {
-            cache:
-              'no-store',
-          }
-        );
+  const media =
+    useStoryMedia({
+      initialFeaturedImage:
+        story.featuredImage,
 
-      if (
-        !response.ok
-      ) {
-        throw new Error(
-          'Unable to load unpublished changes'
-        );
-      }
+      initialImageCaption:
+        story.imageCaption ??
+        '',
 
-      const data =
-        await response.json();
+      initialImageCredit:
+        story.imageCredit ??
+        '',
+    });
 
-      if (cancelled) {
-        return;
-      }
+  // ==================================================
+  // Main editable state
+  // ==================================================
 
-      const revision =
-        data.revision;
+  const editor =
+    useStoryEditorState({
+      story,
 
-      if (!revision) {
-        setHasPendingRevision(
-          false
-        );
+      selectedCategoryIds:
+        taxonomy
+          .selectedCategoryIds,
 
-        setRevisionLoaded(
-          true
-        );
+      tagIds:
+        taxonomy.tagIds,
 
-        return;
-      }
+      featuredImageId:
+        media.featuredImageId,
 
-      setHasPendingRevision(
-        true
-      );
+      imageCaption:
+        media.imageCaption,
 
-      setHeadline(
-        revision.headline
-      );
+      imageCredit:
+        media.imageCredit,
 
-      setSubheadline(
-        revision.subheadline ??
-          ''
-      );
+      primaryCategoryId:
+        taxonomy
+          .primaryCategoryId,
+    });
 
-      setSummary(
-        revision.summary ??
-          ''
-      );
+  // ==================================================
+  // Autosave
+  // ==================================================
 
-      setBody(
-        revision.body
-      );
+  const autosave =
+    useStoryAutosave({
+      storyId:
+        story.id,
 
-      setLanguage(
-        revision.language
-      );
+      payload:
+        editor.savePayload,
 
-      /*
-       * The live article remains published while
-       * this revision is being edited.
+      errorMessage:
+        dict.common
+          .errorDesc,
+
+      /**
+       * Published stories never autosave directly
+       * into their live stories row.
        */
-      setStatus(
-        story.status
-      );
+      saveEndpoint:
+        isPublishedStory
+          ? `/api/stories/${story.id}/revision`
+          : undefined,
+    });
 
-      setAccessLevel(
-        revision.accessLevel
-      );
+  // ==================================================
+  // Stable revision adapters
+  // ==================================================
+  //
+  // useStoryRevision performs an initial effect.
+  // These adapter objects must remain stable so that
+  // effect does not continuously reload the revision.
+  // ==================================================
 
-      setAuthorId(
-        revision.authorId
-      );
-
-      setEditorId(
-        revision.editorId
-      );
-
-      setPrimaryCategoryId(
-        revision.primaryCategoryId
-      );
-
-      setSelectedCategoryIds(
-        revision.categoryIds ??
-          []
-      );
-
-      setTagIds(
-        revision.tagIds ??
-          []
-      );
-
-      setIsland(
-        revision.island
-      );
-
-      setFeaturedImageId(
-        revision.featuredImageId
-      );
-
-      /*
-       * If the draft revision still uses the same
-       * image as the currently published story,
-       * we already have the complete MediaAsset.
-       *
-       * A different pending image will be resolved
-       * separately when we add revision media loading.
-       * Its ID is still preserved safely here.
-       */
-      if (
-        revision.featuredImageId ===
-        story.featuredImage?.id
-      ) {
-        setFeaturedImage(
-          story.featuredImage
-        );
-      } else if (
-        !revision.featuredImageId
-      ) {
-        setFeaturedImage(
-          null
-        );
-      } else {
-        setFeaturedImage(
-          null
-        );
-      }
-
-      setImageCaption(
-        revision.imageCaption ??
-          ''
-      );
-
-      setImageCredit(
-        revision.imageCredit ??
-          ''
-      );
-
-      setSeoTitle(
-        revision.seoTitle ??
-          ''
-      );
-
-      setSeoDescription(
-        revision.seoDescription ??
-          ''
-      );
-
-      setSlug(
-        revision.slug
-      );
-
-      setOriginallyPublishedAt(
-        revision.originallyPublishedAt
-          ? revision.originallyPublishedAt.slice(
-              0,
-              10
-            )
-          : ''
-      );
-
-      setScheduledAt(
-        revision.scheduledAt
-          ? revision.scheduledAt.slice(
-              0,
-              16
-            )
-          : ''
-      );
-
-      setRevisionLoaded(
-        true
-      );
-    } catch (
-      revisionError
-    ) {
-      console.error(
-        'Unable to load story revision:',
-        revisionError
-      );
-
-      if (
-        !cancelled
-      ) {
-        setWorkflowError(
-          revisionError instanceof
-            Error
-            ? revisionError.message
-            : dict.common
-                .errorDesc
-        );
-
-        setRevisionLoaded(
-          true
-        );
-      }
-    }
-  }
-
-  void loadRevision();
-
-  return () => {
-    cancelled = true;
-  };
-}, [
-  dict.common.errorDesc,
-  isPublishedStory,
-  story.featuredImage,
-  story.id,
-  story.status,
-]);
-
-    // --------------------------------------------------
-  // Save payload
-  // --------------------------------------------------
-
-  const savePayload =
-    useMemo<StorySavePayload>(
+  const revisionState =
+    useMemo(
       () => ({
-        headline,
+        setHeadline:
+          editor.setHeadline,
 
-        subheadline:
-          subheadline ||
-          null,
+        setSubheadline:
+          editor.setSubheadline,
 
-        summary:
-          summary || null,
+        setSummary:
+          editor.setSummary,
 
-        body,
+        setBody:
+          editor.setBody,
 
-        language,
-        status,
-        accessLevel,
+        setLanguage:
+          editor.setLanguage,
 
-        authorId,
-        editorId,
+        setAccessLevel:
+          editor.setAccessLevel,
 
-        primaryCategoryId,
+        setAuthorId:
+          editor.setAuthorId,
 
-        island,
+        setEditorId:
+          editor.setEditorId,
 
-        featuredImageId:
-          featuredImage?.id ??
-          null,
+        setIsland:
+          editor.setIsland,
 
-        imageCaption:
-          imageCaption ||
-          null,
+        setSlug:
+          editor.setSlug,
 
-        imageCredit:
-          imageCredit ||
-          null,
+        setSeoTitle:
+          editor.setSeoTitle,
 
-        seoTitle:
-          seoTitle || null,
+        setSeoDescription:
+          editor.setSeoDescription,
 
-        seoDescription:
-          seoDescription ||
-          null,
+        setOriginallyPublishedAt:
+          editor
+            .setOriginallyPublishedAt,
 
-        slug,
-
-        originallyPublishedAt:
-          originallyPublishedAt ||
-          null,
-
-        publishedAt:
-          publishedAt || null,
-
-        scheduledAt:
-          scheduledAt || null,
-
-        categoryIds:
-          selectedCategoryIds,
-
-        tagIds,
-
-        createVersion: false,
+        setScheduledAt:
+          editor.setScheduledAt,
       }),
       [
-        headline,
-        subheadline,
-        summary,
-        body,
-        language,
-        status,
-        accessLevel,
-        authorId,
-        editorId,
-        primaryCategoryId,
-        island,
-        featuredImage,
-        imageCaption,
-        imageCredit,
-        seoTitle,
-        seoDescription,
-        slug,
-        originallyPublishedAt,
-        publishedAt,
-        scheduledAt,
-        selectedCategoryIds,
-        tagIds,
+        editor.setHeadline,
+        editor.setSubheadline,
+        editor.setSummary,
+        editor.setBody,
+        editor.setLanguage,
+        editor.setAccessLevel,
+        editor.setAuthorId,
+        editor.setEditorId,
+        editor.setIsland,
+        editor.setSlug,
+        editor.setSeoTitle,
+        editor.setSeoDescription,
+        editor
+          .setOriginallyPublishedAt,
+        editor.setScheduledAt,
       ]
     );
 
-  // --------------------------------------------------
-  // Autosave
-  // --------------------------------------------------
+  const revisionTaxonomy =
+    useMemo(
+      () => ({
+        setPrimaryCategoryId:
+          taxonomy
+            .setPrimaryCategoryId,
 
-  const {
-    saveState,
-    isSaving,
-    error: autosaveError,
-    saveNow,
-    saveVersion,
-    flushSave,
-    resetSavedState,
-  } = useStoryAutosave({
-    storyId:
-      story.id,
-  
-    payload:
-      savePayload,
-  
-    errorMessage:
-      dict.common.errorDesc,
-  
-    saveEndpoint:
-      isPublishedStory
-        ? `/api/stories/${story.id}/revision`
-        : undefined,
-  });
+        setSelectedCategoryIds:
+          taxonomy
+            .setSelectedCategoryIds,
 
-  // --------------------------------------------------
-  // Navigation
-  // --------------------------------------------------
+        setTagIds:
+          taxonomy.setTagIds,
+      }),
+      [
+        taxonomy
+          .setPrimaryCategoryId,
+        taxonomy
+          .setSelectedCategoryIds,
+        taxonomy.setTagIds,
+      ]
+    );
 
-  async function handlePreview() {
-    const saved =
-      await flushSave();
-  
-    if (!saved) {
-      return;
-    }
-  
+  /**
+   * useStoryMedia currently exposes a normal function
+   * for loadRevisionMedia, so keep the latest function
+   * in a ref while giving useStoryRevision a stable
+   * adapter object.
+   */
+  const loadRevisionMediaRef =
+    useRef(
+      media.loadRevisionMedia
+    );
+
+  useEffect(() => {
+    loadRevisionMediaRef.current =
+      media.loadRevisionMedia;
+  }, [
+    media.loadRevisionMedia,
+  ]);
+
+  const revisionMedia =
+    useMemo(
+      () => ({
+        loadRevisionMedia:
+          (
+            options: Parameters<
+              typeof media.loadRevisionMedia
+            >[0]
+          ) => {
+            loadRevisionMediaRef.current(
+              options
+            );
+          },
+      }),
+      []
+    );
+
+  // ==================================================
+  // Revision lifecycle
+  // ==================================================
+
+  const revision =
+    useStoryRevision({
+      story,
+
+      dict,
+
+      isPublishedStory,
+
+      state:
+        revisionState,
+
+      taxonomy:
+        revisionTaxonomy,
+
+      media:
+        revisionMedia,
+
+      onError:
+        setWorkflowError,
+    });
+
+  /**
+   * As soon as a published story changes, there are
+   * effectively unpublished changes even if the
+   * debounce request has not completed yet.
+   */
+  useEffect(() => {
     if (
-      isPublishedStory
+      !isPublishedStory
     ) {
-      setHasPendingRevision(
-        true
-      );
-    }
-  
-    router.push(
-      isPublishedStory
-        ? `/newsroom/stories/${story.id}/preview?revision=1`
-        : `/newsroom/stories/${story.id}/preview`
-    );
-  }
-
-  async function handleBackToStories() {
-    const saved =
-      await flushSave();
-
-    if (!saved) {
       return;
     }
 
-    router.push(
-      '/newsroom/stories'
-    );
-  }
+    if (
+      autosave.saveState ===
+        'unsaved' ||
+      autosave.saveState ===
+        'saving'
+    ) {
+      revision
+        .markRevisionPending();
+    }
+  }, [
+    autosave.saveState,
+    isPublishedStory,
+    revision
+      .markRevisionPending,
+  ]);
 
-  // --------------------------------------------------
+  // ==================================================
   // Workflow
-  // --------------------------------------------------
+  // ==================================================
 
-  async function changeStatus(
-    nextStatus: StoryStatus,
-    createVersion = false
-  ) {
-    setWorkflowError(null);
+  const workflow =
+    useStoryWorkflow({
+      storyId:
+        story.id,
 
-    const flushed =
-      await flushSave();
+      dict,
 
-    if (!flushed) {
-      return;
-    }
+      router,
 
-    try {
-      const response =
-        await fetch(
-          `/api/stories/${story.id}`,
-          {
-            method: 'PUT',
+      isPublishedStory,
 
-            headers: {
-              'Content-Type':
-                'application/json',
-            },
+      savePayload:
+        editor.savePayload,
 
-            body: JSON.stringify({
-              ...savePayload,
+      flushSave:
+        autosave.flushSave,
 
-              status:
-                nextStatus,
+      resetSavedState:
+        autosave
+          .resetSavedState,
 
-              createVersion,
-            }),
-          }
-        );
+      setStatus:
+        editor.setStatus,
 
-      if (!response.ok) {
-        const data =
-          await response
-            .json()
-            .catch(() => ({}));
+      setWorkflowError,
 
-        throw new Error(
-          data.error ??
-            'Unable to update story status'
-        );
-      }
+      markRevisionPending:
+        revision
+          .markRevisionPending,
 
-      setStatus(
-        nextStatus
-      );
+      discardRevision:
+        revision
+          .discardRevision,
 
-      router.refresh();
-    } catch (
-      workflowSaveError
-    ) {
-      console.error(
-        'Story workflow update failed:',
-        workflowSaveError
-      );
+      clearPendingRevision:
+        revision
+          .clearPendingRevision,
+    });
 
-      setWorkflowError(
-        workflowSaveError instanceof
-          Error
-          ? workflowSaveError.message
-          : dict.common.errorDesc
-      );
-    }
-  }
-
-  async function handleSubmitReview() {
-    await changeStatus(
-      'in_review',
-      true
-    );
-  }
-
-  async function handlePublish() {
-    if (
-      isPublishedStory
-    ) {
-      await handlePublishUpdate();
-      return;
-    }
-  
-    await changeStatus(
-      'published',
-      true
-    );
-  }
-
-  async function handlePublishUpdate() {
-    setWorkflowError(
-      null
-    );
-  
-    const saved =
-      await flushSave();
-  
-    if (!saved) {
-      return;
-    }
-  
-    try {
-      const response =
-        await fetch(
-          `/api/stories/${story.id}/revision/publish`,
-          {
-            method:
-              'POST',
-          }
-        );
-  
-      if (
-        !response.ok
-      ) {
-        const data =
-          await response
-            .json()
-            .catch(
-              () => ({})
-            );
-  
-        throw new Error(
-          data.error ??
-            'Unable to publish update'
-        );
-      }
-  
-      setHasPendingRevision(
-        false
-      );
-  
-      resetSavedState(
-        savePayload
-      );
-  
-      /*
-       * Reload from the newly published server
-       * version so every relation and timestamp is
-       * synchronized with the live article.
-       */
-      window.location.reload();
-    } catch (
-      publishUpdateError
-    ) {
-      console.error(
-        'Publish story update failed:',
-        publishUpdateError
-      );
-  
-      setWorkflowError(
-        publishUpdateError instanceof
-          Error
-          ? publishUpdateError.message
-          : dict.common
-              .errorDesc
-      );
-    }
-  }
-
-  async function handleReturnToDraft() {
-    await changeStatus(
-      'draft'
-    );
-  }
-
-  async function handleArchive() {
-    await changeStatus(
-      'archived'
-    );
-  }
-
-  async function handleRevertChanges() {
-    const confirmed =
-      window.confirm(
-        language === 'es'
-          ? '¿Descartar los cambios no publicados? Esta acción eliminará permanentemente todos los cambios realizados desde la versión publicada.'
-          : 'Revert unpublished changes? This will permanently discard all changes made since the currently published version.'
-      );
-  
-    if (!confirmed) {
-      return;
-    }
-  
-    setWorkflowError(
-      null
-    );
-  
-    try {
-      const response =
-        await fetch(
-          `/api/stories/${story.id}/revision`,
-          {
-            method:
-              'DELETE',
-          }
-        );
-  
-      if (
-        !response.ok
-      ) {
-        const data =
-          await response
-            .json()
-            .catch(
-              () => ({})
-            );
-  
-        throw new Error(
-          data.error ??
-            'Unable to revert changes'
-        );
-      }
-  
-      setHasPendingRevision(
-        false
-      );
-  
-      /*
-       * Reloading restores every editor field from
-       * the untouched live story.
-       */
-      window.location.reload();
-    } catch (
-      revertError
-    ) {
-      console.error(
-        'Revert story changes failed:',
-        revertError
-      );
-  
-      setWorkflowError(
-        revertError instanceof
-          Error
-          ? revertError.message
-          : dict.common
-              .errorDesc
-      );
-    }
-  }
-
-  // --------------------------------------------------
-  // Version restore
-  // --------------------------------------------------
-
-  async function handleRestoreVersion(
-    versionId: string
-  ) {
-    const confirmed =
-      window.confirm(
-        dict.story
-          .restoreConfirm
-      );
-
-    if (!confirmed) {
-      return;
-    }
-
-    const saved =
-      await flushSave();
-
-    if (!saved) {
-      return;
-    }
-
-    try {
-      const response =
-        await fetch(
-          `/api/stories/${story.id}/restore`,
-          {
-            method:
-              'POST',
-
-            headers: {
-              'Content-Type':
-                'application/json',
-            },
-
-            body: JSON.stringify({
-              versionId,
-            }),
-          }
-        );
-
-      if (!response.ok) {
-        throw new Error(
-          'Unable to restore version'
-        );
-      }
-
-      window.location.reload();
-    } catch (
-      restoreError
-    ) {
-      console.error(
-        'Version restore failed:',
-        restoreError
-      );
-
-      setWorkflowError(
-        dict.common.errorDesc
-      );
-    }
-  }
-
-  // --------------------------------------------------
-  // Categories
-  // --------------------------------------------------
-
-  function toggleCategory(
-    categoryId: string
-  ) {
-    setSelectedCategoryIds(
-      (current) => {
-        if (
-          current.includes(
-            categoryId
-          )
-        ) {
-          return current.filter(
-            (id) =>
-              id !==
-              categoryId
-          );
-        }
-
-        return [
-          ...current,
-          categoryId,
-        ];
-      }
-    );
-
-    if (
-      primaryCategoryId ===
-      categoryId
-    ) {
-      setPrimaryCategoryId(
-        null
-      );
-    }
-  }
-
-  // --------------------------------------------------
-  // Tags
-  // --------------------------------------------------
-
-  async function searchTags(
-    query: string
-  ) {
-    setTagSearch(query);
-
-    if (
-      query.trim().length <
-      2
-    ) {
-      return;
-    }
-
-    try {
-      const response =
-        await fetch(
-          `/api/tags?search=${encodeURIComponent(
-            query
-          )}`
-        );
-
-      if (!response.ok) {
-        return;
-      }
-
-      const data =
-        await response.json();
-
-      setAllTags(
-        data.tags ?? []
-      );
-    } catch (
-      searchError
-    ) {
-      console.error(
-        'Tag search failed:',
-        searchError
-      );
-    }
-  }
-
-  function toggleTag(
-    tagId: string
-  ) {
-    const alreadySelected =
-      tagIds.includes(
-        tagId
-      );
-
-    if (
-      alreadySelected
-    ) {
-      setTagIds(
-        (current) =>
-          current.filter(
-            (id) =>
-              id !== tagId
-          )
-      );
-
-      setTags(
-        (current) =>
-          current.filter(
-            (tag) =>
-              tag.id !==
-              tagId
-          )
-      );
-
-      return;
-    }
-
-    setTagIds(
-      (current) => [
-        ...current,
-        tagId,
-      ]
-    );
-
-    const tag =
-      allTags.find(
-        (item) =>
-          item.id === tagId
-      );
-
-    if (!tag) {
-      return;
-    }
-
-    setTags(
-      (current) => {
-        if (
-          current.some(
-            (item) =>
-              item.id ===
-              tag.id
-          )
-        ) {
-          return current;
-        }
-
-        return [
-          ...current,
-          tag,
-        ];
-      }
-    );
-  }
-
-  async function createTag(
-    name: string
-  ) {
-    const trimmedName =
-      name.trim();
-
-    if (!trimmedName) {
-      return;
-    }
-
-    try {
-      const response =
-        await fetch(
-          '/api/tags',
-          {
-            method:
-              'POST',
-
-            headers: {
-              'Content-Type':
-                'application/json',
-            },
-
-            body: JSON.stringify({
-              name:
-                trimmedName,
-            }),
-          }
-        );
-
-      if (!response.ok) {
-        return;
-      }
-
-      const tag =
-        await response.json();
-
-      setTagIds(
-        (current) => {
-          if (
-            current.includes(
-              tag.id
-            )
-          ) {
-            return current;
-          }
-
-          return [
-            ...current,
-            tag.id,
-          ];
-        }
-      );
-
-      setTags(
-        (current) => {
-          if (
-            current.some(
-              (item) =>
-                item.id ===
-                tag.id
-            )
-          ) {
-            return current;
-          }
-
-          return [
-            ...current,
-            tag,
-          ];
-        }
-      );
-
-      setAllTags(
-        (current) => {
-          if (
-            current.some(
-              (item) =>
-                item.id ===
-                tag.id
-            )
-          ) {
-            return current;
-          }
-
-          return [
-            tag,
-            ...current,
-          ];
-        }
-      );
-
-      setTagSearch('');
-    } catch (
-      createTagError
-    ) {
-      console.error(
-        'Create tag failed:',
-        createTagError
-      );
-    }
-  }
-
-  // --------------------------------------------------
+  // ==================================================
   // Shared settings props
-  // --------------------------------------------------
+  // ==================================================
 
   const settingsProps = {
     dict,
 
-    language,
-    status,
-    accessLevel,
+    locale,
 
-    authorId,
-    editorId,
+    language:
+      editor.language,
 
-    primaryCategoryId,
-    selectedCategoryIds,
+    status:
+      editor.status,
 
-    tags,
-    allTags,
-    tagSearch,
+    accessLevel:
+      editor.accessLevel,
 
-    island,
+    authorId:
+      editor.authorId,
 
-    featuredImage,
+    editorId:
+      editor.editorId,
 
-    imageCaption,
-    imageCredit,
+    primaryCategoryId:
+      taxonomy
+        .primaryCategoryId,
 
-    seoTitle,
-    seoDescription,
+    selectedCategoryIds:
+      taxonomy
+        .selectedCategoryIds,
 
-    slug,
+    tags:
+      taxonomy.tags,
+
+    allTags:
+      taxonomy.allTags,
+
+    tagSearch:
+      taxonomy.tagSearch,
+
+    island:
+      editor.island,
+
+    featuredImage:
+      media.featuredImage,
+
+    imageCaption:
+      media.imageCaption,
+
+    imageCredit:
+      media.imageCredit,
+
+    seoTitle:
+      editor.seoTitle,
+
+    seoDescription:
+      editor.seoDescription,
+
+    slug:
+      editor.slug,
+
     slugLocked,
 
-    originallyPublishedAt,
-    publishedAt,
-    scheduledAt,
+    originallyPublishedAt:
+      editor
+        .originallyPublishedAt,
+
+    /**
+     * This remains display-only.
+     *
+     * Actual West Island Times publication time is
+     * controlled by the server.
+     */
+    publishedAt:
+      editor.publishedAt,
+
+    scheduledAt:
+      editor.scheduledAt,
 
     versions,
 
     userIsEditor,
 
     categories,
+
     authors,
+
     editors,
 
-    setLanguage,
-    setAccessLevel,
+    setLanguage:
+      editor.setLanguage,
 
-    setAuthorId,
-    setEditorId,
+    setAccessLevel:
+      editor.setAccessLevel,
 
-    setPrimaryCategoryId,
+    setAuthorId:
+      editor.setAuthorId,
 
-    setIsland,
+    setEditorId:
+      editor.setEditorId,
 
-    setSlug,
+    setPrimaryCategoryId:
+      taxonomy
+        .setPrimaryCategoryId,
 
-    setOriginallyPublishedAt,
-    setPublishedAt,
-    setScheduledAt,
+    setIsland:
+      editor.setIsland,
 
-    setImageCaption,
-    setImageCredit,
+    setSlug:
+      editor.setSlug,
 
-    setSeoTitle,
-    setSeoDescription,
+    setOriginallyPublishedAt:
+      editor
+        .setOriginallyPublishedAt,
 
-    toggleCategory,
-    toggleTag,
+    /**
+     * Kept temporarily for compatibility with the
+     * existing StorySettingsPanelProps type.
+     *
+     * The actual publication timestamp must not be
+     * editable.
+     */
+    setPublishedAt:
+      (_value: string) => {},
 
-    searchTags,
-    createTag,
+    setScheduledAt:
+      editor.setScheduledAt,
+
+    setImageCaption:
+      media.setImageCaption,
+
+    setImageCredit:
+      media.setImageCredit,
+
+    setSeoTitle:
+      editor.setSeoTitle,
+
+    setSeoDescription:
+      editor.setSeoDescription,
+
+    toggleCategory:
+      taxonomy
+        .toggleCategory,
+
+    toggleTag:
+      taxonomy.toggleTag,
+
+    searchTags:
+      taxonomy.searchTags,
+
+    createTag:
+      taxonomy.createTag,
 
     setFeaturedImage:
-      handleSetFeaturedImage,
-    setMediaPickerOpen,
+      media
+        .setStoryFeaturedImage,
 
-    handleRestoreVersion,
+    setMediaPickerOpen:
+      media
+        .setMediaPickerOpen,
+
+    handleRestoreVersion:
+      workflow
+        .handleRestoreVersion,
   };
 
+  // ==================================================
+  // Errors
+  // ==================================================
+
   const error =
-    autosaveError ??
+    autosave.error ??
     workflowError;
 
-    if (
-      !revisionLoaded
-    ) {
-      return (
-        <div className="flex h-full items-center justify-center bg-white">
-          <div className="text-sm text-muted-foreground">
-            {language === 'es'
-              ? 'Cargando cambios…'
-              : 'Loading changes…'}
-          </div>
+  // ==================================================
+  // Initial revision loading
+  // ==================================================
+
+  if (
+    !revision
+      .revisionLoaded
+  ) {
+    return (
+      <div
+        className="
+          flex
+          h-full
+          items-center
+          justify-center
+          bg-white
+        "
+      >
+        <div className="text-sm text-muted-foreground">
+          {locale === 'es'
+            ? 'Cargando cambios…'
+            : 'Loading changes…'}
         </div>
-      );
-    }
+      </div>
+    );
+  }
 
   return (
     <div className="flex h-full flex-col">
+      {/* ==================================================
+          Editor header
+      ================================================== */}
+
       <StoryEditorHeader
-        dict={dict}
-        locale={locale}
-        status={status}
+        dict={
+          dict
+        }
+        locale={
+          locale
+        }
+        status={
+          editor.status
+        }
         saveState={
-          saveState
+          autosave.saveState
         }
         isSaving={
-          isSaving
+          autosave.isSaving
         }
         userIsAuthor={
           userIsAuthor
@@ -1425,40 +669,51 @@ useEffect(() => {
         isPublishedStory={
           isPublishedStory
         }
-        
         hasPendingRevision={
-          hasPendingRevision
+          revision
+            .hasPendingRevision
         }
-        
-        onPublishUpdate={() => {
-          void handlePublishUpdate();
+        onBackToStories={() => {
+          void workflow
+            .handleBackToStories();
         }}
-        
-        onRevertChanges={() => {
-          void handleRevertChanges();
+        onPreview={() => {
+          void workflow
+            .handlePreview();
         }}
-        onBackToStories={
-          handleBackToStories
-        }
-        onPreview={
-          handlePreview
-        }
         onSave={() => {
-          void saveNow();
+          void autosave
+            .saveNow();
         }}
         onSubmitReview={() => {
-          void handleSubmitReview();
+          void workflow
+            .handleSubmitReview();
         }}
         onPublish={() => {
-          void handlePublish();
+          void workflow
+            .handlePublish();
+        }}
+        onPublishUpdate={() => {
+          void workflow
+            .handlePublishUpdate();
+        }}
+        onRevertChanges={() => {
+          void workflow
+            .handleRevertChanges();
         }}
         onReturnToDraft={() => {
-          void handleReturnToDraft();
+          void workflow
+            .handleReturnToDraft();
         }}
         onArchive={() => {
-          void handleArchive();
+          void workflow
+            .handleArchive();
         }}
       />
+
+      {/* ==================================================
+          Error banner
+      ================================================== */}
 
       {error && (
         <div
@@ -1477,40 +732,52 @@ useEffect(() => {
         </div>
       )}
 
+      {/* ==================================================
+          Main editor
+      ================================================== */}
+
       <div className="flex flex-1 overflow-hidden">
         <StoryEditorContent
-          dict={dict}
-          language={
-            language
+          dict={
+            dict
           }
-          userId={user.id}
+          language={
+            editor.language
+          }
+          userId={
+            user.id
+          }
           headline={
-            headline
+            editor.headline
           }
           subheadline={
-            subheadline
+            editor.subheadline
           }
           summary={
-            summary
+            editor.summary
           }
-          body={body}
+          body={
+            editor.body
+          }
           isSaving={
-            isSaving
+            autosave.isSaving
           }
           setHeadline={
-            setHeadline
+            editor.setHeadline
           }
           setSubheadline={
-            setSubheadline
+            editor
+              .setSubheadline
           }
           setSummary={
-            setSummary
+            editor.setSummary
           }
           setBody={
-            setBody
+            editor.setBody
           }
           onSaveVersion={() => {
-            void saveVersion();
+            void autosave
+              .saveVersion();
           }}
         />
 
@@ -1533,7 +800,10 @@ useEffect(() => {
         </aside>
       </div>
 
-      {/* Mobile settings button */}
+      {/* ==================================================
+          Mobile settings trigger
+      ================================================== */}
+
       <button
         type="button"
         onClick={() =>
@@ -1549,6 +819,7 @@ useEffect(() => {
           inline-flex
           h-12
           items-center
+          rounded-lg
           bg-deep
           px-4
           text-sm
@@ -1563,13 +834,23 @@ useEffect(() => {
           lg:hidden
         "
       >
-        Settings
+        {locale === 'es'
+          ? 'Ajustes'
+          : 'Settings'}
       </button>
 
-      {/* Mobile settings drawer */}
+      {/* ==================================================
+          Mobile settings drawer
+      ================================================== */}
+
       {mobileSettingsOpen && (
         <div
-          className="fixed inset-0 z-50 lg:hidden"
+          className="
+            fixed
+            inset-0
+            z-50
+            lg:hidden
+          "
           role="dialog"
           aria-modal="true"
         >
@@ -1599,9 +880,22 @@ useEffect(() => {
               shadow-xl
             "
           >
-            <div className="flex items-center justify-between border-b border-border bg-white px-4 py-3">
+            <div
+              className="
+                flex
+                items-center
+                justify-between
+                border-b
+                border-border
+                bg-white
+                px-4
+                py-3
+              "
+            >
               <span className="font-semibold text-deep">
-                Settings
+                {locale === 'es'
+                  ? 'Ajustes'
+                  : 'Settings'}
               </span>
 
               <button
@@ -1611,7 +905,17 @@ useEffect(() => {
                     false
                   )
                 }
-                className="inline-flex h-8 w-8 items-center justify-center text-foreground hover:bg-surface-muted"
+                className="
+                  inline-flex
+                  h-8
+                  w-8
+                  items-center
+                  justify-center
+                  rounded-lg
+                  text-foreground
+                  transition-colors
+                  hover:bg-surface-muted
+                "
                 aria-label={
                   dict.nav.close
                 }
@@ -1630,51 +934,31 @@ useEffect(() => {
         </div>
       )}
 
-      {/* Featured image picker */}
-      {mediaPickerOpen && (
+      {/* ==================================================
+          Featured image picker
+      ================================================== */}
+
+      {media.mediaPickerOpen && (
         <MediaPicker
-          dict={dict}
+          dict={
+            dict
+          }
           userId={
             user.id
           }
           onSelect={(
-            media
+            selectedMedia
           ) => {
-            handleSetFeaturedImage(
-              media
-            );
-          
-            /*
-             * Use Media Library metadata as sensible
-             * defaults, but do not overwrite story-specific
-             * metadata the editor already entered.
-             */
-            if (
-              !imageCaption &&
-              media.caption
-            ) {
-              setImageCaption(
-                media.caption
+            media
+              .selectFeaturedImage(
+                selectedMedia
               );
-            }
-          
-            if (
-              !imageCredit &&
-              media.credit
-            ) {
-              setImageCredit(
-                media.credit
-              );
-            }
-          
-            setMediaPickerOpen(
-              false
-            );
           }}
           onClose={() =>
-            setMediaPickerOpen(
-              false
-            )
+            media
+              .setMediaPickerOpen(
+                false
+              )
           }
         />
       )}
