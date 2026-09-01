@@ -46,9 +46,9 @@ export const metadata:
   Metadata = {
   title: {
     default:
-      'Simply Raizal — News from the Archipelago',
+      'West Island Times | News from the Archipelago',
     template:
-      '%s — Simply Raizal',
+      '%s — West Island Times',
   },
 
   description:
@@ -56,12 +56,12 @@ export const metadata:
 
   metadataBase:
     new URL(
-      'https://simplyraizal.com'
+      'https://westislandtimes.com'
     ),
 
   openGraph: {
     title:
-      'Simply Raizal',
+      'West Island Times',
 
     description:
       'News from the Archipelago of San Andrés, Old Providence and Saint Catalina.',
