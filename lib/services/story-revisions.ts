@@ -637,6 +637,340 @@ import {
    * 3. story tags are replaced
    * 4. the revision is removed
    */
+
+  export async function restoreVersionToRevision(
+    storyId: string,
+    versionId: string,
+    userId: string
+  ): Promise<StoryRevision> {
+    const supabase =
+      await getDataClient();
+  
+    // ==================================================
+    // Load the historical version
+    // ==================================================
+  
+    const {
+      data:
+        version,
+      error:
+        versionError,
+    } = await supabase
+      .from(
+        'story_versions'
+      )
+      .select(
+        `
+          id,
+          story_id,
+          headline,
+          subheadline,
+          summary,
+          body,
+          language,
+          author_id,
+          editor_id,
+          primary_category_id
+        `
+      )
+      .eq(
+        'id',
+        versionId
+      )
+      .eq(
+        'story_id',
+        storyId
+      )
+      .maybeSingle();
+  
+    if (
+      versionError
+    ) {
+      console.error(
+        'Unable to load story version for revision restore:',
+        versionError
+      );
+  
+      throw new Error(
+        `Unable to load story version: ${versionError.message}`
+      );
+    }
+  
+    if (!version) {
+      throw new Error(
+        'Story version could not be found.'
+      );
+    }
+  
+    // ==================================================
+    // Load current live story
+    // ==================================================
+    //
+    // story_versions only stores the historical editorial
+    // content fields.
+    //
+    // Metadata not stored in the old version snapshot must
+    // remain based on the current published story.
+    // ==================================================
+  
+    const {
+      data:
+        currentStory,
+      error:
+        currentStoryError,
+    } = await supabase
+      .from(
+        'stories'
+      )
+      .select(
+        `
+          id,
+          slug,
+          status,
+          access_level,
+          island,
+          featured_image_id,
+          image_caption,
+          image_credit,
+          seo_title,
+          seo_description,
+          originally_published_at,
+          scheduled_at,
+          author_id,
+          editor_id,
+          primary_category_id
+        `
+      )
+      .eq(
+        'id',
+        storyId
+      )
+      .maybeSingle();
+  
+    if (
+      currentStoryError
+    ) {
+      console.error(
+        'Unable to load current story for revision restore:',
+        currentStoryError
+      );
+  
+      throw new Error(
+        `Unable to load current story: ${currentStoryError.message}`
+      );
+    }
+  
+    if (!currentStory) {
+      throw new Error(
+        'Story could not be found.'
+      );
+    }
+  
+    if (
+      currentStory.status !==
+      'published'
+    ) {
+      throw new Error(
+        'Only published stories should restore historical versions into a revision.'
+      );
+    }
+  
+    // ==================================================
+    // Load current categories
+    // ==================================================
+  
+    const {
+      data:
+        categoryRows,
+      error:
+        categoryError,
+    } = await supabase
+      .from(
+        'story_categories'
+      )
+      .select(
+        `
+          category_id,
+          is_primary
+        `
+      )
+      .eq(
+        'story_id',
+        storyId
+      );
+  
+    if (
+      categoryError
+    ) {
+      console.error(
+        'Unable to load current story categories:',
+        categoryError
+      );
+  
+      throw new Error(
+        `Unable to load story categories: ${categoryError.message}`
+      );
+    }
+  
+    const categoryIds =
+      (
+        categoryRows ??
+        []
+      ).map(
+        (
+          row
+        ) =>
+          row.category_id
+      );
+  
+    // ==================================================
+    // Load current tags
+    // ==================================================
+  
+    const {
+      data:
+        tagRows,
+      error:
+        tagError,
+    } = await supabase
+      .from(
+        'story_tags'
+      )
+      .select(
+        'tag_id'
+      )
+      .eq(
+        'story_id',
+        storyId
+      );
+  
+    if (
+      tagError
+    ) {
+      console.error(
+        'Unable to load current story tags:',
+        tagError
+      );
+  
+      throw new Error(
+        `Unable to load story tags: ${tagError.message}`
+      );
+    }
+  
+    const tagIds =
+      (
+        tagRows ??
+        []
+      ).map(
+        (
+          row
+        ) =>
+          row.tag_id
+      );
+  
+    // ==================================================
+    // Determine restored primary category
+    // ==================================================
+    //
+    // Historical versions DO remember the primary category.
+    // If that old category is not already in the current
+    // category list, add it so the revision stays coherent.
+    // ==================================================
+  
+    const restoredPrimaryCategoryId =
+      version.primary_category_id ??
+      currentStory.primary_category_id;
+  
+    if (
+      restoredPrimaryCategoryId &&
+      !categoryIds.includes(
+        restoredPrimaryCategoryId
+      )
+    ) {
+      categoryIds.push(
+        restoredPrimaryCategoryId
+      );
+    }
+  
+    // ==================================================
+    // Save historical content as unpublished revision
+    // ==================================================
+  
+    return saveStoryRevision(
+      storyId,
+      {
+        headline:
+          version.headline,
+  
+        subheadline:
+          version.subheadline,
+  
+        summary:
+          version.summary,
+  
+        body:
+          version.body,
+  
+        language:
+          version.language,
+  
+        status:
+          'draft',
+  
+        accessLevel:
+          currentStory.access_level,
+  
+        authorId:
+          version.author_id ??
+          currentStory.author_id,
+  
+        editorId:
+          version.editor_id ??
+          currentStory.editor_id,
+  
+        primaryCategoryId:
+          restoredPrimaryCategoryId,
+  
+        categoryIds,
+  
+        tagIds,
+  
+        island:
+          currentStory.island,
+  
+        featuredImageId:
+          currentStory.featured_image_id,
+  
+        imageCaption:
+          currentStory.image_caption,
+  
+        imageCredit:
+          currentStory.image_credit,
+  
+        seoTitle:
+          currentStory.seo_title,
+  
+        seoDescription:
+          currentStory.seo_description,
+  
+        slug:
+          currentStory.slug,
+  
+        originallyPublishedAt:
+          currentStory.originally_published_at,
+  
+        /**
+         * Restoring history creates an unpublished
+         * revision; it should not automatically schedule it.
+         */
+        scheduledAt:
+          null,
+  
+        userId,
+      }
+    );
+  }
+  
   export async function publishStoryRevision(
     storyId: string,
     userId: string
@@ -655,15 +989,39 @@ import {
       );
     }
   
+    // ==================================================
+    // Read the currently published story
+    // ==================================================
+    //
+    // We need the complete current editorial snapshot
+    // BEFORE replacing it with the revision.
+    //
+    // This is what belongs in story_versions.
+    // ==================================================
+  
     const {
       data:
         currentStory,
       error:
         currentStoryError,
     } = await supabase
-      .from('stories')
+      .from(
+        'stories'
+      )
       .select(
-        'published_at'
+        `
+          id,
+          headline,
+          subheadline,
+          summary,
+          body,
+          author_id,
+          editor_id,
+          language,
+          primary_category_id,
+          published_at,
+          status
+        `
       )
       .eq(
         'id',
@@ -690,26 +1048,104 @@ import {
       );
     }
   
-    const existingPublishedAt =
-      (
-        currentStory as {
-          published_at:
-            | string
-            | null;
-        }
-      ).published_at;
+    if (
+      currentStory.status !==
+      'published'
+    ) {
+      throw new Error(
+        'Only a published story can publish an update revision.'
+      );
+    }
   
-    /**
-     * Publishing an update should preserve the article's
-     * original West Island Times publication timestamp.
-     *
-     * updated_at will reflect the newly published revision.
-     */
+    const existingPublishedAt =
+      currentStory
+        .published_at;
+  
+    // ==================================================
+    // Preserve current live version
+    // ==================================================
+    //
+    // This MUST happen before the story row is replaced.
+    //
+    // The version record represents what was previously
+    // live, not the revision that is about to become live.
+    // ==================================================
+  
+    const {
+      error:
+        versionError,
+    } = await supabase
+      .from(
+        'story_versions'
+      )
+      .insert({
+        story_id:
+          storyId,
+  
+        headline:
+          currentStory
+            .headline,
+  
+        subheadline:
+          currentStory
+            .subheadline,
+  
+        summary:
+          currentStory
+            .summary,
+  
+        body:
+          currentStory.body,
+  
+        author_id:
+          currentStory
+            .author_id,
+  
+        editor_id:
+          currentStory
+            .editor_id,
+  
+        language:
+          currentStory
+            .language,
+  
+        primary_category_id:
+          currentStory
+            .primary_category_id,
+  
+        created_by:
+          userId,
+      });
+  
+    if (versionError) {
+      console.error(
+        'Unable to preserve current published version:',
+        versionError
+      );
+  
+      /**
+       * Stop here.
+       *
+       * The live story has not been modified yet, so
+       * failure to preserve history cannot leave us
+       * with a partially published revision.
+       */
+      throw new Error(
+        `Unable to preserve the current published version: ${versionError.message}`
+      );
+    }
+  
+    // ==================================================
+    // Replace live story with revision
+    // ==================================================
+  
     const {
       error:
         storyUpdateError,
     } = await supabase
-      .from('stories')
+      .from(
+        'stories'
+      )
       .update({
         headline:
           revision.headline,
@@ -763,11 +1199,22 @@ import {
           revision.slug,
   
         originally_published_at:
-          revision.originallyPublishedAt,
+          revision
+            .originallyPublishedAt,
   
+        /**
+         * A published update is immediate.
+         *
+         * Scheduled revision publishing can be added
+         * separately later.
+         */
         scheduled_at:
           null,
   
+        /**
+         * Never reset the original West Island Times
+         * publication timestamp when publishing an update.
+         */
         published_at:
           existingPublishedAt ??
           new Date()
@@ -794,9 +1241,9 @@ import {
       );
     }
   
-    // --------------------------------------------------
-    // Replace story categories
-    // --------------------------------------------------
+    // ==================================================
+    // Replace categories
+    // ==================================================
   
     const {
       error:
@@ -825,23 +1272,29 @@ import {
     }
   
     if (
-      revision.categoryIds
+      revision
+        .categoryIds
         .length > 0
     ) {
       const categoryRows =
-        revision.categoryIds.map(
-          (categoryId) => ({
-            story_id:
-              storyId,
+        revision
+          .categoryIds
+          .map(
+            (
+              categoryId
+            ) => ({
+              story_id:
+                storyId,
   
-            category_id:
-              categoryId,
+              category_id:
+                categoryId,
   
-            is_primary:
-              categoryId ===
-              revision.primaryCategoryId,
-          })
-        );
+              is_primary:
+                categoryId ===
+                revision
+                  .primaryCategoryId,
+            })
+          );
   
       const {
         error:
@@ -868,9 +1321,9 @@ import {
       }
     }
   
-    // --------------------------------------------------
-    // Replace story tags
-    // --------------------------------------------------
+    // ==================================================
+    // Replace tags
+    // ==================================================
   
     const {
       error:
@@ -899,19 +1352,24 @@ import {
     }
   
     if (
-      revision.tagIds
+      revision
+        .tagIds
         .length > 0
     ) {
       const tagRows =
-        revision.tagIds.map(
-          (tagId) => ({
-            story_id:
-              storyId,
+        revision
+          .tagIds
+          .map(
+            (
+              tagId
+            ) => ({
+              story_id:
+                storyId,
   
-            tag_id:
-              tagId,
-          })
-        );
+              tag_id:
+                tagId,
+            })
+          );
   
       const {
         error:
@@ -938,68 +1396,9 @@ import {
       }
     }
   
-    // --------------------------------------------------
-    // Preserve a version snapshot
-    // --------------------------------------------------
-  
-    const {
-      error:
-        versionError,
-    } = await supabase
-      .from(
-        'story_versions'
-      )
-      .insert({
-        story_id:
-          storyId,
-  
-        headline:
-          revision.headline,
-  
-        subheadline:
-          revision.subheadline,
-  
-        summary:
-          revision.summary,
-  
-        body:
-          revision.body,
-  
-        author_id:
-          revision.authorId,
-  
-        editor_id:
-          revision.editorId,
-  
-        language:
-          revision.language,
-  
-        primary_category_id:
-          revision.primaryCategoryId,
-  
-        created_by:
-          userId,
-      });
-  
-    if (versionError) {
-      console.error(
-        'Unable to create published revision version:',
-        versionError
-      );
-  
-      /*
-       * The article itself is already successfully
-       * published at this point, so version-history
-       * failure should not destroy the revision yet.
-       */
-      throw new Error(
-        `Revision published, but version history could not be saved: ${versionError.message}`
-      );
-    }
-  
-    // --------------------------------------------------
+    // ==================================================
     // Remove successfully published revision
-    // --------------------------------------------------
+    // ==================================================
   
     await discardStoryRevision(
       storyId

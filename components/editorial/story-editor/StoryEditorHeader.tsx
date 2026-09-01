@@ -176,6 +176,11 @@ export function StoryEditorHeader({
       ? 'Revertir cambios'
       : 'Revert changes';
 
+      const savedForEditorLabel =
+    locale === 'es'
+      ? 'Guardado para el editor'
+      : 'Saved for editor';
+
   const revertTitle =
     locale === 'es'
       ? '¿Revertir cambios no publicados?'
@@ -263,29 +268,29 @@ export function StoryEditorHeader({
             }
           />
 
-          {isPublishedStory &&
-            hasPendingRevision && (
-              <span
-                className="
-                  hidden
-                  items-center
-                  rounded-lg
-                  border
-                  border-primary/20
-                  bg-primary/5
-                  px-2
-                  py-1
-                  text-[0.6875rem]
-                  font-semibold
-                  text-primary
-                  lg:inline-flex
-                "
-              >
-                {
-                  pendingChangesLabel
-                }
-              </span>
-            )}
+{isPublishedStory &&
+  hasPendingRevision && (
+    <span
+      className="
+        hidden
+        items-center
+        rounded-lg
+        border
+        border-star/30
+        bg-star/10
+        px-2
+        py-1
+        text-[0.6875rem]
+        font-semibold
+        text-star
+        lg:inline-flex
+      "
+    >
+      {userIsEditor
+        ? pendingChangesLabel
+        : savedForEditorLabel}
+    </span>
+  )}
         </div>
 
         {/* Right side */}

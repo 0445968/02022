@@ -8,6 +8,7 @@ import {
   
   import {
     canEditStory,
+    canPublish,
   } from '@/lib/permissions/stories';
   
   import {
@@ -62,6 +63,10 @@ import {
       );
     }
   
+    /**
+     * The user must still be allowed to edit/view
+     * this story in the newsroom.
+     */
     if (
       !canEditStory(
         user,
@@ -81,8 +86,30 @@ import {
     }
   
     /**
-     * Only already-published stories should use
-     * the revision publish flow.
+     * Publishing is stricter than editing.
+     *
+     * Authors may work on their own unpublished revision,
+     * but only editors can make that revision live.
+     */
+    if (
+      !canPublish(
+        user
+      )
+    ) {
+      return NextResponse.json(
+        {
+          error:
+            'You do not have permission to publish story updates.',
+        },
+        {
+          status: 403,
+        }
+      );
+    }
+  
+    /**
+     * Revision publishing only applies to stories that
+     * already have a live published version.
      */
     if (
       story.status !==
@@ -105,9 +132,11 @@ import {
         user.id
       );
   
-      return NextResponse.json({
-        success: true,
-      });
+      return NextResponse.json(
+        {
+          success: true,
+        }
+      );
     } catch (error) {
       console.error(
         'POST publish story revision failed:',

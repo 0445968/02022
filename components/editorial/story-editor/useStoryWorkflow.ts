@@ -274,15 +274,137 @@ export function useStoryWorkflow({
       ]
     );
 
-  const handleArchive =
+    const handleArchive =
     useCallback(
       async () => {
-        await changeStatus(
-          'archived'
+        setWorkflowError(
+          null
         );
+  
+        /**
+         * Unpublished stories can continue using the
+         * normal status-change workflow because the
+         * editor state is the source of truth.
+         */
+        if (
+          !isPublishedStory
+        ) {
+          await changeStatus(
+            'archived'
+          );
+  
+          return;
+        }
+  
+        /**
+         * IMPORTANT:
+         *
+         * A published story may currently have an
+         * unpublished revision loaded into the editor.
+         *
+         * We must NOT send savePayload to the normal
+         * story update endpoint here, because doing so
+         * could copy unpublished revision fields into
+         * the live story before archiving it.
+         *
+         * For an already-published story, archive only
+         * changes the live story's status.
+         */
+        try {
+          const response =
+            await fetch(
+              `/api/stories/${storyId}`,
+              {
+                method:
+                  'PUT',
+  
+                headers: {
+                  'Content-Type':
+                    'application/json',
+                },
+  
+                body:
+                  JSON.stringify({
+                    status:
+                      'archived',
+  
+                    /**
+                     * Tell the API this is a workflow-only
+                     * status change. No editor content should
+                     * be copied into the story.
+                     */
+                    workflowOnly:
+                      true,
+                  }),
+              }
+            );
+  
+          if (
+            !response.ok
+          ) {
+            const data =
+              await response
+                .json()
+                .catch(
+                  () => ({})
+                );
+  
+            throw new Error(
+              data.error ??
+                'Unable to archive story'
+            );
+          }
+  
+          /**
+           * The unpublished revision is no longer useful
+           * once the live article is archived.
+           *
+           * Discard it only after the live archive request
+           * succeeds.
+           */
+          await discardRevision();
+  
+          clearPendingRevision();
+  
+          setStatus(
+            'archived'
+          );
+  
+          router.refresh();
+  
+          /**
+           * Reload so editor state cannot keep showing the
+           * unpublished revision after the live story was
+           * archived.
+           */
+          window.location.reload();
+        } catch (
+          archiveError
+        ) {
+          console.error(
+            'Archive published story failed:',
+            archiveError
+          );
+  
+          setWorkflowError(
+            archiveError instanceof
+              Error
+              ? archiveError.message
+              : dict.common
+                  .errorDesc
+          );
+        }
       },
       [
         changeStatus,
+        clearPendingRevision,
+        dict.common.errorDesc,
+        discardRevision,
+        isPublishedStory,
+        router,
+        setStatus,
+        setWorkflowError,
+        storyId,
       ]
     );
 
@@ -427,89 +549,112 @@ export function useStoryWorkflow({
   // --------------------------------------------------
 
   const handleRestoreVersion =
-    useCallback(
-      async (
-        versionId: string
-      ) => {
-        const confirmed =
-          window.confirm(
-            dict.story
-              .restoreConfirm
+  useCallback(
+    async (
+      versionId: string
+    ) => {
+      setWorkflowError(
+        null
+      );
+
+      /**
+       * Save any current editor work first.
+       *
+       * For published stories this saves only into
+       * story_revisions, never into the live article.
+       */
+      const saved =
+        await flushSave();
+
+      if (!saved) {
+        return;
+      }
+
+      try {
+        const response =
+          await fetch(
+            `/api/stories/${storyId}/restore`,
+            {
+              method:
+                'POST',
+
+              headers: {
+                'Content-Type':
+                  'application/json',
+              },
+
+              body:
+                JSON.stringify({
+                  versionId,
+                }),
+            }
           );
 
-        if (!confirmed) {
-          return;
-        }
-
-        const saved =
-          await flushSave();
-
-        if (!saved) {
-          return;
-        }
-
-        try {
-          const response =
-            await fetch(
-              `/api/stories/${storyId}/restore`,
-              {
-                method:
-                  'POST',
-
-                headers: {
-                  'Content-Type':
-                    'application/json',
-                },
-
-                body:
-                  JSON.stringify({
-                    versionId,
-                  }),
-              }
+        const data =
+          await response
+            .json()
+            .catch(
+              () => ({})
             );
 
-          if (
-            !response.ok
-          ) {
-            const data =
-              await response
-                .json()
-                .catch(
-                  () => ({})
-                );
-
-            throw new Error(
-              data.error ??
-                'Unable to restore version'
-            );
-          }
-
-          window.location.reload();
-        } catch (
-          restoreError
+        if (
+          !response.ok
         ) {
-          console.error(
-            'Version restore failed:',
-            restoreError
-          );
-
-          setWorkflowError(
-            restoreError instanceof
-              Error
-              ? restoreError.message
-              : dict.common
-                  .errorDesc
+          throw new Error(
+            data.error ??
+              'Unable to restore version'
           );
         }
-      },
-      [
-        dict.common.errorDesc,
-        dict.story.restoreConfirm,
-        flushSave,
-        setWorkflowError,
-        storyId,
-      ]
-    );
+
+        /**
+         * Published stories restore historical content
+         * into story_revisions.
+         */
+        if (
+          data.restoredToRevision ===
+          true
+        ) {
+          markRevisionPending();
+
+          /**
+           * Reload so useStoryRevision() pulls the newly
+           * restored historical version into the editor.
+           */
+          window.location.reload();
+
+          return;
+        }
+
+        /**
+         * Draft / review stories are restored directly,
+         * so reload the updated story state.
+         */
+        window.location.reload();
+      } catch (
+        restoreError
+      ) {
+        console.error(
+          'Version restore failed:',
+          restoreError
+        );
+
+        setWorkflowError(
+          restoreError instanceof
+            Error
+            ? restoreError.message
+            : dict.common
+                .errorDesc
+        );
+      }
+    },
+    [
+      dict.common.errorDesc,
+      flushSave,
+      markRevisionPending,
+      setWorkflowError,
+      storyId,
+    ]
+  );
 
   return {
     handlePreview,

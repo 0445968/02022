@@ -40,7 +40,8 @@ export async function PUT(
   if (!user) {
     return NextResponse.json(
       {
-        error: 'Unauthorized',
+        error:
+          'Unauthorized',
       },
       {
         status: 401,
@@ -56,7 +57,8 @@ export async function PUT(
   if (!story) {
     return NextResponse.json(
       {
-        error: 'Not found',
+        error:
+          'Not found',
       },
       {
         status: 404,
@@ -73,7 +75,8 @@ export async function PUT(
   ) {
     return NextResponse.json(
       {
-        error: 'Forbidden',
+        error:
+          'Forbidden',
       },
       {
         status: 403,
@@ -169,6 +172,15 @@ export async function PUT(
     newTags?: string[];
 
     createVersion?: boolean;
+
+    /**
+     * Workflow-only requests may change status without
+     * applying editor content to the live story.
+     *
+     * Used for actions such as archiving a published
+     * story that currently has an unpublished revision.
+     */
+    workflowOnly?: boolean;
   };
 
   try {
@@ -186,9 +198,9 @@ export async function PUT(
     );
   }
 
-  // --------------------------------------------------
+  // ==================================================
   // Permission check: status changes
-  // --------------------------------------------------
+  // ==================================================
 
   if (
     body.status &&
@@ -213,9 +225,86 @@ export async function PUT(
     }
   }
 
-  // --------------------------------------------------
+  // ==================================================
+  // Workflow-only status change
+  // ==================================================
+  //
+  // This path deliberately skips:
+  //
+  // - headline
+  // - body
+  // - author/editor
+  // - categories
+  // - tags
+  // - featured image
+  // - SEO
+  // - slug
+  // - publication metadata
+  //
+  // It prevents unpublished revision content from being
+  // copied into the live story during workflow actions.
+  // ==================================================
+
+  if (
+    body.workflowOnly ===
+    true
+  ) {
+    if (!body.status) {
+      return NextResponse.json(
+        {
+          error:
+            'A status is required for a workflow-only update.',
+        },
+        {
+          status: 400,
+        }
+      );
+    }
+
+    try {
+      await updateStory(
+        params.id,
+        {
+          status:
+            body.status,
+
+          updatedBy:
+            user.id,
+
+          createVersion:
+            false,
+        }
+      );
+    } catch (error) {
+      console.error(
+        'Workflow-only story update failed:',
+        error
+      );
+
+      return NextResponse.json(
+        {
+          error:
+            error instanceof
+            Error
+              ? error.message
+              : 'Failed to update story workflow',
+        },
+        {
+          status: 500,
+        }
+      );
+    }
+
+    return NextResponse.json(
+      {
+        success: true,
+      }
+    );
+  }
+
+  // ==================================================
   // Handle new tags
-  // --------------------------------------------------
+  // ==================================================
 
   const allTagIds = [
     ...(
@@ -251,9 +340,9 @@ export async function PUT(
     }
   }
 
-  // --------------------------------------------------
-  // Update story
-  // --------------------------------------------------
+  // ==================================================
+  // Standard story update
+  // ==================================================
 
   try {
     await updateStory(
@@ -347,9 +436,9 @@ export async function PUT(
     );
   }
 
-  // --------------------------------------------------
+  // ==================================================
   // Sync categories
-  // --------------------------------------------------
+  // ==================================================
 
   if (
     body.categoryIds !==
@@ -363,9 +452,9 @@ export async function PUT(
     );
   }
 
-  // --------------------------------------------------
+  // ==================================================
   // Sync tags
-  // --------------------------------------------------
+  // ==================================================
 
   if (
     body.tagIds !==
@@ -379,7 +468,9 @@ export async function PUT(
     );
   }
 
-  return NextResponse.json({
-    success: true,
-  });
+  return NextResponse.json(
+    {
+      success: true,
+    }
+  );
 }
