@@ -142,26 +142,57 @@ export function ArticleView({ story, locale, dict, isPreview }: ArticleViewProps
       </header>
 
       {/* Featured image */}
-      {story.featuredImage && (
-        <figure className="border-b border-border">
-          <div className="container-wide py-6">
-            <div className="mx-auto max-w-4xl">
-              <img
-                src={story.featuredImage.url}
-                alt={story.featuredImage.altText || story.imageCaption || ''}
-                className="w-full bg-surface-subtle object-cover"
-              />
-              {(story.imageCaption || story.imageCredit) && (
-                <figcaption className="mt-2 text-xs text-muted-foreground">
-                  {story.imageCaption && <span>{story.imageCaption}</span>}
-                  {story.imageCaption && story.imageCredit && <span> · </span>}
-                  {story.imageCredit && <span>{story.imageCredit}</span>}
-                </figcaption>
-              )}
-            </div>
-          </div>
-        </figure>
-      )}
+{story.featuredImage && (
+  <figure className="border-b border-border">
+    <div className="container-wide py-6">
+      <div className="mx-auto max-w-4xl">
+        <img
+          src={story.featuredImage.url}
+          alt={
+            story.featuredImage.altText ||
+            story.imageCaption ||
+            ''
+          }
+          className="
+            w-full
+            bg-surface-subtle
+            object-cover
+          "
+        />
+
+        {(story.imageCaption ||
+          story.imageCredit) && (
+          <figcaption
+            className="
+              mt-2
+              font-headline
+              text-[0.95rem]
+              leading-[1.45]
+              text-muted-foreground
+            "
+          >
+            {story.imageCaption && (
+              <span>
+                {story.imageCaption}
+              </span>
+            )}
+
+            {story.imageCaption &&
+              story.imageCredit && ' '}
+
+            {story.imageCredit && (
+              <em>
+                (
+                {story.imageCredit}
+                )
+              </em>
+            )}
+          </figcaption>
+        )}
+      </div>
+    </div>
+  </figure>
+)}
 
       {/* Article body */}
       <div className="container-wide py-8 lg:py-10">
@@ -250,15 +281,83 @@ function ArticleBody({ body }: { body: Record<string, unknown> }) {
       case 'horizontalRule':
         return <hr />;
 
-      case 'image': {
-        const attrs = node.attrs as Record<string, unknown>;
-        return (
-          <figure>
-            <img src={attrs?.src as string} alt={(attrs?.alt as string) ?? ''} />
-            {attrs?.title ? <figcaption>{attrs.title as string}</figcaption> : null}
-          </figure>
-        );
-      }
+        case 'image': {
+          const attrs =
+            node.attrs as
+              | Record<
+                  string,
+                  unknown
+                >
+              | undefined;
+        
+          const src =
+            (attrs?.src as string) ??
+            '';
+        
+          const alt =
+            (attrs?.alt as string) ??
+            '';
+        
+          const description =
+            (attrs?.description as
+              | string
+              | null
+              | undefined) ??
+            null;
+        
+          const credit =
+            (attrs?.credit as
+              | string
+              | null
+              | undefined) ??
+            null;
+        
+          return (
+            <figure className="my-8">
+              <img
+                src={src}
+                alt={alt}
+                className="
+                  block
+                  h-auto
+                  w-full
+                  bg-surface-subtle
+                  object-cover
+                "
+              />
+        
+              {(description ||
+                credit) && (
+                <figcaption
+                  className="
+                    mt-2
+                    font-headline
+                    text-[0.95rem]
+                    leading-[1.45]
+                    text-muted-foreground
+                  "
+                >
+                  {description && (
+                    <span>
+                      {description}
+                    </span>
+                  )}
+        
+                  {description &&
+                    credit && ' '}
+        
+                  {credit && (
+                    <em>
+                      (
+                      {credit}
+                      )
+                    </em>
+                  )}
+                </figcaption>
+              )}
+            </figure>
+          );
+        }
 
       default:
         if (content) {

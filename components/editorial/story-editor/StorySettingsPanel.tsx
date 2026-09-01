@@ -323,7 +323,7 @@ export function StorySettingsPanel({
               "
             />
 
-            <span className="text-sm text-foreground">
+            <span className="text-[12px] text-foreground">
               {language ===
               'es'
                 ? 'Este artículo fue publicado anteriormente'
@@ -1104,63 +1104,34 @@ export function StorySettingsPanel({
       </Section>
 
       {/* Featured image */}
-      <Section
-        title={
-          dict.story
-            .featuredImage
-        }
-      >
-        {featuredImage ? (
-          <div>
-            <img
-              src={
-                featuredImage.url
-              }
-              alt={
-                featuredImage.altText
-              }
-              className="
-                mb-2
-                aspect-video
-                w-full
-                bg-surface-subtle
-                object-cover
-              "
-            />
+<Section
+  title={
+    dict.story
+      .featuredImage
+  }
+>
+  {featuredImage ? (
+    <>
+      <div>
+        <img
+          src={
+            featuredImage.url
+          }
+          alt={
+            featuredImage.altText ||
+            imageCaption ||
+            ''
+          }
+          className="
+            aspect-video
+            w-full
+            rounded-lg
+            bg-surface-subtle
+            object-cover
+          "
+        />
 
-            <div className="flex items-center gap-3">
-              <button
-                type="button"
-                onClick={() =>
-                  setMediaPickerOpen(
-                    true
-                  )
-                }
-                className="text-xs font-medium text-primary hover:underline"
-              >
-                {
-                  dict.story
-                    .selectFromMedia
-                }
-              </button>
-
-              <button
-                type="button"
-                onClick={() =>
-                  setFeaturedImage(
-                    null
-                  )
-                }
-                className="text-xs font-medium text-breaking hover:underline"
-              >
-                {
-                  dict.story
-                    .removeImage
-                }
-              </button>
-            </div>
-          </div>
-        ) : (
+        <div className="mt-2 flex items-center gap-3">
           <button
             type="button"
             onClick={() =>
@@ -1169,21 +1140,10 @@ export function StorySettingsPanel({
               )
             }
             className="
-              flex
-              w-full
-              items-center
-              justify-center
-              rounded-lg
-              border
-              border-dashed
-              border-border
-              bg-white
-              py-8
-              text-sm
-              text-muted-foreground
-              transition-colors
-              hover:border-primary
-              hover:text-primary
+              text-xs
+              font-medium
+              text-primary
+              hover:underline
             "
           >
             {
@@ -1191,84 +1151,215 @@ export function StorySettingsPanel({
                 .selectFromMedia
             }
           </button>
-        )}
 
-        {featuredImage && (
-          <>
-            <Field
-              label={
-                dict.story
-                  .imageCaption
-              }
-            >
-              <input
-                type="text"
-                value={
-                  imageCaption
-                }
-                onChange={(
-                  event
-                ) =>
-                  setImageCaption(
-                    event.target
-                      .value
-                  )
-                }
-                className="
-                  h-9
-                  w-full
-                  rounded-lg
-                  border
-                  border-border
-                  bg-white
-                  px-2
-                  text-sm
-                  focus:border-primary
-                  focus-visible:outline-none
-                  focus-visible:ring-2
-                  focus-visible:ring-ring
-                "
-              />
-            </Field>
+          <button
+            type="button"
+            onClick={() => {
+              setFeaturedImage(
+                null
+              );
 
-            <Field
-              label={
-                dict.story
-                  .imageCredit
-              }
-            >
-              <input
-                type="text"
-                value={
-                  imageCredit
-                }
-                onChange={(
-                  event
-                ) =>
-                  setImageCredit(
-                    event.target
-                      .value
-                  )
-                }
-                className="
-                  h-9
-                  w-full
-                  rounded-lg
-                  border
-                  border-border
-                  bg-white
-                  px-2
-                  text-sm
-                  focus:border-primary
-                  focus-visible:outline-none
-                  focus-visible:ring-2
-                  focus-visible:ring-ring
-                "
-              />
-            </Field>
-          </>
-        )}
-      </Section>
+              setImageCaption(
+                ''
+              );
+
+              setImageCredit(
+                ''
+              );
+            }}
+            className="
+              text-xs
+              font-medium
+              text-breaking
+              hover:underline
+            "
+          >
+            {
+              dict.story
+                .removeImage
+            }
+          </button>
+        </div>
+      </div>
+
+      {/* Description */}
+      <Field
+        label={
+          language === 'es'
+            ? 'Descripción'
+            : 'Description'
+        }
+        hint={
+          language === 'es'
+            ? 'Describe lo que aparece en la imagen.'
+            : 'Describe what is shown in the image.'
+        }
+      >
+        <textarea
+          value={
+            imageCaption
+          }
+          onChange={(
+            event
+          ) =>
+            setImageCaption(
+              event.target.value
+            )
+          }
+          rows={3}
+          placeholder={
+            language === 'es'
+              ? 'Describe la imagen…'
+              : 'Describe the image…'
+          }
+          className="
+            w-full
+            resize-y
+            rounded-lg
+            border
+            border-border
+            bg-white
+            px-3
+            py-2
+            text-sm
+            leading-relaxed
+            text-foreground
+            placeholder:text-muted-foreground
+            focus:border-primary
+            focus-visible:outline-none
+            focus-visible:ring-2
+            focus-visible:ring-ring
+          "
+        />
+      </Field>
+
+      {/* Credit */}
+      <Field
+        label={
+          language === 'es'
+            ? 'Crédito'
+            : 'Credit'
+        }
+        hint={
+          language === 'es'
+            ? 'Fotógrafo, agencia o fuente de la imagen.'
+            : 'Photographer, agency or image source.'
+        }
+      >
+        <input
+          type="text"
+          value={
+            imageCredit
+          }
+          onChange={(
+            event
+          ) =>
+            setImageCredit(
+              event.target.value
+            )
+          }
+          placeholder={
+            language === 'es'
+              ? 'Fotógrafo / Agencia / Fuente'
+              : 'Photographer / Agency / Source'
+          }
+          className="
+            h-9
+            w-full
+            rounded-lg
+            border
+            border-border
+            bg-white
+            px-3
+            text-sm
+            text-foreground
+            placeholder:text-muted-foreground
+            focus:border-primary
+            focus-visible:outline-none
+            focus-visible:ring-2
+            focus-visible:ring-ring
+          "
+        />
+      </Field>
+
+      {/* Caption preview */}
+      {(imageCaption ||
+        imageCredit) && (
+        <div
+          className="
+            border-t
+            border-border
+            pt-3
+          "
+        >
+          <p className="mb-1 text-[0.6875rem] font-semibold uppercase tracking-[0.1em] text-muted-foreground">
+            {language === 'es'
+              ? 'Vista previa'
+              : 'Preview'}
+          </p>
+
+          <p
+            className="
+              font-headline
+              text-sm
+              leading-[1.45]
+              text-muted-foreground
+            "
+          >
+            {imageCaption && (
+              <span>
+                {imageCaption}
+              </span>
+            )}
+
+            {imageCaption &&
+              imageCredit &&
+              ' '}
+
+            {imageCredit && (
+              <em>
+                (
+                {imageCredit}
+                )
+              </em>
+            )}
+          </p>
+        </div>
+      )}
+    </>
+  ) : (
+    <button
+      type="button"
+      onClick={() =>
+        setMediaPickerOpen(
+          true
+        )
+      }
+      className="
+        flex
+        w-full
+        items-center
+        justify-center
+        rounded-lg
+        border
+        border-dashed
+        border-border
+        bg-white
+        py-8
+        text-sm
+        text-muted-foreground
+        transition-colors
+        hover:border-primary
+        hover:text-primary
+      "
+    >
+      {
+        dict.story
+          .selectFromMedia
+      }
+    </button>
+  )}
+</Section>
 
       {/* SEO */}
       <Section title="SEO">

@@ -530,19 +530,19 @@ function MainStory({
           "
         />
 
-        <h1
-          className="
-            mt-4
-            font-headline
-            text-[2rem]
-            font-bold
-            leading-[1.04]
-            tracking-[-0.03em]
-            text-black
-            sm:text-[2.35rem]
-            xl:text-[2.65rem]
-          "
-        >
+<h1
+  className="
+    mt-4
+    font-headline
+    text-[1.65rem]
+    font-bold
+    leading-[1.09]
+    tracking-[-0.03em]
+    text-black
+    sm:text-[1.95rem]
+    xl:text-[2.2rem]
+  "
+>
           {
             placement.story
               .headline

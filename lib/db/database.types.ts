@@ -313,6 +313,271 @@ export interface Database {
         };
       };
 
+      story_revisions: {
+        Row: {
+          id: string;
+
+          story_id: string;
+
+          headline: string;
+
+          subheadline:
+            | string
+            | null;
+
+          summary:
+            | string
+            | null;
+
+          body: Record<
+            string,
+            unknown
+          >;
+
+          language:
+            StoryLanguage;
+
+          status:
+            StoryStatus;
+
+          access_level:
+            AccessLevel;
+
+          author_id:
+            | string
+            | null;
+
+          editor_id:
+            | string
+            | null;
+
+          primary_category_id:
+            | string
+            | null;
+
+          category_ids:
+            string[];
+
+          tag_ids:
+            string[];
+
+          island:
+            IslandScope;
+
+          featured_image_id:
+            | string
+            | null;
+
+          image_caption:
+            | string
+            | null;
+
+          image_credit:
+            | string
+            | null;
+
+          seo_title:
+            | string
+            | null;
+
+          seo_description:
+            | string
+            | null;
+
+          slug: string;
+
+          originally_published_at:
+            | string
+            | null;
+
+          scheduled_at:
+            | string
+            | null;
+
+          created_by:
+            | string
+            | null;
+
+          updated_by:
+            | string
+            | null;
+
+          created_at: string;
+
+          updated_at: string;
+        };
+
+        Insert: {
+          id?: string;
+
+          story_id: string;
+
+          headline: string;
+
+          subheadline?:
+            | string
+            | null;
+
+          summary?:
+            | string
+            | null;
+
+          body?: Record<
+            string,
+            unknown
+          >;
+
+          language?:
+            StoryLanguage;
+
+          status?:
+            StoryStatus;
+
+          access_level?:
+            AccessLevel;
+
+          author_id?:
+            | string
+            | null;
+
+          editor_id?:
+            | string
+            | null;
+
+          primary_category_id?:
+            | string
+            | null;
+
+          category_ids?:
+            string[];
+
+          tag_ids?:
+            string[];
+
+          island?:
+            IslandScope;
+
+          featured_image_id?:
+            | string
+            | null;
+
+          image_caption?:
+            | string
+            | null;
+
+          image_credit?:
+            | string
+            | null;
+
+          seo_title?:
+            | string
+            | null;
+
+          seo_description?:
+            | string
+            | null;
+
+          slug: string;
+
+          originally_published_at?:
+            | string
+            | null;
+
+          scheduled_at?:
+            | string
+            | null;
+
+          created_by?:
+            | string
+            | null;
+
+          updated_by?:
+            | string
+            | null;
+        };
+
+        Update: {
+          headline?: string;
+
+          subheadline?:
+            | string
+            | null;
+
+          summary?:
+            | string
+            | null;
+
+          body?: Record<
+            string,
+            unknown
+          >;
+
+          language?:
+            StoryLanguage;
+
+          status?:
+            StoryStatus;
+
+          access_level?:
+            AccessLevel;
+
+          author_id?:
+            | string
+            | null;
+
+          editor_id?:
+            | string
+            | null;
+
+          primary_category_id?:
+            | string
+            | null;
+
+          category_ids?:
+            string[];
+
+          tag_ids?:
+            string[];
+
+          island?:
+            IslandScope;
+
+          featured_image_id?:
+            | string
+            | null;
+
+          image_caption?:
+            | string
+            | null;
+
+          image_credit?:
+            | string
+            | null;
+
+          seo_title?:
+            | string
+            | null;
+
+          seo_description?:
+            | string
+            | null;
+
+          slug?: string;
+
+          originally_published_at?:
+            | string
+            | null;
+
+          scheduled_at?:
+            | string
+            | null;
+
+          updated_by?:
+            | string
+            | null;
+        };
+      };
+
       story_versions: {
         Row: {
           id: string;

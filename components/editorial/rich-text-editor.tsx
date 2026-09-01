@@ -31,6 +31,7 @@ import {
   Redo,
   Underline as UnderlineIcon,
   Undo,
+  X,
 } from 'lucide-react';
 
 import type {
@@ -48,6 +49,93 @@ import {
 import {
   cn,
 } from '@/lib/utils';
+
+/**
+ * Extends TipTap's regular image node with
+ * story-specific editorial metadata.
+ *
+ * These values are stored directly inside the
+ * story body JSON:
+ *
+ * {
+ *   type: 'image',
+ *   attrs: {
+ *     src: '...',
+ *     alt: '...',
+ *     description: '...',
+ *     credit: '...'
+ *   }
+ * }
+ */
+const StoryImage =
+  Image.extend({
+    addAttributes() {
+      return {
+        ...this.parent?.(),
+
+        description: {
+          default: null,
+
+          parseHTML: (
+            element
+          ) =>
+            element.getAttribute(
+              'data-description'
+            ),
+
+          renderHTML: (
+            attributes
+          ) => {
+            if (
+              !attributes.description
+            ) {
+              return {};
+            }
+
+            return {
+              'data-description':
+                attributes.description,
+            };
+          },
+        },
+
+        credit: {
+          default: null,
+
+          parseHTML: (
+            element
+          ) =>
+            element.getAttribute(
+              'data-credit'
+            ),
+
+          renderHTML: (
+            attributes
+          ) => {
+            if (
+              !attributes.credit
+            ) {
+              return {};
+            }
+
+            return {
+              'data-credit':
+                attributes.credit,
+            };
+          },
+        },
+      };
+    },
+  }).configure({
+    inline: false,
+
+    allowBase64: false,
+
+    HTMLAttributes: {
+      class:
+        'story-inline-image',
+    },
+  });
 
 interface RichTextEditorProps {
   content: Record<
@@ -81,9 +169,27 @@ export function RichTextEditor({
     setMediaPickerOpen,
   ] = useState(false);
 
+  const [
+    selectedImage,
+    setSelectedImage,
+  ] =
+    useState<MediaAsset | null>(
+      null
+    );
+
+  const [
+    imageDescription,
+    setImageDescription,
+  ] = useState('');
+
+  const [
+    imageCredit,
+    setImageCredit,
+  ] = useState('');
+
   /**
    * Remember where the cursor was before
-   * the Media Library modal opens.
+   * the Media Library/modal opens.
    */
   const imageInsertPositionRef =
     useRef<number | null>(
@@ -109,16 +215,7 @@ export function RichTextEditor({
         },
       }),
 
-      Image.configure({
-        inline: false,
-
-        allowBase64: false,
-
-        HTMLAttributes: {
-          class:
-            'story-inline-image',
-        },
-      }),
+      StoryImage,
 
       Placeholder.configure({
         placeholder:
@@ -132,14 +229,16 @@ export function RichTextEditor({
 
     content:
       content &&
-      Object.keys(content).length >
-        0
+      Object.keys(content)
+        .length > 0
         ? content
         : {
             type: 'doc',
+
             content: [
               {
-                type: 'paragraph',
+                type:
+                  'paragraph',
               },
             ],
           },
@@ -184,11 +283,12 @@ export function RichTextEditor({
 
     const nextContent =
       content &&
-      Object.keys(content).length >
-        0
+      Object.keys(content)
+        .length > 0
         ? content
         : {
             type: 'doc',
+
             content: [
               {
                 type:
@@ -225,7 +325,6 @@ export function RichTextEditor({
   /**
    * TypeScript will not preserve the non-null
    * editor narrowing inside nested callbacks.
-   * Capture the narrowed editor in a new constant.
    */
   const ed = editor;
 
@@ -285,14 +384,83 @@ export function RichTextEditor({
     imageInsertPositionRef.current =
       ed.state.selection.from;
 
+    setSelectedImage(
+      null
+    );
+
+    setImageDescription(
+      ''
+    );
+
+    setImageCredit(
+      ''
+    );
+
     setMediaPickerOpen(
       true
     );
   }
 
-  function insertImage(
+  /**
+   * Selecting an image no longer inserts it
+   * immediately.
+   *
+   * Instead, we close the media library and
+   * open the image metadata step.
+   */
+  function handleImageSelected(
     media: MediaAsset
   ) {
+    setSelectedImage(
+      media
+    );
+
+    /*
+     * Use the Media Library metadata as defaults.
+     * The author can override these for this
+     * particular story without altering the
+     * original media record.
+     */
+    setImageDescription(
+      media.caption ?? ''
+    );
+
+    setImageCredit(
+      media.credit ?? ''
+    );
+
+    setMediaPickerOpen(
+      false
+    );
+  }
+
+  function cancelImageInsert() {
+    setSelectedImage(
+      null
+    );
+
+    setImageDescription(
+      ''
+    );
+
+    setImageCredit(
+      ''
+    );
+
+    imageInsertPositionRef.current =
+      null;
+
+    ed
+      .chain()
+      .focus()
+      .run();
+  }
+
+  function insertSelectedImage() {
+    if (!selectedImage) {
+      return;
+    }
+
     const position =
       imageInsertPositionRef.current;
 
@@ -309,7 +477,8 @@ export function RichTextEditor({
       position !== null
     ) {
       const maxPosition =
-        ed.state.doc.content.size;
+        ed.state.doc
+          .content.size;
 
       const safePosition =
         Math.min(
@@ -323,24 +492,50 @@ export function RichTextEditor({
         );
     }
 
+    /**
+     * Use insertContent instead of setImage so
+     * our custom image attributes can be stored
+     * directly in the TipTap document JSON.
+     */
     chain
-      .setImage({
-        src: media.url,
+      .insertContent({
+        type: 'image',
 
-        alt:
-          media.altText ||
-          media.fileName,
+        attrs: {
+          src:
+            selectedImage.url,
 
-        title:
-          media.fileName,
+          alt:
+            selectedImage.altText ||
+            selectedImage.fileName,
+
+          title:
+            selectedImage.fileName,
+
+          description:
+            imageDescription.trim() ||
+            null,
+
+          credit:
+            imageCredit.trim() ||
+            null,
+        },
       })
       .run();
 
     imageInsertPositionRef.current =
       null;
 
-    setMediaPickerOpen(
-      false
+    setSelectedImage(
+      null
+    );
+
+    setImageDescription(
+      ''
+    );
+
+    setImageCredit(
+      ''
     );
   }
 
@@ -501,7 +696,9 @@ export function RichTextEditor({
           <Divider />
 
           <ToolbarButton
-            onClick={setLink}
+            onClick={
+              setLink
+            }
             active={ed.isActive(
               'link'
             )}
@@ -569,23 +766,33 @@ export function RichTextEditor({
 
         <style jsx global>{`
           .prose-editor h2 {
-            font-family: var(--font-headline), Georgia, serif;
+            font-family:
+              var(--font-headline),
+              Georgia,
+              serif;
             font-size: 1.5rem;
             font-weight: 700;
             margin-top: 1.5rem;
             margin-bottom: 0.75rem;
             line-height: 1.25;
-            color: hsl(var(--color-deep));
+            color: hsl(
+              var(--color-deep)
+            );
           }
 
           .prose-editor h3 {
-            font-family: var(--font-headline), Georgia, serif;
+            font-family:
+              var(--font-headline),
+              Georgia,
+              serif;
             font-size: 1.25rem;
             font-weight: 600;
             margin-top: 1.25rem;
             margin-bottom: 0.5rem;
             line-height: 1.3;
-            color: hsl(var(--color-deep));
+            color: hsl(
+              var(--color-deep)
+            );
           }
 
           .prose-editor p {
@@ -611,21 +818,36 @@ export function RichTextEditor({
           }
 
           .prose-editor blockquote {
-            border-left: 3px solid hsl(var(--color-primary));
+            border-left: 3px solid
+              hsl(
+                var(
+                  --color-primary
+                )
+              );
             padding-left: 1rem;
             font-style: italic;
-            color: hsl(var(--color-muted-foreground));
+            color: hsl(
+              var(
+                --color-muted-foreground
+              )
+            );
             margin: 1.5rem 0;
           }
 
           .prose-editor hr {
             border: none;
-            border-top: 1px solid hsl(var(--color-border));
+            border-top: 1px solid
+              hsl(
+                var(
+                  --color-border
+                )
+              );
             margin: 2rem 0;
           }
 
           .prose-editor img,
-          .prose-editor .story-inline-image {
+          .prose-editor
+            .story-inline-image {
             display: block;
             width: 100%;
             max-width: 100%;
@@ -634,7 +856,11 @@ export function RichTextEditor({
           }
 
           .prose-editor a {
-            color: hsl(var(--color-primary));
+            color: hsl(
+              var(
+                --color-primary
+              )
+            );
             text-decoration: underline;
           }
 
@@ -650,7 +876,7 @@ export function RichTextEditor({
           dict={dict}
           userId={userId}
           onSelect={
-            insertImage
+            handleImageSelected
           }
           onClose={() => {
             imageInsertPositionRef.current =
@@ -666,6 +892,319 @@ export function RichTextEditor({
               .run();
           }}
         />
+      )}
+
+      {/* Inline image metadata */}
+      {selectedImage && (
+        <div
+          className="
+            fixed
+            inset-0
+            z-[80]
+            flex
+            items-center
+            justify-center
+            bg-black/40
+            p-4
+          "
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="image-details-title"
+        >
+          <div
+            className="
+              w-full
+              max-w-lg
+              rounded-xl
+              border
+              border-border
+              bg-white
+              shadow-xl
+            "
+          >
+            {/* Header */}
+            <div
+              className="
+                flex
+                items-center
+                justify-between
+                border-b
+                border-border
+                px-5
+                py-4
+              "
+            >
+              <div>
+                <h2
+                  id="image-details-title"
+                  className="
+                    font-headline
+                    text-lg
+                    font-semibold
+                    text-deep
+                  "
+                >
+                  {dict.story.imageCaption}
+                </h2>
+
+                <p className="mt-0.5 text-xs text-muted-foreground">
+                  Add the description and credit that should appear beneath this image.
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={
+                  cancelImageInsert
+                }
+                className="
+                  inline-flex
+                  h-8
+                  w-8
+                  items-center
+                  justify-center
+                  rounded-lg
+                  text-muted-foreground
+                  transition-colors
+                  hover:bg-surface-muted
+                  hover:text-foreground
+                  focus-visible:outline-none
+                  focus-visible:ring-2
+                  focus-visible:ring-ring
+                "
+                aria-label="Close"
+              >
+                <X
+                  className="h-4 w-4"
+                  aria-hidden
+                />
+              </button>
+            </div>
+
+            <div className="space-y-4 p-5">
+              {/* Selected image preview */}
+              <img
+                src={
+                  selectedImage.url
+                }
+                alt={
+                  selectedImage.altText ||
+                  selectedImage.fileName
+                }
+                className="
+                  aspect-video
+                  w-full
+                  rounded-lg
+                  bg-surface-muted
+                  object-cover
+                "
+              />
+
+              {/* Description */}
+              <div>
+                <label
+                  htmlFor="inline-image-description"
+                  className="text-xs font-semibold text-foreground"
+                >
+                  Description
+                </label>
+
+                <textarea
+                  id="inline-image-description"
+                  value={
+                    imageDescription
+                  }
+                  onChange={(
+                    event
+                  ) =>
+                    setImageDescription(
+                      event.target
+                        .value
+                    )
+                  }
+                  rows={3}
+                  placeholder="Describe what is shown in the image…"
+                  className="
+                    mt-1
+                    w-full
+                    resize-y
+                    rounded-lg
+                    border
+                    border-border
+                    bg-white
+                    px-3
+                    py-2
+                    text-sm
+                    text-foreground
+                    placeholder:text-muted-foreground
+                    focus:border-primary
+                    focus-visible:outline-none
+                    focus-visible:ring-2
+                    focus-visible:ring-ring
+                  "
+                />
+              </div>
+
+              {/* Credit */}
+              <div>
+                <label
+                  htmlFor="inline-image-credit"
+                  className="text-xs font-semibold text-foreground"
+                >
+                  Credit
+                </label>
+
+                <input
+                  id="inline-image-credit"
+                  type="text"
+                  value={
+                    imageCredit
+                  }
+                  onChange={(
+                    event
+                  ) =>
+                    setImageCredit(
+                      event.target
+                        .value
+                    )
+                  }
+                  placeholder="Photographer / Agency / Source"
+                  className="
+                    mt-1
+                    h-9
+                    w-full
+                    rounded-lg
+                    border
+                    border-border
+                    bg-white
+                    px-3
+                    text-sm
+                    text-foreground
+                    placeholder:text-muted-foreground
+                    focus:border-primary
+                    focus-visible:outline-none
+                    focus-visible:ring-2
+                    focus-visible:ring-ring
+                  "
+                />
+              </div>
+
+              {/* Caption preview */}
+              {(imageDescription ||
+                imageCredit) && (
+                <div
+                  className="
+                    border-t
+                    border-border
+                    pt-4
+                  "
+                >
+                  <p className="mb-1 text-[0.6875rem] font-semibold uppercase tracking-wide text-muted-foreground">
+                    Preview
+                  </p>
+
+                  <p
+                    className="
+                      font-headline
+                      text-sm
+                      leading-relaxed
+                      text-muted-foreground
+                    "
+                  >
+                    {imageDescription}
+
+                    {imageDescription &&
+                      imageCredit &&
+                      ' '}
+
+                    {imageCredit && (
+                      <em>
+                        (
+                        {
+                          imageCredit
+                        }
+                        )
+                      </em>
+                    )}
+                  </p>
+                </div>
+              )}
+            </div>
+
+            {/* Actions */}
+            <div
+              className="
+                flex
+                items-center
+                justify-end
+                gap-2
+                border-t
+                border-border
+                px-5
+                py-4
+              "
+            >
+              <button
+                type="button"
+                onClick={
+                  cancelImageInsert
+                }
+                className="
+                  inline-flex
+                  h-9
+                  items-center
+                  justify-center
+                  rounded-lg
+                  border
+                  border-border
+                  bg-white
+                  px-4
+                  text-sm
+                  font-medium
+                  text-foreground
+                  transition-colors
+                  hover:bg-surface-muted
+                  focus-visible:outline-none
+                  focus-visible:ring-2
+                  focus-visible:ring-ring
+                "
+              >
+                {dict.common.cancel}
+              </button>
+
+              <button
+                type="button"
+                onClick={
+                  insertSelectedImage
+                }
+                className="
+                  inline-flex
+                  h-9
+                  items-center
+                  justify-center
+                  rounded-lg
+                  bg-primary
+                  px-4
+                  text-sm
+                  font-semibold
+                  text-white
+                  transition-colors
+                  hover:bg-primary/90
+                  focus-visible:outline-none
+                  focus-visible:ring-2
+                  focus-visible:ring-ring
+                "
+              >
+                <ImageIcon
+                  className="mr-1.5 h-4 w-4"
+                  aria-hidden
+                />
+
+                Insert image
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </>
   );

@@ -1,12 +1,17 @@
 'use client';
 
 import {
+  useState,
+} from 'react';
+
+import {
   Archive,
   ArrowLeft,
   Eye,
   RotateCcw,
   Save,
   Send,
+  X,
 } from 'lucide-react';
 
 import type {
@@ -31,24 +36,66 @@ import {
 
 interface StoryEditorHeaderProps {
   dict: Dictionary;
-  locale: 'en' | 'es';
 
-  status: StoryStatus;
+  locale:
+    | 'en'
+    | 'es';
 
-  saveState: SaveState;
-  isSaving: boolean;
+  status:
+    StoryStatus;
 
-  userIsAuthor: boolean;
-  userIsEditor: boolean;
+  saveState:
+    SaveState;
 
-  onBackToStories: () => void;
-  onPreview: () => void;
-  onSave: () => void;
+  isSaving:
+    boolean;
 
-  onSubmitReview: () => void;
-  onPublish: () => void;
-  onReturnToDraft: () => void;
-  onArchive: () => void;
+  userIsAuthor:
+    boolean;
+
+  userIsEditor:
+    boolean;
+
+  /**
+   * True when the editor was opened from an
+   * already-published West Island Times story.
+   */
+  isPublishedStory:
+    boolean;
+
+  /**
+   * True when a saved story_revisions row already
+   * exists for this published article.
+   */
+  hasPendingRevision:
+    boolean;
+
+  onBackToStories:
+    () => void;
+
+  onPreview:
+    () => void;
+
+  onSave:
+    () => void;
+
+  onSubmitReview:
+    () => void;
+
+  onPublish:
+    () => void;
+
+  onPublishUpdate:
+    () => void;
+
+  onRevertChanges:
+    () => void;
+
+  onReturnToDraft:
+    () => void;
+
+  onArchive:
+    () => void;
 }
 
 export function StoryEditorHeader({
@@ -59,18 +106,28 @@ export function StoryEditorHeader({
   isSaving,
   userIsAuthor,
   userIsEditor,
+  isPublishedStory,
+  hasPendingRevision,
   onBackToStories,
   onPreview,
   onSave,
   onSubmitReview,
   onPublish,
+  onPublishUpdate,
+  onRevertChanges,
   onReturnToDraft,
   onArchive,
 }: StoryEditorHeaderProps) {
-  const saveStateLabel: Record<
-    SaveState,
-    string
-  > = {
+  const [
+    revertDialogOpen,
+    setRevertDialogOpen,
+  ] = useState(false);
+
+  const saveStateLabel:
+    Record<
+      SaveState,
+      string
+    > = {
     saved:
       dict.story.saved,
 
@@ -82,15 +139,17 @@ export function StoryEditorHeader({
         .unsavedChanges,
 
     error:
-      dict.story.errorSaving,
+      dict.story
+        .errorSaving,
   };
 
-  const saveStateColor: Record<
-    SaveState,
-    string
-  > = {
+  const saveStateColor:
+    Record<
+      SaveState,
+      string
+    > = {
     saved:
-      'text-live',
+      'text-star',
 
     saving:
       'text-primary',
@@ -102,306 +161,440 @@ export function StoryEditorHeader({
       'text-breaking',
   };
 
-  return (
-    <div
-      className="
-        flex
-        items-center
-        justify-between
-        gap-3
-        border-b
-        border-border
-        bg-white
-        px-4
-        py-2.5
-      "
-    >
-      {/* Left side */}
-      <div className="flex items-center gap-3">
-        <button
-          type="button"
-          onClick={
-            onBackToStories
-          }
-          className="
-            inline-flex
-            items-center
-            gap-1
-            text-sm
-            font-medium
-            text-muted-foreground
-            transition-colors
-            hover:text-primary
-            focus-visible:outline-none
-            focus-visible:underline
-          "
-        >
-          <ArrowLeft
-            className="h-4 w-4"
-            aria-hidden
-          />
+  const pendingChangesLabel =
+    locale === 'es'
+      ? 'Cambios sin publicar'
+      : 'Unpublished changes';
 
-          <span className="hidden sm:inline">
+  const publishUpdateLabel =
+    locale === 'es'
+      ? 'Publicar actualización'
+      : 'Publish update';
+
+  const revertChangesLabel =
+    locale === 'es'
+      ? 'Revertir cambios'
+      : 'Revert changes';
+
+  const revertTitle =
+    locale === 'es'
+      ? '¿Revertir cambios no publicados?'
+      : 'Revert unpublished changes?';
+
+  const revertDescription =
+    locale === 'es'
+      ? 'Esto descartará permanentemente todos los cambios realizados desde la versión actualmente publicada. La versión publicada permanecerá sin cambios.'
+      : 'This will permanently discard all changes made since the currently published version. The published version will remain unchanged.';
+
+  function confirmRevert() {
+    setRevertDialogOpen(
+      false
+    );
+
+    onRevertChanges();
+  }
+
+  return (
+    <>
+      <div
+        className="
+          flex
+          items-center
+          justify-between
+          gap-3
+          border-b
+          border-border
+          bg-white
+          px-4
+          py-2.5
+        "
+      >
+        {/* Left side */}
+        <div className="flex min-w-0 items-center gap-3">
+          <button
+            type="button"
+            onClick={
+              onBackToStories
+            }
+            className="
+              inline-flex
+              shrink-0
+              items-center
+              gap-1
+              text-sm
+              font-medium
+              text-muted-foreground
+              transition-colors
+              hover:text-primary
+              focus-visible:outline-none
+              focus-visible:underline
+            "
+          >
+            <ArrowLeft
+              className="h-4 w-4"
+              aria-hidden
+            />
+
+            <span className="hidden sm:inline">
+              {
+                dict.story
+                  .backToStories
+              }
+            </span>
+          </button>
+
+          <span className="hidden text-xs text-muted-foreground sm:inline">
+            /
+          </span>
+
+          <span className="hidden text-xs font-medium text-muted-foreground md:inline">
             {
               dict.story
-                .backToStories
+                .editing
             }
           </span>
-        </button>
 
-        <span className="text-xs text-muted-foreground">
-          /
-        </span>
-
-        <span className="text-xs font-medium text-muted-foreground">
-          {dict.story.editing}
-        </span>
-
-        <StoryStatusBadge
-          status={status}
-          locale={locale}
-        />
-      </div>
-
-      {/* Right side */}
-      <div className="flex items-center gap-2">
-        <span
-          className={cn(
-            `
-              hidden
-              text-xs
-              font-medium
-              sm:inline
-            `,
-            saveStateColor[
-              saveState
-            ]
-          )}
-        >
-          {
-            saveStateLabel[
-              saveState
-            ]
-          }
-        </span>
-
-        {/* Preview */}
-        <button
-          type="button"
-          onClick={onPreview}
-          className="
-            inline-flex
-            h-8
-            items-center
-            gap-1
-            rounded-lg
-            border
-            border-border
-            bg-white
-            px-3
-            text-xs
-            font-semibold
-            text-foreground
-            transition-colors
-            hover:bg-surface-muted
-            focus-visible:outline-none
-            focus-visible:ring-2
-            focus-visible:ring-ring
-          "
-        >
-          <Eye
-            className="h-3.5 w-3.5"
-            aria-hidden
+          <StoryStatusBadge
+            status={
+              status
+            }
+            locale={
+              locale
+            }
           />
 
-          <span className="hidden sm:inline">
+          {isPublishedStory &&
+            hasPendingRevision && (
+              <span
+                className="
+                  hidden
+                  items-center
+                  rounded-lg
+                  border
+                  border-primary/20
+                  bg-primary/5
+                  px-2
+                  py-1
+                  text-[0.6875rem]
+                  font-semibold
+                  text-primary
+                  lg:inline-flex
+                "
+              >
+                {
+                  pendingChangesLabel
+                }
+              </span>
+            )}
+        </div>
+
+        {/* Right side */}
+        <div className="flex shrink-0 items-center gap-2">
+          <span
+            className={cn(
+              `
+                hidden
+                text-xs
+                font-medium
+                xl:inline
+              `,
+              saveStateColor[
+                saveState
+              ]
+            )}
+          >
             {
-              dict.story.preview
+              saveStateLabel[
+                saveState
+              ]
             }
           </span>
-        </button>
 
-        {/* Manual save */}
-        <button
-          type="button"
-          onClick={onSave}
-          className="
-            inline-flex
-            h-8
-            items-center
-            gap-1
-            rounded-lg
-            border
-            border-border
-            bg-white
-            px-3
-            text-xs
-            font-semibold
-            text-foreground
-            transition-colors
-            hover:bg-surface-muted
-            focus-visible:outline-none
-            focus-visible:ring-2
-            focus-visible:ring-ring
-          "
-        >
-          <Save
-            className="h-3.5 w-3.5"
-            aria-hidden
-          />
+          {/* Preview */}
+          <button
+            type="button"
+            onClick={
+              onPreview
+            }
+            className="
+              inline-flex
+              h-8
+              items-center
+              gap-1
+              rounded-lg
+              border
+              border-border
+              bg-white
+              px-3
+              text-xs
+              font-semibold
+              text-foreground
+              transition-colors
+              hover:bg-surface-muted
+              focus-visible:outline-none
+              focus-visible:ring-2
+              focus-visible:ring-ring
+            "
+          >
+            <Eye
+              className="h-3.5 w-3.5"
+              aria-hidden
+            />
 
-          <span className="hidden sm:inline">
-            {dict.story.save}
-          </span>
-        </button>
-
-        {/* Author submit */}
-        {userIsAuthor &&
-          !userIsEditor &&
-          status ===
-            'draft' && (
-            <button
-              type="button"
-              onClick={
-                onSubmitReview
+            <span className="hidden sm:inline">
+              {
+                dict.story
+                  .preview
               }
-              disabled={
-                isSaving
+            </span>
+          </button>
+
+          {/* Manual save */}
+          <button
+            type="button"
+            onClick={
+              onSave
+            }
+            disabled={
+              isSaving
+            }
+            className="
+              inline-flex
+              h-8
+              items-center
+              gap-1
+              rounded-lg
+              border
+              border-border
+              bg-white
+              px-3
+              text-xs
+              font-semibold
+              text-foreground
+              transition-colors
+              hover:bg-surface-muted
+              focus-visible:outline-none
+              focus-visible:ring-2
+              focus-visible:ring-ring
+              disabled:cursor-not-allowed
+              disabled:opacity-50
+            "
+          >
+            <Save
+              className="h-3.5 w-3.5"
+              aria-hidden
+            />
+
+            <span className="hidden sm:inline">
+              {
+                dict.story
+                  .save
               }
-              className="
-                inline-flex
-                h-8
-                items-center
-                gap-1
-                rounded-lg
-                bg-primary
-                px-3
-                text-xs
-                font-semibold
-                text-white
-                transition-colors
-                hover:bg-primary/90
-                focus-visible:outline-none
-                focus-visible:ring-2
-                focus-visible:ring-ring
-                disabled:opacity-50
-              "
-            >
-              <Send
-                className="h-3.5 w-3.5"
-                aria-hidden
-              />
+            </span>
+          </button>
 
-              <span className="hidden sm:inline">
-                {
-                  dict.story
-                    .submitReview
-                }
-              </span>
-            </button>
-          )}
-
-        {/* Editor publish */}
-        {userIsEditor &&
-          status !==
-            'published' &&
-          status !==
-            'archived' && (
-            <button
-              type="button"
-              onClick={onPublish}
-              disabled={
-                isSaving
-              }
-              className="
-                inline-flex
-                h-8
-                items-center
-                gap-1
-                rounded-lg
-                bg-live
-                px-3
-                text-xs
-                font-semibold
-                text-white
-                transition-colors
-                hover:bg-live/90
-                focus-visible:outline-none
-                focus-visible:ring-2
-                focus-visible:ring-ring
-                disabled:opacity-50
-              "
-            >
-              <Send
-                className="h-3.5 w-3.5"
-                aria-hidden
-              />
-
-              <span className="hidden sm:inline">
-                {
-                  dict.story
-                    .publish
-                }
-              </span>
-            </button>
-          )}
-
-        {/* Return to draft */}
-        {userIsEditor &&
-          (status ===
-            'published' ||
+          {/* Author submit */}
+          {userIsAuthor &&
+            !userIsEditor &&
+            !isPublishedStory &&
             status ===
-              'in_review') && (
-            <button
-              type="button"
-              onClick={
-                onReturnToDraft
-              }
-              disabled={
-                isSaving
-              }
-              className="
-                inline-flex
-                h-8
-                items-center
-                gap-1
-                rounded-lg
-                border
-                border-border
-                bg-white
-                px-3
-                text-xs
-                font-semibold
-                text-foreground
-                transition-colors
-                hover:bg-surface-muted
-                focus-visible:outline-none
-                focus-visible:ring-2
-                focus-visible:ring-ring
-                disabled:opacity-50
-              "
-            >
-              <RotateCcw
-                className="h-3.5 w-3.5"
-                aria-hidden
-              />
-
-              <span className="hidden sm:inline">
-                {
-                  dict.story
-                    .returnToDraft
+              'draft' && (
+              <button
+                type="button"
+                onClick={
+                  onSubmitReview
                 }
-              </span>
-            </button>
-          )}
+                disabled={
+                  isSaving
+                }
+                className="
+                  inline-flex
+                  h-8
+                  items-center
+                  gap-1
+                  rounded-lg
+                  bg-primary
+                  px-3
+                  text-xs
+                  font-semibold
+                  text-white
+                  transition-colors
+                  hover:bg-primary/90
+                  focus-visible:outline-none
+                  focus-visible:ring-2
+                  focus-visible:ring-ring
+                  disabled:cursor-not-allowed
+                  disabled:opacity-50
+                "
+              >
+                <Send
+                  className="h-3.5 w-3.5"
+                  aria-hidden
+                />
 
-        {/* Archive */}
-        {userIsEditor &&
-          status !==
-            'archived' && (
+                <span className="hidden sm:inline">
+                  {
+                    dict.story
+                      .submitReview
+                  }
+                </span>
+              </button>
+            )}
+
+          {/* Initial publish */}
+          {userIsEditor &&
+            !isPublishedStory &&
+            status !==
+              'published' &&
+            status !==
+              'archived' && (
+              <button
+                type="button"
+                onClick={
+                  onPublish
+                }
+                disabled={
+                  isSaving
+                }
+                className="
+                  inline-flex
+                  h-8
+                  items-center
+                  gap-1
+                  rounded-lg
+                  bg-star
+                  px-3
+                  text-xs
+                  font-semibold
+                  text-white
+                  transition-colors
+                  hover:bg-star/90
+                  focus-visible:outline-none
+                  focus-visible:ring-2
+                  focus-visible:ring-ring
+                  disabled:cursor-not-allowed
+                  disabled:opacity-50
+                "
+              >
+                <Send
+                  className="h-3.5 w-3.5"
+                  aria-hidden
+                />
+
+                <span className="hidden sm:inline">
+                  {
+                    dict.story
+                      .publish
+                  }
+                </span>
+              </button>
+            )}
+
+          {/* Publish revision */}
+          {userIsEditor &&
+            isPublishedStory && (
+              <button
+                type="button"
+                onClick={
+                  onPublishUpdate
+                }
+                disabled={
+                  isSaving
+                }
+                className="
+                  inline-flex
+                  h-8
+                  items-center
+                  gap-1
+                  rounded-lg
+                  bg-star
+                  px-3
+                  text-xs
+                  font-semibold
+                  text-white
+                  transition-colors
+                  hover:bg-star/90
+                  focus-visible:outline-none
+                  focus-visible:ring-2
+                  focus-visible:ring-ring
+                  disabled:cursor-not-allowed
+                  disabled:opacity-50
+                "
+                title={
+                  publishUpdateLabel
+                }
+              >
+                <Send
+                  className="h-3.5 w-3.5"
+                  aria-hidden
+                />
+
+                <span className="hidden sm:inline">
+                  {
+                    publishUpdateLabel
+                  }
+                </span>
+              </button>
+            )}
+
+          {/* Return non-published review story to draft */}
+          {userIsEditor &&
+            !isPublishedStory &&
+            status ===
+              'in_review' && (
+              <button
+                type="button"
+                onClick={
+                  onReturnToDraft
+                }
+                disabled={
+                  isSaving
+                }
+                className="
+                  inline-flex
+                  h-8
+                  items-center
+                  gap-1
+                  rounded-lg
+                  border
+                  border-border
+                  bg-white
+                  px-3
+                  text-xs
+                  font-semibold
+                  text-foreground
+                  transition-colors
+                  hover:bg-surface-muted
+                  focus-visible:outline-none
+                  focus-visible:ring-2
+                  focus-visible:ring-ring
+                  disabled:cursor-not-allowed
+                  disabled:opacity-50
+                "
+              >
+                <RotateCcw
+                  className="h-3.5 w-3.5"
+                  aria-hidden
+                />
+
+                <span className="hidden lg:inline">
+                  {
+                    dict.story
+                      .returnToDraft
+                  }
+                </span>
+              </button>
+            )}
+
+          {/* Revert unpublished revision */}
+          {isPublishedStory && (
             <button
               type="button"
-              onClick={onArchive}
+              onClick={() =>
+                setRevertDialogOpen(
+                  true
+                )
+              }
               disabled={
                 isSaving
               }
@@ -419,26 +612,289 @@ export function StoryEditorHeader({
                 font-semibold
                 text-muted-foreground
                 transition-colors
+                hover:border-breaking/30
+                hover:bg-breaking/5
                 hover:text-breaking
                 focus-visible:outline-none
                 focus-visible:ring-2
                 focus-visible:ring-ring
+                disabled:cursor-not-allowed
                 disabled:opacity-50
               "
               aria-label={
-                dict.story.archive
+                revertChangesLabel
               }
               title={
-                dict.story.archive
+                revertChangesLabel
               }
             >
-              <Archive
+              <RotateCcw
                 className="h-3.5 w-3.5"
                 aria-hidden
               />
+
+              <span className="hidden xl:inline">
+                {
+                  revertChangesLabel
+                }
+              </span>
             </button>
           )}
+
+          {/* Archive */}
+          {userIsEditor &&
+            status !==
+              'archived' && (
+              <button
+                type="button"
+                onClick={
+                  onArchive
+                }
+                disabled={
+                  isSaving
+                }
+                className="
+                  inline-flex
+                  h-8
+                  w-8
+                  items-center
+                  justify-center
+                  rounded-lg
+                  border
+                  border-border
+                  bg-white
+                  text-muted-foreground
+                  transition-colors
+                  hover:border-breaking/30
+                  hover:bg-breaking/5
+                  hover:text-breaking
+                  focus-visible:outline-none
+                  focus-visible:ring-2
+                  focus-visible:ring-ring
+                  disabled:cursor-not-allowed
+                  disabled:opacity-50
+                "
+                aria-label={
+                  dict.story
+                    .archive
+                }
+                title={
+                  dict.story
+                    .archive
+                }
+              >
+                <Archive
+                  className="h-3.5 w-3.5"
+                  aria-hidden
+                />
+              </button>
+            )}
+        </div>
       </div>
-    </div>
+
+      {/* Revert confirmation dialog */}
+      {revertDialogOpen && (
+        <div
+          className="
+            fixed
+            inset-0
+            z-[100]
+            flex
+            items-center
+            justify-center
+            p-4
+          "
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="revert-changes-title"
+        >
+          <button
+            type="button"
+            className="
+              absolute
+              inset-0
+              bg-deep/55
+            "
+            aria-label={
+              locale === 'es'
+                ? 'Cerrar'
+                : 'Close'
+            }
+            onClick={() =>
+              setRevertDialogOpen(
+                false
+              )
+            }
+          />
+
+          <div
+            className="
+              relative
+              z-10
+              w-full
+              max-w-md
+              rounded-xl
+              border
+              border-border
+              bg-white
+              shadow-2xl
+            "
+          >
+            <div
+              className="
+                flex
+                items-start
+                justify-between
+                gap-4
+                border-b
+                border-border
+                px-5
+                py-4
+              "
+            >
+              <div>
+                <h2
+                  id="revert-changes-title"
+                  className="
+                    text-base
+                    font-semibold
+                    text-foreground
+                  "
+                >
+                  {
+                    revertTitle
+                  }
+                </h2>
+
+                <p
+                  className="
+                    mt-1.5
+                    text-sm
+                    leading-6
+                    text-muted-foreground
+                  "
+                >
+                  {
+                    revertDescription
+                  }
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={() =>
+                  setRevertDialogOpen(
+                    false
+                  )
+                }
+                className="
+                  inline-flex
+                  h-8
+                  w-8
+                  shrink-0
+                  items-center
+                  justify-center
+                  rounded-lg
+                  text-muted-foreground
+                  transition-colors
+                  hover:bg-surface-muted
+                  hover:text-foreground
+                  focus-visible:outline-none
+                  focus-visible:ring-2
+                  focus-visible:ring-ring
+                "
+                aria-label={
+                  locale === 'es'
+                    ? 'Cerrar'
+                    : 'Close'
+                }
+              >
+                <X
+                  className="h-4 w-4"
+                  aria-hidden
+                />
+              </button>
+            </div>
+
+            <div
+              className="
+                flex
+                items-center
+                justify-end
+                gap-2
+                px-5
+                py-4
+              "
+            >
+              <button
+                type="button"
+                onClick={() =>
+                  setRevertDialogOpen(
+                    false
+                  )
+                }
+                className="
+                  inline-flex
+                  h-9
+                  items-center
+                  justify-center
+                  rounded-lg
+                  border
+                  border-border
+                  bg-white
+                  px-4
+                  text-sm
+                  font-semibold
+                  text-foreground
+                  transition-colors
+                  hover:bg-surface-muted
+                  focus-visible:outline-none
+                  focus-visible:ring-2
+                  focus-visible:ring-ring
+                "
+              >
+                {locale === 'es'
+                  ? 'Cancelar'
+                  : 'Cancel'}
+              </button>
+
+              <button
+                type="button"
+                onClick={
+                  confirmRevert
+                }
+                className="
+                  inline-flex
+                  h-9
+                  items-center
+                  justify-center
+                  gap-2
+                  rounded-lg
+                  bg-breaking
+                  px-4
+                  text-sm
+                  font-semibold
+                  text-white
+                  transition-colors
+                  hover:bg-breaking/90
+                  focus-visible:outline-none
+                  focus-visible:ring-2
+                  focus-visible:ring-breaking/30
+                "
+              >
+                <RotateCcw
+                  className="h-4 w-4"
+                  aria-hidden
+                />
+
+                {
+                  revertChangesLabel
+                }
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 }

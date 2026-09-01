@@ -1,6 +1,7 @@
 'use client';
 
 import {
+  useEffect,
   useMemo,
   useState,
 } from 'react';
@@ -62,6 +63,10 @@ export function StoryEditor({
   const userIsAuthor =
     user.profile?.isAuthor ??
     false;
+
+  const isPublishedStory =
+    story.status ===
+      'published';
 
   const slugLocked =
     story.status ===
@@ -210,6 +215,16 @@ export function StoryEditor({
   );
 
   const [
+    featuredImageId,
+    setFeaturedImageId,
+  ] = useState<
+    string | null
+  >(
+    story.featuredImage?.id ??
+      null
+  );
+
+  const [
     imageCaption,
     setImageCaption,
   ] = useState(
@@ -283,6 +298,18 @@ export function StoryEditor({
       : ''
   );
 
+  function handleSetFeaturedImage(
+    media: MediaAsset | null
+  ) {
+    setFeaturedImage(
+      media
+    );
+  
+    setFeaturedImageId(
+      media?.id ?? null
+    );
+  }
+
   // --------------------------------------------------
   // Interface state
   // --------------------------------------------------
@@ -304,7 +331,257 @@ export function StoryEditor({
     string | null
   >(null);
 
+  const [
+    revisionLoaded,
+    setRevisionLoaded,
+  ] = useState(
+    !isPublishedStory
+  );
+  
+  const [
+    hasPendingRevision,
+    setHasPendingRevision,
+  ] = useState(false);
+
   // --------------------------------------------------
+// Published story revision
+// --------------------------------------------------
+
+useEffect(() => {
+  if (
+    !isPublishedStory
+  ) {
+    setRevisionLoaded(
+      true
+    );
+
+    return;
+  }
+
+  let cancelled = false;
+
+  async function loadRevision() {
+    try {
+      const response =
+        await fetch(
+          `/api/stories/${story.id}/revision`,
+          {
+            cache:
+              'no-store',
+          }
+        );
+
+      if (
+        !response.ok
+      ) {
+        throw new Error(
+          'Unable to load unpublished changes'
+        );
+      }
+
+      const data =
+        await response.json();
+
+      if (cancelled) {
+        return;
+      }
+
+      const revision =
+        data.revision;
+
+      if (!revision) {
+        setHasPendingRevision(
+          false
+        );
+
+        setRevisionLoaded(
+          true
+        );
+
+        return;
+      }
+
+      setHasPendingRevision(
+        true
+      );
+
+      setHeadline(
+        revision.headline
+      );
+
+      setSubheadline(
+        revision.subheadline ??
+          ''
+      );
+
+      setSummary(
+        revision.summary ??
+          ''
+      );
+
+      setBody(
+        revision.body
+      );
+
+      setLanguage(
+        revision.language
+      );
+
+      /*
+       * The live article remains published while
+       * this revision is being edited.
+       */
+      setStatus(
+        story.status
+      );
+
+      setAccessLevel(
+        revision.accessLevel
+      );
+
+      setAuthorId(
+        revision.authorId
+      );
+
+      setEditorId(
+        revision.editorId
+      );
+
+      setPrimaryCategoryId(
+        revision.primaryCategoryId
+      );
+
+      setSelectedCategoryIds(
+        revision.categoryIds ??
+          []
+      );
+
+      setTagIds(
+        revision.tagIds ??
+          []
+      );
+
+      setIsland(
+        revision.island
+      );
+
+      setFeaturedImageId(
+        revision.featuredImageId
+      );
+
+      /*
+       * If the draft revision still uses the same
+       * image as the currently published story,
+       * we already have the complete MediaAsset.
+       *
+       * A different pending image will be resolved
+       * separately when we add revision media loading.
+       * Its ID is still preserved safely here.
+       */
+      if (
+        revision.featuredImageId ===
+        story.featuredImage?.id
+      ) {
+        setFeaturedImage(
+          story.featuredImage
+        );
+      } else if (
+        !revision.featuredImageId
+      ) {
+        setFeaturedImage(
+          null
+        );
+      } else {
+        setFeaturedImage(
+          null
+        );
+      }
+
+      setImageCaption(
+        revision.imageCaption ??
+          ''
+      );
+
+      setImageCredit(
+        revision.imageCredit ??
+          ''
+      );
+
+      setSeoTitle(
+        revision.seoTitle ??
+          ''
+      );
+
+      setSeoDescription(
+        revision.seoDescription ??
+          ''
+      );
+
+      setSlug(
+        revision.slug
+      );
+
+      setOriginallyPublishedAt(
+        revision.originallyPublishedAt
+          ? revision.originallyPublishedAt.slice(
+              0,
+              10
+            )
+          : ''
+      );
+
+      setScheduledAt(
+        revision.scheduledAt
+          ? revision.scheduledAt.slice(
+              0,
+              16
+            )
+          : ''
+      );
+
+      setRevisionLoaded(
+        true
+      );
+    } catch (
+      revisionError
+    ) {
+      console.error(
+        'Unable to load story revision:',
+        revisionError
+      );
+
+      if (
+        !cancelled
+      ) {
+        setWorkflowError(
+          revisionError instanceof
+            Error
+            ? revisionError.message
+            : dict.common
+                .errorDesc
+        );
+
+        setRevisionLoaded(
+          true
+        );
+      }
+    }
+  }
+
+  void loadRevision();
+
+  return () => {
+    cancelled = true;
+  };
+}, [
+  dict.common.errorDesc,
+  isPublishedStory,
+  story.featuredImage,
+  story.id,
+  story.status,
+]);
+
+    // --------------------------------------------------
   // Save payload
   // --------------------------------------------------
 
@@ -408,11 +685,21 @@ export function StoryEditor({
     saveNow,
     saveVersion,
     flushSave,
+    resetSavedState,
   } = useStoryAutosave({
-    storyId: story.id,
-    payload: savePayload,
+    storyId:
+      story.id,
+  
+    payload:
+      savePayload,
+  
     errorMessage:
       dict.common.errorDesc,
+  
+    saveEndpoint:
+      isPublishedStory
+        ? `/api/stories/${story.id}/revision`
+        : undefined,
   });
 
   // --------------------------------------------------
@@ -422,13 +709,23 @@ export function StoryEditor({
   async function handlePreview() {
     const saved =
       await flushSave();
-
+  
     if (!saved) {
       return;
     }
-
+  
+    if (
+      isPublishedStory
+    ) {
+      setHasPendingRevision(
+        true
+      );
+    }
+  
     router.push(
-      `/newsroom/stories/${story.id}/preview`
+      isPublishedStory
+        ? `/newsroom/stories/${story.id}/preview?revision=1`
+        : `/newsroom/stories/${story.id}/preview`
     );
   }
 
@@ -527,10 +824,87 @@ export function StoryEditor({
   }
 
   async function handlePublish() {
+    if (
+      isPublishedStory
+    ) {
+      await handlePublishUpdate();
+      return;
+    }
+  
     await changeStatus(
       'published',
       true
     );
+  }
+
+  async function handlePublishUpdate() {
+    setWorkflowError(
+      null
+    );
+  
+    const saved =
+      await flushSave();
+  
+    if (!saved) {
+      return;
+    }
+  
+    try {
+      const response =
+        await fetch(
+          `/api/stories/${story.id}/revision/publish`,
+          {
+            method:
+              'POST',
+          }
+        );
+  
+      if (
+        !response.ok
+      ) {
+        const data =
+          await response
+            .json()
+            .catch(
+              () => ({})
+            );
+  
+        throw new Error(
+          data.error ??
+            'Unable to publish update'
+        );
+      }
+  
+      setHasPendingRevision(
+        false
+      );
+  
+      resetSavedState(
+        savePayload
+      );
+  
+      /*
+       * Reload from the newly published server
+       * version so every relation and timestamp is
+       * synchronized with the live article.
+       */
+      window.location.reload();
+    } catch (
+      publishUpdateError
+    ) {
+      console.error(
+        'Publish story update failed:',
+        publishUpdateError
+      );
+  
+      setWorkflowError(
+        publishUpdateError instanceof
+          Error
+          ? publishUpdateError.message
+          : dict.common
+              .errorDesc
+      );
+    }
   }
 
   async function handleReturnToDraft() {
@@ -543,6 +917,75 @@ export function StoryEditor({
     await changeStatus(
       'archived'
     );
+  }
+
+  async function handleRevertChanges() {
+    const confirmed =
+      window.confirm(
+        language === 'es'
+          ? '¿Descartar los cambios no publicados? Esta acción eliminará permanentemente todos los cambios realizados desde la versión publicada.'
+          : 'Revert unpublished changes? This will permanently discard all changes made since the currently published version.'
+      );
+  
+    if (!confirmed) {
+      return;
+    }
+  
+    setWorkflowError(
+      null
+    );
+  
+    try {
+      const response =
+        await fetch(
+          `/api/stories/${story.id}/revision`,
+          {
+            method:
+              'DELETE',
+          }
+        );
+  
+      if (
+        !response.ok
+      ) {
+        const data =
+          await response
+            .json()
+            .catch(
+              () => ({})
+            );
+  
+        throw new Error(
+          data.error ??
+            'Unable to revert changes'
+        );
+      }
+  
+      setHasPendingRevision(
+        false
+      );
+  
+      /*
+       * Reloading restores every editor field from
+       * the untouched live story.
+       */
+      window.location.reload();
+    } catch (
+      revertError
+    ) {
+      console.error(
+        'Revert story changes failed:',
+        revertError
+      );
+  
+      setWorkflowError(
+        revertError instanceof
+          Error
+          ? revertError.message
+          : dict.common
+              .errorDesc
+      );
+    }
   }
 
   // --------------------------------------------------
@@ -936,7 +1379,8 @@ export function StoryEditor({
     searchTags,
     createTag,
 
-    setFeaturedImage,
+    setFeaturedImage:
+      handleSetFeaturedImage,
     setMediaPickerOpen,
 
     handleRestoreVersion,
@@ -945,6 +1389,20 @@ export function StoryEditor({
   const error =
     autosaveError ??
     workflowError;
+
+    if (
+      !revisionLoaded
+    ) {
+      return (
+        <div className="flex h-full items-center justify-center bg-white">
+          <div className="text-sm text-muted-foreground">
+            {language === 'es'
+              ? 'Cargando cambios…'
+              : 'Loading changes…'}
+          </div>
+        </div>
+      );
+    }
 
   return (
     <div className="flex h-full flex-col">
@@ -964,6 +1422,21 @@ export function StoryEditor({
         userIsEditor={
           userIsEditor
         }
+        isPublishedStory={
+          isPublishedStory
+        }
+        
+        hasPendingRevision={
+          hasPendingRevision
+        }
+        
+        onPublishUpdate={() => {
+          void handlePublishUpdate();
+        }}
+        
+        onRevertChanges={() => {
+          void handleRevertChanges();
+        }}
         onBackToStories={
           handleBackToStories
         }
@@ -1167,10 +1640,33 @@ export function StoryEditor({
           onSelect={(
             media
           ) => {
-            setFeaturedImage(
+            handleSetFeaturedImage(
               media
             );
-
+          
+            /*
+             * Use Media Library metadata as sensible
+             * defaults, but do not overwrite story-specific
+             * metadata the editor already entered.
+             */
+            if (
+              !imageCaption &&
+              media.caption
+            ) {
+              setImageCaption(
+                media.caption
+              );
+            }
+          
+            if (
+              !imageCredit &&
+              media.credit
+            ) {
+              setImageCredit(
+                media.credit
+              );
+            }
+          
             setMediaPickerOpen(
               false
             );

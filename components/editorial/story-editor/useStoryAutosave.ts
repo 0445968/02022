@@ -16,18 +16,38 @@ const AUTOSAVE_DELAY = 800;
 
 interface UseStoryAutosaveOptions {
   storyId: string;
+
   payload: StorySavePayload;
+
   errorMessage: string;
+
+  /**
+   * Published stories save into a private revision.
+   * Draft/review stories continue saving directly.
+   */
+  saveEndpoint?: string;
 }
 
 interface UseStoryAutosaveResult {
   saveState: SaveState;
+
   isSaving: boolean;
+
   error: string | null;
 
   saveNow: () => Promise<boolean>;
+
   saveVersion: () => Promise<boolean>;
+
   flushSave: () => Promise<boolean>;
+
+  /**
+   * Lets the editor reset its baseline after
+   * loading or discarding a revision.
+   */
+  resetSavedState: (
+    payload?: StorySavePayload
+  ) => void;
 }
 
 function serializePayload(
@@ -35,6 +55,7 @@ function serializePayload(
 ) {
   return JSON.stringify({
     ...payload,
+
     createVersion: false,
   });
 }
@@ -43,19 +64,35 @@ export function useStoryAutosave({
   storyId,
   payload,
   errorMessage,
+  saveEndpoint,
 }: UseStoryAutosaveOptions): UseStoryAutosaveResult {
-  const [saveState, setSaveState] =
-    useState<SaveState>('saved');
+  const [
+    saveState,
+    setSaveState,
+  ] =
+    useState<SaveState>(
+      'saved'
+    );
 
-  const [isSaving, setIsSaving] =
+  const [
+    isSaving,
+    setIsSaving,
+  ] =
     useState(false);
 
-  const [error, setError] =
-    useState<string | null>(null);
+  const [
+    error,
+    setError,
+  ] =
+    useState<
+      string | null
+    >(null);
 
   const autosaveTimerRef =
     useRef<
-      ReturnType<typeof setTimeout> | null
+      ReturnType<
+        typeof setTimeout
+      > | null
     >(null);
 
   const latestPayloadRef =
@@ -65,7 +102,9 @@ export function useStoryAutosave({
 
   const lastSavedRef =
     useRef<string>(
-      serializePayload(payload)
+      serializePayload(
+        payload
+      )
     );
 
   const saveInFlightRef =
@@ -82,6 +121,10 @@ export function useStoryAutosave({
       Promise<boolean> | null
     >(null);
 
+  const endpoint =
+    saveEndpoint ??
+    `/api/stories/${storyId}`;
+
   /**
    * Keep the newest React state available
    * to the save loop without depending on
@@ -93,14 +136,43 @@ export function useStoryAutosave({
   }, [payload]);
 
   /**
+   * If the save destination changes, reset the
+   * comparison baseline.
+   *
+   * This is important when moving between the
+   * normal story endpoint and revision endpoint.
+   */
+  useEffect(() => {
+    lastSavedRef.current =
+      serializePayload(
+        payload
+      );
+
+    pendingSaveRef.current =
+      false;
+
+    pendingVersionRef.current =
+      false;
+
+    setSaveState(
+      'saved'
+    );
+
+    setError(
+      null
+    );
+  }, [
+    endpoint,
+  ]);
+
+  /**
    * Sends saves sequentially.
    *
    * Only one PUT request can run at a time.
    *
    * If another change happens during that
-   * request, pendingSaveRef is set and the
-   * newest state is saved immediately after
-   * the current request finishes.
+   * request, the newest state is saved immediately
+   * after the active request finishes.
    */
   const runSaveLoop =
     useCallback(
@@ -117,10 +189,16 @@ export function useStoryAutosave({
         saveInFlightRef.current =
           true;
 
-        setIsSaving(true);
-        setError(null);
+        setIsSaving(
+          true
+        );
 
-        let successful = true;
+        setError(
+          null
+        );
+
+        let successful =
+          true;
 
         try {
           while (
@@ -138,11 +216,12 @@ export function useStoryAutosave({
             pendingVersionRef.current =
               false;
 
-            const requestPayload: StorySavePayload =
-              {
-                ...latestPayload,
-                createVersion,
-              };
+            const requestPayload:
+              StorySavePayload = {
+              ...latestPayload,
+
+              createVersion,
+            };
 
             const serialized =
               serializePayload(
@@ -153,7 +232,8 @@ export function useStoryAutosave({
              * Avoid unnecessary requests when
              * nothing has changed.
              *
-             * Version saves are always allowed.
+             * Version saves are always allowed
+             * on normal story saves.
              */
             if (
               !createVersion &&
@@ -170,16 +250,20 @@ export function useStoryAutosave({
             try {
               const response =
                 await fetch(
-                  `/api/stories/${storyId}`,
+                  endpoint,
                   {
-                    method: 'PUT',
+                    method:
+                      'PUT',
+
                     headers: {
                       'Content-Type':
                         'application/json',
                     },
-                    body: JSON.stringify(
-                      requestPayload
-                    ),
+
+                    body:
+                      JSON.stringify(
+                        requestPayload
+                      ),
                   }
                 );
 
@@ -190,7 +274,8 @@ export function useStoryAutosave({
                   await response
                     .json()
                     .catch(
-                      () => ({})
+                      () =>
+                        ({})
                     );
 
                 throw new Error(
@@ -200,12 +285,8 @@ export function useStoryAutosave({
               }
 
               /**
-               * Important:
-               *
-               * Record exactly the state this
-               * request saved, not whatever
-               * happens to be in React state
-               * when the request finishes.
+               * Record exactly the payload that
+               * this request successfully saved.
                */
               lastSavedRef.current =
                 serialized;
@@ -219,9 +300,9 @@ export function useStoryAutosave({
                 );
 
               /**
-               * If the document changed while
-               * the request was running, queue
-               * another pass immediately.
+               * If the document changed while the
+               * request was running, immediately
+               * queue the newest state.
                */
               if (
                 newestSerialized !==
@@ -238,13 +319,16 @@ export function useStoryAutosave({
                   'saved'
                 );
               }
-            } catch (saveError) {
+            } catch (
+              saveError
+            ) {
               console.error(
                 'Story save failed:',
                 saveError
               );
 
-              successful = false;
+              successful =
+                false;
 
               setSaveState(
                 'error'
@@ -257,13 +341,6 @@ export function useStoryAutosave({
                   : errorMessage
               );
 
-              /**
-               * Stop this loop after an error.
-               *
-               * The next editor change will
-               * automatically schedule another
-               * attempt.
-               */
               break;
             }
           }
@@ -271,13 +348,15 @@ export function useStoryAutosave({
           saveInFlightRef.current =
             false;
 
-          setIsSaving(false);
+          setIsSaving(
+            false
+          );
         }
 
         return successful;
       },
       [
-        storyId,
+        endpoint,
         errorMessage,
       ]
     );
@@ -288,9 +367,12 @@ export function useStoryAutosave({
   const queueSave =
     useCallback(
       async (
-        createVersion = false
+        createVersion =
+          false
       ): Promise<boolean> => {
-        if (createVersion) {
+        if (
+          createVersion
+        ) {
           pendingVersionRef.current =
             true;
         }
@@ -320,14 +402,12 @@ export function useStoryAutosave({
               null;
           }
 
-          if (!successful) {
+          if (
+            !successful
+          ) {
             return false;
           }
 
-          /**
-           * Nothing else was queued while the
-           * current save completed.
-           */
           if (
             !pendingSaveRef.current
           ) {
@@ -335,7 +415,9 @@ export function useStoryAutosave({
           }
         }
       },
-      [runSaveLoop]
+      [
+        runSaveLoop,
+      ]
     );
 
   /**
@@ -370,9 +452,14 @@ export function useStoryAutosave({
     }
 
     autosaveTimerRef.current =
-      setTimeout(() => {
-        void queueSave(false);
-      }, AUTOSAVE_DELAY);
+      setTimeout(
+        () => {
+          void queueSave(
+            false
+          );
+        },
+        AUTOSAVE_DELAY
+      );
 
     return () => {
       if (
@@ -406,12 +493,7 @@ export function useStoryAutosave({
     }, []);
 
   /**
-   * Forces the latest editor state to save now.
-   *
-   * Used by:
-   * - Save button
-   * - Preview
-   * - Back to Stories
+   * Forces the newest editor state to save.
    */
   const flushSave =
     useCallback(
@@ -453,11 +535,18 @@ export function useStoryAutosave({
       async (): Promise<boolean> => {
         return flushSave();
       },
-      [flushSave]
+      [
+        flushSave,
+      ]
     );
 
   /**
-   * Manual "Save + Version" button.
+   * Manual "Save + Version".
+   *
+   * Revision saves do not need to create public
+   * story_versions snapshots, but preserving the
+   * flag here keeps the hook compatible with the
+   * existing draft workflow.
    */
   const saveVersion =
     useCallback(
@@ -478,12 +567,58 @@ export function useStoryAutosave({
       ]
     );
 
+  /**
+   * Reset the saved comparison point.
+   *
+   * We will use this after:
+   * - loading a previously saved revision
+   * - reverting unpublished changes
+   * - publishing a revision
+   */
+  const resetSavedState =
+    useCallback(
+      (
+        nextPayload =
+          latestPayloadRef.current
+      ) => {
+        clearAutosaveTimer();
+
+        latestPayloadRef.current =
+          nextPayload;
+
+        lastSavedRef.current =
+          serializePayload(
+            nextPayload
+          );
+
+        pendingSaveRef.current =
+          false;
+
+        pendingVersionRef.current =
+          false;
+
+        setError(
+          null
+        );
+
+        setSaveState(
+          'saved'
+        );
+      },
+      [
+        clearAutosaveTimer,
+      ]
+    );
+
   return {
     saveState,
     isSaving,
     error,
+
     saveNow,
     saveVersion,
     flushSave,
+
+    resetSavedState,
   };
 }
