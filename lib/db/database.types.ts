@@ -887,10 +887,20 @@ export interface Database {
       never
     >;
 
-    Functions: Record<
-      string,
-      never
-    >;
+    Functions: {
+      publish_story_revision: {
+        Args: {
+          p_story_id:
+            string;
+    
+          p_user_id:
+            string;
+        };
+    
+        Returns:
+          undefined;
+      };
+    };
 
     Enums: {
       story_language: StoryLanguage;

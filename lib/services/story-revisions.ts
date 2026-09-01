@@ -970,437 +970,49 @@ import {
       }
     );
   }
-  
-  export async function publishStoryRevision(
-    storyId: string,
-    userId: string
-  ): Promise<void> {
-    const supabase =
-      await getDataClient();
-  
-    const revision =
-      await getStoryRevision(
-        storyId
-      );
-  
-    if (!revision) {
-      throw new Error(
-        'There are no unpublished changes to publish.'
-      );
+
+  /**
+ * Atomically publishes the active revision.
+ *
+ * PostgreSQL performs the complete operation in one
+ * transaction:
+ *
+ * 1. preserve the current live story in story_versions
+ * 2. publish the revision into stories
+ * 3. replace category relationships
+ * 4. replace tag relationships
+ * 5. remove the published revision
+ *
+ * If any step fails, PostgreSQL rolls back every step.
+ */
+export async function publishStoryRevision(
+  storyId: string,
+  userId: string
+): Promise<void> {
+  const supabase =
+    await getDataClient();
+
+  const {
+    error,
+  } = await supabase.rpc(
+    'publish_story_revision',
+    {
+      p_story_id:
+        storyId,
+
+      p_user_id:
+        userId,
     }
-  
-    // ==================================================
-    // Read the currently published story
-    // ==================================================
-    //
-    // We need the complete current editorial snapshot
-    // BEFORE replacing it with the revision.
-    //
-    // This is what belongs in story_versions.
-    // ==================================================
-  
-    const {
-      data:
-        currentStory,
-      error:
-        currentStoryError,
-    } = await supabase
-      .from(
-        'stories'
-      )
-      .select(
-        `
-          id,
-          headline,
-          subheadline,
-          summary,
-          body,
-          author_id,
-          editor_id,
-          language,
-          primary_category_id,
-          published_at,
-          status
-        `
-      )
-      .eq(
-        'id',
-        storyId
-      )
-      .maybeSingle();
-  
-    if (
-      currentStoryError
-    ) {
-      console.error(
-        'Unable to read currently published story:',
-        currentStoryError
-      );
-  
-      throw new Error(
-        `Unable to read published story: ${currentStoryError.message}`
-      );
-    }
-  
-    if (!currentStory) {
-      throw new Error(
-        'Published story could not be found.'
-      );
-    }
-  
-    if (
-      currentStory.status !==
-      'published'
-    ) {
-      throw new Error(
-        'Only a published story can publish an update revision.'
-      );
-    }
-  
-    const existingPublishedAt =
-      currentStory
-        .published_at;
-  
-    // ==================================================
-    // Preserve current live version
-    // ==================================================
-    //
-    // This MUST happen before the story row is replaced.
-    //
-    // The version record represents what was previously
-    // live, not the revision that is about to become live.
-    // ==================================================
-  
-    const {
-      error:
-        versionError,
-    } = await supabase
-      .from(
-        'story_versions'
-      )
-      .insert({
-        story_id:
-          storyId,
-  
-        headline:
-          currentStory
-            .headline,
-  
-        subheadline:
-          currentStory
-            .subheadline,
-  
-        summary:
-          currentStory
-            .summary,
-  
-        body:
-          currentStory.body,
-  
-        author_id:
-          currentStory
-            .author_id,
-  
-        editor_id:
-          currentStory
-            .editor_id,
-  
-        language:
-          currentStory
-            .language,
-  
-        primary_category_id:
-          currentStory
-            .primary_category_id,
-  
-        created_by:
-          userId,
-      });
-  
-    if (versionError) {
-      console.error(
-        'Unable to preserve current published version:',
-        versionError
-      );
-  
-      /**
-       * Stop here.
-       *
-       * The live story has not been modified yet, so
-       * failure to preserve history cannot leave us
-       * with a partially published revision.
-       */
-      throw new Error(
-        `Unable to preserve the current published version: ${versionError.message}`
-      );
-    }
-  
-    // ==================================================
-    // Replace live story with revision
-    // ==================================================
-  
-    const {
-      error:
-        storyUpdateError,
-    } = await supabase
-      .from(
-        'stories'
-      )
-      .update({
-        headline:
-          revision.headline,
-  
-        subheadline:
-          revision.subheadline,
-  
-        summary:
-          revision.summary,
-  
-        body:
-          revision.body,
-  
-        language:
-          revision.language,
-  
-        status:
-          'published',
-  
-        access_level:
-          revision.accessLevel,
-  
-        author_id:
-          revision.authorId,
-  
-        editor_id:
-          revision.editorId,
-  
-        primary_category_id:
-          revision.primaryCategoryId,
-  
-        island:
-          revision.island,
-  
-        featured_image_id:
-          revision.featuredImageId,
-  
-        image_caption:
-          revision.imageCaption,
-  
-        image_credit:
-          revision.imageCredit,
-  
-        seo_title:
-          revision.seoTitle,
-  
-        seo_description:
-          revision.seoDescription,
-  
-        slug:
-          revision.slug,
-  
-        originally_published_at:
-          revision
-            .originallyPublishedAt,
-  
-        /**
-         * A published update is immediate.
-         *
-         * Scheduled revision publishing can be added
-         * separately later.
-         */
-        scheduled_at:
-          null,
-  
-        /**
-         * Never reset the original West Island Times
-         * publication timestamp when publishing an update.
-         */
-        published_at:
-          existingPublishedAt ??
-          new Date()
-            .toISOString(),
-  
-        updated_by:
-          userId,
-      })
-      .eq(
-        'id',
-        storyId
-      );
-  
-    if (
-      storyUpdateError
-    ) {
-      console.error(
-        'Unable to publish story revision:',
-        storyUpdateError
-      );
-  
-      throw new Error(
-        `Unable to publish story revision: ${storyUpdateError.message}`
-      );
-    }
-  
-    // ==================================================
-    // Replace categories
-    // ==================================================
-  
-    const {
-      error:
-        categoryDeleteError,
-    } = await supabase
-      .from(
-        'story_categories'
-      )
-      .delete()
-      .eq(
-        'story_id',
-        storyId
-      );
-  
-    if (
-      categoryDeleteError
-    ) {
-      console.error(
-        'Unable to replace revision categories:',
-        categoryDeleteError
-      );
-  
-      throw new Error(
-        `Unable to replace story categories: ${categoryDeleteError.message}`
-      );
-    }
-  
-    if (
-      revision
-        .categoryIds
-        .length > 0
-    ) {
-      const categoryRows =
-        revision
-          .categoryIds
-          .map(
-            (
-              categoryId
-            ) => ({
-              story_id:
-                storyId,
-  
-              category_id:
-                categoryId,
-  
-              is_primary:
-                categoryId ===
-                revision
-                  .primaryCategoryId,
-            })
-          );
-  
-      const {
-        error:
-          categoryInsertError,
-      } = await supabase
-        .from(
-          'story_categories'
-        )
-        .insert(
-          categoryRows
-        );
-  
-      if (
-        categoryInsertError
-      ) {
-        console.error(
-          'Unable to insert revision categories:',
-          categoryInsertError
-        );
-  
-        throw new Error(
-          `Unable to publish story categories: ${categoryInsertError.message}`
-        );
-      }
-    }
-  
-    // ==================================================
-    // Replace tags
-    // ==================================================
-  
-    const {
-      error:
-        tagDeleteError,
-    } = await supabase
-      .from(
-        'story_tags'
-      )
-      .delete()
-      .eq(
-        'story_id',
-        storyId
-      );
-  
-    if (
-      tagDeleteError
-    ) {
-      console.error(
-        'Unable to replace revision tags:',
-        tagDeleteError
-      );
-  
-      throw new Error(
-        `Unable to replace story tags: ${tagDeleteError.message}`
-      );
-    }
-  
-    if (
-      revision
-        .tagIds
-        .length > 0
-    ) {
-      const tagRows =
-        revision
-          .tagIds
-          .map(
-            (
-              tagId
-            ) => ({
-              story_id:
-                storyId,
-  
-              tag_id:
-                tagId,
-            })
-          );
-  
-      const {
-        error:
-          tagInsertError,
-      } = await supabase
-        .from(
-          'story_tags'
-        )
-        .insert(
-          tagRows
-        );
-  
-      if (
-        tagInsertError
-      ) {
-        console.error(
-          'Unable to insert revision tags:',
-          tagInsertError
-        );
-  
-        throw new Error(
-          `Unable to publish story tags: ${tagInsertError.message}`
-        );
-      }
-    }
-  
-    // ==================================================
-    // Remove successfully published revision
-    // ==================================================
-  
-    await discardStoryRevision(
-      storyId
+  );
+
+  if (error) {
+    console.error(
+      'Unable to publish story revision atomically:',
+      error
+    );
+
+    throw new Error(
+      `Unable to publish story revision: ${error.message}`
     );
   }
+}

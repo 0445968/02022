@@ -15,6 +15,16 @@ export interface StoryTextSnapshot {
   body: string;
 }
 
+/**
+ * Maximum number of LCS matrix cells we will allocate.
+ *
+ * The detailed diff remains available for ordinary article
+ * edits. Very large changed regions use the safe linear
+ * fallback below instead of risking a frozen comparison page.
+ */
+const MAX_LCS_CELLS =
+  500_000;
+
 /* =========================================================
    TOKENIZATION
 ========================================================= */
@@ -23,16 +33,8 @@ function tokenize(
   value: string
 ): string[] {
   /**
-   * Preserve whitespace as tokens so the rendered
-   * comparison still reads naturally.
-   *
-   * Example:
-   *
-   * "Hello new world"
-   *
-   * becomes roughly:
-   *
-   * ["Hello", " ", "new", " ", "world"]
+   * Preserve whitespace so rendered comparisons retain
+   * natural spacing and paragraph breaks.
    */
   return value
     .split(/(\s+)/)
@@ -47,17 +49,40 @@ function tokenize(
 ========================================================= */
 
 /**
- * Calculates a word-level diff using a longest common
- * subsequence table.
+ * Produces a word-level comparison.
  *
- * This is intentionally dependency-free because newsroom
- * stories are small enough that we do not need a dedicated
- * diff package here.
+ * The unchanged prefix and suffix are removed before building
+ * the LCS matrix. This keeps common edits efficient even when
+ * the complete article is long.
+ *
+ * If the remaining changed region would require an excessive
+ * matrix, the function returns a safe coarse comparison:
+ *
+ * unchanged prefix
+ * removed previous region
+ * added revised region
+ * unchanged suffix
  */
 export function diffText(
   originalValue: string,
   revisedValue: string
 ): DiffPart[] {
+  if (
+    originalValue ===
+    revisedValue
+  ) {
+    return originalValue
+      ? [
+          {
+            type:
+              'unchanged',
+            value:
+              originalValue,
+          },
+        ]
+      : [];
+  }
+
   const original =
     tokenize(
       originalValue
@@ -68,14 +93,211 @@ export function diffText(
       revisedValue
     );
 
+  const parts:
+    DiffPart[] = [];
+
+  const commonPrefixLength =
+    findCommonPrefixLength(
+      original,
+      revised
+    );
+
+  const commonSuffixLength =
+    findCommonSuffixLength(
+      original,
+      revised,
+      commonPrefixLength
+    );
+
+  const originalMiddleEnd =
+    original.length -
+    commonSuffixLength;
+
+  const revisedMiddleEnd =
+    revised.length -
+    commonSuffixLength;
+
+  const originalMiddle =
+    original.slice(
+      commonPrefixLength,
+      originalMiddleEnd
+    );
+
+  const revisedMiddle =
+    revised.slice(
+      commonPrefixLength,
+      revisedMiddleEnd
+    );
+
+  pushTokens(
+    parts,
+    'unchanged',
+    original.slice(
+      0,
+      commonPrefixLength
+    )
+  );
+
+  const requiredCells =
+    (
+      originalMiddle.length +
+      1
+    ) *
+    (
+      revisedMiddle.length +
+      1
+    );
+
+  if (
+    requiredCells <=
+    MAX_LCS_CELLS
+  ) {
+    appendDetailedDiff(
+      parts,
+      originalMiddle,
+      revisedMiddle
+    );
+  } else {
+    appendCoarseDiff(
+      parts,
+      originalMiddle,
+      revisedMiddle
+    );
+  }
+
+  if (
+    commonSuffixLength >
+    0
+  ) {
+    pushTokens(
+      parts,
+      'unchanged',
+      original.slice(
+        originalMiddleEnd
+      )
+    );
+  }
+
+  return parts;
+}
+
+/* =========================================================
+   COMMON PREFIX / SUFFIX
+========================================================= */
+
+function findCommonPrefixLength(
+  original: string[],
+  revised: string[]
+): number {
+  const limit =
+    Math.min(
+      original.length,
+      revised.length
+    );
+
+  let index = 0;
+
+  while (
+    index < limit &&
+    original[index] ===
+      revised[index]
+  ) {
+    index += 1;
+  }
+
+  return index;
+}
+
+function findCommonSuffixLength(
+  original: string[],
+  revised: string[],
+  prefixLength: number
+): number {
+  const availableOriginal =
+    original.length -
+    prefixLength;
+
+  const availableRevised =
+    revised.length -
+    prefixLength;
+
+  const limit =
+    Math.min(
+      availableOriginal,
+      availableRevised
+    );
+
+  let suffixLength = 0;
+
+  while (
+    suffixLength <
+      limit &&
+    original[
+      original.length -
+      1 -
+      suffixLength
+    ] ===
+      revised[
+        revised.length -
+        1 -
+        suffixLength
+      ]
+  ) {
+    suffixLength += 1;
+  }
+
+  return suffixLength;
+}
+
+/* =========================================================
+   DETAILED LCS DIFF
+========================================================= */
+
+function appendDetailedDiff(
+  parts: DiffPart[],
+  original: string[],
+  revised: string[]
+) {
   const originalLength =
     original.length;
 
   const revisedLength =
     revised.length;
 
+  if (
+    originalLength ===
+    0
+  ) {
+    pushTokens(
+      parts,
+      'added',
+      revised
+    );
+
+    return;
+  }
+
+  if (
+    revisedLength ===
+    0
+  ) {
+    pushTokens(
+      parts,
+      'removed',
+      original
+    );
+
+    return;
+  }
+
+  /**
+   * Typed arrays use substantially less memory than nested
+   * JavaScript number arrays.
+   *
+   * The matrix size is already bounded by MAX_LCS_CELLS.
+   */
   const table:
-    number[][] =
+    Uint32Array[] =
     Array.from(
       {
         length:
@@ -83,15 +305,11 @@ export function diffText(
           1,
       },
       () =>
-        Array(
+        new Uint32Array(
           revisedLength +
-            1
-        ).fill(0)
+          1
+        )
     );
-
-  // -------------------------------------------------------
-  // Build LCS table
-  // -------------------------------------------------------
 
   for (
     let originalIndex =
@@ -99,6 +317,17 @@ export function diffText(
     originalIndex >= 0;
     originalIndex -= 1
   ) {
+    const currentRow =
+      table[
+        originalIndex
+      ];
+
+    const nextRow =
+      table[
+        originalIndex +
+        1
+      ];
+
     for (
       let revisedIndex =
         revisedLength - 1;
@@ -113,45 +342,29 @@ export function diffText(
           revisedIndex
         ]
       ) {
-        table[
-          originalIndex
-        ][revisedIndex] =
-          table[
-            originalIndex +
-              1
-          ][
+        currentRow[
+          revisedIndex
+        ] =
+          nextRow[
             revisedIndex +
-              1
+            1
           ] + 1;
       } else {
-        table[
-          originalIndex
-        ][revisedIndex] =
+        currentRow[
+          revisedIndex
+        ] =
           Math.max(
-            table[
-              originalIndex +
-                1
-            ][
+            nextRow[
               revisedIndex
             ],
-
-            table[
-              originalIndex
-            ][
+            currentRow[
               revisedIndex +
-                1
+              1
             ]
           );
       }
     }
   }
-
-  // -------------------------------------------------------
-  // Walk table and build result
-  // -------------------------------------------------------
-
-  const parts:
-    DiffPart[] = [];
 
   let originalIndex = 0;
   let revisedIndex = 0;
@@ -200,7 +413,7 @@ export function diffText(
               1
           ][
             revisedIndex
-          ] ?? 0
+          ]
         : -1;
 
     const addScore =
@@ -208,10 +421,10 @@ export function diffText(
       revisedLength
         ? table[
             originalIndex
-          ]?.[
+          ][
             revisedIndex +
               1
-          ] ?? 0
+          ]
         : -1;
 
     if (
@@ -248,13 +461,59 @@ export function diffText(
       originalIndex += 1;
     }
   }
-
-  return parts;
 }
 
 /* =========================================================
-   MERGE ADJACENT PARTS
+   LARGE-DIFF FALLBACK
 ========================================================= */
+
+function appendCoarseDiff(
+  parts: DiffPart[],
+  original: string[],
+  revised: string[]
+) {
+  /**
+   * This intentionally avoids trying to find word-level
+   * matches inside an exceptionally large changed region.
+   *
+   * It remains editorially honest: the previous region is
+   * shown as removed and the replacement region as added.
+   */
+  pushTokens(
+    parts,
+    'removed',
+    original
+  );
+
+  pushTokens(
+    parts,
+    'added',
+    revised
+  );
+}
+
+/* =========================================================
+   RESULT HELPERS
+========================================================= */
+
+function pushTokens(
+  parts: DiffPart[],
+  type: DiffPartType,
+  tokens: string[]
+) {
+  if (
+    tokens.length ===
+    0
+  ) {
+    return;
+  }
+
+  pushDiffPart(
+    parts,
+    type,
+    tokens.join('')
+  );
+}
 
 function pushDiffPart(
   parts: DiffPart[],
@@ -306,18 +565,19 @@ interface TipTapNode {
 }
 
 /**
- * Converts the TipTap body JSON into readable text for
- * comparison.
+ * Converts TipTap JSON into readable text for comparison.
  *
- * The normal article preview continues rendering the actual
- * rich content. This conversion is only for the Changes view.
+ * Normal article previews continue rendering the complete
+ * rich-text document. This conversion is only for Changes
+ * views.
  */
 export function tipTapToPlainText(
   document:
-    Record<
-      string,
-      unknown
-    > | null
+    | Record<
+        string,
+        unknown
+      >
+    | null
     | undefined
 ): string {
   if (!document) {
@@ -350,8 +610,8 @@ function extractNodeText(
   }
 
   /**
-   * Give image nodes a readable marker so adding/removing an
-   * inline image still appears in the comparison.
+   * Give inline images a readable marker so adding or
+   * removing an image remains visible in the comparison.
    */
   if (
     node.type ===
@@ -427,16 +687,17 @@ export function createStoryTextSnapshot(
       string;
 
     subheadline:
-      string | null;
+      | string
+      | null;
 
     summary:
-      string | null;
+      | string
+      | null;
 
-    body:
-      Record<
-        string,
-        unknown
-      >;
+    body: Record<
+      string,
+      unknown
+    >;
   }
 ): StoryTextSnapshot {
   return {
@@ -465,7 +726,6 @@ export function createStoryTextSnapshot(
 export function hasTextChanges(
   published:
     StoryTextSnapshot,
-
   revision:
     StoryTextSnapshot
 ): boolean {
