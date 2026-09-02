@@ -263,14 +263,6 @@ export function useStoryEditorState({
           originallyPublishedAt ||
           null,
 
-        /**
-         * Do not allow editor autosave to overwrite
-         * the actual West Island Times publication
-         * timestamp.
-         */
-        publishedAt:
-          null,
-
         scheduledAt:
           scheduledAt ||
           null,

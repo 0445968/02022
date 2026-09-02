@@ -735,10 +735,7 @@ import {
           seo_title,
           seo_description,
           originally_published_at,
-          scheduled_at,
-          author_id,
-          editor_id,
-          primary_category_id
+          scheduled_at
         `
       )
       .eq(
@@ -878,8 +875,7 @@ import {
     // ==================================================
   
     const restoredPrimaryCategoryId =
-      version.primary_category_id ??
-      currentStory.primary_category_id;
+      version.primary_category_id;
   
     if (
       restoredPrimaryCategoryId &&
@@ -920,13 +916,11 @@ import {
         accessLevel:
           currentStory.access_level,
   
-        authorId:
-          version.author_id ??
-          currentStory.author_id,
-  
+          authorId:
+          version.author_id,
+        
         editorId:
-          version.editor_id ??
-          currentStory.editor_id,
+          version.editor_id,
   
         primaryCategoryId:
           restoredPrimaryCategoryId,

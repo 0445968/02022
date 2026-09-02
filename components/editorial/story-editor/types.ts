@@ -214,13 +214,6 @@ export interface StorySavePayload {
     | null;
 
   /**
-   * Actual publication timestamp.
-   */
-  publishedAt:
-    | string
-    | null;
-
-  /**
    * Future publication timestamp.
    */
   scheduledAt:
@@ -354,11 +347,7 @@ export interface StorySettingsPanelProps {
   setOriginallyPublishedAt: (
     value: string
   ) => void;
-
-  setPublishedAt: (
-    value: string
-  ) => void;
-
+  
   setScheduledAt: (
     value: string
   ) => void;

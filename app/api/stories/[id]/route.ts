@@ -155,10 +155,6 @@ export async function PUT(
       | string
       | null;
 
-    publishedAt?:
-      | string
-      | null;
-
     scheduledAt?:
       | string
       | null;
@@ -398,9 +394,6 @@ export async function PUT(
 
         originallyPublishedAt:
           body.originallyPublishedAt,
-
-        publishedAt:
-          body.publishedAt,
 
         scheduledAt:
           body.scheduledAt,

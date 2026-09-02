@@ -750,9 +750,6 @@ async function resolveStoryRelations(
       originallyPublishedAt:
   story.originally_published_at,
 
-    publishedAt:
-      story.published_at,
-
     scheduledAt:
       story.scheduled_at,
 
@@ -1851,10 +1848,6 @@ export interface UpdateStoryInput {
   | string
   | null;
 
-  publishedAt?:
-    | string
-    | null;
-
   scheduledAt?:
     | string
     | null;
@@ -2026,14 +2019,6 @@ export async function updateStory(
   }
   
   if (
-    input.publishedAt !==
-    undefined
-  ) {
-    update.published_at =
-      input.publishedAt;
-  }
-  
-  if (
     input.scheduledAt !==
     undefined
   ) {
@@ -2049,63 +2034,60 @@ export async function updateStory(
       input.slug;
   }
 
-  /**
-   * Publishing immediately requires a publication
-   * date.
-   *
-   * The editor currently sends null when no manual
-   * publication time has been entered, so null and
-   * undefined must both mean "publish now".
-   */
+/**
+ * The actual publication timestamp is server-owned.
+ *
+ * When a story is published for the first time, assign
+ * the current server time. If it was published before,
+ * preserve its existing publication timestamp.
+ */
+if (
+  input.status ===
+  'published'
+) {
+  const {
+    data:
+      existingStory,
+    error:
+      existingStoryError,
+  } = await supabase
+    .from(
+      'stories'
+    )
+    .select(
+      'published_at'
+    )
+    .eq(
+      'id',
+      storyId
+    )
+    .maybeSingle();
+
   if (
-    input.status ===
-      'published' &&
-    !input.publishedAt
+    existingStoryError
   ) {
-    const {
-      data:
-        existingStory,
-      error:
-        existingStoryError,
-    } = await supabase
-      .from('stories')
-      .select(
-        'published_at'
-      )
-      .eq(
-        'id',
-        storyId
-      )
-      .maybeSingle();
-
-    if (
+    console.error(
+      'Unable to read existing publication date:',
       existingStoryError
-    ) {
-      console.error(
-        'Unable to read existing publication date:',
-        existingStoryError
-      );
+    );
 
-      throw new Error(
-        `Story update failed: ${existingStoryError.message}`
-      );
-    }
-
-    const existingPublishedAt =
-      existingStory
-        ? (
-            existingStory as Record<
-              string,
-              unknown
-            >
-          )
-            .published_at
-        : null;
-
-    update.published_at =
-      existingPublishedAt ??
-      new Date().toISOString();
+    throw new Error(
+      `Story update failed: ${existingStoryError.message}`
+    );
   }
+
+  if (!existingStory) {
+    throw new Error(
+      'Story could not be found.'
+    );
+  }
+
+  update.published_at =
+    existingStory
+      .published_at ??
+    new Date()
+      .toISOString();
+}
 
   const {
     data,
