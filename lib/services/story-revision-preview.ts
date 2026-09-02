@@ -5,6 +5,10 @@ import {
   import {
     getStoryRevision,
   } from '@/lib/services/story-revisions';
+
+  import {
+    getEditorialProfilesByAccountIds,
+  } from '@/lib/services/editorial-profiles';
   
   import type {
     Category,
@@ -39,20 +43,18 @@ import {
       await getDataClient();
   
     // ==================================================
-    // Resolve people
-    // ==================================================
-  
-    let author:
-      | StoryAuthor
-      | null =
-      story.author;
-  
-    let editor:
-      | StoryEditor
-      | null =
-      story.editor;
-  
-    const profileIds = [
+// Resolve editorial identities
+// ==================================================
+//
+// Revision author_id and editor_id still contain account
+// IDs. Resolve the separate editorial bylines while keeping
+// legacy profile values as a temporary migration fallback.
+// ==================================================
+
+const profileIds =
+Array.from(
+  new Set(
+    [
       revision.authorId,
       revision.editorId,
     ].filter(
@@ -60,86 +62,135 @@ import {
         value
       ): value is string =>
         Boolean(value)
-    );
-  
-    if (
-      profileIds.length > 0
-    ) {
-      const {
-        data:
-          profileRows,
-      } =
-        await supabase
-          .from(
-            'profiles'
-          )
-          .select(
-            `
-              id,
-              name,
-              editorial_title
-            `
-          )
-          .in(
-            'id',
-            profileIds
-          );
-  
-      if (
-        revision.authorId
-      ) {
-        const row =
-          profileRows?.find(
-            (profile) =>
-              profile.id ===
-              revision.authorId
-          );
-  
-        author = row
-          ? {
-              id:
-                row.id,
-  
-              name:
-                row.name,
-  
-              editorialTitle:
-                row.editorial_title,
-            }
-          : null;
-      } else {
-        author = null;
-      }
-  
-      if (
-        revision.editorId
-      ) {
-        const row =
-          profileRows?.find(
-            (profile) =>
-              profile.id ===
-              revision.editorId
-          );
-  
-        editor = row
-          ? {
-              id:
-                row.id,
-  
-              name:
-                row.name,
-  
-              editorialTitle:
-                row.editorial_title,
-            }
-          : null;
-      } else {
-        editor = null;
-      }
-    } else {
-      author = null;
-      editor = null;
+    )
+  )
+);
+
+const legacyProfiles =
+new Map<
+  string,
+  {
+    name:
+      | string
+      | null;
+
+    editorialTitle:
+      | string
+      | null;
+  }
+>();
+
+if (
+profileIds.length >
+0
+) {
+const {
+  data:
+    profileRows,
+  error:
+    profileError,
+} = await supabase
+  .from(
+    'profiles'
+  )
+  .select(
+    `
+      id,
+      name,
+      editorial_title
+    `
+  )
+  .in(
+    'id',
+    profileIds
+  );
+
+if (profileError) {
+  console.error(
+    'Unable to resolve revision staff profiles:',
+    profileError
+  );
+
+  throw new Error(
+    `Unable to resolve revision staff: ${profileError.message}`
+  );
+}
+
+for (
+  const profile of
+    profileRows ?? []
+) {
+  legacyProfiles.set(
+    profile.id,
+    {
+      name:
+        profile.name,
+
+      editorialTitle:
+        profile
+          .editorial_title,
     }
+  );
+}
+}
+
+const editorialProfiles =
+await getEditorialProfilesByAccountIds(
+  profileIds
+);
+
+function resolveRevisionIdentity(
+accountId:
+  | string
+  | null
+): StoryAuthor | null {
+if (!accountId) {
+  return null;
+}
+
+const editorialProfile =
+  editorialProfiles.get(
+    accountId
+  );
+
+const legacyProfile =
+  legacyProfiles.get(
+    accountId
+  );
+
+return {
+  id:
+    accountId,
+
+  name:
+    editorialProfile
+      ?.bylineName ??
+    legacyProfile
+      ?.name ??
+    null,
+
+  editorialTitle:
+    editorialProfile
+      ?.editorialTitle ??
+    legacyProfile
+      ?.editorialTitle ??
+    null,
+};
+}
+
+const author:
+| StoryAuthor
+| null =
+resolveRevisionIdentity(
+  revision.authorId
+);
+
+const editor:
+| StoryEditor
+| null =
+resolveRevisionIdentity(
+  revision.editorId
+);
   
     // ==================================================
     // Resolve categories

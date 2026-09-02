@@ -1,5 +1,9 @@
 import { getDataClient } from '@/lib/db/supabase-data-access';
 
+import {
+  getEditorialProfilesByAccountIds,
+} from '@/lib/services/editorial-profiles';
+
 import type {
   AccessLevel,
   IslandScope,
@@ -401,93 +405,159 @@ async function resolveStoryRelations(
   const supabase =
     await getDataClient();
 
-  // Author
-  let author:
-    | StoryAuthor
-    | null =
-    null;
+// ==================================================
+// Editorial identities
+// ==================================================
+//
+// Story author_id and editor_id still reference account
+// profile IDs. Resolve their separate editorial bylines
+// without changing those relationships yet.
+// ==================================================
 
-  if (
+const staffAccountIds =
+  Array.from(
+    new Set(
+      [
+        story.author_id,
+        story.editor_id,
+      ].filter(
+        (
+          id
+        ): id is string =>
+          Boolean(id)
+      )
+    )
+  );
+
+const legacyProfiles =
+  new Map<
+    string,
+    {
+      name:
+        | string
+        | null;
+
+      editorialTitle:
+        | string
+        | null;
+    }
+  >();
+
+if (
+  staffAccountIds.length >
+  0
+) {
+  const {
+    data:
+      profileRows,
+    error:
+      profileError,
+  } = await supabase
+    .from(
+      'profiles'
+    )
+    .select(
+      `
+        id,
+        name,
+        editorial_title
+      `
+    )
+    .in(
+      'id',
+      staffAccountIds
+    );
+
+  if (profileError) {
+    console.error(
+      'Unable to load legacy story staff profiles:',
+      profileError
+    );
+
+    throw new Error(
+      `Unable to load story staff: ${profileError.message}`
+    );
+  }
+
+  for (
+    const profile of
+      profileRows ?? []
+  ) {
+    legacyProfiles.set(
+      profile.id,
+      {
+        name:
+          profile.name,
+
+        editorialTitle:
+          profile
+            .editorial_title,
+      }
+    );
+  }
+}
+
+const editorialProfiles =
+  await getEditorialProfilesByAccountIds(
+    staffAccountIds
+  );
+
+function resolveEditorialIdentity(
+  accountId:
+    | string
+    | null
+): StoryAuthor | null {
+  if (!accountId) {
+    return null;
+  }
+
+  const editorialProfile =
+    editorialProfiles.get(
+      accountId
+    );
+
+  const legacyProfile =
+    legacyProfiles.get(
+      accountId
+    );
+
+  return {
+    /**
+     * Keep returning the account ID until story foreign
+     * keys migrate to editorial-profile IDs.
+     */
+    id:
+      accountId,
+
+    name:
+      editorialProfile
+        ?.bylineName ??
+      legacyProfile
+        ?.name ??
+      null,
+
+    editorialTitle:
+      editorialProfile
+        ?.editorialTitle ??
+      legacyProfile
+        ?.editorialTitle ??
+      null,
+  };
+}
+
+const author:
+  | StoryAuthor
+  | null =
+  resolveEditorialIdentity(
     story.author_id
-  ) {
-    const {
-      data: authorRow,
-    } = await supabase
-      .from('profiles')
-      .select(
-        'id, name, editorial_title'
-      )
-      .eq(
-        'id',
-        story.author_id
-      )
-      .maybeSingle();
+  );
 
-    if (authorRow) {
-      author = {
-        id:
-          authorRow.id,
-
-        name:
-          authorRow.name,
-
-        editorialTitle:
-          (
-            authorRow as Record<
-              string,
-              unknown
-            >
-          )
-            .editorial_title as
-            | string
-            | null,
-      };
-    }
-  }
-
-  // Editor
-  let editor:
-    | StoryEditor
-    | null =
-    null;
-
-  if (
+const editor:
+  | StoryEditor
+  | null =
+  resolveEditorialIdentity(
     story.editor_id
-  ) {
-    const {
-      data: editorRow,
-    } = await supabase
-      .from('profiles')
-      .select(
-        'id, name, editorial_title'
-      )
-      .eq(
-        'id',
-        story.editor_id
-      )
-      .maybeSingle();
-
-    if (editorRow) {
-      editor = {
-        id:
-          editorRow.id,
-
-        name:
-          editorRow.name,
-
-        editorialTitle:
-          (
-            editorRow as Record<
-              string,
-              unknown
-            >
-          )
-            .editorial_title as
-            | string
-            | null,
-      };
-    }
-  }
+  );
 
   // Story categories
   const {

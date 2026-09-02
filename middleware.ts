@@ -27,12 +27,31 @@ export async function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
 
   // ---- Locale handling -------------------------------------------------
-  // Skip locale routing for Next internals, API routes, and the newsroom.
-  const isInternal =
-    pathname.startsWith('/_next') ||
-    pathname.startsWith('/api') ||
-    pathname.includes('.') ||
-    pathname.startsWith('/newsroom');
+// Skip locale routing for Next internals, API routes,
+// the Newsroom, and the authenticated reader account.
+// Newsroom and account language come from the user's
+// preferred profile locale.
+  const isAccountRoute =
+  pathname ===
+    '/account' ||
+  pathname.startsWith(
+    '/account/'
+  );
+
+const isInternal =
+  pathname.startsWith(
+    '/_next'
+  ) ||
+  pathname.startsWith(
+    '/api'
+  ) ||
+  pathname.includes(
+    '.'
+  ) ||
+  pathname.startsWith(
+    '/newsroom'
+  ) ||
+  isAccountRoute;
 
   if (!isInternal) {
     const firstSegment = pathname.split('/').filter(Boolean)[0];

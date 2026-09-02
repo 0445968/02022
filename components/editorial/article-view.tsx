@@ -1,20 +1,40 @@
 import Link from 'next/link';
 import { Fragment } from 'react';
-import { Bookmark, Share2, MessageSquare } from 'lucide-react';
+import {
+  MessageSquare,
+  Share2,
+} from 'lucide-react';
 import type { Locale } from '@/types';
 import type { Dictionary } from '@/lib/i18n/dictionaries';
 import type { StoryWithRelations } from '@/types/editorial';
 import { categoryLabel, islandLabel, statusLabel } from '@/types/editorial';
 import { localizedPath } from '@/lib/i18n/config';
 
+import {
+  StoryBookmarkButton,
+} from '@/components/account/story-bookmark-button';
+
+interface ArticleBookmarkState {
+  isAuthenticated: boolean;
+  initialBookmarked: boolean;
+  signInHref: string;
+}
+
 interface ArticleViewProps {
   story: StoryWithRelations;
   locale: Locale;
   dict: Dictionary;
   isPreview?: boolean;
+  bookmarkState?: ArticleBookmarkState;
 }
 
-export function ArticleView({ story, locale, dict, isPreview }: ArticleViewProps) {
+export function ArticleView({
+  story,
+  locale,
+  dict,
+  isPreview,
+  bookmarkState,
+}: ArticleViewProps) {
   const categoryName = story.primaryCategory
     ? categoryLabel(story.primaryCategory, locale)
     : null;
@@ -120,14 +140,35 @@ export function ArticleView({ story, locale, dict, isPreview }: ArticleViewProps
                 <Share2 className="h-3.5 w-3.5" aria-hidden />
                 {dict.article.share}
               </button>
-              <button
-                type="button"
-                className="inline-flex h-8 items-center gap-1.5 border border-border bg-white px-3 text-xs font-medium text-foreground transition-colors hover:bg-surface-muted"
-                aria-label={dict.article.bookmark}
-              >
-                <Bookmark className="h-3.5 w-3.5" aria-hidden />
-                {dict.article.bookmark}
-              </button>
+              {bookmarkState ? (
+  <StoryBookmarkButton
+    storyId={story.id}
+    initialBookmarked={
+      bookmarkState.initialBookmarked
+    }
+    isAuthenticated={
+      bookmarkState.isAuthenticated
+    }
+    signInHref={
+      bookmarkState.signInHref
+    }
+    labels={{
+      save:
+        dict.article.bookmark,
+      saved:
+        dict.article.bookmarkSaved,
+      remove:
+        dict.article.bookmarkRemove,
+      signIn:
+        dict.article.bookmarkSignIn,
+      updating:
+        dict.article.bookmarkUpdating,
+      error:
+        dict.article.bookmarkError,
+    }}
+    className="h-8 min-h-8 px-3 text-xs font-medium"
+  />
+) : null}
               <button
                 type="button"
                 className="inline-flex h-8 items-center gap-1.5 border border-border bg-white px-3 text-xs font-medium text-muted-foreground"

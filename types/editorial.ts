@@ -3,6 +3,7 @@ import type {
   StoryStatus,
   AccessLevel,
   IslandScope,
+  EditorialBylineStatus,
 } from '@/lib/db/database.types';
 
 /**
@@ -16,6 +17,7 @@ export type {
   StoryStatus,
   AccessLevel,
   IslandScope,
+  EditorialBylineStatus,
 };
 
 /* ========================================================= */
@@ -105,6 +107,46 @@ export interface StoryAuthor {
   editorialTitle:
     | string
     | null;
+}
+
+/**
+ * Public editorial identity.
+ *
+ * This contains byline and contributor-page information.
+ * It does not grant Newsroom access.
+ */
+export interface EditorialProfile {
+  id: string;
+
+  /**
+   * Optional link to the authenticated reader account.
+   */
+  accountId:
+    | string
+    | null;
+
+  bylineName: string;
+
+  slug: string;
+
+  editorialTitle:
+    | string
+    | null;
+
+  bio:
+    | string
+    | null;
+
+  headshot:
+    | MediaAsset
+    | null;
+
+  bylineStatus:
+    EditorialBylineStatus;
+
+  createdAt: string;
+
+  updatedAt: string;
 }
 
 export interface StoryEditor {

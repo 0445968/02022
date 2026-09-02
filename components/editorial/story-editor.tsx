@@ -549,18 +549,7 @@ export function StoryEditor({
       editor.setSlug,
 
     setOriginallyPublishedAt:
-      editor
-        .setOriginallyPublishedAt,
-
-    /**
-     * Kept temporarily for compatibility with the
-     * existing StorySettingsPanelProps type.
-     *
-     * The actual publication timestamp must not be
-     * editable.
-     */
-    setPublishedAt:
-      (_value: string) => {},
+      editor.setOriginallyPublishedAt,
 
     setScheduledAt:
       editor.setScheduledAt,

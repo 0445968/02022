@@ -38,6 +38,11 @@ export type IslandScope =
   | 'archipelago'
   | 'none';
 
+  export type EditorialBylineStatus =
+  | 'active'
+  | 'former'
+  | 'hidden';
+
 export type HomepageSlotType =
   | 'lead'
   | 'top_left'
@@ -55,6 +60,7 @@ export interface Database {
         Row: {
           id: string;
           name: string | null;
+          display_name: string;
           email: string | null;
           email_verified: string | null;
           image: string | null;
@@ -69,6 +75,7 @@ export interface Database {
         Insert: {
           id: string;
           name?: string | null;
+          display_name?: string;
           email?: string | null;
           email_verified?: string | null;
           image?: string | null;
@@ -80,9 +87,122 @@ export interface Database {
 
         Update: {
           name?: string | null;
+          display_name?: string;
           image?: string | null;
           preferred_locale?: 'en' | 'es';
         };
+      };
+
+      editorial_profiles: {
+        Row: {
+          id: string;
+      
+          account_id:
+            | string
+            | null;
+      
+          byline_name: string;
+      
+          slug: string;
+      
+          editorial_title:
+            | string
+            | null;
+      
+          bio:
+            | string
+            | null;
+      
+          headshot_media_id:
+            | string
+            | null;
+      
+          byline_status:
+            EditorialBylineStatus;
+      
+          created_at: string;
+      
+          updated_at: string;
+        };
+      
+        Insert: {
+          id?: string;
+      
+          account_id?:
+            | string
+            | null;
+      
+          byline_name: string;
+      
+          slug: string;
+      
+          editorial_title?:
+            | string
+            | null;
+      
+          bio?:
+            | string
+            | null;
+      
+          headshot_media_id?:
+            | string
+            | null;
+      
+          byline_status?:
+            EditorialBylineStatus;
+      
+          created_at?: string;
+      
+          updated_at?: string;
+        };
+      
+        Update: {
+          account_id?:
+            | string
+            | null;
+      
+          byline_name?: string;
+      
+          slug?: string;
+      
+          editorial_title?:
+            | string
+            | null;
+      
+          bio?:
+            | string
+            | null;
+      
+          headshot_media_id?:
+            | string
+            | null;
+      
+          byline_status?:
+            EditorialBylineStatus;
+      
+          updated_at?: string;
+        };
+      };
+
+      bookmarks: {
+        Row: {
+          id: string;
+          user_id: string;
+          story_id: string;
+          created_at: string;
+        };
+
+        Insert: {
+          id?: string;
+          user_id: string;
+          story_id: string;
+          created_at?: string;
+        };
+
+        Update: Record<
+          string,
+          never
+        >;
       };
 
       categories: {

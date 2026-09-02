@@ -1,6 +1,10 @@
 import {
     getDataClient,
   } from '@/lib/db/supabase-data-access';
+
+  import {
+    getEditorialProfilesByAccountIds,
+  } from '@/lib/services/editorial-profiles';
   
   import type {
     StoryLanguage,
@@ -91,102 +95,150 @@ import {
     }
   
     // ==================================================
-    // Resolve historical author
-    // ==================================================
-  
-    let author =
-      story.author;
-  
-    if (
-      version.author_id
-    ) {
-      const {
-        data:
-          authorRow,
-      } = await supabase
-        .from(
-          'profiles'
-        )
-        .select(
-          `
-            id,
-            name,
-            editorial_title
-          `
-        )
-        .eq(
-          'id',
-          version.author_id
-        )
-        .maybeSingle();
-  
-      if (
-        authorRow
-      ) {
-        author = {
-          id:
-            authorRow.id,
-  
-          name:
-            authorRow.name,
-  
-          editorialTitle:
-            authorRow
-              .editorial_title,
-        };
-      }
-    } else {
-      author = null;
+// Resolve historical editorial identities
+// ==================================================
+//
+// author_id and editor_id are historically stored fields.
+// A saved null remains null. Otherwise, resolve the separate
+// editorial byline linked to that historical account ID.
+// ==================================================
+
+const historicalStaffIds =
+Array.from(
+  new Set(
+    [
+      version.author_id,
+      version.editor_id,
+    ].filter(
+      (
+        id
+      ): id is string =>
+        Boolean(id)
+    )
+  )
+);
+
+const legacyProfiles =
+new Map<
+  string,
+  {
+    name:
+      | string
+      | null;
+
+    editorialTitle:
+      | string
+      | null;
+  }
+>();
+
+if (
+historicalStaffIds.length >
+0
+) {
+const {
+  data:
+    profileRows,
+  error:
+    profileError,
+} = await supabase
+  .from(
+    'profiles'
+  )
+  .select(
+    `
+      id,
+      name,
+      editorial_title
+    `
+  )
+  .in(
+    'id',
+    historicalStaffIds
+  );
+
+if (profileError) {
+  console.error(
+    'Unable to resolve historical staff profiles:',
+    profileError
+  );
+
+  throw new Error(
+    `Unable to resolve historical staff: ${profileError.message}`
+  );
+}
+
+for (
+  const profile of
+    profileRows ?? []
+) {
+  legacyProfiles.set(
+    profile.id,
+    {
+      name:
+        profile.name,
+
+      editorialTitle:
+        profile
+          .editorial_title,
     }
-  
-    // ==================================================
-    // Resolve historical editor
-    // ==================================================
-  
-    let editor =
-      story.editor;
-  
-    if (
-      version.editor_id
-    ) {
-      const {
-        data:
-          editorRow,
-      } = await supabase
-        .from(
-          'profiles'
-        )
-        .select(
-          `
-            id,
-            name,
-            editorial_title
-          `
-        )
-        .eq(
-          'id',
-          version.editor_id
-        )
-        .maybeSingle();
-  
-      if (
-        editorRow
-      ) {
-        editor = {
-          id:
-            editorRow.id,
-  
-          name:
-            editorRow.name,
-  
-          editorialTitle:
-            editorRow
-              .editorial_title,
-        };
-      }
-    } else {
-      editor = null;
-    }
+  );
+}
+}
+
+const editorialProfiles =
+await getEditorialProfilesByAccountIds(
+  historicalStaffIds
+);
+
+function resolveHistoricalIdentity(
+accountId:
+  | string
+  | null
+): StoryWithRelations['author'] {
+if (!accountId) {
+  return null;
+}
+
+const editorialProfile =
+  editorialProfiles.get(
+    accountId
+  );
+
+const legacyProfile =
+  legacyProfiles.get(
+    accountId
+  );
+
+return {
+  id:
+    accountId,
+
+  name:
+    editorialProfile
+      ?.bylineName ??
+    legacyProfile
+      ?.name ??
+    null,
+
+  editorialTitle:
+    editorialProfile
+      ?.editorialTitle ??
+    legacyProfile
+      ?.editorialTitle ??
+    null,
+};
+}
+
+const author =
+resolveHistoricalIdentity(
+  version.author_id
+);
+
+const editor =
+resolveHistoricalIdentity(
+  version.editor_id
+);
   
     // ==================================================
     // Resolve historical primary category
