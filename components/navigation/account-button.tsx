@@ -88,7 +88,7 @@ export function AccountButton({ user, dict, locale }: AccountButtonProps) {
           )}
           <li>
             <Link
-              href={localizedPath(locale, '/account')}
+              href="/account"
               className="flex items-center gap-2 px-3 py-2 text-sm text-foreground transition-colors hover:bg-surface-muted hover:text-primary focus-visible:bg-surface-muted focus-visible:outline-none"
             >
               <User className="h-4 w-4" aria-hidden />

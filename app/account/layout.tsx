@@ -17,6 +17,10 @@ import {
   import {
     getDictionary,
   } from '@/lib/i18n/dictionaries';
+
+  import {
+    getServerLocale,
+  } from '@/lib/i18n/server-locale';
   
   /**
    * Authentication boundary for My West Island Times.
@@ -60,9 +64,10 @@ import {
     }
   
     const locale =
-      user.profile
-        ?.preferredLocale ??
-      defaultLocale;
+        getServerLocale(
+            user.profile
+                ?.preferredLocale
+        );
   
     const dict =
       getDictionary(

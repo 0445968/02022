@@ -33,8 +33,16 @@ import {
 } from '@/lib/i18n/dictionaries';
 
 import {
+    getServerLocale,
+  } from '@/lib/i18n/server-locale';
+
+import {
   getSavedStories,
 } from '@/lib/services/saved-stories';
+
+import {
+    getAccountComments,
+  } from '@/lib/services/account-comments';
 
 async function loadSavedCount(
   userId: string
@@ -64,6 +72,34 @@ async function loadSavedCount(
   }
 }
 
+async function loadCommentCount(
+    userId: string
+  ): Promise<number | null> {
+    try {
+      const result =
+        await getAccountComments(
+          userId,
+          {
+            page: 1,
+            perPage: 1,
+          }
+        );
+  
+      return result.total;
+    } catch (error) {
+      /*
+       * Comment history should not prevent the rest of
+       * the account dashboard from loading.
+       */
+      console.error(
+        'Unable to load dashboard comment count:',
+        error
+      );
+  
+      return null;
+    }
+  }
+
 export default async function AccountPage() {
   const user =
     await getCurrentUser();
@@ -83,9 +119,10 @@ export default async function AccountPage() {
   }
 
   const locale =
+  getServerLocale(
     user.profile
-      ?.preferredLocale ??
-    defaultLocale;
+      ?.preferredLocale
+  );
 
   const dict =
     getDictionary(locale);
@@ -94,12 +131,24 @@ export default async function AccountPage() {
    * The development bypass is an editorial testing
    * identity, not a real authenticated reader session.
    */
-  const savedCount =
+  const [
+    savedCount,
+    commentCount,
+  ] =
     isDevAuthBypass()
-      ? null
-      : await loadSavedCount(
-          user.id
-        );
+      ? [
+          null,
+          null,
+        ]
+      : await Promise.all([
+          loadSavedCount(
+            user.id
+          ),
+  
+          loadCommentCount(
+            user.id
+          ),
+        ]);
 
   const displayName =
     user.profile
@@ -144,18 +193,18 @@ export default async function AccountPage() {
     },
 
     {
-      href:
-        '/account/comments',
-
-      label:
-        dict.account.comments,
-
-      icon:
-        MessageSquare,
-
-      count:
-        null,
-    },
+        href:
+          '/account/comments',
+      
+        label:
+          dict.account.comments,
+      
+        icon:
+          MessageSquare,
+      
+        count:
+          commentCount,
+      },
 
     {
       href:

@@ -7,6 +7,10 @@ import {
 } from 'next/navigation';
 
 import {
+  StoryComments,
+} from '@/components/comments/story-comments';
+
+import {
   ArticleView,
 } from '@/components/editorial/article-view';
 
@@ -30,6 +34,11 @@ import {
 import {
   isStoryBookmarked,
 } from '@/lib/services/bookmarks';
+
+import {
+  getPublicCommentsForStory,
+  type PublicCommentThread,
+} from '@/lib/services/comments';
 
 import {
   getPublishedStoryBySlug,
@@ -157,39 +166,62 @@ export default async function ArticlePage({
   }
 
   /*
-   * DEV_AUTH_BYPASS represents a mock editorial
-   * identity, not an authenticated reader session.
-   *
-   * Reader bookmarks therefore remain logged out
-   * while the editorial bypass is active. This avoids
-   * weakening bookmark RLS with anonymous policies.
+   * The editorial bypass is not a real reader session.
+   * Public comments still load, but posting and
+   * bookmarking remain signed-out while it is active.
    */
   const reader =
     isDevAuthBypass()
       ? null
       : await getCurrentUser();
 
-  let initialBookmarked =
-    false;
+  const emptyThread:
+    PublicCommentThread = {
+      comments: [],
+      total: 0,
+      hasMore: false,
+    };
 
-  if (reader) {
-    try {
-      initialBookmarked =
-        await isStoryBookmarked(
+  const [
+    initialBookmarked,
+    initialThread,
+  ] = await Promise.all([
+    reader
+      ? isStoryBookmarked(
           reader.id,
           story.id
+        ).catch(
+          (error) => {
+            console.error(
+              'Unable to load article bookmark state:',
+              error
+            );
+
+            return false;
+          }
+        )
+      : false,
+
+    getPublicCommentsForStory(
+      story.id,
+      {
+        limit: 200,
+      }
+    ).catch(
+      (error) => {
+        /*
+         * A comment outage must not prevent readers
+         * from accessing the published article.
+         */
+        console.error(
+          'Unable to load article comments:',
+          error
         );
-    } catch (error) {
-      /*
-       * A bookmark lookup failure should not prevent
-       * the published article from loading.
-       */
-      console.error(
-        'Unable to load article bookmark state:',
-        error
-      );
-    }
-  }
+
+        return emptyThread;
+      }
+    ),
+  ]);
 
   const articlePath =
     localizedPath(
@@ -203,24 +235,127 @@ export default async function ArticlePage({
       '/auth/sign-in'
     );
 
-  const signInHref =
+  const bookmarkSignInHref =
     `${signInPath}?next=${encodeURIComponent(
       articlePath
     )}`;
 
+  const commentSignInHref =
+    `${signInPath}?next=${encodeURIComponent(
+      `${articlePath}#comments`
+    )}`;
+
   return (
-    <ArticleView
-      story={story}
-      locale={locale}
-      dict={dict}
-      bookmarkState={{
-        isAuthenticated:
-          Boolean(reader),
+    <>
+      <ArticleView
+        story={story}
+        locale={locale}
+        dict={dict}
+        bookmarkState={{
+          isAuthenticated:
+            Boolean(reader),
 
-        initialBookmarked,
+          initialBookmarked,
 
-        signInHref,
-      }}
-    />
+          signInHref:
+            bookmarkSignInHref,
+        }}
+      />
+
+      <StoryComments
+        storyId={
+          story.id
+        }
+        locale={
+          locale
+        }
+        initialThread={
+          initialThread
+        }
+        isAuthenticated={
+          Boolean(reader)
+        }
+        signInHref={
+          commentSignInHref
+        }
+        labels={{
+          heading:
+            dict.article
+              .comments,
+
+          intro:
+            dict.article
+              .commentIntro,
+
+          signInPrompt:
+            dict.article
+              .commentSignInPrompt,
+
+          signInAction:
+            dict.article
+              .commentSignInAction,
+
+          placeholder:
+            dict.article
+              .commentPlaceholder,
+
+          submit:
+            dict.article
+              .commentSubmit,
+
+          submitting:
+            dict.article
+              .commentSubmitting,
+
+          pendingNotice:
+            dict.article
+              .commentPendingNotice,
+
+          reply:
+            dict.article
+              .commentReply,
+
+          replyingTo:
+            dict.article
+              .commentReplyingTo,
+
+          cancelReply:
+            dict.article
+              .commentCancelReply,
+
+          emptyTitle:
+            dict.article
+              .commentEmptyTitle,
+
+          emptyDescription:
+            dict.article
+              .commentEmptyDescription,
+
+          anonymous:
+            dict.article
+              .commentAnonymous,
+
+          edited:
+            dict.article
+              .commentEdited,
+
+          charactersRemaining:
+            dict.article
+              .commentCharactersRemaining,
+
+          loadMore:
+            dict.article
+              .commentLoadMore,
+
+          loadError:
+            dict.article
+              .commentLoadError,
+
+          submitError:
+            dict.article
+              .commentSubmitError,
+        }}
+      />
+    </>
   );
 }

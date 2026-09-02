@@ -30,6 +30,10 @@ import {
 } from '@/lib/i18n/dictionaries';
 
 import {
+    getServerLocale,
+  } from '@/lib/i18n/server-locale';
+
+import {
   getSavedStories,
   type SavedStoriesPage,
 } from '@/lib/services/saved-stories';
@@ -98,9 +102,10 @@ export default async function SavedPage({
   }
 
   const locale =
+  getServerLocale(
     user.profile
-      ?.preferredLocale ??
-    defaultLocale;
+      ?.preferredLocale
+  );
 
   const dict =
     getDictionary(locale);

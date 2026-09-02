@@ -53,6 +53,18 @@ export type HomepageSlotType =
   | 'section_feature'
   | 'video_feature';
 
+export type CommentStatus =
+  | 'pending'
+  | 'published'
+  | 'hidden'
+  | 'deleted';
+
+export type CommentReportStatus =
+  | 'open'
+  | 'reviewed'
+  | 'dismissed'
+  | 'actioned';
+
 export interface Database {
   public: {
     Tables: {
@@ -203,6 +215,91 @@ export interface Database {
           string,
           never
         >;
+      };
+
+      comments: {
+        Row: {
+          id: string;
+          story_id: string;
+          user_id:
+            | string
+            | null;
+          parent_id:
+            | string
+            | null;
+          body: string;
+          status:
+            CommentStatus;
+          created_at: string;
+          updated_at: string;
+        };
+
+        Insert: {
+          id?: string;
+          story_id: string;
+          user_id?:
+            | string
+            | null;
+          parent_id?:
+            | string
+            | null;
+          body: string;
+          status?:
+            CommentStatus;
+          created_at?: string;
+          updated_at?: string;
+        };
+
+        Update: {
+          body?: string;
+          status?:
+            CommentStatus;
+        };
+      };
+
+      comment_reports: {
+        Row: {
+          id: string;
+          comment_id: string;
+          reporter_id: string;
+          reason: string;
+          status:
+            CommentReportStatus;
+          reviewed_by:
+            | string
+            | null;
+          reviewed_at:
+            | string
+            | null;
+          created_at: string;
+        };
+
+        Insert: {
+          id?: string;
+          comment_id: string;
+          reporter_id: string;
+          reason: string;
+          status?:
+            CommentReportStatus;
+          reviewed_by?:
+            | string
+            | null;
+          reviewed_at?:
+            | string
+            | null;
+          created_at?: string;
+        };
+
+        Update: {
+          status?:
+            CommentReportStatus;
+          reviewed_by?:
+            | string
+            | null;
+          reviewed_at?:
+            | string
+            | null;
+        };
       };
 
       categories: {
@@ -1002,10 +1099,17 @@ export interface Database {
       };
     };
 
-    Views: Record<
-      string,
-      never
-    >;
+    Views: {
+      reader_public_profiles: {
+        Row: {
+          id: string;
+          display_name: string;
+          avatar_url:
+            | string
+            | null;
+        };
+      };
+    };
 
     Functions: {
       publish_story_revision: {
@@ -1028,6 +1132,11 @@ export interface Database {
       access_level: AccessLevel;
       island_scope: IslandScope;
       homepage_slot_type: HomepageSlotType;
+      comment_status:
+        CommentStatus;
+
+      comment_report_status:
+        CommentReportStatus;
     };
   };
 }
