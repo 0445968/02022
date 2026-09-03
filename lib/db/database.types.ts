@@ -59,6 +59,14 @@ export type HomepageSlotType =
   | 'video_feature'
   | 'island_feature';
 
+export type Json =
+  | string
+  | number
+  | boolean
+  | null
+  | { [key: string]: Json | undefined }
+  | Json[];
+
 export type CommentStatus =
   | 'pending'
   | 'published'
@@ -109,6 +117,8 @@ export interface Database {
           image?: string | null;
           preferred_locale?: 'en' | 'es';
         };
+
+        Relationships: [];
       };
 
       editorial_profiles: {
@@ -200,6 +210,8 @@ export interface Database {
       
           updated_at?: string;
         };
+
+        Relationships: [];
       };
 
       bookmarks: {
@@ -221,6 +233,23 @@ export interface Database {
           string,
           never
         >;
+
+        Relationships: [
+          {
+            foreignKeyName: 'bookmarks_story_id_fkey';
+            columns: ['story_id'];
+            isOneToOne: false;
+            referencedRelation: 'stories';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'bookmarks_user_id_fkey';
+            columns: ['user_id'];
+            isOneToOne: false;
+            referencedRelation: 'profiles';
+            referencedColumns: ['id'];
+          },
+        ];
       };
 
       comments: {
@@ -261,6 +290,30 @@ export interface Database {
           status?:
             CommentStatus;
         };
+
+        Relationships: [
+          {
+            foreignKeyName: 'comments_parent_id_fkey';
+            columns: ['parent_id'];
+            isOneToOne: false;
+            referencedRelation: 'comments';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'comments_story_id_fkey';
+            columns: ['story_id'];
+            isOneToOne: false;
+            referencedRelation: 'stories';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'comments_user_id_fkey';
+            columns: ['user_id'];
+            isOneToOne: false;
+            referencedRelation: 'profiles';
+            referencedColumns: ['id'];
+          },
+        ];
       };
 
       comment_reports: {
@@ -306,6 +359,30 @@ export interface Database {
             | string
             | null;
         };
+
+        Relationships: [
+          {
+            foreignKeyName: 'comment_reports_comment_id_fkey';
+            columns: ['comment_id'];
+            isOneToOne: false;
+            referencedRelation: 'comments';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'comment_reports_reporter_id_fkey';
+            columns: ['reporter_id'];
+            isOneToOne: false;
+            referencedRelation: 'profiles';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'comment_reports_reviewed_by_fkey';
+            columns: ['reviewed_by'];
+            isOneToOne: false;
+            referencedRelation: 'profiles';
+            referencedColumns: ['id'];
+          },
+        ];
       };
 
       categories: {
@@ -342,6 +419,8 @@ export interface Database {
           active?: boolean;
           sort_order?: number;
         };
+
+        Relationships: [];
       };
 
       tags: {
@@ -362,6 +441,8 @@ export interface Database {
           slug?: string;
           name?: string;
         };
+
+        Relationships: [];
       };
 
       stories: {
@@ -534,6 +615,51 @@ export interface Database {
             | string
             | null;
         };
+
+        Relationships: [
+          {
+            foreignKeyName: 'stories_author_id_fkey';
+            columns: ['author_id'];
+            isOneToOne: false;
+            referencedRelation: 'profiles';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'stories_created_by_fkey';
+            columns: ['created_by'];
+            isOneToOne: false;
+            referencedRelation: 'profiles';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'stories_editor_id_fkey';
+            columns: ['editor_id'];
+            isOneToOne: false;
+            referencedRelation: 'profiles';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'stories_featured_image_id_fkey';
+            columns: ['featured_image_id'];
+            isOneToOne: false;
+            referencedRelation: 'media_assets';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'stories_primary_category_id_fkey';
+            columns: ['primary_category_id'];
+            isOneToOne: false;
+            referencedRelation: 'categories';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'stories_updated_by_fkey';
+            columns: ['updated_by'];
+            isOneToOne: false;
+            referencedRelation: 'profiles';
+            referencedColumns: ['id'];
+          },
+        ];
       };
 
       story_revisions: {
@@ -720,6 +846,8 @@ export interface Database {
         };
 
         Update: {
+          story_id?: string;
+
           headline?: string;
 
           subheadline?:
@@ -799,6 +927,58 @@ export interface Database {
             | string
             | null;
         };
+
+        Relationships: [
+          {
+            foreignKeyName: 'story_revisions_author_id_fkey';
+            columns: ['author_id'];
+            isOneToOne: false;
+            referencedRelation: 'profiles';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'story_revisions_created_by_fkey';
+            columns: ['created_by'];
+            isOneToOne: false;
+            referencedRelation: 'profiles';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'story_revisions_editor_id_fkey';
+            columns: ['editor_id'];
+            isOneToOne: false;
+            referencedRelation: 'profiles';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'story_revisions_featured_image_id_fkey';
+            columns: ['featured_image_id'];
+            isOneToOne: false;
+            referencedRelation: 'media_assets';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'story_revisions_primary_category_id_fkey';
+            columns: ['primary_category_id'];
+            isOneToOne: false;
+            referencedRelation: 'categories';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'story_revisions_story_id_fkey';
+            columns: ['story_id'];
+            isOneToOne: false;
+            referencedRelation: 'stories';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'story_revisions_updated_by_fkey';
+            columns: ['updated_by'];
+            isOneToOne: false;
+            referencedRelation: 'profiles';
+            referencedColumns: ['id'];
+          },
+        ];
       };
 
       story_versions: {
@@ -861,6 +1041,44 @@ export interface Database {
           string,
           never
         >;
+
+        Relationships: [
+          {
+            foreignKeyName: 'story_versions_author_id_fkey';
+            columns: ['author_id'];
+            isOneToOne: false;
+            referencedRelation: 'profiles';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'story_versions_created_by_fkey';
+            columns: ['created_by'];
+            isOneToOne: false;
+            referencedRelation: 'profiles';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'story_versions_editor_id_fkey';
+            columns: ['editor_id'];
+            isOneToOne: false;
+            referencedRelation: 'profiles';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'story_versions_primary_category_id_fkey';
+            columns: ['primary_category_id'];
+            isOneToOne: false;
+            referencedRelation: 'categories';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'story_versions_story_id_fkey';
+            columns: ['story_id'];
+            isOneToOne: false;
+            referencedRelation: 'stories';
+            referencedColumns: ['id'];
+          },
+        ];
       };
 
       story_categories: {
@@ -880,6 +1098,23 @@ export interface Database {
         Update: {
           is_primary?: boolean;
         };
+
+        Relationships: [
+          {
+            foreignKeyName: 'story_categories_category_id_fkey';
+            columns: ['category_id'];
+            isOneToOne: false;
+            referencedRelation: 'categories';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'story_categories_story_id_fkey';
+            columns: ['story_id'];
+            isOneToOne: false;
+            referencedRelation: 'stories';
+            referencedColumns: ['id'];
+          },
+        ];
       };
 
       story_tags: {
@@ -898,6 +1133,23 @@ export interface Database {
           string,
           never
         >;
+
+        Relationships: [
+          {
+            foreignKeyName: 'story_tags_story_id_fkey';
+            columns: ['story_id'];
+            isOneToOne: false;
+            referencedRelation: 'stories';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'story_tags_tag_id_fkey';
+            columns: ['tag_id'];
+            isOneToOne: false;
+            referencedRelation: 'tags';
+            referencedColumns: ['id'];
+          },
+        ];
       };
 
       media_assets: {
@@ -958,6 +1210,16 @@ export interface Database {
             | string
             | null;
         };
+
+        Relationships: [
+          {
+            foreignKeyName: 'media_assets_uploaded_by_fkey';
+            columns: ['uploaded_by'];
+            isOneToOne: false;
+            referencedRelation: 'profiles';
+            referencedColumns: ['id'];
+          },
+        ];
       };
 
       homepage_slots: {
@@ -1027,6 +1289,75 @@ export interface Database {
             | string
             | null;
         };
+
+        Relationships: [
+          {
+            foreignKeyName: 'homepage_slots_category_id_fkey';
+            columns: ['category_id'];
+            isOneToOne: false;
+            referencedRelation: 'categories';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'homepage_slots_created_by_fkey';
+            columns: ['created_by'];
+            isOneToOne: false;
+            referencedRelation: 'profiles';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'homepage_slots_story_id_fkey';
+            columns: ['story_id'];
+            isOneToOne: false;
+            referencedRelation: 'stories';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'homepage_slots_updated_by_fkey';
+            columns: ['updated_by'];
+            isOneToOne: false;
+            referencedRelation: 'profiles';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+
+      homepage_layout_drafts: {
+        Row: {
+          id: string;
+          selections: Json;
+          updated_by:
+            | string
+            | null;
+          updated_at: string;
+        };
+
+        Insert: {
+          id?: string;
+          selections?: Json;
+          updated_by?:
+            | string
+            | null;
+          updated_at?: string;
+        };
+
+        Update: {
+          selections?: Json;
+          updated_by?:
+            | string
+            | null;
+          updated_at?: string;
+        };
+
+        Relationships: [
+          {
+            foreignKeyName: 'homepage_layout_drafts_updated_by_fkey';
+            columns: ['updated_by'];
+            isOneToOne: false;
+            referencedRelation: 'profiles';
+            referencedColumns: ['id'];
+          },
+        ];
       };
 
       breaking_news: {
@@ -1102,6 +1433,30 @@ export interface Database {
             | string
             | null;
         };
+
+        Relationships: [
+          {
+            foreignKeyName: 'breaking_news_created_by_fkey';
+            columns: ['created_by'];
+            isOneToOne: false;
+            referencedRelation: 'profiles';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'breaking_news_story_id_fkey';
+            columns: ['story_id'];
+            isOneToOne: false;
+            referencedRelation: 'stories';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'breaking_news_updated_by_fkey';
+            columns: ['updated_by'];
+            isOneToOne: false;
+            referencedRelation: 'profiles';
+            referencedColumns: ['id'];
+          },
+        ];
       };
     };
 
@@ -1114,10 +1469,23 @@ export interface Database {
             | string
             | null;
         };
+
+        Relationships: [];
       };
     };
 
     Functions: {
+      publish_homepage_layout: {
+        Args: {
+          p_selections: Json;
+          p_user_id?:
+            | string
+            | null;
+        };
+
+        Returns: undefined;
+      };
+
       publish_story_revision: {
         Args: {
           p_story_id:

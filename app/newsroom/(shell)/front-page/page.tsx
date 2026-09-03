@@ -10,6 +10,7 @@ import {
   getBreakingNews,
   getFrontPageStoryOptions,
   getPublishedStoriesByCategory,
+  getHomepageLayoutDraft,
   getHomepageSlots,
 } from '@/lib/services/front-page';
 
@@ -27,6 +28,7 @@ export default async function FrontPagePage() {
 
   const [
     placements,
+    layoutDraft,
     breakingNews,
     stories,
     worldStories,
@@ -34,11 +36,12 @@ export default async function FrontPagePage() {
     acrossTheIslands,
   ] = await Promise.all([
     getHomepageSlots(),
+    getHomepageLayoutDraft(),
     getBreakingNews(),
     getFrontPageStoryOptions(),
     getPublishedStoriesByCategory(
       'world',
-      12
+      100
     ),
     getCategories(),
     getAcrossTheIslands(),
@@ -110,11 +113,11 @@ export default async function FrontPagePage() {
       <FrontPageEditor
         dict={dict}
         locale={locale}
-        userId={
-          user?.id ?? null
-        }
         placements={
           placements
+        }
+        layoutDraft={
+          layoutDraft
         }
         breakingNews={
           breakingNews

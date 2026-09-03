@@ -1,7 +1,9 @@
 import { getDataClient } from '@/lib/db/supabase-data-access';
 
 import type {
+  Database,
   HomepageSlotType,
+  Json,
 } from '@/lib/db/database.types';
 
 export interface FrontPageStoryOption {
@@ -44,6 +46,173 @@ export interface HomepagePlacement {
   updatedAt: string;
 
   story: FrontPageStoryOption;
+}
+
+export interface HomepageLayoutSelection {
+  slot: HomepageSlotType;
+  position: number;
+  categoryId: string | null;
+  storyId: string;
+}
+
+export interface HomepageLayoutDraft {
+  selections: HomepageLayoutSelection[];
+  updatedAt: string | null;
+}
+
+const HOMEPAGE_SLOTS: HomepageSlotType[] = [
+  'lead',
+  'top_left',
+  'top_right',
+  'secondary',
+  'lead_support',
+  'more_coverage',
+  'highlight',
+  'world',
+  'latest_news',
+  'editors_pick',
+  'latest_feature',
+  'section_feature',
+  'video_feature',
+  'island_feature',
+];
+
+export function homepagePlacementsToSelections(
+  placements: HomepagePlacement[]
+): HomepageLayoutSelection[] {
+  return placements
+    .filter((placement) => placement.active)
+    .map((placement) => ({
+      slot: placement.slot,
+      position: placement.position,
+      categoryId: placement.categoryId,
+      storyId: placement.story.id,
+    }));
+}
+
+export function normalizeHomepageLayoutSelections(
+  value: unknown
+): HomepageLayoutSelection[] {
+  if (!Array.isArray(value)) {
+    throw new Error('Homepage selections must be an array.');
+  }
+
+  const storyIds = new Set<string>();
+  const positions = new Set<string>();
+
+  return value.map((item) => {
+    if (!item || typeof item !== 'object') {
+      throw new Error('Invalid homepage selection.');
+    }
+
+    const candidate = item as Record<string, unknown>;
+    const slot = candidate.slot;
+    const storyId =
+      typeof candidate.storyId === 'string'
+        ? candidate.storyId.trim()
+        : '';
+    const position = candidate.position ?? 0;
+    const categoryId =
+      typeof candidate.categoryId === 'string'
+        ? candidate.categoryId.trim() || null
+        : null;
+
+    if (
+      typeof slot !== 'string' ||
+      !HOMEPAGE_SLOTS.includes(slot as HomepageSlotType)
+    ) {
+      throw new Error('Invalid homepage slot.');
+    }
+
+    if (!storyId) {
+      throw new Error('Every homepage selection requires a story.');
+    }
+
+    if (!Number.isInteger(position) || Number(position) < 0) {
+      throw new Error('Invalid homepage position.');
+    }
+
+    if (storyIds.has(storyId)) {
+      throw new Error('A story cannot appear more than once on the homepage.');
+    }
+
+    const positionKey = `${slot}:${Number(position)}`;
+    if (positions.has(positionKey)) {
+      throw new Error('A homepage position cannot contain more than one story.');
+    }
+
+    storyIds.add(storyId);
+    positions.add(positionKey);
+
+    return {
+      slot: slot as HomepageSlotType,
+      position: Number(position),
+      categoryId,
+      storyId,
+    };
+  });
+}
+
+export async function getHomepageLayoutDraft(): Promise<HomepageLayoutDraft | null> {
+  const supabase = await getDataClient();
+  const { data, error } = await supabase
+    .from('homepage_layout_drafts')
+    .select('selections, updated_at')
+    .eq('id', 'current')
+    .maybeSingle();
+
+  if (error) {
+    throw new Error(`Unable to load the homepage layout draft: ${error.message}`);
+  }
+
+  if (!data) {
+    return null;
+  }
+
+  return {
+    selections: normalizeHomepageLayoutSelections(data.selections),
+    updatedAt: data.updated_at,
+  };
+}
+
+export async function saveHomepageLayoutDraft(
+  selections: HomepageLayoutSelection[],
+  userId: string | null
+): Promise<HomepageLayoutDraft> {
+  const normalized = normalizeHomepageLayoutSelections(selections);
+  const updatedAt = new Date().toISOString();
+  const supabase = await getDataClient();
+  const { error } = await supabase.from('homepage_layout_drafts').upsert(
+    {
+      id: 'current',
+      selections: normalized as unknown as Json,
+      updated_by: userId,
+      updated_at: updatedAt,
+    },
+    { onConflict: 'id' }
+  );
+
+  if (error) {
+    throw new Error(`Unable to save the homepage layout draft: ${error.message}`);
+  }
+
+  return { selections: normalized, updatedAt };
+}
+
+export async function publishHomepageLayout(
+  selections: HomepageLayoutSelection[],
+  userId: string | null
+): Promise<void> {
+  const normalized = normalizeHomepageLayoutSelections(selections);
+  const supabase = await getDataClient();
+  const { error } = await supabase.rpc('publish_homepage_layout', {
+    p_selections: normalized as unknown as Json,
+    p_user_id: userId,
+  });
+
+  if (error) {
+    throw new Error(`Unable to publish the homepage layout: ${error.message}`);
+  }
 }
 
 export interface BreakingNewsItem {
@@ -738,10 +907,7 @@ export async function updateHomepagePlacement(
   const supabase =
     await getDataClient();
 
-  const update: Record<
-    string,
-    unknown
-  > = {};
+  const update: Database['public']['Tables']['homepage_slots']['Update'] = {};
 
   if (
     input.slot !==
@@ -1444,10 +1610,7 @@ export async function updateBreakingNews(
   const supabase =
     await getDataClient();
 
-  const update: Record<
-    string,
-    unknown
-  > = {};
+  const update: Database['public']['Tables']['breaking_news']['Update'] = {};
 
   if (
     input.headline !==

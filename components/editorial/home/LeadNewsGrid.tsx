@@ -46,10 +46,11 @@ interface BuildLeadNewsGridPlanInput {
   topLeft: HomepagePlacement | null;
   topRight: HomepagePlacement | null;
   secondary: Array<HomepagePlacement | null>;
-  latestStories: FrontPageStoryOption[];
-  worldStories: FrontPageStoryOption[];
+  leadSupport?: Array<HomepagePlacement | null>;
+  moreCoverage?: Array<HomepagePlacement | null>;
+  highlight?: HomepagePlacement | null;
+  world?: Array<HomepagePlacement | null>;
   excludedStoryIds?: Iterable<string>;
-  reservedStoryIds?: Iterable<string>;
 }
 
 /* ========================================================= */
@@ -73,41 +74,16 @@ export function buildLeadNewsGridPlan({
   topLeft,
   topRight,
   secondary,
-  latestStories,
-  worldStories,
+  leadSupport = [],
+  moreCoverage = [],
+  highlight = null,
+  world = [],
   excludedStoryIds = [],
-  reservedStoryIds = [],
 }: BuildLeadNewsGridPlanInput): LeadNewsGridPlan {
   const usedStoryIds =
     new Set<string>(
       excludedStoryIds
     );
-
-  const worldStoryIds =
-    new Set(
-      worldStories.map(
-        (story) => story.id
-      )
-    );
-
-  const reservedIds =
-    new Set<string>(
-      reservedStoryIds
-    );
-
-  const fallbackStories =
-    latestStories.filter(
-      (story) =>
-        !worldStoryIds.has(
-          story.id
-        ) &&
-        !reservedIds.has(
-          story.id
-        )
-    );
-
-  let fallbackIndex = 0;
-  let worldIndex = 0;
 
   function claim(
     source: StorySource | null | undefined
@@ -127,107 +103,55 @@ export function buildLeadNewsGridPlan({
     return source;
   }
 
-  function takeFallback(): StorySource | null {
-    while (
-      fallbackIndex <
-      fallbackStories.length
-    ) {
-      const story =
-        claim(
-          fallbackStories[
-            fallbackIndex
-          ]
-        );
-
-      fallbackIndex += 1;
-
-      if (story) {
-        return story;
-      }
-    }
-
-    return null;
-  }
-
-  function takeWorld(): StorySource | null {
-    while (
-      worldIndex <
-      worldStories.length
-    ) {
-      const candidate =
-        worldStories[
-          worldIndex
-        ];
-
-      worldIndex += 1;
-
-      if (
-        reservedIds.has(
-          candidate.id
-        )
-      ) {
-        continue;
-      }
-
-      const story =
-        claim(candidate);
-
-      if (story) {
-        return story;
-      }
-    }
-
-    return null;
-  }
-
-  function preferred(
-    source: StorySource | null | undefined
-  ) {
-    return claim(source) ??
-      takeFallback();
-  }
-
   const mainStory =
-    preferred(lead);
+    claim(lead);
 
   const moreTopFeature =
-    preferred(topLeft);
+    claim(topLeft);
 
   const moreTopText =
     [0, 1, 2].map(
       (position) =>
-        preferred(
+        claim(
           secondary[position]
         )
     );
 
   const featuredSupport = [
-    preferred(topRight),
-    takeFallback(),
+    claim(topRight),
+    claim(leadSupport[0]),
   ];
 
-  const moreCoverage =
+  const plannedMoreCoverage =
     [0, 1, 2].map(
-      () => takeFallback()
+      (position) =>
+        claim(
+          moreCoverage[position]
+        )
     );
 
   const highlightsStory =
-    takeFallback();
+    claim(highlight);
 
   const plannedWorldStories =
-    [takeWorld(), takeWorld()].filter(
+    [0, 1]
+      .map((position) =>
+        claim(world[position])
+      )
+      .filter(
       (
         story
       ): story is StorySource =>
         story !== null
-    );
+      );
 
   return {
     mainStory,
     moreTopFeature,
     moreTopText,
     featuredSupport,
-    moreCoverage,
+    moreCoverage:
+      plannedMoreCoverage,
     highlightsStory,
     worldStories:
       plannedWorldStories,
@@ -1227,13 +1151,6 @@ function WorldCoverage({
   locale: Locale;
   stories: StorySource[];
 }) {
-  if (
-    stories.length ===
-    0
-  ) {
-    return null;
-  }
-
   return (
     <div
       className="
@@ -1275,21 +1192,44 @@ function WorldCoverage({
         </h3>
       </div>
 
-      <WorldStory
-        locale={locale}
-        source={
-          stories[0] ??
-          null
-        }
-      />
+      {stories.length > 0 ? (
+        <>
+          <WorldStory
+            locale={locale}
+            source={
+              stories[0] ??
+              null
+            }
+          />
 
-      <WorldStory
-        locale={locale}
-        source={
-          stories[1] ??
-          null
-        }
-      />
+          <WorldStory
+            locale={locale}
+            source={
+              stories[1] ??
+              null
+            }
+          />
+        </>
+      ) : (
+        <div
+          className="
+            rounded-lg
+            border
+            border-dashed
+            border-border
+            bg-surface-muted/35
+            px-4
+            py-5
+            text-sm
+            leading-5
+            text-muted-foreground
+          "
+        >
+          {locale === 'es'
+            ? 'Selecciona historias de Mundo en el editor de portada.'
+            : 'Select World stories in the front-page editor.'}
+        </div>
+      )}
     </div>
   );
 }

@@ -67,7 +67,7 @@ interface HomePageProps {
 
   latestStories: FrontPageStoryOption[];
 
-  worldStories: FrontPageStoryOption[];
+  worldStories?: FrontPageStoryOption[];
 
   acrossTheIslands: {
     sanAndres: HomeStory[];
@@ -353,9 +353,6 @@ export function HomePage({
   locale,
   placements,
   breakingNews,
-  latestStories,
-  worldStories,
-  acrossTheIslands,
 }: HomePageProps) {
   const uniqueBreakingNews =
     breakingNews.filter(
@@ -411,39 +408,6 @@ export function HomePage({
         )
     );
 
-  const leadPlacementIds =
-    new Set(
-      [
-        rawLead,
-        rawTopLeft,
-        rawTopRight,
-        ...rawSecondary,
-      ]
-        .filter(
-          (
-            placement
-          ): placement is HomepagePlacement =>
-            placement !== null
-        )
-        .map(
-          (placement) =>
-            placement.story.id
-        )
-    );
-
-  const reservedStoryIds =
-    placements
-      .filter(
-        (placement) =>
-          !leadPlacementIds.has(
-            placement.story.id
-          )
-      )
-      .map(
-        (placement) =>
-          placement.story.id
-      );
-
   const leadNewsPlan =
     buildLeadNewsGridPlan({
       lead: rawLead,
@@ -451,11 +415,37 @@ export function HomePage({
       topRight: rawTopRight,
       secondary:
         rawSecondary,
-      latestStories,
-      worldStories,
+      leadSupport: [
+        getPlacement(
+          placements,
+          'lead_support'
+        ),
+      ],
+      moreCoverage:
+        [0, 1, 2].map(
+          (position) =>
+            getPlacement(
+              placements,
+              'more_coverage',
+              position
+            )
+        ),
+      highlight:
+        getPlacement(
+          placements,
+          'highlight'
+        ),
+      world:
+        [0, 1].map(
+          (position) =>
+            getPlacement(
+              placements,
+              'world',
+              position
+            )
+        ),
       excludedStoryIds:
         breakingStoryIds,
-      reservedStoryIds,
     });
 
   const usedStoryIds =
@@ -485,37 +475,6 @@ export function HomePage({
     );
 
     return placement;
-  }
-
-  function claimStories<T extends { id: string }>(
-    stories: T[],
-    limit?: number
-  ) {
-    const claimed: T[] = [];
-
-    for (const story of stories) {
-      if (
-        usedStoryIds.has(
-          story.id
-        )
-      ) {
-        continue;
-      }
-
-      usedStoryIds.add(
-        story.id
-      );
-      claimed.push(story);
-
-      if (
-        limit !== undefined &&
-        claimed.length >= limit
-      ) {
-        break;
-      }
-    }
-
-    return claimed;
   }
 
   const editorsPicks =
@@ -570,27 +529,65 @@ export function HomePage({
       );
 
   const latestNewsStories =
-    claimStories(
-      latestStories,
-      8
-    );
+    [0, 1, 2, 3, 4, 5, 6, 7]
+      .map((position) =>
+        claimPlacement(
+          getPlacement(
+            placements,
+            'latest_news',
+            position
+          )
+        )
+      )
+      .filter(
+        (
+          placement
+        ): placement is HomepagePlacement =>
+          placement !== null
+      )
+      .map(
+        (placement) =>
+          placement.story
+      );
+
+  const islandStories =
+    [
+      ...Array.from(
+        { length: 12 },
+        (_, position) =>
+          claimPlacement(
+            getPlacement(
+              placements,
+              'island_feature',
+              position
+            )
+          )
+      ),
+    ];
+
+  function islandSlice(
+    start: number
+  ) {
+    return islandStories
+      .slice(start, start + 4)
+      .filter(
+        (
+          placement
+        ): placement is HomepagePlacement =>
+          placement !== null
+      )
+      .map(
+        (placement) => ({
+          ...placement.story,
+          summary: null,
+        })
+      );
+  }
 
   const uniqueAcrossTheIslands = {
-    sanAndres:
-      claimStories(
-        acrossTheIslands.sanAndres,
-        4
-      ),
-    oldProvidence:
-      claimStories(
-        acrossTheIslands.oldProvidence,
-        4
-      ),
-    saintCatalina:
-      claimStories(
-        acrossTheIslands.saintCatalina,
-        4
-      ),
+    sanAndres: islandSlice(0),
+    oldProvidence: islandSlice(4),
+    saintCatalina: islandSlice(8),
   };
 
   return (
@@ -874,7 +871,7 @@ export function HomePage({
 
       {/* ======================================================= */}
       {/* ACROSS THE ISLANDS */}
-      {/* Temporary until island feeds are connected */}
+      {/* Manually curated island story positions */}
       {/* ======================================================= */}
 
       <AcrossTheIslands
