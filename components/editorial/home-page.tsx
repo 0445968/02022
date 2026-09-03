@@ -61,41 +61,57 @@ interface HomePageProps {
   dict: Dictionary;
   locale: Locale;
 
-  placements: HomepagePlacement[];
+  placements:
+    HomepagePlacement[];
 
-  breakingNews: BreakingNewsItem[];
+  breakingNews:
+    BreakingNewsItem[];
 
-  latestStories: FrontPageStoryOption[];
+  latestStories:
+    FrontPageStoryOption[];
 
-  worldStories?: FrontPageStoryOption[];
+  worldStories?:
+    FrontPageStoryOption[];
 
   acrossTheIslands: {
-    sanAndres: HomeStory[];
-    oldProvidence: HomeStory[];
-    saintCatalina: HomeStory[];
+    sanAndres:
+      HomeStory[];
+
+    oldProvidence:
+      HomeStory[];
+
+    saintCatalina:
+      HomeStory[];
   };
 }
 
 function getPlacement(
-  placements: HomepagePlacement[],
-  slot: HomepagePlacement['slot'],
+  placements:
+    HomepagePlacement[],
+  slot:
+    HomepagePlacement['slot'],
   position = 0
 ) {
   return (
     placements.find(
       (placement) =>
-        placement.slot === slot &&
-        placement.position === position
-    ) ?? null
+        placement.slot ===
+          slot &&
+        placement.position ===
+          position
+    ) ??
+    null
   );
 }
 
 function getCategoryName(
   locale: Locale,
-  placement: HomepagePlacement
+  placement:
+    HomepagePlacement
 ) {
   const category =
-    placement.story.primaryCategory;
+    placement.story
+      .primaryCategory;
 
   if (!category) {
     return null;
@@ -110,11 +126,13 @@ function StoryImage({
   placement,
   className = '',
 }: {
-  placement: HomepagePlacement;
+  placement:
+    HomepagePlacement;
   className?: string;
 }) {
   const image =
-    placement.story.featuredImage;
+    placement.story
+      .featuredImage;
 
   if (!image) {
     return (
@@ -139,13 +157,18 @@ function StoryImage({
       `}
     >
       <Image
-        src={image.url}
+        src={
+          image.url
+        }
         alt={
           image.altText ||
-          placement.story.headline
+          placement.story
+            .headline
         }
         fill
-        className="object-cover"
+        className="
+          object-cover
+        "
         sizes="
           (max-width: 768px) 100vw,
           (max-width: 1280px) 50vw,
@@ -161,7 +184,9 @@ function EditorsPickStory({
   placement,
 }: {
   locale: Locale;
-  placement: HomepagePlacement | null;
+  placement:
+    | HomepagePlacement
+    | null;
 }) {
   if (!placement) {
     return (
@@ -203,7 +228,9 @@ function EditorsPickStory({
       "
     >
       <StoryImage
-        placement={placement}
+        placement={
+          placement
+        }
         className="
           mb-3
           aspect-[16/10]
@@ -237,7 +264,8 @@ function EditorsPickStory({
         "
       >
         {
-          placement.story.headline
+          placement.story
+            .headline
         }
       </h3>
     </article>
@@ -250,7 +278,9 @@ function FeaturedStory({
   label,
 }: {
   locale: Locale;
-  placement: HomepagePlacement | null;
+  placement:
+    | HomepagePlacement
+    | null;
   label: string;
 }) {
   return (
@@ -279,7 +309,9 @@ function FeaturedStory({
       {placement ? (
         <article className="group">
           <StoryImage
-            placement={placement}
+            placement={
+              placement
+            }
             className="
               aspect-[16/9]
               w-full
@@ -320,7 +352,8 @@ function FeaturedStory({
               "
             >
               {
-                placement.story.headline
+                placement.story
+                  .headline
               }
             </h3>
           </div>
@@ -356,7 +389,11 @@ export function HomePage({
 }: HomePageProps) {
   const uniqueBreakingNews =
     breakingNews.filter(
-      (item, index, items) =>
+      (
+        item,
+        index,
+        items
+      ) =>
         !item.storyId ||
         items.findIndex(
           (candidate) =>
@@ -399,7 +436,15 @@ export function HomePage({
     );
 
   const rawSecondary =
-    [0, 1, 2].map(
+    [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+    ].map(
       (position) =>
         getPlacement(
           placements,
@@ -409,57 +454,80 @@ export function HomePage({
     );
 
   const leadNewsPlan =
-    buildLeadNewsGridPlan({
-      lead: rawLead,
-      topLeft: rawTopLeft,
-      topRight: rawTopRight,
-      secondary:
-        rawSecondary,
-      leadSupport: [
-        getPlacement(
-          placements,
-          'lead_support'
-        ),
-      ],
-      moreCoverage:
-        [0, 1, 2].map(
-          (position) =>
-            getPlacement(
-              placements,
-              'more_coverage',
-              position
-            )
-        ),
-      highlight:
-        getPlacement(
-          placements,
-          'highlight'
-        ),
-      world:
-        [0, 1].map(
-          (position) =>
-            getPlacement(
-              placements,
-              'world',
-              position
-            )
-        ),
-      excludedStoryIds:
-        breakingStoryIds,
-    });
+    buildLeadNewsGridPlan(
+      {
+        lead:
+          rawLead,
+
+        topLeft:
+          rawTopLeft,
+
+        topRight:
+          rawTopRight,
+
+        secondary:
+          rawSecondary,
+
+        leadSupport: [
+          getPlacement(
+            placements,
+            'lead_support'
+          ),
+        ],
+
+        moreCoverage:
+          [
+            0,
+            1,
+            2,
+          ].map(
+            (position) =>
+              getPlacement(
+                placements,
+                'more_coverage',
+                position
+              )
+          ),
+
+        highlight:
+          getPlacement(
+            placements,
+            'highlight'
+          ),
+
+        world:
+          [
+            0,
+            1,
+          ].map(
+            (position) =>
+              getPlacement(
+                placements,
+                'world',
+                position
+              )
+          ),
+
+        excludedStoryIds:
+          breakingStoryIds,
+      }
+    );
 
   const usedStoryIds =
     new Set([
       ...Array.from(
         breakingStoryIds
       ),
+
       ...getLeadNewsGridStoryIds(
         leadNewsPlan
       ),
     ]);
 
   function claimPlacement(
-    placement: HomepagePlacement | null
+    placement:
+      | HomepagePlacement
+      | null
   ) {
     if (
       !placement ||
@@ -478,7 +546,11 @@ export function HomePage({
   }
 
   const editorsPicks =
-    [0, 1, 2].map(
+    [
+      0,
+      1,
+      2,
+    ].map(
       (position) =>
         claimPlacement(
           getPlacement(
@@ -491,17 +563,19 @@ export function HomePage({
 
   const latestFeature =
     claimPlacement(
-    getPlacement(
-      placements,
-      'latest_feature'
-    ));
+      getPlacement(
+        placements,
+        'latest_feature'
+      )
+    );
 
   const videoFeature =
     claimPlacement(
-    getPlacement(
-      placements,
-      'video_feature'
-    ));
+      getPlacement(
+        placements,
+        'video_feature'
+      )
+    );
 
   const sectionFeatures =
     placements
@@ -511,7 +585,10 @@ export function HomePage({
           'section_feature'
       )
       .sort(
-        (a, b) =>
+        (
+          a,
+          b
+        ) =>
           a.position -
           b.position
       )
@@ -525,25 +602,37 @@ export function HomePage({
         (
           placement
         ): placement is HomepagePlacement =>
-          placement !== null
+          placement !==
+          null
       );
 
   const latestNewsStories =
-    [0, 1, 2, 3, 4, 5, 6, 7]
-      .map((position) =>
-        claimPlacement(
-          getPlacement(
-            placements,
-            'latest_news',
-            position
+    [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+    ]
+      .map(
+        (position) =>
+          claimPlacement(
+            getPlacement(
+              placements,
+              'latest_news',
+              position
+            )
           )
-        )
       )
       .filter(
         (
           placement
         ): placement is HomepagePlacement =>
-          placement !== null
+          placement !==
+          null
       )
       .map(
         (placement) =>
@@ -553,8 +642,14 @@ export function HomePage({
   const islandStories =
     [
       ...Array.from(
-        { length: 12 },
-        (_, position) =>
+        {
+          length:
+            12,
+        },
+        (
+          _,
+          position
+        ) =>
           claimPlacement(
             getPlacement(
               placements,
@@ -569,37 +664,56 @@ export function HomePage({
     start: number
   ) {
     return islandStories
-      .slice(start, start + 4)
+      .slice(
+        start,
+        start + 4
+      )
       .filter(
         (
           placement
         ): placement is HomepagePlacement =>
-          placement !== null
+          placement !==
+          null
       )
       .map(
-        (placement) => ({
+        (
+          placement
+        ) => ({
           ...placement.story,
-          summary: null,
+          summary:
+            null,
         })
       );
   }
 
-  const uniqueAcrossTheIslands = {
-    sanAndres: islandSlice(0),
-    oldProvidence: islandSlice(4),
-    saintCatalina: islandSlice(8),
-  };
+  const uniqueAcrossTheIslands =
+    {
+      sanAndres:
+        islandSlice(
+          0
+        ),
+
+      oldProvidence:
+        islandSlice(
+          4
+        ),
+
+      saintCatalina:
+        islandSlice(
+          8
+        ),
+    };
 
   return (
     <div className="bg-white">
-      
-
       {/* ======================================================= */}
       {/* BREAKING NEWS */}
       {/* ======================================================= */}
 
       <BreakingNewsBar
-        locale={locale}
+        locale={
+          locale
+        }
         items={
           uniqueBreakingNews
         }
@@ -610,8 +724,12 @@ export function HomePage({
       {/* ======================================================= */}
 
       <LeadNewsGrid
-        locale={locale}
-        plan={leadNewsPlan}
+        locale={
+          locale
+        }
+        plan={
+          leadNewsPlan
+        }
       />
 
       {/* ======================================================= */}
@@ -619,7 +737,9 @@ export function HomePage({
       {/* ======================================================= */}
 
       <LatestNewsRail
-        locale={locale}
+        locale={
+          locale
+        }
         stories={
           latestNewsStories
         }
@@ -686,8 +806,12 @@ export function HomePage({
                 index
               ) => (
                 <EditorsPickStory
-                  key={index}
-                  locale={locale}
+                  key={
+                    index
+                  }
+                  locale={
+                    locale
+                  }
                   placement={
                     placement
                   }
@@ -699,51 +823,63 @@ export function HomePage({
       </section>
 
       <PodcastBlock
-  locale={locale}
-/>
+        locale={
+          locale
+        }
+      />
 
       {/* ======================================================= */}
-{/* FEATURED CONTENT */}
-{/* ======================================================= */}
+      {/* FEATURED CONTENT */}
+      {/* ======================================================= */}
 
-<section
-  className="
-    border-b
-    border-border
-    bg-white
-  "
->
-  <div
-    className="
-      container-wide
-      py-7
-      lg:py-8
-    "
-  >
-    <FeaturedStory
-      locale={locale}
-      placement={latestFeature}
-      label={
-        locale === 'es'
-          ? 'Destacado'
-          : 'Featured'
-      }
-    />
-  </div>
-</section>
+      <section
+        className="
+          border-b
+          border-border
+          bg-white
+        "
+      >
+        <div
+          className="
+            container-wide
+            py-7
+            lg:py-8
+          "
+        >
+          <FeaturedStory
+            locale={
+              locale
+            }
+            placement={
+              latestFeature
+            }
+            label={
+              locale === 'es'
+                ? 'Destacado'
+                : 'Featured'
+            }
+          />
+        </div>
+      </section>
 
-{/* ======================================================= */}
-{/* WATCH + LIVE */}
-{/* ======================================================= */}
+      {/* ======================================================= */}
+      {/* WATCH + LIVE */}
+      {/* ======================================================= */}
 
-<WatchLiveBlock
-  locale={locale}
-  feature={videoFeature}
-/>
+      <WatchLiveBlock
+        locale={
+          locale
+        }
+        feature={
+          videoFeature
+        }
+      />
 
-<ShortsBlock
-  locale={locale}
-/>
+      <ShortsBlock
+        locale={
+          locale
+        }
+      />
 
       {/* ======================================================= */}
       {/* SECTION FEATURES */}
@@ -856,7 +992,8 @@ export function HomePage({
                         "
                       >
                         {
-                          placement.story
+                          placement
+                            .story
                             .headline
                         }
                       </h3>
@@ -875,27 +1012,32 @@ export function HomePage({
       {/* ======================================================= */}
 
       <AcrossTheIslands
-  locale={locale}
-  sanAndres={
-    uniqueAcrossTheIslands.sanAndres
-  }
-  oldProvidence={
-    uniqueAcrossTheIslands.oldProvidence
-  }
-  saintCatalina={
-    uniqueAcrossTheIslands.saintCatalina
-  }
-/>
+        locale={
+          locale
+        }
+        sanAndres={
+          uniqueAcrossTheIslands
+            .sanAndres
+        }
+        oldProvidence={
+          uniqueAcrossTheIslands
+            .oldProvidence
+        }
+        saintCatalina={
+          uniqueAcrossTheIslands
+            .saintCatalina
+        }
+      />
 
       {/* ======================================================= */}
       {/* LISTEN / RADIO */}
       {/* ======================================================= */}
 
       <RadioBlock
-  locale={locale}
-/>
-
-
+        locale={
+          locale
+        }
+      />
     </div>
   );
 }

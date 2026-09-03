@@ -22,6 +22,10 @@ import type {
   Locale,
 } from '@/types';
 
+import {
+  CompleteOverflowList,
+} from './CompleteOverflowList';
+
 interface LeadNewsGridProps {
   locale: Locale;
   plan: LeadNewsGridPlan;
@@ -32,25 +36,76 @@ type StorySource =
   | FrontPageStoryOption;
 
 export interface LeadNewsGridPlan {
-  mainStory: StorySource | null;
-  moreTopFeature: StorySource | null;
-  moreTopText: Array<StorySource | null>;
-  featuredSupport: Array<StorySource | null>;
-  moreCoverage: Array<StorySource | null>;
-  highlightsStory: StorySource | null;
-  worldStories: StorySource[];
+  mainStory:
+    | StorySource
+    | null;
+
+  moreTopFeature:
+    | StorySource
+    | null;
+
+  moreTopText:
+    Array<
+      StorySource | null
+    >;
+
+  featuredSupport:
+    Array<
+      StorySource | null
+    >;
+
+  moreCoverage:
+    Array<
+      StorySource | null
+    >;
+
+  highlightsStory:
+    | StorySource
+    | null;
+
+  worldStories:
+    StorySource[];
 }
 
 interface BuildLeadNewsGridPlanInput {
-  lead: HomepagePlacement | null;
-  topLeft: HomepagePlacement | null;
-  topRight: HomepagePlacement | null;
-  secondary: Array<HomepagePlacement | null>;
-  leadSupport?: Array<HomepagePlacement | null>;
-  moreCoverage?: Array<HomepagePlacement | null>;
-  highlight?: HomepagePlacement | null;
-  world?: Array<HomepagePlacement | null>;
-  excludedStoryIds?: Iterable<string>;
+  lead:
+    | HomepagePlacement
+    | null;
+
+  topLeft:
+    | HomepagePlacement
+    | null;
+
+  topRight:
+    | HomepagePlacement
+    | null;
+
+  secondary:
+    Array<
+      HomepagePlacement | null
+    >;
+
+  leadSupport?:
+    Array<
+      HomepagePlacement | null
+    >;
+
+  moreCoverage?:
+    Array<
+      HomepagePlacement | null
+    >;
+
+  highlight?:
+    | HomepagePlacement
+    | null;
+
+  world?:
+    Array<
+      HomepagePlacement | null
+    >;
+
+  excludedStoryIds?:
+    Iterable<string>;
 }
 
 /* ========================================================= */
@@ -86,63 +141,112 @@ export function buildLeadNewsGridPlan({
     );
 
   function claim(
-    source: StorySource | null | undefined
+    source:
+      | StorySource
+      | null
+      | undefined
   ): StorySource | null {
     if (!source) {
       return null;
     }
 
     const id =
-      getStory(source).id;
+      getStory(
+        source
+      ).id;
 
-    if (usedStoryIds.has(id)) {
+    if (
+      usedStoryIds.has(
+        id
+      )
+    ) {
       return null;
     }
 
-    usedStoryIds.add(id);
+    usedStoryIds.add(
+      id
+    );
+
     return source;
   }
 
   const mainStory =
-    claim(lead);
+    claim(
+      lead
+    );
 
   const moreTopFeature =
-    claim(topLeft);
+    claim(
+      topLeft
+    );
 
   const moreTopText =
-    [0, 1, 2].map(
+    [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+    ].map(
       (position) =>
         claim(
-          secondary[position]
+          secondary[
+            position
+          ]
         )
     );
 
-  const featuredSupport = [
-    claim(topRight),
-    claim(leadSupport[0]),
-  ];
+  const featuredSupport =
+    [
+      claim(
+        topRight
+      ),
+
+      claim(
+        leadSupport[0]
+      ),
+    ];
 
   const plannedMoreCoverage =
-    [0, 1, 2].map(
+    [
+      0,
+      1,
+      2,
+    ].map(
       (position) =>
         claim(
-          moreCoverage[position]
+          moreCoverage[
+            position
+          ]
         )
     );
 
   const highlightsStory =
-    claim(highlight);
+    claim(
+      highlight
+    );
 
   const plannedWorldStories =
-    [0, 1]
-      .map((position) =>
-        claim(world[position])
+    [
+      0,
+      1,
+    ]
+      .map(
+        (position) =>
+          claim(
+            world[
+              position
+            ]
+          )
       )
       .filter(
-      (
-        story
-      ): story is StorySource =>
-        story !== null
+        (
+          story
+        ): story is StorySource =>
+          story !==
+          null
       );
 
   return {
@@ -150,16 +254,20 @@ export function buildLeadNewsGridPlan({
     moreTopFeature,
     moreTopText,
     featuredSupport,
+
     moreCoverage:
       plannedMoreCoverage,
+
     highlightsStory,
+
     worldStories:
       plannedWorldStories,
   };
 }
 
 export function getLeadNewsGridStoryIds(
-  plan: LeadNewsGridPlan
+  plan:
+    LeadNewsGridPlan
 ) {
   return [
     plan.mainStory,
@@ -174,11 +282,14 @@ export function getLeadNewsGridStoryIds(
       (
         source
       ): source is StorySource =>
-        source !== null
+        source !==
+        null
     )
     .map(
       (source) =>
-        getStory(source).id
+        getStory(
+          source
+        ).id
     );
 }
 
@@ -187,7 +298,9 @@ function getArticleHref(
   source: StorySource
 ) {
   const story =
-    getStory(source);
+    getStory(
+      source
+    );
 
   return localizedPath(
     locale,
@@ -200,7 +313,9 @@ function getCategory(
   source: StorySource
 ) {
   const story =
-    getStory(source);
+    getStory(
+      source
+    );
 
   const category =
     story.primaryCategory;
@@ -216,14 +331,18 @@ function getCategory(
 
 function formatPublishedDate(
   locale: Locale,
-  value: string | null
+  value:
+    | string
+    | null
 ) {
   if (!value) {
     return null;
   }
 
   const date =
-    new Date(value);
+    new Date(
+      value
+    );
 
   if (
     Number.isNaN(
@@ -233,15 +352,22 @@ function formatPublishedDate(
     return null;
   }
 
-  return new Intl.DateTimeFormat(
-    locale === 'es'
-      ? 'es-CO'
-      : 'en-US',
-    {
-      month: 'short',
-      day: 'numeric',
-    }
-  ).format(date);
+  return new Intl
+    .DateTimeFormat(
+      locale === 'es'
+        ? 'es-CO'
+        : 'en-US',
+      {
+        month:
+          'short',
+
+        day:
+          'numeric',
+      }
+    )
+    .format(
+      date
+    );
 }
 
 /* ========================================================= */
@@ -251,7 +377,8 @@ function formatPublishedDate(
 function SectionHeading({
   children,
 }: {
-  children: React.ReactNode;
+  children:
+    React.ReactNode;
 }) {
   return (
     <div
@@ -295,12 +422,19 @@ function StoryImage({
   className = '',
   priority = false,
 }: {
-  source: StorySource;
-  className?: string;
-  priority?: boolean;
+  source:
+    StorySource;
+
+  className?:
+    string;
+
+  priority?:
+    boolean;
 }) {
   const story =
-    getStory(source);
+    getStory(
+      source
+    );
 
   const image =
     story.featuredImage;
@@ -364,11 +498,16 @@ function StoryMeta({
   locale,
   source,
 }: {
-  locale: Locale;
-  source: StorySource;
+  locale:
+    Locale;
+
+  source:
+    StorySource;
 }) {
   const story =
-    getStory(source);
+    getStory(
+      source
+    );
 
   const published =
     formatPublishedDate(
@@ -454,8 +593,11 @@ function EmptySlot({
   locale,
   className = '',
 }: {
-  locale: Locale;
-  className?: string;
+  locale:
+    Locale;
+
+  className?:
+    string;
 }) {
   return (
     <div
@@ -488,28 +630,40 @@ function TopStoryFeature({
   locale,
   source,
 }: {
-  locale: Locale;
-  source: StorySource | null;
+  locale:
+    Locale;
+
+  source:
+    | StorySource
+    | null;
 }) {
   if (!source) {
     return (
       <EmptySlot
-        locale={locale}
-        className="min-h-[220px]"
+        locale={
+          locale
+        }
+        className="
+          min-h-[220px]
+        "
       />
     );
   }
 
   const story =
-    getStory(source);
+    getStory(
+      source
+    );
 
   return (
     <article className="group">
       <Link
-        href={getArticleHref(
-          locale,
-          source
-        )}
+        href={
+          getArticleHref(
+            locale,
+            source
+          )
+        }
         className="
           block
           focus-visible:outline-none
@@ -518,7 +672,9 @@ function TopStoryFeature({
         "
       >
         <StoryImage
-          source={source}
+          source={
+            source
+          }
           className="
             aspect-[16/10]
             w-full
@@ -536,9 +692,7 @@ function TopStoryFeature({
             text-black
           "
         >
-          {
-            story.headline
-          }
+          {story.headline}
         </h3>
       </Link>
     </article>
@@ -549,15 +703,21 @@ function TopStoryHeadline({
   locale,
   source,
 }: {
-  locale: Locale;
-  source: StorySource | null;
+  locale:
+    Locale;
+
+  source:
+    | StorySource
+    | null;
 }) {
   if (!source) {
     return null;
   }
 
   const story =
-    getStory(source);
+    getStory(
+      source
+    );
 
   return (
     <article
@@ -568,10 +728,12 @@ function TopStoryHeadline({
       "
     >
       <Link
-        href={getArticleHref(
-          locale,
-          source
-        )}
+        href={
+          getArticleHref(
+            locale,
+            source
+          )
+        }
         className="
           group
           block
@@ -593,9 +755,7 @@ function TopStoryHeadline({
             group-hover:opacity-65
           "
         >
-          {
-            story.headline
-          }
+          {story.headline}
         </h3>
       </Link>
     </article>
@@ -610,28 +770,40 @@ function MainStory({
   locale,
   source,
 }: {
-  locale: Locale;
-  source: StorySource | null;
+  locale:
+    Locale;
+
+  source:
+    | StorySource
+    | null;
 }) {
   if (!source) {
     return (
       <EmptySlot
-        locale={locale}
-        className="min-h-[400px]"
+        locale={
+          locale
+        }
+        className="
+          min-h-[400px]
+        "
       />
     );
   }
 
   const story =
-    getStory(source);
+    getStory(
+      source
+    );
 
   return (
     <article className="group">
       <Link
-        href={getArticleHref(
-          locale,
-          source
-        )}
+        href={
+          getArticleHref(
+            locale,
+            source
+          )
+        }
         className="
           block
           focus-visible:outline-none
@@ -640,12 +812,18 @@ function MainStory({
         "
       >
         <StoryMeta
-          locale={locale}
-          source={source}
+          locale={
+            locale
+          }
+          source={
+            source
+          }
         />
 
         <StoryImage
-          source={source}
+          source={
+            source
+          }
           priority
           className="
             mt-3
@@ -654,22 +832,20 @@ function MainStory({
           "
         />
 
-<h1
-  className="
-    mt-4
-    font-headline
-    text-[1.65rem]
-    font-bold
-    leading-[1.09]
-    tracking-[-0.03em]
-    text-black
-    sm:text-[1.95rem]
-    xl:text-[2.2rem]
-  "
->
-          {
-            story.headline
-          }
+        <h1
+          className="
+            mt-4
+            font-headline
+            text-[1.65rem]
+            font-bold
+            leading-[1.09]
+            tracking-[-0.03em]
+            text-black
+            sm:text-[1.95rem]
+            xl:text-[2.2rem]
+          "
+        >
+          {story.headline}
         </h1>
       </Link>
     </article>
@@ -684,15 +860,21 @@ function SmallSupportingHeadline({
   locale,
   source,
 }: {
-  locale: Locale;
-  source: StorySource | null;
+  locale:
+    Locale;
+
+  source:
+    | StorySource
+    | null;
 }) {
   if (!source) {
     return null;
   }
 
   const story =
-    getStory(source);
+    getStory(
+      source
+    );
 
   return (
     <article
@@ -703,10 +885,12 @@ function SmallSupportingHeadline({
       "
     >
       <Link
-        href={getArticleHref(
-          locale,
-          source
-        )}
+        href={
+          getArticleHref(
+            locale,
+            source
+          )
+        }
         className="
           group
           block
@@ -727,9 +911,7 @@ function SmallSupportingHeadline({
             sm:text-[15px]
           "
         >
-          {
-            story.headline
-          }
+          {story.headline}
         </h3>
       </Link>
     </article>
@@ -744,28 +926,40 @@ function MiniStory({
   locale,
   source,
 }: {
-  locale: Locale;
-  source: StorySource | null;
+  locale:
+    Locale;
+
+  source:
+    | StorySource
+    | null;
 }) {
   if (!source) {
     return (
       <EmptySlot
-        locale={locale}
-        className="min-h-[180px]"
+        locale={
+          locale
+        }
+        className="
+          min-h-[180px]
+        "
       />
     );
   }
 
   const story =
-    getStory(source);
+    getStory(
+      source
+    );
 
   return (
     <article className="group">
       <Link
-        href={getArticleHref(
-          locale,
-          source
-        )}
+        href={
+          getArticleHref(
+            locale,
+            source
+          )
+        }
         className="
           block
           focus-visible:outline-none
@@ -774,7 +968,9 @@ function MiniStory({
         "
       >
         <StoryImage
-          source={source}
+          source={
+            source
+          }
           className="
             aspect-[16/10]
             w-full
@@ -792,9 +988,7 @@ function MiniStory({
             text-black
           "
         >
-          {
-            story.headline
-          }
+          {story.headline}
         </h3>
       </Link>
     </article>
@@ -809,28 +1003,40 @@ function TodaysHighlights({
   locale,
   source,
 }: {
-  locale: Locale;
-  source: StorySource | null;
+  locale:
+    Locale;
+
+  source:
+    | StorySource
+    | null;
 }) {
   if (!source) {
     return (
       <EmptySlot
-        locale={locale}
-        className="min-h-[250px]"
+        locale={
+          locale
+        }
+        className="
+          min-h-[250px]
+        "
       />
     );
   }
 
   const story =
-    getStory(source);
+    getStory(
+      source
+    );
 
   return (
     <article className="group">
       <Link
-        href={getArticleHref(
-          locale,
-          source
-        )}
+        href={
+          getArticleHref(
+            locale,
+            source
+          )
+        }
         className="
           block
           focus-visible:outline-none
@@ -838,13 +1044,11 @@ function TodaysHighlights({
           focus-visible:ring-primary
         "
       >
-        <div
-          className="
-            relative
-          "
-        >
+        <div className="relative">
           <StoryImage
-            source={source}
+            source={
+              source
+            }
             className="
               aspect-video
               w-full
@@ -915,9 +1119,7 @@ function TodaysHighlights({
               text-black
             "
           >
-            {
-              story.headline
-            }
+            {story.headline}
           </h3>
         </div>
       </Link>
@@ -932,7 +1134,8 @@ function TodaysHighlights({
 function LatestPodcast({
   locale,
 }: {
-  locale: Locale;
+  locale:
+    Locale;
 }) {
   return (
     <div
@@ -998,14 +1201,17 @@ function LatestPodcast({
           text-white/60
         "
       >
-        Clear Talks with Peter Bent
+        Clear Talks with
+        Peter Bent
       </p>
 
       <Link
-        href={localizedPath(
-          locale,
-          '/podcasts'
-        )}
+        href={
+          localizedPath(
+            locale,
+            '/podcasts'
+          )
+        }
         className="
           mt-5
           inline-flex
@@ -1057,15 +1263,21 @@ function WorldStory({
   locale,
   source,
 }: {
-  locale: Locale;
-  source: StorySource | null;
+  locale:
+    Locale;
+
+  source:
+    | StorySource
+    | null;
 }) {
   if (!source) {
     return null;
   }
 
   const story =
-    getStory(source);
+    getStory(
+      source
+    );
 
   return (
     <article
@@ -1078,10 +1290,12 @@ function WorldStory({
       "
     >
       <Link
-        href={getArticleHref(
-          locale,
-          source
-        )}
+        href={
+          getArticleHref(
+            locale,
+            source
+          )
+        }
         className="
           group
           grid
@@ -1093,7 +1307,9 @@ function WorldStory({
         "
       >
         <StoryImage
-          source={source}
+          source={
+            source
+          }
           className="
             aspect-[4/3]
             w-full
@@ -1113,9 +1329,7 @@ function WorldStory({
               group-hover:opacity-65
             "
           >
-            {
-              story.headline
-            }
+            {story.headline}
           </h3>
 
           {getCategory(
@@ -1148,8 +1362,11 @@ function WorldCoverage({
   locale,
   stories,
 }: {
-  locale: Locale;
-  stories: StorySource[];
+  locale:
+    Locale;
+
+  stories:
+    StorySource[];
 }) {
   return (
     <div
@@ -1192,10 +1409,13 @@ function WorldCoverage({
         </h3>
       </div>
 
-      {stories.length > 0 ? (
+      {stories.length >
+      0 ? (
         <>
           <WorldStory
-            locale={locale}
+            locale={
+              locale
+            }
             source={
               stories[0] ??
               null
@@ -1203,7 +1423,9 @@ function WorldCoverage({
           />
 
           <WorldStory
-            locale={locale}
+            locale={
+              locale
+            }
             source={
               stories[1] ??
               null
@@ -1279,44 +1501,54 @@ export function LeadNewsGrid({
 
           <aside
             className="
+              relative
               min-w-0
               xl:border-r
               xl:border-border
               xl:pr-6
             "
           >
-            
+            <div
+              className="
+                xl:absolute
+                xl:inset-y-0
+                xl:left-0
+                xl:right-6
+              "
+            >
+              <CompleteOverflowList>
+                <TopStoryFeature
+                  locale={
+                    locale
+                  }
+                  source={
+                    moreTopFeature
+                  }
+                />
 
-            <TopStoryFeature
-              locale={locale}
-              source={
-                moreTopFeature
-              }
-            />
-
-            <div className="mt-4">
-              {moreTopText.map(
-                (
-                  story,
-                  index
-                ) => (
-                  <TopStoryHeadline
-                    key={
-                      story
-                        ? getStory(
-                            story
-                          ).id
-                        : `top-story-${index}`
-                    }
-                    locale={
-                      locale
-                    }
-                    source={
-                      story
-                    }
-                  />
-                )
-              )}
+                {moreTopText.map(
+                  (
+                    story,
+                    index
+                  ) => (
+                    <TopStoryHeadline
+                      key={
+                        story
+                          ? getStory(
+                              story
+                            ).id
+                          : `top-story-${index}`
+                      }
+                      locale={
+                        locale
+                      }
+                      source={
+                        story
+                      }
+                    />
+                  )
+                )}
+              </CompleteOverflowList>
             </div>
           </aside>
 
@@ -1332,27 +1564,36 @@ export function LeadNewsGrid({
               xl:pr-7
             "
           >
-
             <MainStory
-              locale={locale}
-              source={mainStory}
+              locale={
+                locale
+              }
+              source={
+                mainStory
+              }
             />
-
-            {/* Smaller headlines below main headline */}
 
             <div className="mt-4">
               <SmallSupportingHeadline
-                locale={locale}
-                  source={
-                  featuredSupport[0] ??
+                locale={
+                  locale
+                }
+                source={
+                  featuredSupport[
+                    0
+                  ] ??
                   null
                 }
               />
 
               <SmallSupportingHeadline
-                locale={locale}
-                  source={
-                  featuredSupport[1] ??
+                locale={
+                  locale
+                }
+                source={
+                  featuredSupport[
+                    1
+                  ] ??
                   null
                 }
               />
@@ -1363,8 +1604,6 @@ export function LeadNewsGrid({
             {/* ================================================= */}
 
             <div className="mt-5">
-              
-
               <div
                 className="
                   grid
@@ -1377,7 +1616,9 @@ export function LeadNewsGrid({
                     locale
                   }
                   source={
-                    moreCoverage[0] ??
+                    moreCoverage[
+                      0
+                    ] ??
                     null
                   }
                 />
@@ -1387,7 +1628,9 @@ export function LeadNewsGrid({
                     locale
                   }
                   source={
-                    moreCoverage[1] ??
+                    moreCoverage[
+                      1
+                    ] ??
                     null
                   }
                 />
@@ -1397,7 +1640,9 @@ export function LeadNewsGrid({
                     locale
                   }
                   source={
-                    moreCoverage[2] ??
+                    moreCoverage[
+                      2
+                    ] ??
                     null
                   }
                 />
@@ -1409,15 +1654,11 @@ export function LeadNewsGrid({
           {/* RIGHT — HIGHLIGHTS + PODCAST + WORLD */}
           {/* ================================================= */}
 
-          <aside
-            className="
-              min-w-0
-            "
-          >
-           
-
+          <aside className="min-w-0">
             <TodaysHighlights
-              locale={locale}
+              locale={
+                locale
+              }
               source={
                 highlightsStory
               }
