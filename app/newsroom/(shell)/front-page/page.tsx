@@ -1,11 +1,15 @@
 import { getCurrentUser } from '@/lib/auth/session';
 import { defaultLocale } from '@/lib/i18n/config';
+import { getDictionary } from '@/lib/i18n/dictionaries';
+
+import { getAcrossTheIslands } from '@/lib/services/home';
 
 import { getCategories } from '@/lib/services/taxonomy';
 
 import {
   getBreakingNews,
   getFrontPageStoryOptions,
+  getPublishedStoriesByCategory,
   getHomepageSlots,
 } from '@/lib/services/front-page';
 
@@ -18,16 +22,26 @@ export default async function FrontPagePage() {
     user?.profile?.preferredLocale ??
     defaultLocale;
 
+  const dict =
+    getDictionary(locale);
+
   const [
     placements,
     breakingNews,
     stories,
+    worldStories,
     categories,
+    acrossTheIslands,
   ] = await Promise.all([
     getHomepageSlots(),
     getBreakingNews(),
     getFrontPageStoryOptions(),
+    getPublishedStoriesByCategory(
+      'world',
+      12
+    ),
     getCategories(),
+    getAcrossTheIslands(),
   ]);
 
   return (
@@ -94,6 +108,7 @@ export default async function FrontPagePage() {
       </div>
 
       <FrontPageEditor
+        dict={dict}
         locale={locale}
         userId={
           user?.id ?? null
@@ -105,8 +120,14 @@ export default async function FrontPagePage() {
           breakingNews
         }
         stories={stories}
+        worldStories={
+          worldStories
+        }
         categories={
           categories
+        }
+        acrossTheIslands={
+          acrossTheIslands
         }
       />
     </div>

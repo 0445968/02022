@@ -393,6 +393,47 @@ function mapBreakingNews(
   };
 }
 
+async function assertStoryHasNoOtherActivePlacement(
+  storyId: string,
+  targetSlot: HomepageSlotType,
+  targetPosition: number
+): Promise<void> {
+  const supabase =
+    await getDataClient();
+
+  const { data, error } =
+    await supabase
+      .from('homepage_slots')
+      .select('id, slot, position')
+      .eq('story_id', storyId)
+      .eq('active', true);
+
+  if (error) {
+    throw new Error(
+      `Unable to validate homepage placement: ${error.message}`
+    );
+  }
+
+  const conflictingPlacement =
+    (data ?? []).find((row) => {
+      const placement = row as {
+        slot: HomepageSlotType;
+        position: number;
+      };
+
+      return !(
+        placement.slot === targetSlot &&
+        placement.position === targetPosition
+      );
+    });
+
+  if (conflictingPlacement) {
+    throw new Error(
+      'This story is already assigned elsewhere on the homepage. Remove its existing placement before assigning it again.'
+    );
+  }
+}
+
 /**
  * Returns every homepage placement visible to the current
  * database role.
@@ -578,6 +619,12 @@ export async function setHomepageSlot(
 > {
   const supabase =
     await getDataClient();
+
+  await assertStoryHasNoOtherActivePlacement(
+    input.storyId,
+    input.slot,
+    input.position ?? 0
+  );
 
   const {
     data,
@@ -881,6 +928,12 @@ export async function replaceHomepageSlot(
   const position =
     input.position ?? 0;
 
+  await assertStoryHasNoOtherActivePlacement(
+    input.storyId,
+    input.slot,
+    position
+  );
+
   const {
     error: deleteError,
   } = await supabase
@@ -1052,6 +1105,106 @@ export async function getFrontPageStoryOptions(
   return (
     (data ?? []) as unknown as
       RawStory[]
+  ).map(mapStory);
+}
+
+/**
+ * Returns recent published stories assigned to a category either as their
+ * primary category or through the additional story-category relation.
+ */
+export async function getPublishedStoriesByCategory(
+  categorySlug: string,
+  limit = 12
+): Promise<FrontPageStoryOption[]> {
+  const supabase =
+    await getDataClient();
+
+  const {
+    data: category,
+    error: categoryError,
+  } = await supabase
+    .from('categories')
+    .select('id')
+    .eq('slug', categorySlug)
+    .eq('active', true)
+    .maybeSingle();
+
+  if (categoryError) {
+    throw new Error(
+      `Unable to load the ${categorySlug} category: ${categoryError.message}`
+    );
+  }
+
+  if (!category) {
+    return [];
+  }
+
+  const categoryId =
+    (category as { id: string }).id;
+
+  const {
+    data: relatedRows,
+    error: relatedError,
+  } = await supabase
+    .from('story_categories')
+    .select('story_id')
+    .eq('category_id', categoryId);
+
+  if (relatedError) {
+    throw new Error(
+      `Unable to load ${categorySlug} story relationships: ${relatedError.message}`
+    );
+  }
+
+  const relatedStoryIds =
+    (relatedRows ?? []).map(
+      (row) =>
+        (row as { story_id: string }).story_id
+    );
+
+  let query = supabase
+    .from('stories')
+    .select(`
+      id,
+      slug,
+      headline,
+      language,
+      published_at,
+      primary_category:categories!stories_primary_category_id_fkey (
+        id,
+        slug,
+        name_en,
+        name_es
+      ),
+      featured_image:media_assets!stories_featured_image_id_fkey (
+        id,
+        url,
+        alt_text
+      )
+    `)
+    .eq('status', 'published')
+    .not('published_at', 'is', null)
+    .lte('published_at', new Date().toISOString())
+    .order('published_at', { ascending: false })
+    .limit(limit);
+
+  query = relatedStoryIds.length > 0
+    ? query.or(
+        `primary_category_id.eq.${categoryId},id.in.(${relatedStoryIds.join(',')})`
+      )
+    : query.eq('primary_category_id', categoryId);
+
+  const { data, error } =
+    await query;
+
+  if (error) {
+    throw new Error(
+      `Unable to load ${categorySlug} stories: ${error.message}`
+    );
+  }
+
+  return (
+    (data ?? []) as unknown as RawStory[]
   ).map(mapStory);
 }
 

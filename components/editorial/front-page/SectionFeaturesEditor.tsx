@@ -22,6 +22,8 @@ interface SectionFeaturesEditorProps {
   userId: string | null;
 
   onChanged?: () => void;
+
+  excludedStoryIds?: string[];
 }
 
 export function SectionFeaturesEditor({
@@ -31,6 +33,7 @@ export function SectionFeaturesEditor({
   placements,
   userId,
   onChanged,
+  excludedStoryIds = [],
 }: SectionFeaturesEditorProps) {
   const visibleCategories =
     useMemo(
@@ -159,6 +162,9 @@ export function SectionFeaturesEditor({
               }
               stories={
                 stories
+              }
+              excludedStoryIds={
+                excludedStoryIds
               }
               placement={
                 placement

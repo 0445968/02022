@@ -12,6 +12,7 @@ import {
 
 import {
   getFrontPageStoryOptions,
+  getPublishedStoriesByCategory,
   getPublicBreakingNews,
   getPublicHomepageSlots,
 } from '@/lib/services/front-page';
@@ -39,6 +40,7 @@ export default async function Page({
     placements,
     breakingNews,
     latestStories,
+    worldStories,
     acrossTheIslands,
   ] = await Promise.all([
     getPublicHomepageSlots(),
@@ -47,7 +49,12 @@ export default async function Page({
 
     getFrontPageStoryOptions(
       undefined,
-      20
+      60
+    ),
+
+    getPublishedStoriesByCategory(
+      'world',
+      12
     ),
 
     getAcrossTheIslands(),
@@ -65,6 +72,9 @@ export default async function Page({
       }
       latestStories={
         latestStories
+      }
+      worldStories={
+        worldStories
       }
       acrossTheIslands={
         acrossTheIslands
