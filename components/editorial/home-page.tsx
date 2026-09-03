@@ -28,6 +28,8 @@ import {
 } from './home/BreakingNewsBar';
 
 import {
+  buildLeadNewsGridPlan,
+  getLeadNewsGridStoryIds,
   LeadNewsGrid,
 } from './home/LeadNewsGrid';
 
@@ -64,6 +66,8 @@ interface HomePageProps {
   breakingNews: BreakingNewsItem[];
 
   latestStories: FrontPageStoryOption[];
+
+  worldStories: FrontPageStoryOption[];
 
   acrossTheIslands: {
     sanAndres: HomeStory[];
@@ -350,27 +354,54 @@ export function HomePage({
   placements,
   breakingNews,
   latestStories,
+  worldStories,
   acrossTheIslands,
 }: HomePageProps) {
-  const lead =
+  const uniqueBreakingNews =
+    breakingNews.filter(
+      (item, index, items) =>
+        !item.storyId ||
+        items.findIndex(
+          (candidate) =>
+            candidate.storyId ===
+            item.storyId
+        ) === index
+    );
+
+  const breakingStoryIds =
+    new Set(
+      uniqueBreakingNews
+        .map(
+          (item) =>
+            item.storyId
+        )
+        .filter(
+          (
+            id
+          ): id is string =>
+            Boolean(id)
+        )
+    );
+
+  const rawLead =
     getPlacement(
       placements,
       'lead'
     );
 
-  const topLeft =
+  const rawTopLeft =
     getPlacement(
       placements,
       'top_left'
     );
 
-  const topRight =
+  const rawTopRight =
     getPlacement(
       placements,
       'top_right'
     );
 
-  const secondary =
+  const rawSecondary =
     [0, 1, 2].map(
       (position) =>
         getPlacement(
@@ -380,27 +411,138 @@ export function HomePage({
         )
     );
 
+  const leadPlacementIds =
+    new Set(
+      [
+        rawLead,
+        rawTopLeft,
+        rawTopRight,
+        ...rawSecondary,
+      ]
+        .filter(
+          (
+            placement
+          ): placement is HomepagePlacement =>
+            placement !== null
+        )
+        .map(
+          (placement) =>
+            placement.story.id
+        )
+    );
+
+  const reservedStoryIds =
+    placements
+      .filter(
+        (placement) =>
+          !leadPlacementIds.has(
+            placement.story.id
+          )
+      )
+      .map(
+        (placement) =>
+          placement.story.id
+      );
+
+  const leadNewsPlan =
+    buildLeadNewsGridPlan({
+      lead: rawLead,
+      topLeft: rawTopLeft,
+      topRight: rawTopRight,
+      secondary:
+        rawSecondary,
+      latestStories,
+      worldStories,
+      excludedStoryIds:
+        breakingStoryIds,
+      reservedStoryIds,
+    });
+
+  const usedStoryIds =
+    new Set([
+      ...Array.from(
+        breakingStoryIds
+      ),
+      ...getLeadNewsGridStoryIds(
+        leadNewsPlan
+      ),
+    ]);
+
+  function claimPlacement(
+    placement: HomepagePlacement | null
+  ) {
+    if (
+      !placement ||
+      usedStoryIds.has(
+        placement.story.id
+      )
+    ) {
+      return null;
+    }
+
+    usedStoryIds.add(
+      placement.story.id
+    );
+
+    return placement;
+  }
+
+  function claimStories<T extends { id: string }>(
+    stories: T[],
+    limit?: number
+  ) {
+    const claimed: T[] = [];
+
+    for (const story of stories) {
+      if (
+        usedStoryIds.has(
+          story.id
+        )
+      ) {
+        continue;
+      }
+
+      usedStoryIds.add(
+        story.id
+      );
+      claimed.push(story);
+
+      if (
+        limit !== undefined &&
+        claimed.length >= limit
+      ) {
+        break;
+      }
+    }
+
+    return claimed;
+  }
+
   const editorsPicks =
     [0, 1, 2].map(
       (position) =>
-        getPlacement(
-          placements,
-          'editors_pick',
-          position
+        claimPlacement(
+          getPlacement(
+            placements,
+            'editors_pick',
+            position
+          )
         )
     );
 
   const latestFeature =
+    claimPlacement(
     getPlacement(
       placements,
       'latest_feature'
-    );
+    ));
 
   const videoFeature =
+    claimPlacement(
     getPlacement(
       placements,
       'video_feature'
-    );
+    ));
 
   const sectionFeatures =
     placements
@@ -413,7 +555,43 @@ export function HomePage({
         (a, b) =>
           a.position -
           b.position
+      )
+      .map(
+        (placement) =>
+          claimPlacement(
+            placement
+          )
+      )
+      .filter(
+        (
+          placement
+        ): placement is HomepagePlacement =>
+          placement !== null
       );
+
+  const latestNewsStories =
+    claimStories(
+      latestStories,
+      8
+    );
+
+  const uniqueAcrossTheIslands = {
+    sanAndres:
+      claimStories(
+        acrossTheIslands.sanAndres,
+        4
+      ),
+    oldProvidence:
+      claimStories(
+        acrossTheIslands.oldProvidence,
+        4
+      ),
+    saintCatalina:
+      claimStories(
+        acrossTheIslands.saintCatalina,
+        4
+      ),
+  };
 
   return (
     <div className="bg-white">
@@ -425,7 +603,9 @@ export function HomePage({
 
       <BreakingNewsBar
         locale={locale}
-        items={breakingNews}
+        items={
+          uniqueBreakingNews
+        }
       />
 
       {/* ======================================================= */}
@@ -433,14 +613,9 @@ export function HomePage({
       {/* ======================================================= */}
 
       <LeadNewsGrid
-  locale={locale}
-  lead={lead}
-  topLeft={topLeft}
-  topRight={topRight}
-  secondary={secondary}
-  videoFeature={videoFeature}
-  latestStories={latestStories}
-/>
+        locale={locale}
+        plan={leadNewsPlan}
+      />
 
       {/* ======================================================= */}
       {/* LATEST NEWS */}
@@ -448,7 +623,9 @@ export function HomePage({
 
       <LatestNewsRail
         locale={locale}
-        stories={latestStories}
+        stories={
+          latestNewsStories
+        }
         limit={8}
       />
 
@@ -703,13 +880,13 @@ export function HomePage({
       <AcrossTheIslands
   locale={locale}
   sanAndres={
-    acrossTheIslands.sanAndres
+    uniqueAcrossTheIslands.sanAndres
   }
   oldProvidence={
-    acrossTheIslands.oldProvidence
+    uniqueAcrossTheIslands.oldProvidence
   }
   saintCatalina={
-    acrossTheIslands.saintCatalina
+    uniqueAcrossTheIslands.saintCatalina
   }
 />
 

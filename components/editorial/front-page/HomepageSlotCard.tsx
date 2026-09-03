@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 
 import {
+  useEffect,
   useState,
 } from 'react';
 
@@ -39,6 +40,8 @@ interface HomepageSlotCardProps {
 
   stories: FrontPageStoryOption[];
 
+  excludedStoryIds?: string[];
+
   placement?: HomepagePlacement | null;
 
   position?: number;
@@ -56,6 +59,7 @@ export function HomepageSlotCard({
   label,
   description,
   stories,
+  excludedStoryIds = [],
   placement = null,
   position = 0,
   categoryId = null,
@@ -86,6 +90,12 @@ export function HomepageSlotCard({
   ] = useState<
     string | null
   >(null);
+
+  useEffect(() => {
+    setCurrentPlacement(
+      placement
+    );
+  }, [placement]);
 
   async function handleSelect(
     story: FrontPageStoryOption
@@ -242,8 +252,10 @@ export function HomepageSlotCard({
         className="
           flex
           h-full
+          min-w-0
           min-h-[150px]
           flex-col
+          overflow-hidden
           rounded-xl
           border
           border-border
@@ -259,7 +271,7 @@ export function HomepageSlotCard({
             gap-4
           "
         >
-          <div>
+          <div className="min-w-0">
             <p
               className="
                 text-[10px]
@@ -339,17 +351,21 @@ export function HomepageSlotCard({
             <div
               className="
                 flex
+                min-w-0
+                flex-col
                 gap-3
+                sm:flex-row
               "
             >
               <div
                 className="
                   h-[74px]
-                  w-[108px]
+                  w-full
                   shrink-0
                   overflow-hidden
                   rounded-lg
                   bg-surface-muted
+                  sm:w-24
                 "
               >
                 {currentPlacement
@@ -671,7 +687,16 @@ export function HomepageSlotCard({
       <StoryPicker
         open={pickerOpen}
         locale={locale}
-        stories={stories}
+        stories={
+          stories.filter(
+            (story) =>
+              story.id ===
+                currentPlacement?.story.id ||
+              !excludedStoryIds.includes(
+                story.id
+              )
+          )
+        }
         selectedStoryId={
           currentPlacement
             ?.story.id ??

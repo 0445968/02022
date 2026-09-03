@@ -48,10 +48,16 @@ export type HomepageSlotType =
   | 'top_left'
   | 'top_right'
   | 'secondary'
+  | 'lead_support'
+  | 'more_coverage'
+  | 'highlight'
+  | 'world'
+  | 'latest_news'
   | 'editors_pick'
   | 'latest_feature'
   | 'section_feature'
-  | 'video_feature';
+  | 'video_feature'
+  | 'island_feature';
 
 export type CommentStatus =
   | 'pending'

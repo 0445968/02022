@@ -17,12 +17,26 @@ import type {
   Locale,
 } from '@/types';
 
+type IslandDisplayStory =
+  Pick<
+    HomeStory,
+    | 'id'
+    | 'slug'
+    | 'headline'
+    | 'language'
+    | 'publishedAt'
+    | 'primaryCategory'
+    | 'featuredImage'
+  > & {
+    summary?: string | null;
+  };
+
 interface AcrossTheIslandsProps {
   locale: Locale;
 
-  sanAndres: HomeStory[];
-  oldProvidence: HomeStory[];
-  saintCatalina: HomeStory[];
+  sanAndres: IslandDisplayStory[];
+  oldProvidence: IslandDisplayStory[];
+  saintCatalina: IslandDisplayStory[];
 }
 
 interface IslandColumnProps {
@@ -31,12 +45,12 @@ interface IslandColumnProps {
   title: string;
   href: string;
 
-  stories: HomeStory[];
+  stories: IslandDisplayStory[];
 }
 
 function getCategoryName(
   locale: Locale,
-  story: HomeStory
+  story: IslandDisplayStory
 ) {
   if (
     !story.primaryCategory
@@ -52,7 +66,7 @@ function getCategoryName(
 function StoryImage({
   story,
 }: {
-  story: HomeStory;
+  story: IslandDisplayStory;
 }) {
   if (
     !story.featuredImage
@@ -111,7 +125,7 @@ function IslandLeadStory({
   story,
 }: {
   locale: Locale;
-  story: HomeStory;
+  story: IslandDisplayStory;
 }) {
   const category =
     getCategoryName(
@@ -201,7 +215,7 @@ function IslandTextStory({
   story,
 }: {
   locale: Locale;
-  story: HomeStory;
+  story: IslandDisplayStory;
 }) {
   const category =
     getCategoryName(

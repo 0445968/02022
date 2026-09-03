@@ -24,26 +24,33 @@ import type {
 
 interface LeadNewsGridProps {
   locale: Locale;
-
-  lead: HomepagePlacement | null;
-
-  topLeft: HomepagePlacement | null;
-  topRight: HomepagePlacement | null;
-
-  secondary: Array<
-    HomepagePlacement | null
-  >;
-
-  videoFeature:
-    | HomepagePlacement
-    | null;
-
-    latestStories?: FrontPageStoryOption[];
+  plan: LeadNewsGridPlan;
 }
 
 type StorySource =
   | HomepagePlacement
   | FrontPageStoryOption;
+
+export interface LeadNewsGridPlan {
+  mainStory: StorySource | null;
+  moreTopFeature: StorySource | null;
+  moreTopText: Array<StorySource | null>;
+  featuredSupport: Array<StorySource | null>;
+  moreCoverage: Array<StorySource | null>;
+  highlightsStory: StorySource | null;
+  worldStories: StorySource[];
+}
+
+interface BuildLeadNewsGridPlanInput {
+  lead: HomepagePlacement | null;
+  topLeft: HomepagePlacement | null;
+  topRight: HomepagePlacement | null;
+  secondary: Array<HomepagePlacement | null>;
+  latestStories: FrontPageStoryOption[];
+  worldStories: FrontPageStoryOption[];
+  excludedStoryIds?: Iterable<string>;
+  reservedStoryIds?: Iterable<string>;
+}
 
 /* ========================================================= */
 /* HELPERS */
@@ -59,6 +66,196 @@ function getStory(
   }
 
   return source;
+}
+
+export function buildLeadNewsGridPlan({
+  lead,
+  topLeft,
+  topRight,
+  secondary,
+  latestStories,
+  worldStories,
+  excludedStoryIds = [],
+  reservedStoryIds = [],
+}: BuildLeadNewsGridPlanInput): LeadNewsGridPlan {
+  const usedStoryIds =
+    new Set<string>(
+      excludedStoryIds
+    );
+
+  const worldStoryIds =
+    new Set(
+      worldStories.map(
+        (story) => story.id
+      )
+    );
+
+  const reservedIds =
+    new Set<string>(
+      reservedStoryIds
+    );
+
+  const fallbackStories =
+    latestStories.filter(
+      (story) =>
+        !worldStoryIds.has(
+          story.id
+        ) &&
+        !reservedIds.has(
+          story.id
+        )
+    );
+
+  let fallbackIndex = 0;
+  let worldIndex = 0;
+
+  function claim(
+    source: StorySource | null | undefined
+  ): StorySource | null {
+    if (!source) {
+      return null;
+    }
+
+    const id =
+      getStory(source).id;
+
+    if (usedStoryIds.has(id)) {
+      return null;
+    }
+
+    usedStoryIds.add(id);
+    return source;
+  }
+
+  function takeFallback(): StorySource | null {
+    while (
+      fallbackIndex <
+      fallbackStories.length
+    ) {
+      const story =
+        claim(
+          fallbackStories[
+            fallbackIndex
+          ]
+        );
+
+      fallbackIndex += 1;
+
+      if (story) {
+        return story;
+      }
+    }
+
+    return null;
+  }
+
+  function takeWorld(): StorySource | null {
+    while (
+      worldIndex <
+      worldStories.length
+    ) {
+      const candidate =
+        worldStories[
+          worldIndex
+        ];
+
+      worldIndex += 1;
+
+      if (
+        reservedIds.has(
+          candidate.id
+        )
+      ) {
+        continue;
+      }
+
+      const story =
+        claim(candidate);
+
+      if (story) {
+        return story;
+      }
+    }
+
+    return null;
+  }
+
+  function preferred(
+    source: StorySource | null | undefined
+  ) {
+    return claim(source) ??
+      takeFallback();
+  }
+
+  const mainStory =
+    preferred(lead);
+
+  const moreTopFeature =
+    preferred(topLeft);
+
+  const moreTopText =
+    [0, 1, 2].map(
+      (position) =>
+        preferred(
+          secondary[position]
+        )
+    );
+
+  const featuredSupport = [
+    preferred(topRight),
+    takeFallback(),
+  ];
+
+  const moreCoverage =
+    [0, 1, 2].map(
+      () => takeFallback()
+    );
+
+  const highlightsStory =
+    takeFallback();
+
+  const plannedWorldStories =
+    [takeWorld(), takeWorld()].filter(
+      (
+        story
+      ): story is StorySource =>
+        story !== null
+    );
+
+  return {
+    mainStory,
+    moreTopFeature,
+    moreTopText,
+    featuredSupport,
+    moreCoverage,
+    highlightsStory,
+    worldStories:
+      plannedWorldStories,
+  };
+}
+
+export function getLeadNewsGridStoryIds(
+  plan: LeadNewsGridPlan
+) {
+  return [
+    plan.mainStory,
+    plan.moreTopFeature,
+    ...plan.moreTopText,
+    ...plan.featuredSupport,
+    ...plan.moreCoverage,
+    plan.highlightsStory,
+    ...plan.worldStories,
+  ]
+    .filter(
+      (
+        source
+      ): source is StorySource =>
+        source !== null
+    )
+    .map(
+      (source) =>
+        getStory(source).id
+    );
 }
 
 function getArticleHref(
@@ -487,12 +684,12 @@ function TopStoryHeadline({
 
 function MainStory({
   locale,
-  placement,
+  source,
 }: {
   locale: Locale;
-  placement: HomepagePlacement | null;
+  source: StorySource | null;
 }) {
-  if (!placement) {
+  if (!source) {
     return (
       <EmptySlot
         locale={locale}
@@ -501,12 +698,15 @@ function MainStory({
     );
   }
 
+  const story =
+    getStory(source);
+
   return (
     <article className="group">
       <Link
         href={getArticleHref(
           locale,
-          placement
+          source
         )}
         className="
           block
@@ -517,11 +717,11 @@ function MainStory({
       >
         <StoryMeta
           locale={locale}
-          source={placement}
+          source={source}
         />
 
         <StoryImage
-          source={placement}
+          source={source}
           priority
           className="
             mt-3
@@ -544,8 +744,7 @@ function MainStory({
   "
 >
           {
-            placement.story
-              .headline
+            story.headline
           }
         </h1>
       </Link>
@@ -1100,164 +1299,18 @@ function WorldCoverage({
 /* ========================================================= */
 
 export function LeadNewsGrid({
-    locale,
-    lead,
-    topLeft,
-    topRight,
-    secondary,
-    videoFeature,
-    latestStories = [],
-  }: LeadNewsGridProps) {
-  const secondaryOne =
-    secondary[0] ??
-    null;
-
-  const secondaryTwo =
-    secondary[1] ??
-    null;
-
-  const secondaryThree =
-    secondary[2] ??
-    null;
-
-  /* ======================================================= */
-  /* BUILD FALLBACK POOL */
-  /* ======================================================= */
-
-  const curatedStoryIds =
-    new Set(
-      [
-        lead,
-        topLeft,
-        topRight,
-        secondaryOne,
-        secondaryTwo,
-        secondaryThree,
-        videoFeature,
-      ]
-        .filter(
-          (
-            placement
-          ): placement is HomepagePlacement =>
-            Boolean(placement)
-        )
-        .map(
-          (
-            placement
-          ) =>
-            placement.story.id
-        )
-    );
-
-  const fallbackStories =
-    latestStories.filter(
-      (
-        story
-      ) =>
-        !curatedStoryIds.has(
-          story.id
-        )
-    );
-
-  /* ======================================================= */
-  /* MORE TOP STORIES */
-  /* ======================================================= */
-
-  const moreTopFeature:
-    StorySource | null =
-      topLeft ??
-      fallbackStories[0] ??
-      null;
-
-  const moreTopText: Array<
-    StorySource | null
-  > = [
-    secondaryOne ??
-      fallbackStories[1] ??
-      null,
-
-    secondaryTwo ??
-      fallbackStories[2] ??
-      null,
-
-    secondaryThree ??
-      fallbackStories[3] ??
-      null,
-  ];
-
-  /* ======================================================= */
-  /* FEATURED SUPPORTING HEADLINES */
-  /* ======================================================= */
-
-  const featuredSupportOne:
-    StorySource | null =
-      topRight ??
-      fallbackStories[4] ??
-      fallbackStories[0] ??
-      null;
-
-  const featuredSupportTwo:
-    StorySource | null =
-      fallbackStories[5] ??
-      fallbackStories[6] ??
-      fallbackStories[1] ??
-      null;
-
-  /* ======================================================= */
-  /* MORE COVERAGE */
-  /* ======================================================= */
-
-  const moreCoverageOne:
-    StorySource | null =
-      topLeft ??
-      fallbackStories[7] ??
-      fallbackStories[2] ??
-      null;
-
-  const moreCoverageTwo:
-    StorySource | null =
-      secondaryTwo ??
-      fallbackStories[8] ??
-      fallbackStories[3] ??
-      null;
-
-  const moreCoverageThree:
-    StorySource | null =
-      secondaryThree ??
-      fallbackStories[9] ??
-      fallbackStories[4] ??
-      null;
-
-  /* ======================================================= */
-  /* TODAY'S HIGHLIGHTS */
-  /* ======================================================= */
-
-  const highlightsStory:
-    StorySource | null =
-      videoFeature ??
-      fallbackStories[10] ??
-      fallbackStories[0] ??
-      null;
-
-  /* ======================================================= */
-  /* WORLD COVERAGE */
-  /* ======================================================= */
-
-  const worldStories =
-    [
-      fallbackStories[11] ??
-        fallbackStories[5] ??
-        null,
-
-      fallbackStories[12] ??
-        fallbackStories[6] ??
-        null,
-    ].filter(
-      (
-        story
-      ): story is StorySource =>
-        Boolean(story)
-    );
+  locale,
+  plan,
+}: LeadNewsGridProps) {
+  const {
+    mainStory,
+    moreTopFeature,
+    moreTopText,
+    featuredSupport,
+    moreCoverage,
+    highlightsStory,
+    worldStories,
+  } = plan;
 
   return (
     <section
@@ -1342,7 +1395,7 @@ export function LeadNewsGrid({
 
             <MainStory
               locale={locale}
-              placement={lead}
+              source={mainStory}
             />
 
             {/* Smaller headlines below main headline */}
@@ -1350,15 +1403,17 @@ export function LeadNewsGrid({
             <div className="mt-4">
               <SmallSupportingHeadline
                 locale={locale}
-                source={
-                  featuredSupportOne
+                  source={
+                  featuredSupport[0] ??
+                  null
                 }
               />
 
               <SmallSupportingHeadline
                 locale={locale}
-                source={
-                  featuredSupportTwo
+                  source={
+                  featuredSupport[1] ??
+                  null
                 }
               />
             </div>
@@ -1382,7 +1437,8 @@ export function LeadNewsGrid({
                     locale
                   }
                   source={
-                    moreCoverageOne
+                    moreCoverage[0] ??
+                    null
                   }
                 />
 
@@ -1391,7 +1447,8 @@ export function LeadNewsGrid({
                     locale
                   }
                   source={
-                    moreCoverageTwo
+                    moreCoverage[1] ??
+                    null
                   }
                 />
 
@@ -1400,7 +1457,8 @@ export function LeadNewsGrid({
                     locale
                   }
                   source={
-                    moreCoverageThree
+                    moreCoverage[2] ??
+                    null
                   }
                 />
               </div>

@@ -15,10 +15,16 @@ const VALID_SLOTS: HomepageSlotType[] = [
   'top_left',
   'top_right',
   'secondary',
+  'lead_support',
+  'more_coverage',
+  'highlight',
+  'world',
+  'latest_news',
   'editors_pick',
   'latest_feature',
   'section_feature',
   'video_feature',
+  'island_feature',
 ];
 
 interface CreatePlacementBody {
@@ -243,16 +249,29 @@ export async function POST(
       error
     );
 
+    const message =
+      error instanceof Error
+        ? error.message
+        : 'Unable to save homepage placement.';
+
+    const isConflict =
+      message.includes(
+        'already assigned elsewhere'
+      ) ||
+      message.includes(
+        'homepage_slots_unique_active_story_idx'
+      );
+
     return NextResponse.json(
       {
-        error:
-          error instanceof
-          Error
-            ? error.message
-            : 'Unable to save homepage placement.',
+        error: isConflict
+          ? 'This story already appears elsewhere on the homepage.'
+          : message,
       },
       {
-        status: 500,
+        status: isConflict
+          ? 409
+          : 500,
       }
     );
   }
