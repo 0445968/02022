@@ -1,6 +1,9 @@
 import { createServerClient } from '@supabase/ssr';
+import type { SupabaseClient } from '@supabase/supabase-js';
 import { isDevAuthBypass } from '@/lib/db/supabase-data';
 import type { Database } from '@/lib/db/database.types';
+
+type DataClient = SupabaseClient<Database>;
 
 /**
  * Centralized data client factory for all server-side services.
@@ -18,7 +21,9 @@ import type { Database } from '@/lib/db/database.types';
  * Uses createServerClient in both paths so the return type is identical
  * — this avoids type-inference mismatches in the service layer.
  */
-export async function getDataClient() {
+export async function getDataClient(): Promise<
+  DataClient
+> {
   if (isDevAuthBypass()) {
     // Cookie-free client: no next/headers import, no session.
     // The no-op cookie handlers mean no auth tokens are read or written.
@@ -32,10 +37,10 @@ export async function getDataClient() {
           remove: () => {},
         },
       }
-    );
+    ) as unknown as DataClient;
   }
 
   // Normal production path: cookie-based client with real session.
   const { createClient } = await import('@/lib/db/supabase-server');
-  return createClient();
+  return createClient() as unknown as DataClient;
 }

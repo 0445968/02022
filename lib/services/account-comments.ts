@@ -104,11 +104,12 @@ async function loadStories(
     AccountCommentStory
   >
 > {
-  const uniqueStoryIds = [
-    ...new Set(
-      storyIds
-    ),
-  ];
+  const uniqueStoryIds =
+    Array.from(
+      new Set(
+        storyIds
+      )
+    );
 
   if (
     uniqueStoryIds.length ===

@@ -130,13 +130,14 @@ async function getPublicProfiles(
     PublicCommentAuthor
   >
 > {
-  const uniqueUserIds = [
-    ...new Set(
-      userIds.filter(
-        Boolean
+  const uniqueUserIds =
+    Array.from(
+      new Set(
+        userIds.filter(
+          Boolean
+        )
       )
-    ),
-  ];
+    );
 
   if (
     uniqueUserIds.length ===

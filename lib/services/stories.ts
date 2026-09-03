@@ -6,6 +6,7 @@ import {
 
 import type {
   AccessLevel,
+  Database,
   IslandScope,
   StoryLanguage,
   StoryStatus,
@@ -817,8 +818,11 @@ const editor:
     seoDescription:
       story.seo_description,
 
-      originallyPublishedAt:
-  story.originally_published_at,
+    originallyPublishedAt:
+      story.originally_published_at,
+
+    publishedAt:
+      story.published_at,
 
     scheduledAt:
       story.scheduled_at,
@@ -1943,11 +1947,7 @@ export async function updateStory(
   const supabase =
     await getDataClient();
 
-  const update:
-    Record<
-      string,
-      unknown
-    > = {
+  const update: Database['public']['Tables']['stories']['Update'] = {
       updated_by:
         input.updatedBy,
     };

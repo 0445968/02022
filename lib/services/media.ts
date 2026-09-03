@@ -1,4 +1,5 @@
 import { getDataClient } from '@/lib/db/supabase-data-access';
+import type { Database } from '@/lib/db/database.types';
 import type { MediaAsset } from '@/types/editorial';
 import { ALLOWED_MIME_TYPES, MAX_FILE_SIZE } from '@/lib/services/media-config';
 
@@ -65,7 +66,7 @@ export async function updateMediaAsset(
   update: { altText?: string; caption?: string | null; credit?: string | null }
 ): Promise<boolean> {
   const supabase = await getDataClient();
-  const updateData: Record<string, unknown> = {};
+  const updateData: Database['public']['Tables']['media_assets']['Update'] = {};
   if (update.altText !== undefined) updateData.alt_text = update.altText;
   if (update.caption !== undefined) updateData.caption = update.caption;
   if (update.credit !== undefined) updateData.credit = update.credit;
@@ -117,5 +118,4 @@ export async function deleteMediaAsset(id: string, storagePath: string): Promise
   const { error } = await supabase.from('media_assets').delete().eq('id', id);
   return !error;
 }
-
 
