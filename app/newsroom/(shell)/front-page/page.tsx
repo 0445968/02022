@@ -1,30 +1,46 @@
-import { getCurrentUser } from '@/lib/auth/session';
-import { defaultLocale } from '@/lib/i18n/config';
-import { getDictionary } from '@/lib/i18n/dictionaries';
+import {
+  getCurrentUser,
+} from '@/lib/auth/session';
+import {
+  defaultLocale,
+} from '@/lib/i18n/config';
+import {
+  getDictionary,
+} from '@/lib/i18n/dictionaries';
 
-import { getAcrossTheIslands } from '@/lib/services/home';
+import {
+  getAcrossTheIslands,
+} from '@/lib/services/home';
 
-import { getCategories } from '@/lib/services/taxonomy';
+import {
+  getCategories,
+} from '@/lib/services/taxonomy';
 
 import {
   getBreakingNews,
   getFrontPageStoryOptions,
-  getPublishedStoriesByCategory,
   getHomepageLayoutDraft,
   getHomepageSlots,
+  getPublishedStoriesByCategory,
 } from '@/lib/services/front-page';
 
-import { FrontPageEditor } from '@/components/editorial/front-page/FrontPageEditor';
+import {
+  FrontPageEditor,
+} from '@/components/editorial/front-page/FrontPageEditor';
 
 export default async function FrontPagePage() {
-  const user = await getCurrentUser();
+  const user =
+    await getCurrentUser();
 
   const locale =
-    user?.profile?.preferredLocale ??
+    user?.profile
+      ?.preferredLocale ??
     defaultLocale;
 
   const dict =
-    getDictionary(locale);
+    getDictionary(
+      locale
+    );
 
   const [
     placements,
@@ -34,85 +50,40 @@ export default async function FrontPagePage() {
     worldStories,
     categories,
     acrossTheIslands,
-  ] = await Promise.all([
-    getHomepageSlots(),
-    getHomepageLayoutDraft(),
-    getBreakingNews(),
-    getFrontPageStoryOptions(),
-    getPublishedStoriesByCategory(
-      'world',
-      100
-    ),
-    getCategories(),
-    getAcrossTheIslands(),
-  ]);
+  ] =
+    await Promise.all([
+      getHomepageSlots(),
+
+      getHomepageLayoutDraft(),
+
+      getBreakingNews(),
+
+      getFrontPageStoryOptions(),
+
+      getPublishedStoriesByCategory(
+        'world',
+        100
+      ),
+
+      getCategories(),
+
+      getAcrossTheIslands(),
+    ]);
 
   return (
     <div
       className="
-        mx-auto
         w-full
-        max-w-7xl
-        px-4
-        py-6
-        sm:px-6
-        lg:px-8
+        min-w-0
       "
     >
-      <div
-        className="
-          border-b
-          border-border
-          pb-5
-        "
-      >
-        <p
-          className="
-            text-xs
-            font-semibold
-            uppercase
-            tracking-[0.18em]
-            text-muted-foreground
-          "
-        >
-          {locale === 'es'
-            ? 'Portada'
-            : 'Front Page'}
-        </p>
-
-        <h1
-          className="
-            mt-2
-            font-headline
-            text-3xl
-            font-bold
-            tracking-tight
-            text-deep
-          "
-        >
-          {locale === 'es'
-            ? 'Editar portada'
-            : 'Edit Front Page'}
-        </h1>
-
-        <p
-          className="
-            mt-2
-            max-w-2xl
-            text-sm
-            leading-6
-            text-muted-foreground
-          "
-        >
-          {locale === 'es'
-            ? 'Elige qué historias aparecen en las posiciones principales de Simply Raizal y administra las alertas de última hora.'
-            : 'Choose which stories appear in Simply Raizal’s main homepage positions and manage breaking-news alerts.'}
-        </p>
-      </div>
-
       <FrontPageEditor
-        dict={dict}
-        locale={locale}
+        dict={
+          dict
+        }
+        locale={
+          locale
+        }
         placements={
           placements
         }
@@ -122,7 +93,9 @@ export default async function FrontPagePage() {
         breakingNews={
           breakingNews
         }
-        stories={stories}
+        stories={
+          stories
+        }
         worldStories={
           worldStories
         }
