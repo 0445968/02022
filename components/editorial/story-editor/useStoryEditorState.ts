@@ -52,12 +52,39 @@ export function useStoryEditorState({
   imageCredit,
   primaryCategoryId,
 }: UseStoryEditorStateOptions) {
+  // ==================================================
+  // Headline
+  // ==================================================
+
   const [
     headline,
     setHeadline,
   ] = useState(
     story.headline
   );
+
+  // ==================================================
+  // Short title
+  // ==================================================
+  //
+  // This is the compact version of the headline.
+  // It will be used later by the story bar below
+  // the main navigation.
+  //
+  // Existing stories may not have one, so we
+  // fall back to an empty string in the editor.
+  // ==================================================
+
+  const [
+    shortTitle,
+    setShortTitle,
+  ] = useState(
+    story.shortTitle ?? ''
+  );
+
+  // ==================================================
+  // Subheadline
+  // ==================================================
 
   const [
     subheadline,
@@ -67,6 +94,10 @@ export function useStoryEditorState({
       ''
   );
 
+  // ==================================================
+  // Summary
+  // ==================================================
+
   const [
     summary,
     setSummary,
@@ -74,6 +105,10 @@ export function useStoryEditorState({
     story.summary ??
       ''
   );
+
+  // ==================================================
+  // Body
+  // ==================================================
 
   const [
     body,
@@ -87,6 +122,10 @@ export function useStoryEditorState({
     story.body
   );
 
+  // ==================================================
+  // Language
+  // ==================================================
+
   const [
     language,
     setLanguage,
@@ -95,6 +134,10 @@ export function useStoryEditorState({
   >(
     story.language
   );
+
+  // ==================================================
+  // Status
+  // ==================================================
 
   const [
     status,
@@ -105,6 +148,10 @@ export function useStoryEditorState({
     story.status
   );
 
+  // ==================================================
+  // Access level
+  // ==================================================
+
   const [
     accessLevel,
     setAccessLevel,
@@ -113,6 +160,10 @@ export function useStoryEditorState({
   >(
     story.accessLevel
   );
+
+  // ==================================================
+  // Author
+  // ==================================================
 
   const [
     authorId,
@@ -124,6 +175,10 @@ export function useStoryEditorState({
       null
   );
 
+  // ==================================================
+  // Editor
+  // ==================================================
+
   const [
     editorId,
     setEditorId,
@@ -134,6 +189,10 @@ export function useStoryEditorState({
       null
   );
 
+  // ==================================================
+  // Island
+  // ==================================================
+
   const [
     island,
     setIsland,
@@ -143,6 +202,10 @@ export function useStoryEditorState({
     story.island
   );
 
+  // ==================================================
+  // SEO title
+  // ==================================================
+
   const [
     seoTitle,
     setSeoTitle,
@@ -150,6 +213,10 @@ export function useStoryEditorState({
     story.seoTitle ??
       ''
   );
+
+  // ==================================================
+  // SEO description
+  // ==================================================
 
   const [
     seoDescription,
@@ -159,12 +226,20 @@ export function useStoryEditorState({
       ''
   );
 
+  // ==================================================
+  // Slug
+  // ==================================================
+
   const [
     slug,
     setSlug,
   ] = useState(
     story.slug
   );
+
+  // ==================================================
+  // Original publication date
+  // ==================================================
 
   const [
     originallyPublishedAt,
@@ -179,8 +254,7 @@ export function useStoryEditorState({
   );
 
   /**
-   * System-controlled actual West Island Times
-   * publication timestamp.
+   * System-controlled actual publication timestamp.
    *
    * We keep it available for display, but do NOT
    * include it in the autosave payload.
@@ -196,6 +270,10 @@ export function useStoryEditorState({
       : ''
   );
 
+  // ==================================================
+  // Scheduled publication date
+  // ==================================================
+
   const [
     scheduledAt,
     setScheduledAt,
@@ -208,12 +286,26 @@ export function useStoryEditorState({
       : ''
   );
 
+  // ==================================================
+  // Save payload
+  // ==================================================
+  //
+  // This is the object that gets sent to your
+  // story autosave / update API.
+  //
+  // shortTitle is converted to null when empty.
+  // ==================================================
+
   const savePayload =
     useMemo<
       StorySavePayload
     >(
       () => ({
         headline,
+
+        shortTitle:
+          shortTitle.trim() ||
+          null,
 
         subheadline:
           subheadline ||
@@ -292,6 +384,7 @@ export function useStoryEditorState({
         selectedCategoryIds,
         seoDescription,
         seoTitle,
+        shortTitle,
         slug,
         status,
         subheadline,
@@ -300,9 +393,16 @@ export function useStoryEditorState({
       ]
     );
 
+  // ==================================================
+  // Exposed editor state
+  // ==================================================
+
   return {
     headline,
     setHeadline,
+
+    shortTitle,
+    setShortTitle,
 
     subheadline,
     setSubheadline,

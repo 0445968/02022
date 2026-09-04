@@ -43,7 +43,7 @@ export type IslandScope =
   | 'former'
   | 'hidden';
 
-export type HomepageSlotType =
+  export type HomepageSlotType =
   | 'lead'
   | 'top_left'
   | 'top_right'
@@ -57,7 +57,8 @@ export type HomepageSlotType =
   | 'latest_feature'
   | 'section_feature'
   | 'video_feature'
-  | 'island_feature';
+  | 'island_feature'
+  | 'headline_bar';
 
 export type Json =
   | string
@@ -450,6 +451,9 @@ export interface Database {
           id: string;
           slug: string;
           headline: string;
+          short_title:
+          | string
+          | null;
           subheadline: string | null;
           summary: string | null;
           body: Record<
@@ -503,6 +507,9 @@ export interface Database {
           id?: string;
           slug: string;
           headline?: string;
+          short_title?:
+          | string
+          | null;
           subheadline?:
             | string
             | null;
@@ -560,7 +567,11 @@ export interface Database {
 
         Update: {
           slug?: string;
-          headline?: string;
+          headline?: string;        
+          short_title?:
+            | string
+            | null;
+        
           subheadline?:
             | string
             | null;

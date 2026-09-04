@@ -71,6 +71,7 @@ export function StorySettingsPanel({
   language,
   status,
   accessLevel,
+  shortTitle,
   authorId,
   editorId,
   primaryCategoryId,
@@ -95,6 +96,7 @@ export function StorySettingsPanel({
   editors,
   setLanguage,
   setAccessLevel,
+  setShortTitle,
   setAuthorId,
   setEditorId,
   setPrimaryCategoryId,
@@ -515,12 +517,85 @@ export function StorySettingsPanel({
         </Field>
       </Section>
 
+            {/* Short title */}
+            <Section
+        title={
+          language === 'es'
+            ? 'Título corto'
+            : 'Short title'
+        }
+      >
+        <Field
+          label={
+            language === 'es'
+              ? 'Título corto'
+              : 'Short title'
+          }
+          hint={
+            language === 'es'
+              ? 'Una versión más corta del titular para barras de noticias y otros espacios compactos.'
+              : 'A shorter version of the headline for story bars and other compact editorial areas.'
+          }
+        >
+          <input
+            type="text"
+            value={shortTitle}
+            onChange={(event) =>
+              setShortTitle(
+                event.target.value
+              )
+            }
+            placeholder={
+              language === 'es'
+                ? 'Escribe un título corto'
+                : 'Enter a short title'
+            }
+            className="
+              h-9
+              w-full
+              rounded-lg
+              border
+              border-border
+              bg-white
+              px-3
+              text-sm
+              text-foreground
+              placeholder:text-muted-foreground/60
+              focus:border-primary
+              focus-visible:outline-none
+              focus-visible:ring-2
+              focus-visible:ring-ring
+            "
+          />
+
+          <div className="mt-1.5 flex items-center justify-between gap-3">
+            <p className="text-[11px] leading-4 text-muted-foreground">
+              {language === 'es'
+                ? 'Si se deja vacío, se utilizará el titular completo.'
+                : 'If empty, the full headline will be used.'}
+            </p>
+
+            <span
+              className={cn(
+                'shrink-0 text-[11px]',
+                shortTitle.length > 60
+                  ? 'font-medium text-breaking'
+                  : 'text-muted-foreground'
+              )}
+            >
+              {shortTitle.length}/60
+            </span>
+          </div>
+        </Field>
+      </Section>
+
       {/* Language */}
       <Section
         title={
           dict.story.language
         }
       >
+
         <div className="flex gap-2">
           {(
             [

@@ -201,6 +201,10 @@ export interface StoryWithRelations {
 
   headline: string;
 
+  shortTitle:
+  | string
+  | null;
+
   subheadline:
     | string
     | null;
@@ -304,6 +308,10 @@ export interface StoryListItem {
 
   headline: string;
 
+  shortTitle:
+  | string
+  | null;
+
   language: StoryLanguage;
 
   status: StoryStatus;
@@ -349,6 +357,10 @@ export interface StoryVersion {
   storyId: string;
 
   headline: string;
+
+  shortTitle:
+  | string
+  | null;
 
   subheadline:
     | string
@@ -546,6 +558,10 @@ export interface PublicStoryListItem {
   slug: string;
 
   headline: string;
+
+  shortTitle:
+  | string
+  | null;
 
   summary:
     | string

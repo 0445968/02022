@@ -223,6 +223,9 @@ export function StoryEditor({
         setHeadline:
           editor.setHeadline,
 
+        setShortTitle:
+          editor.setShortTitle,
+
         setSubheadline:
           editor.setSubheadline,
 
@@ -265,6 +268,7 @@ export function StoryEditor({
       }),
       [
         editor.setHeadline,
+        editor.setShortTitle,
         editor.setSubheadline,
         editor.setSummary,
         editor.setBody,
@@ -499,6 +503,12 @@ export function StoryEditor({
       editor.slug,
 
     slugLocked,
+
+    shortTitle:
+      editor.shortTitle,
+
+    setShortTitle:
+      editor.setShortTitle,
 
     originallyPublishedAt:
       editor

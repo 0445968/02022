@@ -87,6 +87,10 @@ export async function PUT(
   let body: {
     headline?: string;
 
+    shortTitle?:
+      | string
+      | null;
+
     subheadline?:
       | string
       | null;
@@ -224,22 +228,6 @@ export async function PUT(
   // ==================================================
   // Workflow-only status change
   // ==================================================
-  //
-  // This path deliberately skips:
-  //
-  // - headline
-  // - body
-  // - author/editor
-  // - categories
-  // - tags
-  // - featured image
-  // - SEO
-  // - slug
-  // - publication metadata
-  //
-  // It prevents unpublished revision content from being
-  // copied into the live story during workflow actions.
-  // ==================================================
 
   if (
     body.workflowOnly ===
@@ -346,6 +334,9 @@ export async function PUT(
       {
         headline:
           body.headline,
+
+        shortTitle:
+          body.shortTitle,
 
         subheadline:
           body.subheadline,

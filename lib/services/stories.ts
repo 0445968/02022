@@ -38,6 +38,7 @@ const STORY_SELECT = `
   id,
   slug,
   headline,
+  short_title,
   subheadline,
   summary,
   body,
@@ -66,6 +67,11 @@ interface StoryRow {
   id: string;
   slug: string;
   headline: string;
+
+  short_title:
+    | string
+    | null;
+
   subheadline: string | null;
   summary: string | null;
 
@@ -773,6 +779,9 @@ const editor:
     slug:
       story.slug,
 
+    shortTitle:
+      story.short_title,
+
     headline:
       story.headline,
 
@@ -918,6 +927,7 @@ export async function listStories(
           id,
           slug,
           headline,
+          short_title,
           language,
           status,
           access_level,
@@ -1139,6 +1149,12 @@ export async function listStories(
           headline:
             r.headline as string,
 
+          shortTitle:
+            (r.short_title as
+              | string
+              | null) ??
+            null,
+
           language:
             r.language as StoryLanguage,
 
@@ -1218,6 +1234,7 @@ const PUBLIC_STORY_SELECT = `
   id,
   slug,
   headline,
+  short_title,
   summary,
   language,
   island,
@@ -1367,6 +1384,12 @@ async function fetchPublicStories(
 
           headline:
             r.headline as string,
+
+          shortTitle:
+            (r.short_title as
+              | string
+              | null) ??
+            null,
 
           summary:
             (r.summary as
@@ -1661,6 +1684,12 @@ export async function getRelatedStories(
         headline:
           r.headline as string,
 
+        shortTitle:
+          (r.short_title as
+            | string
+            | null) ??
+          null,
+
         summary:
           (r.summary as
             | string
@@ -1861,6 +1890,10 @@ export async function createStory(
 export interface UpdateStoryInput {
   headline?: string;
 
+  shortTitle?:
+    | string
+    | null;
+
   subheadline?:
     | string
     | null;
@@ -1958,6 +1991,14 @@ export async function updateStory(
   ) {
     update.headline =
       input.headline;
+  }
+
+  if (
+    input.shortTitle !==
+    undefined
+  ) {
+    update.short_title =
+      input.shortTitle;
   }
 
   if (
@@ -2547,6 +2588,7 @@ export async function getStoryVersions(
         id,
         story_id,
         headline,
+        short_title,
         subheadline,
         summary,
         body,

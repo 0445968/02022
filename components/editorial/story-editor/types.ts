@@ -75,6 +75,8 @@ export interface StoryEditorProps {
 export interface StoryEditorState {
   headline: string;
 
+  shortTitle: string;
+
   subheadline: string;
 
   summary: string;
@@ -150,6 +152,10 @@ export interface StoryEditorState {
  */
 export interface StorySavePayload {
   headline: string;
+
+  shortTitle:
+    | string
+    | null;
 
   subheadline:
     | string
@@ -244,6 +250,12 @@ export interface StorySettingsPanelProps {
   accessLevel: AccessLevel;
 
   locale: Locale;
+
+  shortTitle: string;
+
+setShortTitle: (
+  value: string
+) => void;
 
   authorId:
     | string

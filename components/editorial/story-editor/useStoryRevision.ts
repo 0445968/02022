@@ -27,6 +27,10 @@ interface StoryRevisionData {
 
   headline: string;
 
+  shortTitle:
+    | string
+    | null;
+
   subheadline:
     | string
     | null;
@@ -100,6 +104,9 @@ interface StoryRevisionData {
 
 interface RevisionStateSetters {
   setHeadline:
+    (value: string) => void;
+
+  setShortTitle:
     (value: string) => void;
 
   setSubheadline:
@@ -359,6 +366,11 @@ export function useStoryRevision({
 
           state.setHeadline(
             nextRevision.headline
+          );
+
+          state.setShortTitle(
+            nextRevision.shortTitle ??
+              ''
           );
 
           state.setSubheadline(
