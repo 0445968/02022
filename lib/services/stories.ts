@@ -2311,6 +2311,12 @@ if (
             (story.headline as string) ??
             '',
 
+          short_title:
+            (story.short_title as
+              | string
+              | null) ??
+            null,
+
           subheadline:
             (story.subheadline as
               | string

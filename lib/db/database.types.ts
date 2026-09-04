@@ -681,6 +681,10 @@ export interface Database {
 
           headline: string;
 
+          short_title:
+            | string
+            | null;
+
           subheadline:
             | string
             | null;
@@ -774,6 +778,10 @@ export interface Database {
 
           headline: string;
 
+          short_title?:
+            | string
+            | null;
+
           subheadline?:
             | string
             | null;
@@ -860,6 +868,10 @@ export interface Database {
           story_id?: string;
 
           headline?: string;
+
+          short_title?:
+            | string
+            | null;
 
           subheadline?:
             | string
@@ -997,6 +1009,9 @@ export interface Database {
           id: string;
           story_id: string;
           headline: string;
+          short_title?:
+            | string
+            | null;
           subheadline:
             | string
             | null;
@@ -1025,6 +1040,9 @@ export interface Database {
           id?: string;
           story_id: string;
           headline?: string;
+          short_title?:
+            | string
+            | null;
           subheadline?:
             | string
             | null;

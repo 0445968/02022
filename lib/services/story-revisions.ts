@@ -16,6 +16,10 @@ import {
   
     headline: string;
   
+    shortTitle:
+      | string
+      | null;
+  
     subheadline:
       | string
       | null;
@@ -104,6 +108,10 @@ import {
   
   export interface SaveStoryRevisionInput {
     headline: string;
+
+    shortTitle:
+      | string
+      | null;
   
     subheadline:
       | string
@@ -187,6 +195,10 @@ import {
     story_id: string;
   
     headline: string;
+
+    short_title:
+      | string
+      | null;
   
     subheadline:
       | string
@@ -286,6 +298,9 @@ import {
   
       headline:
         row.headline,
+
+      shortTitle:
+        row.short_title,
   
       subheadline:
         row.subheadline,
@@ -429,6 +444,9 @@ import {
   
       headline:
         input.headline,
+
+      short_title:
+        input.shortTitle,
   
       subheadline:
         input.subheadline,
@@ -727,6 +745,7 @@ import {
           id,
           slug,
           status,
+          short_title,
           access_level,
           island,
           featured_image_id,
@@ -897,6 +916,9 @@ import {
       {
         headline:
           version.headline,
+
+        shortTitle:
+          currentStory.short_title ?? null,
   
         subheadline:
           version.subheadline,
