@@ -10,6 +10,7 @@ export interface FrontPageStoryOption {
   id: string;
   slug: string;
   headline: string;
+  shortTitle: string | null;
   language: 'en' | 'es';
   publishedAt: string | null;
 
@@ -75,7 +76,22 @@ const HOMEPAGE_SLOTS: HomepageSlotType[] = [
   'section_feature',
   'video_feature',
   'island_feature',
+  'headline_bar',
 ];
+
+type HomepageSelectionScope =
+  | 'front-page'
+  | 'headline-bar';
+
+function getHomepageSelectionScope(
+  slot: HomepageSlotType
+): HomepageSelectionScope {
+  if (slot === 'headline_bar') {
+    return 'headline-bar';
+  }
+
+  return 'front-page';
+}
 
 export function homepagePlacementsToSelections(
   placements: HomepagePlacement[]
@@ -97,8 +113,14 @@ export function normalizeHomepageLayoutSelections(
     throw new Error('Homepage selections must be an array.');
   }
 
-  const storyIds = new Set<string>();
-  const positions = new Set<string>();
+  const storyIdsByScope =
+  new Map<
+    HomepageSelectionScope,
+    Set<string>
+  >();
+
+const positions =
+  new Set<string>();
 
   return value.map((item) => {
     if (!item || typeof item !== 'object') {
@@ -132,17 +154,44 @@ export function normalizeHomepageLayoutSelections(
       throw new Error('Invalid homepage position.');
     }
 
-    if (storyIds.has(storyId)) {
-      throw new Error('A story cannot appear more than once on the homepage.');
-    }
+    const scope =
+  getHomepageSelectionScope(
+    slot as HomepageSlotType
+  );
+
+const scopeStoryIds =
+  storyIdsByScope.get(scope) ??
+  new Set<string>();
+
+if (
+  scopeStoryIds.has(
+    storyId
+  )
+) {
+  throw new Error(
+    scope === 'headline-bar'
+      ? 'A story cannot appear more than once in the headline bar.'
+      : 'A story cannot appear more than once on the front page.'
+  );
+}
 
     const positionKey = `${slot}:${Number(position)}`;
     if (positions.has(positionKey)) {
       throw new Error('A homepage position cannot contain more than one story.');
     }
 
-    storyIds.add(storyId);
-    positions.add(positionKey);
+    scopeStoryIds.add(
+      storyId
+    );
+    
+    storyIdsByScope.set(
+      scope,
+      scopeStoryIds
+    );
+    
+    positions.add(
+      positionKey
+    );
 
     return {
       slot: slot as HomepageSlotType,
@@ -313,6 +362,7 @@ type RawStory = {
   id: string;
   slug: string;
   headline: string;
+  short_title: string | null;
   language: 'en' | 'es';
   published_at: string | null;
 
@@ -439,6 +489,10 @@ function mapStory(
     id: raw.id,
     slug: raw.slug,
     headline: raw.headline,
+
+    shortTitle:
+      raw.short_title ?? null,
+
     language: raw.language,
     publishedAt:
       raw.published_at,
@@ -640,6 +694,7 @@ export async function getHomepageSlots(): Promise<
         id,
         slug,
         headline,
+        short_title,
         language,
         published_at,
         primary_category:categories!stories_primary_category_id_fkey (
@@ -849,6 +904,7 @@ export async function setHomepageSlot(
         id,
         slug,
         headline,
+        short_title,
         language,
         published_at,
         primary_category:categories!stories_primary_category_id_fkey (
@@ -996,6 +1052,7 @@ export async function updateHomepagePlacement(
         id,
         slug,
         headline,
+        short_title,
         language,
         published_at,
         primary_category:categories!stories_primary_category_id_fkey (
@@ -1202,6 +1259,7 @@ export async function getFrontPageStoryOptions(
         id,
         slug,
         headline,
+        short_title,
         language,
         published_at,
         primary_category:categories!stories_primary_category_id_fkey (
@@ -1334,6 +1392,7 @@ export async function getPublishedStoriesByCategory(
       id,
       slug,
       headline,
+      short_title,
       language,
       published_at,
       primary_category:categories!stories_primary_category_id_fkey (

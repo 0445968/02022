@@ -63,6 +63,9 @@ import {
   FrontPagePreview,
 } from './FrontPagePreview';
 import {
+  HeadlineBarEditor,
+} from './HeadlineBarEditor';
+import {
   HomepageSlotCard,
 } from './HomepageSlotCard';
 import {
@@ -92,6 +95,7 @@ interface FrontPageEditorProps {
 
 type FrontPageTab =
   | 'layout'
+  | 'headline-bar'
   | 'breaking';
 
 type SaveStatus =
@@ -396,14 +400,73 @@ export function FrontPageEditor({
       [allStories]
     );
 
-  const selectedStoryIds =
+  const layoutSelectedStoryIds =
     useMemo(
       () =>
-        selections.map(
-          (selection) =>
-            selection.storyId
-        ),
+        selections
+          .filter(
+            (selection) =>
+              selection.slot !==
+              'headline_bar'
+          )
+          .map(
+            (selection) =>
+              selection.storyId
+          ),
       [selections]
+    );
+
+  const headlineBarSelectedStoryIds =
+    useMemo(
+      () =>
+        selections
+          .filter(
+            (selection) =>
+              selection.slot ===
+              'headline_bar'
+          )
+          .map(
+            (selection) =>
+              selection.storyId
+          ),
+      [selections]
+    );
+
+  const headlineBarStories =
+    useMemo(
+      () =>
+        [
+          0,
+          1,
+          2,
+          3,
+          4,
+        ].map(
+          (position) => {
+            const selection =
+              selections.find(
+                (item) =>
+                  item.slot ===
+                    'headline_bar' &&
+                  item.position ===
+                    position
+              );
+
+            if (!selection) {
+              return null;
+            }
+
+            return (
+              storyById.get(
+                selection.storyId
+              ) ?? null
+            );
+          }
+        ),
+      [
+        selections,
+        storyById,
+      ]
     );
 
   const isDirty =
@@ -670,7 +733,7 @@ export function FrontPageEditor({
         storyOptions,
 
       excludedStoryIds:
-        selectedStoryIds,
+        layoutSelectedStoryIds,
 
       story:
         selection
@@ -966,6 +1029,22 @@ export function FrontPageEditor({
             <TabButton
               active={
                 activeTab ===
+                'headline-bar'
+              }
+              onClick={() =>
+                setActiveTab(
+                  'headline-bar'
+                )
+              }
+            >
+              {locale === 'es'
+                ? 'Barra de titulares'
+                : 'Headline Bar'}
+            </TabButton>
+
+            <TabButton
+              active={
+                activeTab ===
                 'breaking'
               }
               onClick={() =>
@@ -1004,8 +1083,12 @@ export function FrontPageEditor({
             </TabButton>
           </div>
 
-          {activeTab ===
-            'layout' && (
+          {(
+            activeTab ===
+              'layout' ||
+            activeTab ===
+              'headline-bar'
+          ) && (
             <p
               className="
                 text-xs
@@ -1014,8 +1097,8 @@ export function FrontPageEditor({
               "
             >
               {locale === 'es'
-                ? 'El guardado automático conserva el borrador. Solo Enviar diseño publica.'
-                : 'Autosave preserves the draft. Only Submit Layout publishes it.'}
+                ? 'El guardado automático conserva el borrador. Los cambios no se publican automáticamente.'
+                : 'Autosave preserves the draft. Changes are not published automatically.'}
             </p>
           )}
         </div>
@@ -1078,7 +1161,7 @@ export function FrontPageEditor({
                       "
                     >
                       {
-                        selections.length
+                        layoutSelectedStoryIds.length
                       }{' '}
 
                       {locale === 'es'
@@ -1189,7 +1272,7 @@ export function FrontPageEditor({
                     }
                     disabled={
                       actionBusy ||
-                      selections.length ===
+                      layoutSelectedStoryIds.length ===
                         0
                     }
                     danger
@@ -1733,7 +1816,7 @@ export function FrontPageEditor({
                     selections
                   }
                   excludedStoryIds={
-                    selectedStoryIds
+                    layoutSelectedStoryIds
                   }
                   disabled={
                     actionBusy
@@ -1872,6 +1955,141 @@ export function FrontPageEditor({
         )}
 
         {activeTab ===
+          'headline-bar' && (
+          <div
+            className="
+              mt-6
+              space-y-4
+            "
+          >
+            {actionError && (
+              <div
+                role="alert"
+                className="
+                  flex
+                  items-start
+                  gap-3
+                  rounded-xl
+                  border
+                  border-breaking/20
+                  bg-breaking/5
+                  px-4
+                  py-3
+                  text-sm
+                  text-breaking
+                "
+              >
+                <AlertCircle
+                  className="
+                    mt-0.5
+                    h-4
+                    w-4
+                    shrink-0
+                  "
+                  aria-hidden
+                />
+
+                <span>
+                  {
+                    actionError
+                  }
+                </span>
+              </div>
+            )}
+
+            <div
+              className="
+                flex
+                flex-col
+                gap-2
+              "
+            >
+              <div
+                className="
+                  flex
+                  items-center
+                  gap-3
+                "
+              >
+                <SaveStatusIndicator
+                  status={
+                    saveStatus
+                  }
+                  locale={
+                    locale
+                  }
+                />
+
+                <div>
+                  <p
+                    className="
+                      text-sm
+                      font-semibold
+                      text-deep
+                    "
+                  >
+                    {
+                      headlineBarSelectedStoryIds.length
+                    }{' '}
+
+                    {locale === 'es'
+                      ? 'titulares seleccionados'
+                      : 'headlines selected'}
+                  </p>
+
+                  <p
+                    className="
+                      text-xs
+                      text-muted-foreground
+                    "
+                  >
+                    {locale === 'es'
+                      ? 'La barra tiene su propio conjunto de historias y puede reutilizar artículos que ya aparecen en la portada.'
+                      : 'The headline bar has its own story pool and may reuse stories already selected on the front page.'}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <HeadlineBarEditor
+              locale={
+                locale
+              }
+              stories={
+                allStories
+              }
+              selectedStories={
+                headlineBarStories
+              }
+              excludedStoryIds={
+                headlineBarSelectedStoryIds
+              }
+              disabled={
+                actionBusy
+              }
+              onSelect={(
+                position,
+                story
+              ) =>
+                setSelection(
+                  'headline_bar',
+                  position,
+                  story
+                )
+              }
+              onRemove={(
+                position
+              ) =>
+                removeSelection(
+                  'headline_bar',
+                  position
+                )
+              }
+            />
+          </div>
+        )}
+
+        {activeTab ===
           'breaking' && (
           <div className="mt-6">
             <BreakingNewsEditor
@@ -1894,8 +2112,12 @@ export function FrontPageEditor({
 
       {previewOpen && (
         <FrontPagePreview
-          dict={dict}
-          locale={locale}
+          dict={
+            dict
+          }
+          locale={
+            locale
+          }
           placements={
             previewPlacements
           }

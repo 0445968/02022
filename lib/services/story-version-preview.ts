@@ -59,6 +59,7 @@ import {
           id,
           story_id,
           headline,
+          short_title,
           subheadline,
           summary,
           body,
@@ -363,6 +364,10 @@ resolveHistoricalIdentity(
   
       headline:
         version.headline,
+
+      shortTitle:
+        version.short_title ??
+        null,
   
       subheadline:
         version.subheadline,

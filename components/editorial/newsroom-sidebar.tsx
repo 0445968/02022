@@ -27,7 +27,7 @@ const NAV = [
   { key: 'stories', icon: FileText, href: '/newsroom/stories' },
   { key: 'newStory', icon: PlusCircle, href: '/newsroom/stories/new' },
   { key: 'media', icon: ImageIcon, href: '/newsroom/media' },
-  { key: 'frontPage', icon: Newspaper, href: '/newsroom/front-page' },
+  { key: 'pageEditor', icon: Newspaper, href: '/newsroom/front-page' },
   { key: 'comments', icon: MessageSquare, href: '/newsroom/comments' },
   { key: 'polls', icon: BarChart3, href: '/newsroom/polls' },
   { key: 'schedule', icon: Calendar, href: '/newsroom/schedule' },
