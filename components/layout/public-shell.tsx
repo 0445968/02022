@@ -7,8 +7,12 @@ import {
 } from '@/components/layout/header';
 
 import {
-  UtilityBar,
-} from '@/components/layout/utility-bar';
+  HeadlineBar,
+} from '@/components/layout/headline-bar';
+
+import {
+  getHomepageSlots,
+} from '@/lib/services/front-page';
 
 import type {
   Dictionary,
@@ -26,42 +30,69 @@ interface PublicShellProps {
   children: React.ReactNode;
 }
 
-export function PublicShell({
+export async function PublicShell({
   dict,
   locale,
   user,
   children,
 }: PublicShellProps) {
+  const homepageSlots =
+    await getHomepageSlots();
+
+  const headlineBarPlacements =
+    homepageSlots.filter(
+      (placement) =>
+        placement.active &&
+        placement.slot ===
+          'headline_bar'
+    );
+
   return (
-    <div className="flex min-h-screen flex-col bg-white">
-      <UtilityBar
-        date={
-          dict.utility.date
+    <div
+      className="
+        flex
+        min-h-screen
+        flex-col
+        bg-white
+      "
+    >
+      <Header
+        dict={
+          dict
         }
-        weather={
-          dict.utility.weather
+        locale={
+          locale
         }
-        islands={
-          dict.utility.islands
+        user={
+          user
         }
       />
 
-      <Header
-        dict={dict}
-        locale={locale}
-        user={user}
+      <HeadlineBar
+        locale={
+          locale
+        }
+        placements={
+          headlineBarPlacements
+        }
       />
 
       <main
-        className="flex-1"
+        className="
+          flex-1
+        "
         id="main"
       >
         {children}
       </main>
 
       <Footer
-        dict={dict}
-        locale={locale}
+        dict={
+          dict
+        }
+        locale={
+          locale
+        }
       />
     </div>
   );

@@ -1,12 +1,20 @@
 'use client';
 
 import {
+  Headphones,
   Menu,
+  Search,
 } from 'lucide-react';
+
+import Link from 'next/link';
 
 import {
   useState,
 } from 'react';
+
+import {
+  Masthead,
+} from '@/components/layout/masthead';
 
 import {
   AccountButton,
@@ -25,8 +33,8 @@ import {
 } from '@/components/navigation/mobile-nav';
 
 import {
-  Masthead,
-} from '@/components/layout/masthead';
+  localizedPath,
+} from '@/lib/i18n/config';
 
 import type {
   Dictionary,
@@ -51,7 +59,9 @@ export function Header({
   const [
     mobileOpen,
     setMobileOpen,
-  ] = useState(false);
+  ] = useState(
+    false
+  );
 
   return (
     <>
@@ -74,10 +84,13 @@ export function Header({
             h-14
             items-center
             gap-3
-            lg:h-[58px]
+            lg:grid
+            lg:h-[64px]
+            lg:grid-cols-[auto_minmax(0,1fr)_auto]
+            lg:gap-5
           "
         >
-          {/* Menu */}
+          {/* Mobile menu */}
           <button
             type="button"
             onClick={() =>
@@ -92,39 +105,47 @@ export function Header({
               shrink-0
               items-center
               justify-center
+              rounded-lg
               text-foreground
               transition-colors
               hover:bg-surface-muted
               focus-visible:outline-none
               focus-visible:ring-2
               focus-visible:ring-ring
+              lg:hidden
             "
             aria-label={
               dict.nav.menu
             }
           >
             <Menu
-              className="h-5 w-5"
+              className="
+                h-5
+                w-5
+              "
               aria-hidden
             />
           </button>
 
           {/* Logo */}
-          <div className="shrink-0">
+          <div
+            className="
+              shrink-0
+            "
+          >
             <Masthead
               locale={locale}
               compact
             />
           </div>
 
-          {/* Desktop navigation */}
+          {/* Centered desktop navigation */}
           <div
             className="
               hidden
               min-w-0
-              flex-1
               items-center
-              overflow-visible
+              justify-center
               lg:flex
             "
           >
@@ -142,9 +163,87 @@ export function Header({
               flex
               shrink-0
               items-center
-              gap-2
+              gap-1
+              lg:ml-0
+              lg:gap-2
             "
           >
+            {/* Search */}
+            <Link
+              href={localizedPath(
+                locale,
+                '/search'
+              )}
+              className="
+                inline-flex
+                h-9
+                w-9
+                items-center
+                justify-center
+                rounded-lg
+                text-foreground
+                transition-colors
+                hover:bg-surface-muted
+                hover:text-primary
+                focus-visible:outline-none
+                focus-visible:ring-2
+                focus-visible:ring-ring
+              "
+              aria-label={
+                locale === 'es'
+                  ? 'Buscar'
+                  : 'Search'
+              }
+            >
+              <Search
+                className="
+                  h-[18px]
+                  w-[18px]
+                "
+                aria-hidden
+              />
+            </Link>
+
+            {/* Listen */}
+            <Link
+              href={localizedPath(
+                locale,
+                '/listen'
+              )}
+              className="
+                hidden
+                h-9
+                items-center
+                gap-1.5
+                rounded-lg
+                px-2.5
+                text-sm
+                font-semibold
+                text-foreground
+                transition-colors
+                hover:bg-surface-muted
+                hover:text-primary
+                focus-visible:outline-none
+                focus-visible:ring-2
+                focus-visible:ring-ring
+                sm:inline-flex
+              "
+            >
+              <Headphones
+                className="
+                  h-[17px]
+                  w-[17px]
+                "
+                aria-hidden
+              />
+
+              <span>
+                {locale === 'es'
+                  ? 'Escuchar'
+                  : 'Listen'}
+              </span>
+            </Link>
+
             <LanguageSwitcher
               locale={locale}
               label={
@@ -163,7 +262,9 @@ export function Header({
       </header>
 
       <MobileNav
-        open={mobileOpen}
+        open={
+          mobileOpen
+        }
         onClose={() =>
           setMobileOpen(
             false
