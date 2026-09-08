@@ -38,7 +38,7 @@ import {
 
 import {
   ArticleView,
-} from '@/components/editorial/article-view';
+} from '@/components/editorial/article/ArticleView';
 
 import {
   StoryRevisionComparison,

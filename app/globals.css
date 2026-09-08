@@ -4,7 +4,7 @@
 
 @layer base {
   :root {
-    /* Simply Raizal semantic palette */
+    /* West Island Times semantic palette */
     --color-background: 0 0% 100%;
     --color-foreground: 222 47% 11%;
 
@@ -18,6 +18,9 @@
     --color-star: 261 84% 48%;
     --color-primary: 210 93% 45%;
     --color-primary-foreground: 0 0% 100%;
+
+    /* Article accent */
+    --color-article-accent: 30 100% 54%; /* #FF8913 */
 
     /* Signals */
     --color-breaking: 0 80% 40%;
@@ -87,29 +90,40 @@
   }
 
   /* Typography roles */
+
   .font-headline {
     font-family:
       var(--font-headline),
-      Georgia,
-      "Times New Roman",
-      serif;
+      Arial,
+      Helvetica,
+      sans-serif;
+  
+    font-feature-settings: "kern", "liga", "calt";
+  }
 
-    font-feature-settings: "kern", "liga", "calt", "onum";
+  .font-body {
+    font-family:
+      var(--font-body),
+      Arial,
+      Helvetica,
+      system-ui,
+      sans-serif;
   }
 
   .font-interface {
     font-family:
       var(--font-interface),
+      Arial,
+      Helvetica,
       system-ui,
-      -apple-system,
       sans-serif;
   }
 
   .font-subheadline {
     font-family:
       var(--font-subheadline),
-      Georgia,
       "Times New Roman",
+      Times,
       serif;
   }
 
@@ -120,6 +134,7 @@
 
 @layer components {
   /* Containers */
+
   .container-editorial {
     @apply mx-auto w-full max-w-[1280px] px-4 sm:px-6 lg:px-8;
   }
@@ -129,6 +144,7 @@
   }
 
   /* Rules */
+
   .rule {
     @apply h-px w-full bg-border;
   }
@@ -138,11 +154,29 @@
   }
 
   /* Eyebrow */
+
   .eyebrow {
-    @apply text-[0.6875rem] font-semibold uppercase tracking-[0.14em] text-muted-foreground;
+    @apply font-interface text-[0.6875rem] font-semibold uppercase tracking-[0.14em] text-muted-foreground;
+  }
+
+  /* Tags */
+
+  .tag {
+    @apply font-interface text-xs font-medium;
+  }
+
+  /* Photo metadata */
+
+  .photo-description {
+    @apply font-interface text-xs leading-relaxed text-muted-foreground;
+  }
+
+  .photo-credit {
+    @apply font-interface text-[0.6875rem] font-medium uppercase tracking-[0.06em] text-muted-foreground;
   }
 
   /* Live indicator */
+
   .live-dot {
     @apply inline-block h-2 w-2 rounded-full;
 
@@ -152,8 +186,9 @@
   }
 
   /* Article body */
+
   .article-body {
-    @apply text-base leading-8 text-foreground;
+    @apply font-body text-base leading-8 text-foreground;
   }
 
   .article-body p {
@@ -203,7 +238,7 @@
   }
 
   .article-body blockquote {
-    @apply my-8 border-l-4 border-primary pl-5 font-headline text-xl italic leading-relaxed text-muted-foreground;
+    @apply my-8 border-l-4 border-primary pl-5 font-subheadline text-xl italic leading-relaxed text-muted-foreground;
   }
 
   .article-body hr {
@@ -219,7 +254,7 @@
   }
 
   .article-body figcaption {
-    @apply mt-2 text-xs leading-relaxed text-muted-foreground;
+    @apply mt-2 font-interface text-xs leading-relaxed text-muted-foreground;
   }
 
   .article-body > :first-child {

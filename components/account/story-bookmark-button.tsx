@@ -7,6 +7,7 @@ import {
 import {
   useState,
 } from 'react';
+
 import {
   Bookmark,
   LoaderCircle,
@@ -32,6 +33,12 @@ interface StoryBookmarkButtonProps {
   signInHref: string;
   labels: StoryBookmarkButtonLabels;
   className?: string;
+
+  /*
+   * Used for compact controls such as the
+   * sticky article action rail.
+   */
+  iconOnly?: boolean;
 }
 
 const buttonStyles =
@@ -44,6 +51,7 @@ export function StoryBookmarkButton({
   signInHref,
   labels,
   className,
+  iconOnly = false,
 }: StoryBookmarkButtonProps) {
   const router =
     useRouter();
@@ -71,18 +79,30 @@ export function StoryBookmarkButton({
     return (
       <Link
         href={signInHref}
+        aria-label={labels.signIn}
+        title={
+          iconOnly
+            ? labels.signIn
+            : undefined
+        }
         className={cn(
           buttonStyles,
-          'border-slate-300 bg-white text-slate-900 hover:border-primary hover:text-primary',
+          'border-slate-300 bg-white text-slate-900 hover:border-[hsl(var(--color-article-accent))] hover:text-[hsl(var(--color-article-accent))]',
+          iconOnly &&
+            'h-11 min-h-11 w-11 rounded-full p-0',
           className
         )}
       >
         <Bookmark
           aria-hidden="true"
-          className="h-4 w-4"
+          className="h-4 w-4 shrink-0"
         />
 
-        {labels.signIn}
+        {!iconOnly && (
+          <span>
+            {labels.signIn}
+          </span>
+        )}
       </Link>
     );
   }
@@ -109,6 +129,7 @@ export function StoryBookmarkButton({
               nextBookmarked
                 ? 'POST'
                 : 'DELETE',
+
             headers: {
               Accept:
                 'application/json',
@@ -149,10 +170,6 @@ export function StoryBookmarkButton({
           nextBookmarked
       );
 
-      /*
-       * Refresh Server Components so account totals
-       * and saved-story lists can reflect the change.
-       */
       router.refresh();
     } catch (requestError) {
       console.error(
@@ -160,14 +177,30 @@ export function StoryBookmarkButton({
         requestError
       );
 
-      setError(labels.error);
+      setError(
+        labels.error
+      );
     } finally {
       setPending(false);
     }
   }
 
+  const currentLabel =
+    pending
+      ? labels.updating
+      : bookmarked
+        ? labels.saved
+        : labels.save;
+
   return (
-    <div className="inline-flex flex-col items-start gap-1.5">
+    <div
+      className={cn(
+        'inline-flex flex-col gap-1.5',
+        iconOnly
+          ? 'items-center'
+          : 'items-start'
+      )}
+    >
       <button
         type="button"
         aria-pressed={bookmarked}
@@ -176,25 +209,39 @@ export function StoryBookmarkButton({
             ? labels.remove
             : labels.save
         }
+        title={
+          iconOnly
+            ? bookmarked
+              ? labels.remove
+              : labels.save
+            : undefined
+        }
         disabled={pending}
-        onClick={handleToggle}
+        onClick={
+          handleToggle
+        }
         className={cn(
           buttonStyles,
+
           bookmarked
-            ? 'border-primary bg-primary text-white hover:bg-deep'
-            : 'border-slate-300 bg-white text-slate-900 hover:border-primary hover:text-primary',
+            ? 'border-[hsl(var(--color-article-accent))] bg-[hsl(var(--color-article-accent))] text-white hover:opacity-90'
+            : 'border-slate-300 bg-white text-slate-900 hover:border-[hsl(var(--color-article-accent))] hover:text-[hsl(var(--color-article-accent))]',
+
+          iconOnly &&
+            'h-11 min-h-11 w-11 rounded-full p-0',
+
           className
         )}
       >
         {pending ? (
           <LoaderCircle
             aria-hidden="true"
-            className="h-4 w-4 animate-spin"
+            className="h-4 w-4 shrink-0 animate-spin"
           />
         ) : (
           <Bookmark
             aria-hidden="true"
-            className="h-4 w-4"
+            className="h-4 w-4 shrink-0"
             fill={
               bookmarked
                 ? 'currentColor'
@@ -203,17 +250,23 @@ export function StoryBookmarkButton({
           />
         )}
 
-        {pending
-          ? labels.updating
-          : bookmarked
-            ? labels.saved
-            : labels.save}
+        {!iconOnly && (
+          <span>
+            {currentLabel}
+          </span>
+        )}
       </button>
 
       {error ? (
         <p
           role="status"
-          className="text-xs font-medium text-breaking"
+          className="
+            max-w-32
+            text-center
+            text-xs
+            font-medium
+            text-breaking
+          "
         >
           {error}
         </p>

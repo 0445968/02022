@@ -12,7 +12,7 @@ import {
 
 import {
   ArticleView,
-} from '@/components/editorial/article-view';
+} from '@/components/editorial/article/ArticleView';
 
 import {
   getCurrentUser,
@@ -41,6 +41,7 @@ import {
 } from '@/lib/services/comments';
 
 import {
+  getLatestStories,
   getPublishedStoryBySlug,
 } from '@/lib/services/stories';
 
@@ -91,6 +92,7 @@ export async function generateMetadata({
     openGraph: {
       title,
       description,
+
       type:
         'article',
 
@@ -182,9 +184,15 @@ export default async function ArticlePage({
       hasMore: false,
     };
 
+  /*
+   * Fetch a few extra recent stories so the current
+   * article can be removed before limiting the rail
+   * to five items.
+   */
   const [
     initialBookmarked,
     initialThread,
+    latestStoriesResult,
   ] = await Promise.all([
     reader
       ? isStoryBookmarked(
@@ -221,7 +229,42 @@ export default async function ArticlePage({
         return emptyThread;
       }
     ),
+
+    getLatestStories(
+      1,
+      8
+    ).catch(
+      (error) => {
+        console.error(
+          'Unable to load article trending stories:',
+          error
+        );
+
+        return {
+          items: [],
+          total: 0,
+          page: 1,
+          perPage: 8,
+          totalPages: 0,
+        };
+      }
+    ),
   ]);
+
+  /*
+   * For now, "Trending" uses the latest published
+   * stories. We can later replace this with actual
+   * view / engagement rankings without changing
+   * the ArticleRightRail API.
+   */
+  const trendingStories =
+    latestStoriesResult.items
+      .filter(
+        (item) =>
+          item.id !==
+          story.id
+      )
+      .slice(0, 5);
 
   const articlePath =
     localizedPath(
@@ -260,6 +303,9 @@ export default async function ArticlePage({
           signInHref:
             bookmarkSignInHref,
         }}
+        trendingStories={
+          trendingStories
+        }
       />
 
       <StoryComments

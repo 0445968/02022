@@ -4,10 +4,16 @@ import {
   MessageSquare,
   Share2,
 } from 'lucide-react';
+
 import type { Locale } from '@/types';
 import type { Dictionary } from '@/lib/i18n/dictionaries';
 import type { StoryWithRelations } from '@/types/editorial';
-import { categoryLabel, islandLabel, statusLabel } from '@/types/editorial';
+
+import {
+  categoryLabel,
+  islandLabel,
+} from '@/types/editorial';
+
 import { localizedPath } from '@/lib/i18n/config';
 
 import {
@@ -36,14 +42,23 @@ export function ArticleView({
   bookmarkState,
 }: ArticleViewProps) {
   const categoryName = story.primaryCategory
-    ? categoryLabel(story.primaryCategory, locale)
+    ? categoryLabel(
+        story.primaryCategory,
+        locale
+      )
     : null;
+
   const categoryHref = story.primaryCategory
-    ? localizedPath(locale, `/category/${story.primaryCategory.slug}`)
+    ? localizedPath(
+        locale,
+        `/category/${story.primaryCategory.slug}`
+      )
     : null;
 
   const isSameAuthorEditor =
-    story.author && story.editor && story.author.id === story.editor.id;
+    story.author &&
+    story.editor &&
+    story.author.id === story.editor.id;
 
   return (
     <article className="bg-white">
@@ -52,130 +67,356 @@ export function ArticleView({
         <div className="container-wide py-8 lg:py-10">
           <div className="mx-auto max-w-3xl">
             {/* Breadcrumb / category */}
-            {categoryName && categoryHref && (
-              <Link
-                href={categoryHref}
-                className="eyebrow text-primary hover:underline"
-              >
-                {categoryName}
-              </Link>
-            )}
+            {categoryName &&
+              categoryHref && (
+                <Link
+                  href={
+                    categoryHref
+                  }
+                  className="
+                    eyebrow
+                    text-primary
+                    hover:underline
+                  "
+                >
+                  {
+                    categoryName
+                  }
+                </Link>
+              )}
 
             {/* Headline */}
-            <h1 className="mt-3 font-headline text-3xl font-bold leading-tight text-deep sm:text-4xl lg:text-5xl text-balance">
+            <h1
+              className="
+                mt-3
+                font-headline
+                text-3xl
+                font-bold
+                leading-tight
+                text-deep
+                text-balance
+                sm:text-4xl
+                lg:text-5xl
+              "
+            >
               {story.headline}
             </h1>
 
             {/* Subheadline */}
             {story.subheadline && (
-              <p className="mt-4 font-headline text-lg italic leading-snug text-muted-foreground sm:text-xl">
-                {story.subheadline}
+              <p
+                className="
+                  mt-4
+                  [font-family:'Times_New_Roman',Times,serif]
+                  text-lg
+                  italic
+                  leading-snug
+                  text-muted-foreground
+                  sm:text-xl
+                "
+              >
+                {
+                  story.subheadline
+                }
               </p>
             )}
 
             {/* Summary */}
             {story.summary && (
-              <p className="mt-4 text-base leading-relaxed text-foreground">
-                {story.summary}
+              <p
+                className="
+                  mt-4
+                  font-body
+                  text-base
+                  leading-relaxed
+                  text-foreground
+                "
+              >
+                {
+                  story.summary
+                }
               </p>
             )}
 
             {/* Byline */}
-            <div className="mt-6 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
+            <div
+              className="
+                mt-6
+                flex
+                flex-wrap
+                items-center
+                gap-x-4
+                gap-y-2
+                font-interface
+                text-sm
+              "
+            >
               {story.author && (
                 <span className="font-medium text-foreground">
-                  {dict.common.by}{' '}
-                  <span className="font-semibold text-deep">{story.author.name}</span>
-                  {story.author.editorialTitle && (
-                    <span className="text-muted-foreground"> · {story.author.editorialTitle}</span>
+                  {
+                    dict.common
+                      .by
+                  }{' '}
+                  <span className="font-semibold text-deep">
+                    {
+                      story
+                        .author
+                        .name
+                    }
+                  </span>
+
+                  {story.author
+                    .editorialTitle && (
+                    <span className="text-muted-foreground">
+                      {' '}
+                      ·{' '}
+                      {
+                        story
+                          .author
+                          .editorialTitle
+                      }
+                    </span>
                   )}
                 </span>
               )}
-              {story.editor && !isSameAuthorEditor && (
-                <span className="text-muted-foreground">
-                  {dict.common.editedBy}{' '}
-                  <span className="font-medium text-foreground">{story.editor.name}</span>
-                </span>
-              )}
+
+              {story.editor &&
+                !isSameAuthorEditor && (
+                  <span className="text-muted-foreground">
+                    {
+                      dict
+                        .common
+                        .editedBy
+                    }{' '}
+                    <span className="font-medium text-foreground">
+                      {
+                        story
+                          .editor
+                          .name
+                      }
+                    </span>
+                  </span>
+                )}
             </div>
 
-            {/* Meta row: dates, language, island */}
-            <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
+            {/* Meta row */}
+            <div
+              className="
+                mt-4
+                flex
+                flex-wrap
+                items-center
+                gap-x-4
+                gap-y-1
+                font-interface
+                text-xs
+                text-muted-foreground
+              "
+            >
               {story.publishedAt && (
-                <time dateTime={story.publishedAt}>
-                  {dict.common.published}{' '}
-                  {new Date(story.publishedAt).toLocaleDateString(locale === 'es' ? 'es' : 'en', {
-                    month: 'long',
-                    day: 'numeric',
-                    year: 'numeric',
-                  })}
+                <time
+                  dateTime={
+                    story.publishedAt
+                  }
+                >
+                  {
+                    dict.common
+                      .published
+                  }{' '}
+                  {new Date(
+                    story.publishedAt
+                  ).toLocaleDateString(
+                    locale ===
+                      'es'
+                      ? 'es'
+                      : 'en',
+                    {
+                      month:
+                        'long',
+                      day:
+                        'numeric',
+                      year:
+                        'numeric',
+                    }
+                  )}
                 </time>
               )}
-              {story.updatedAt !== story.publishedAt && (
-                <time dateTime={story.updatedAt}>
-                  {dict.common.updated}{' '}
-                  {new Date(story.updatedAt).toLocaleDateString(locale === 'es' ? 'es' : 'en', {
-                    month: 'short',
-                    day: 'numeric',
-                  })}
+
+              {story.updatedAt !==
+                story.publishedAt && (
+                <time
+                  dateTime={
+                    story.updatedAt
+                  }
+                >
+                  {
+                    dict.common
+                      .updated
+                  }{' '}
+                  {new Date(
+                    story.updatedAt
+                  ).toLocaleDateString(
+                    locale ===
+                      'es'
+                      ? 'es'
+                      : 'en',
+                    {
+                      month:
+                        'short',
+                      day:
+                        'numeric',
+                    }
+                  )}
                 </time>
               )}
-              {story.language !== locale && (
-                <span className="font-semibold uppercase tracking-wide text-primary">
-                  {story.language === 'en' ? dict.common.languageEN : dict.common.languageES}
+
+              {story.language !==
+                locale && (
+                <span
+                  className="
+                    font-semibold
+                    uppercase
+                    tracking-wide
+                    text-primary
+                  "
+                >
+                  {story.language ===
+                  'en'
+                    ? dict
+                        .common
+                        .languageEN
+                    : dict
+                        .common
+                        .languageES}
                 </span>
               )}
-              {story.island !== 'none' && (
-                <span>{islandLabel(story.island, locale)}</span>
+
+              {story.island !==
+                'none' && (
+                <span>
+                  {islandLabel(
+                    story.island,
+                    locale
+                  )}
+                </span>
               )}
             </div>
 
-            {/* Share / bookmark / comments placeholders */}
+            {/* Share / bookmark / comments */}
             <div className="mt-6 flex items-center gap-2">
               <button
                 type="button"
-                className="inline-flex h-8 items-center gap-1.5 border border-border bg-white px-3 text-xs font-medium text-foreground transition-colors hover:bg-surface-muted"
-                aria-label={dict.article.share}
+                className="
+                  inline-flex
+                  h-8
+                  items-center
+                  gap-1.5
+                  border
+                  border-border
+                  bg-white
+                  px-3
+                  font-interface
+                  text-xs
+                  font-medium
+                  text-foreground
+                  transition-colors
+                  hover:bg-surface-muted
+                "
+                aria-label={
+                  dict.article
+                    .share
+                }
               >
-                <Share2 className="h-3.5 w-3.5" aria-hidden />
-                {dict.article.share}
+                <Share2
+                  className="h-3.5 w-3.5"
+                  aria-hidden
+                />
+
+                {
+                  dict.article
+                    .share
+                }
               </button>
+
               {bookmarkState ? (
-  <StoryBookmarkButton
-    storyId={story.id}
-    initialBookmarked={
-      bookmarkState.initialBookmarked
-    }
-    isAuthenticated={
-      bookmarkState.isAuthenticated
-    }
-    signInHref={
-      bookmarkState.signInHref
-    }
-    labels={{
-      save:
-        dict.article.bookmark,
-      saved:
-        dict.article.bookmarkSaved,
-      remove:
-        dict.article.bookmarkRemove,
-      signIn:
-        dict.article.bookmarkSignIn,
-      updating:
-        dict.article.bookmarkUpdating,
-      error:
-        dict.article.bookmarkError,
-    }}
-    className="h-8 min-h-8 px-3 text-xs font-medium"
-  />
-) : null}
+                <StoryBookmarkButton
+                  storyId={
+                    story.id
+                  }
+                  initialBookmarked={
+                    bookmarkState.initialBookmarked
+                  }
+                  isAuthenticated={
+                    bookmarkState.isAuthenticated
+                  }
+                  signInHref={
+                    bookmarkState.signInHref
+                  }
+                  labels={{
+                    save:
+                      dict
+                        .article
+                        .bookmark,
+                    saved:
+                      dict
+                        .article
+                        .bookmarkSaved,
+                    remove:
+                      dict
+                        .article
+                        .bookmarkRemove,
+                    signIn:
+                      dict
+                        .article
+                        .bookmarkSignIn,
+                    updating:
+                      dict
+                        .article
+                        .bookmarkUpdating,
+                    error:
+                      dict
+                        .article
+                        .bookmarkError,
+                  }}
+                  className="h-8 min-h-8 px-3 font-interface text-xs font-medium"
+                />
+              ) : null}
+
               <button
                 type="button"
-                className="inline-flex h-8 items-center gap-1.5 border border-border bg-white px-3 text-xs font-medium text-muted-foreground"
-                aria-label={dict.article.comments}
+                className="
+                  inline-flex
+                  h-8
+                  items-center
+                  gap-1.5
+                  border
+                  border-border
+                  bg-white
+                  px-3
+                  font-interface
+                  text-xs
+                  font-medium
+                  text-muted-foreground
+                "
+                aria-label={
+                  dict.article
+                    .comments
+                }
               >
-                <MessageSquare className="h-3.5 w-3.5" aria-hidden />
-                {dict.article.comments} · {dict.article.comingSoon}
+                <MessageSquare
+                  className="h-3.5 w-3.5"
+                  aria-hidden
+                />
+
+                {
+                  dict.article
+                    .comments
+                }{' '}
+                ·{' '}
+                {
+                  dict.article
+                    .comingSoon
+                }
               </button>
             </div>
           </div>
@@ -183,62 +424,78 @@ export function ArticleView({
       </header>
 
       {/* Featured image */}
-{story.featuredImage && (
-  <figure className="border-b border-border">
-    <div className="container-wide py-6">
-      <div className="mx-auto max-w-4xl">
-        <img
-          src={story.featuredImage.url}
-          alt={
-            story.featuredImage.altText ||
-            story.imageCaption ||
-            ''
-          }
-          className="
-            w-full
-            bg-surface-subtle
-            object-cover
-          "
-        />
+      {story.featuredImage && (
+        <figure className="border-b border-border">
+          <div className="container-wide py-6">
+            <div className="mx-auto max-w-2xl">
+              <img
+                src={
+                  story
+                    .featuredImage
+                    .url
+                }
+                alt={
+                  story
+                    .featuredImage
+                    .altText ||
+                  story.imageCaption ||
+                  ''
+                }
+                className="
+                  block
+                  h-auto
+                  w-full
+                  rounded-sm
+                  bg-surface-subtle
+                  object-cover
+                "
+              />
 
-        {(story.imageCaption ||
-          story.imageCredit) && (
-          <figcaption
-            className="
-              mt-2
-              font-headline
-              text-[0.95rem]
-              leading-[1.45]
-              text-muted-foreground
-            "
-          >
-            {story.imageCaption && (
-              <span>
-                {story.imageCaption}
-              </span>
-            )}
+              {(story.imageCaption ||
+                story.imageCredit) && (
+                <figcaption
+                  className="
+                    mt-2
+                    font-interface
+                    text-xs
+                    leading-[1.5]
+                    text-muted-foreground
+                  "
+                >
+                  {story.imageCaption && (
+                    <span>
+                      {
+                        story.imageCaption
+                      }
+                    </span>
+                  )}
 
-            {story.imageCaption &&
-              story.imageCredit && ' '}
+                  {story.imageCaption &&
+                    story.imageCredit &&
+                    ' '}
 
-            {story.imageCredit && (
-              <em>
-                (
-                {story.imageCredit}
-                )
-              </em>
-            )}
-          </figcaption>
-        )}
-      </div>
-    </div>
-  </figure>
-)}
+                  {story.imageCredit && (
+                    <em>
+                      (
+                      {
+                        story.imageCredit
+                      }
+                      )
+                    </em>
+                  )}
+                </figcaption>
+              )}
+            </div>
+          </div>
+        </figure>
+      )}
 
       {/* Article body */}
       <div className="container-wide py-8 lg:py-10">
         <div className="mx-auto max-w-2xl">
-          <ArticleBody body={story.body} />
+          <ArticleBody
+            body={story.body}
+          />
         </div>
       </div>
 
@@ -247,16 +504,36 @@ export function ArticleView({
         <div className="border-t border-border">
           <div className="container-wide py-6">
             <div className="mx-auto max-w-2xl">
-              <h2 className="eyebrow text-deep">{dict.story.tags}</h2>
+              <h2 className="eyebrow text-deep">
+                {
+                  dict.story
+                    .tags
+                }
+              </h2>
+
               <div className="mt-3 flex flex-wrap gap-2">
-                {story.tags.map((tag) => (
-                  <span
-                    key={tag.id}
-                    className="border border-border bg-surface-muted px-2.5 py-1 text-xs font-medium text-foreground"
-                  >
-                    {tag.name}
-                  </span>
-                ))}
+                {story.tags.map(
+                  (tag) => (
+                    <span
+                      key={tag.id}
+                      className="
+                        border
+                        border-border
+                        bg-surface-muted
+                        px-2.5
+                        py-1
+                        font-interface
+                        text-xs
+                        font-medium
+                        text-foreground
+                      "
+                    >
+                      {
+                        tag.name
+                      }
+                    </span>
+                  )
+                )}
               </div>
             </div>
           </div>
@@ -267,8 +544,26 @@ export function ArticleView({
       <div className="border-t border-border bg-surface-muted">
         <div className="container-wide py-8">
           <div className="mx-auto max-w-3xl">
-            <h2 className="font-headline text-xl font-bold text-deep">{dict.article.relatedStories}</h2>
-            <p className="mt-1 text-sm text-muted-foreground">{dict.article.comingSoon}</p>
+            <h2
+              className="
+                font-headline
+                text-xl
+                font-bold
+                text-deep
+              "
+            >
+              {
+                dict.article
+                  .relatedStories
+              }
+            </h2>
+
+            <p className="mt-1 font-body text-sm text-muted-foreground">
+              {
+                dict.article
+                  .comingSoon
+              }
+            </p>
           </div>
         </div>
       </div>
@@ -276,169 +571,462 @@ export function ArticleView({
   );
 }
 
-/** Renders the TipTap JSON body as HTML using a recursive renderer. */
-function ArticleBody({ body }: { body: Record<string, unknown> }) {
-  return <div className="article-body">{renderNode(body)}</div>;
+/**
+ * Renders the TipTap JSON body recursively.
+ */
+function ArticleBody({
+  body,
+}: {
+  body: Record<string, unknown>;
+}) {
+  return (
+    <div className="article-body text-[1.1rem] font-normal [-webkit-text-stroke:0.1px_currentColor]">
+  {renderNode(body)}
+</div>
+  );
 
-  function renderNode(node: Record<string, unknown>): React.ReactNode {
-    const type = node.type as string;
-    const content = node.content as Record<string, unknown>[] | undefined;
+  function renderNode(
+    node: Record<
+      string,
+      unknown
+    >
+  ): React.ReactNode {
+    const type =
+      node.type as string;
+
+    const content =
+      node.content as
+        | Record<
+            string,
+            unknown
+          >[]
+        | undefined;
 
     switch (type) {
       case 'doc':
-        return (content ?? []).map((child, i) => (
-          <Fragment key={i}>{renderNode(child)}</Fragment>
-        ));
+        return (
+          content ?? []
+        ).map(
+          (
+            child,
+            i
+          ) => (
+            <Fragment key={i}>
+              {
+                renderNode(
+                  child
+                )
+              }
+            </Fragment>
+          )
+        );
 
       case 'paragraph':
         return (
-          <p>{(content ?? []).map((child, i) => <Fragment key={i}>{renderInline(child)}</Fragment>)}</p>
+          <p>
+            {(content ??
+              []).map(
+              (
+                child,
+                i
+              ) => (
+                <Fragment
+                  key={i}
+                >
+                  {
+                    renderInline(
+                      child
+                    )
+                  }
+                </Fragment>
+              )
+            )}
+          </p>
         );
 
       case 'heading': {
-        const level = (node.attrs as Record<string, unknown>)?.level as number;
-        const children = (content ?? []).map((child, i) => <Fragment key={i}>{renderInline(child)}</Fragment>);
-        if (level === 2) return <h2>{children}</h2>;
-        if (level === 3) return <h3>{children}</h3>;
-        return <h2>{children}</h2>;
+        const level =
+          (
+            node.attrs as Record<
+              string,
+              unknown
+            >
+          )?.level as number;
+
+        const children =
+          (
+            content ?? []
+          ).map(
+            (
+              child,
+              i
+            ) => (
+              <Fragment
+                key={i}
+              >
+                {
+                  renderInline(
+                    child
+                  )
+                }
+              </Fragment>
+            )
+          );
+
+        if (level === 2) {
+          return (
+            <h2>
+              {
+                children
+              }
+            </h2>
+          );
+        }
+
+        if (level === 3) {
+          return (
+            <h3>
+              {
+                children
+              }
+            </h3>
+          );
+        }
+
+        return (
+          <h2>
+            {
+              children
+            }
+          </h2>
+        );
       }
 
       case 'bulletList':
-        return <ul>{(content ?? []).map((child, i) => <Fragment key={i}>{renderNode(child)}</Fragment>)}</ul>;
+        return (
+          <ul>
+            {(content ??
+              []).map(
+              (
+                child,
+                i
+              ) => (
+                <Fragment
+                  key={i}
+                >
+                  {
+                    renderNode(
+                      child
+                    )
+                  }
+                </Fragment>
+              )
+            )}
+          </ul>
+        );
 
       case 'orderedList':
-        return <ol>{(content ?? []).map((child, i) => <Fragment key={i}>{renderNode(child)}</Fragment>)}</ol>;
+        return (
+          <ol>
+            {(content ??
+              []).map(
+              (
+                child,
+                i
+              ) => (
+                <Fragment
+                  key={i}
+                >
+                  {
+                    renderNode(
+                      child
+                    )
+                  }
+                </Fragment>
+              )
+            )}
+          </ol>
+        );
 
       case 'listItem':
         return (
-          <li>{(content ?? []).map((child, i) => <Fragment key={i}>{renderNode(child)}</Fragment>)}</li>
+          <li>
+            {(content ??
+              []).map(
+              (
+                child,
+                i
+              ) => (
+                <Fragment
+                  key={i}
+                >
+                  {
+                    renderNode(
+                      child
+                    )
+                  }
+                </Fragment>
+              )
+            )}
+          </li>
         );
 
       case 'blockquote':
         return (
-          <blockquote>{(content ?? []).map((child, i) => <Fragment key={i}>{renderNode(child)}</Fragment>)}</blockquote>
+          <blockquote>
+            {(content ??
+              []).map(
+              (
+                child,
+                i
+              ) => (
+                <Fragment
+                  key={i}
+                >
+                  {
+                    renderNode(
+                      child
+                    )
+                  }
+                </Fragment>
+              )
+            )}
+          </blockquote>
         );
 
       case 'horizontalRule':
         return <hr />;
 
-        case 'image': {
-          const attrs =
-            node.attrs as
-              | Record<
-                  string,
-                  unknown
-                >
-              | undefined;
-        
-          const src =
-            (attrs?.src as string) ??
-            '';
-        
-          const alt =
-            (attrs?.alt as string) ??
-            '';
-        
-          const description =
-            (attrs?.description as
-              | string
-              | null
-              | undefined) ??
-            null;
-        
-          const credit =
-            (attrs?.credit as
-              | string
-              | null
-              | undefined) ??
-            null;
-        
-          return (
-            <figure className="my-8">
-              <img
-                src={src}
-                alt={alt}
-                className="
-                  block
-                  h-auto
-                  w-full
-                  bg-surface-subtle
-                  object-cover
-                "
-              />
-        
-              {(description ||
-                credit) && (
+      case 'image': {
+        const attrs =
+          node.attrs as
+            | Record<
+                string,
+                unknown
+              >
+            | undefined;
+
+        const src =
+          (attrs?.src as string) ??
+          '';
+
+        const alt =
+          (attrs?.alt as string) ??
+          '';
+
+        const description =
+          (attrs?.description as
+            | string
+            | null
+            | undefined) ??
+          null;
+
+        const credit =
+          (attrs?.credit as
+            | string
+            | null
+            | undefined) ??
+          null;
+
+        return (
+          <figure className="my-8">
+            <img
+              src={src}
+              alt={alt}
+              className="
+                block
+                h-auto
+                w-full
+                rounded-sm
+                bg-surface-subtle
+                object-cover
+              "
+            />
+
+            {(description ||
+              credit) && (
                 <figcaption
                   className="
                     mt-2
-                    font-headline
-                    text-[0.95rem]
-                    leading-[1.45]
+                    font-interface
+                    text-xs
+                    leading-[1.5]
                     text-muted-foreground
                   "
                 >
                   {description && (
                     <span>
-                      {description}
+                      {
+                        description
+                      }
                     </span>
                   )}
-        
+
                   {description &&
-                    credit && ' '}
-        
+                    credit &&
+                    ' '}
+
                   {credit && (
                     <em>
                       (
-                      {credit}
+                      {
+                        credit
+                      }
                       )
                     </em>
                   )}
                 </figcaption>
               )}
-            </figure>
-          );
-        }
+          </figure>
+        );
+      }
 
       default:
         if (content) {
-          return (content ?? []).map((child, i) => <Fragment key={i}>{renderNode(child)}</Fragment>);
+          return content.map(
+            (
+              child,
+              i
+            ) => (
+              <Fragment
+                key={i}
+              >
+                {
+                  renderNode(
+                    child
+                  )
+                }
+              </Fragment>
+            )
+          );
         }
+
         return null;
     }
   }
 
-  function renderInline(node: Record<string, unknown>): React.ReactNode {
-    const type = node.type as string;
-    const content = node.content as Record<string, unknown>[] | undefined;
+  function renderInline(
+    node: Record<
+      string,
+      unknown
+    >
+  ): React.ReactNode {
+    const type =
+      node.type as string;
+
+    const content =
+      node.content as
+        | Record<
+            string,
+            unknown
+          >[]
+        | undefined;
 
     if (type === 'text') {
-      const marks = node.marks as Record<string, unknown>[] | undefined;
-      let text: React.ReactNode = node.text as string;
+      const marks =
+        node.marks as
+          | Record<
+              string,
+              unknown
+            >[]
+          | undefined;
+
+      let text:
+        React.ReactNode =
+        node.text as string;
 
       if (marks) {
         for (const mark of marks) {
-          const markType = mark.type as string;
-          if (markType === 'bold') text = <strong>{text}</strong>;
-          if (markType === 'italic') text = <em>{text}</em>;
-          if (markType === 'underline') text = <u>{text}</u>;
-          if (markType === 'link') {
-            const attrs = mark.attrs as Record<string, unknown>;
+          const markType =
+            mark.type as string;
+
+          if (
+            markType ===
+            'bold'
+          ) {
             text = (
-              <a href={attrs?.href as string} target="_blank" rel="noopener noreferrer">
+              <strong>
                 {text}
+              </strong>
+            );
+          }
+
+          if (
+            markType ===
+            'italic'
+          ) {
+            text = (
+              <em>
+                {text}
+              </em>
+            );
+          }
+
+          if (
+            markType ===
+            'underline'
+          ) {
+            text = (
+              <u>
+                {text}
+              </u>
+            );
+          }
+
+          if (
+            markType ===
+            'link'
+          ) {
+            const attrs =
+              mark.attrs as Record<
+                string,
+                unknown
+              >;
+
+            text = (
+              <a
+                href={
+                  attrs?.href as string
+                }
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                {
+                  text
+                }
               </a>
             );
           }
         }
       }
+
       return text;
     }
 
-    if (type === 'hardBreak') return <br />;
+    if (
+      type ===
+      'hardBreak'
+    ) {
+      return <br />;
+    }
 
     if (content) {
-      return content.map((child, i) => <Fragment key={i}>{renderInline(child)}</Fragment>);
+      return content.map(
+        (
+          child,
+          i
+        ) => (
+          <Fragment
+            key={i}
+          >
+            {
+              renderInline(
+                child
+              )
+            }
+          </Fragment>
+        )
+      );
     }
 
     return null;
