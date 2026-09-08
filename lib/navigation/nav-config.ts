@@ -45,6 +45,22 @@ export function getPrimaryNav(dict: Dictionary, locale: Locale): NavItem[] {
     { key: 'watch', label: dict.nav.watch, href: localizedPath(locale, '/watch') },
     { key: 'listen', label: dict.nav.listen, href: localizedPath(locale, '/listen') },
     { key: 'vault', label: dict.nav.vault, href: localizedPath(locale, '/vault') },
+    {
+      key: 'colombia',
+      label: dict.nav.colombia,
+      href: localizedPath(
+        locale,
+        '/category/colombia'
+      ),
+    },
+    {
+      key: 'caribbean',
+      label: dict.nav.caribbean,
+      href: localizedPath(
+        locale,
+        '/category/caribbean'
+      ),
+    },
   ];
 }
 

@@ -79,16 +79,15 @@ export function Header({
       >
         <div
           className="
-            container-wide
-            flex
-            h-14
-            items-center
-            gap-3
-            lg:grid
-            lg:h-[64px]
-            lg:grid-cols-[auto_minmax(0,1fr)_auto]
-            lg:gap-5
-          "
+          container-wide
+          relative
+          flex
+          h-14
+          items-center
+          gap-3
+          lg:h-[64px]
+          lg:justify-between
+        "
         >
           {/* Mobile menu */}
           <button
@@ -141,33 +140,36 @@ export function Header({
 
           {/* Centered desktop navigation */}
           <div
-            className="
-              hidden
-              min-w-0
-              items-center
-              justify-center
-              lg:flex
-            "
-          >
-            <DesktopNav
-              dict={dict}
-              locale={locale}
-              inline
-            />
-          </div>
+  className="
+    absolute
+    left-1/2
+    hidden
+    h-full
+    -translate-x-1/2
+    items-center
+    lg:flex
+  "
+>
+  <DesktopNav
+    dict={dict}
+    locale={locale}
+    inline
+  />
+</div>
 
           {/* Right controls */}
           <div
-            className="
-              ml-auto
-              flex
-              shrink-0
-              items-center
-              gap-1
-              lg:ml-0
-              lg:gap-2
-            "
-          >
+  className="
+    ml-auto
+    flex
+    shrink-0
+    items-center
+    gap-1
+    lg:ml-0
+    lg:justify-self-end
+    lg:gap-2
+  "
+>
             {/* Search */}
             <Link
               href={localizedPath(

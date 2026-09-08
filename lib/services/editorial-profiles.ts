@@ -270,6 +270,43 @@ import {
       null
     );
   }
+
+  export async function getEditorialProfiles(): Promise<
+  EditorialProfile[]
+> {
+  const supabase =
+    await getDataClient();
+
+  const {
+    data,
+    error,
+  } = await supabase
+    .from(
+      'editorial_profiles'
+    )
+    .select('*')
+    .order(
+      'byline_name',
+      {
+        ascending: true,
+      }
+    );
+
+  if (error) {
+    console.error(
+      'Unable to load editorial profiles:',
+      error
+    );
+
+    throw new Error(
+      `Unable to load editorial profiles: ${error.message}`
+    );
+  }
+
+  return resolveEditorialProfiles(
+    data ?? []
+  );
+}
   
   /**
    * Returns a public contributor profile by its stable URL

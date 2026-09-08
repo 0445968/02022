@@ -509,63 +509,69 @@ const editorialProfiles =
     staffAccountIds
   );
 
-function resolveEditorialIdentity(
-  accountId:
-    | string
-    | null
-): StoryAuthor | null {
-  if (!accountId) {
-    return null;
+  function resolveEditorialIdentity(
+    accountId:
+      | string
+      | null
+  ): StoryAuthor | null {
+    if (!accountId) {
+      return null;
+    }
+  
+    const editorialProfile =
+      editorialProfiles.get(
+        accountId
+      );
+  
+    const legacyProfile =
+      legacyProfiles.get(
+        accountId
+      );
+  
+    return {
+      /**
+       * Keep returning the account ID until story foreign
+       * keys migrate to editorial-profile IDs.
+       */
+      id:
+        accountId,
+  
+      name:
+        editorialProfile
+          ?.bylineName ??
+        legacyProfile
+          ?.name ??
+        null,
+  
+      editorialTitle:
+        editorialProfile
+          ?.editorialTitle ??
+        legacyProfile
+          ?.editorialTitle ??
+        null,
+  
+      headshotUrl:
+        editorialProfile
+          ?.headshot
+          ?.url ??
+        null,
+    };
   }
-
-  const editorialProfile =
-    editorialProfiles.get(
-      accountId
+  
+  const author:
+    | StoryAuthor
+    | null =
+    resolveEditorialIdentity(
+      story.author_id
     );
-
-  const legacyProfile =
-    legacyProfiles.get(
-      accountId
+  
+  const editor:
+    | StoryEditor
+    | null =
+    resolveEditorialIdentity(
+      story.editor_id
     );
-
-  return {
-    /**
-     * Keep returning the account ID until story foreign
-     * keys migrate to editorial-profile IDs.
-     */
-    id:
-      accountId,
-
-    name:
-      editorialProfile
-        ?.bylineName ??
-      legacyProfile
-        ?.name ??
-      null,
-
-    editorialTitle:
-      editorialProfile
-        ?.editorialTitle ??
-      legacyProfile
-        ?.editorialTitle ??
-      null,
-  };
-}
-
-const author:
-  | StoryAuthor
-  | null =
-  resolveEditorialIdentity(
-    story.author_id
-  );
-
-const editor:
-  | StoryEditor
-  | null =
-  resolveEditorialIdentity(
-    story.editor_id
-  );
-
+  
   // Story categories
   const {
     data: catRows,

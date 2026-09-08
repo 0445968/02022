@@ -10,9 +10,13 @@ import {
 
 import {
   ChevronDown,
+  Info,
   Pause,
   Play,
+  Volume1,
   Volume2,
+  VolumeX,
+  X,
 } from 'lucide-react';
 
 import type { Locale } from '@/types';
@@ -35,7 +39,9 @@ interface ArticleListenBarProps {
    EXTRACT ARTICLE TEXT
 ========================================================= */
 
-function extractText(node: any): string {
+function extractText(
+  node: any
+): string {
   if (!node) {
     return '';
   }
@@ -47,22 +53,32 @@ function extractText(node: any): string {
     return node.text;
   }
 
-  if (node.type === 'hardBreak') {
+  if (
+    node.type ===
+    'hardBreak'
+  ) {
     return '\n';
   }
 
-  if (Array.isArray(node)) {
+  if (
+    Array.isArray(node)
+  ) {
     return node
       .map(extractText)
       .filter(Boolean)
       .join(' ');
   }
 
-  if (Array.isArray(node.content)) {
-    const children = node.content
-      .map(extractText)
-      .filter(Boolean)
-      .join(' ');
+  if (
+    Array.isArray(
+      node.content
+    )
+  ) {
+    const children =
+      node.content
+        .map(extractText)
+        .filter(Boolean)
+        .join(' ');
 
     if (
       [
@@ -70,7 +86,9 @@ function extractText(node: any): string {
         'heading',
         'blockquote',
         'listItem',
-      ].includes(node.type)
+      ].includes(
+        node.type
+      )
     ) {
       return `${children}\n`;
     }
@@ -88,9 +106,13 @@ function extractText(node: any): string {
 function createSpeechSegments(
   text: string
 ) {
-  const cleaned = text
-    .replace(/\s+/g, ' ')
-    .trim();
+  const cleaned =
+    text
+      .replace(
+        /\s+/g,
+        ' '
+      )
+      .trim();
 
   if (!cleaned) {
     return [];
@@ -99,49 +121,73 @@ function createSpeechSegments(
   const sentences =
     cleaned.match(
       /[^.!?]+[.!?]+|[^.!?]+$/g
-    ) ?? [cleaned];
+    ) ?? [
+      cleaned,
+    ];
 
-  const segments: string[] = [];
+  const segments:
+    string[] = [];
 
-  sentences.forEach((sentence) => {
-    const trimmed =
-      sentence.trim();
+  sentences.forEach(
+    (sentence) => {
+      const trimmed =
+        sentence.trim();
 
-    if (!trimmed) {
-      return;
-    }
-
-    if (trimmed.length <= 260) {
-      segments.push(trimmed);
-      return;
-    }
-
-    const words =
-      trimmed.split(' ');
-
-    let current = '';
-
-    words.forEach((word) => {
-      const candidate =
-        current
-          ? `${current} ${word}`
-          : word;
+      if (!trimmed) {
+        return;
+      }
 
       if (
-        candidate.length > 220 &&
-        current
+        trimmed.length <=
+        260
       ) {
-        segments.push(current);
-        current = word;
-      } else {
-        current = candidate;
-      }
-    });
+        segments.push(
+          trimmed
+        );
 
-    if (current) {
-      segments.push(current);
+        return;
+      }
+
+      const words =
+        trimmed.split(
+          ' '
+        );
+
+      let current =
+        '';
+
+      words.forEach(
+        (word) => {
+          const candidate =
+            current
+              ? `${current} ${word}`
+              : word;
+
+          if (
+            candidate.length >
+              220 &&
+            current
+          ) {
+            segments.push(
+              current
+            );
+
+            current =
+              word;
+          } else {
+            current =
+              candidate;
+          }
+        }
+      );
+
+      if (current) {
+        segments.push(
+          current
+        );
+      }
     }
-  });
+  );
 
   return segments;
 }
@@ -163,21 +209,28 @@ function countWords(
 function formatTime(
   seconds: number
 ) {
-  const safe = Math.max(
-    0,
-    Math.floor(seconds)
-  );
+  const safe =
+    Math.max(
+      0,
+      Math.floor(
+        seconds
+      )
+    );
 
-  const minutes = Math.floor(
-    safe / 60
-  );
+  const minutes =
+    Math.floor(
+      safe / 60
+    );
 
   const remaining =
     safe % 60;
 
   return `${minutes}:${String(
     remaining
-  ).padStart(2, '0')}`;
+  ).padStart(
+    2,
+    '0'
+  )}`;
 }
 
 /* =========================================================
@@ -191,10 +244,17 @@ export function ArticleListenBar({
   const articleText =
     useMemo(
       () =>
-        extractText(body)
-          .replace(/\s+/g, ' ')
+        extractText(
+          body
+        )
+          .replace(
+            /\s+/g,
+            ' '
+          )
           .trim(),
-      [body]
+      [
+        body,
+      ]
     );
 
   const segments =
@@ -203,7 +263,9 @@ export function ArticleListenBar({
         createSpeechSegments(
           articleText
         ),
-      [articleText]
+      [
+        articleText,
+      ]
     );
 
   const totalWords =
@@ -212,60 +274,127 @@ export function ArticleListenBar({
         countWords(
           articleText
         ),
-      [articleText]
+      [
+        articleText,
+      ]
     );
 
   const [
     isPlaying,
     setIsPlaying,
-  ] = useState(false);
+  ] =
+    useState(
+      false
+    );
 
   const [
     currentSegment,
     setCurrentSegment,
-  ] = useState(0);
+  ] =
+    useState(
+      0
+    );
 
   const [
     elapsedSeconds,
     setElapsedSeconds,
-  ] = useState(0);
+  ] =
+    useState(
+      0
+    );
 
   const [
     speed,
     setSpeed,
-  ] = useState(1);
+  ] =
+    useState(
+      1
+    );
+
+  const [
+    volume,
+    setVolume,
+  ] =
+    useState(
+      1
+    );
+
+  const [
+    previousVolume,
+    setPreviousVolume,
+  ] =
+    useState(
+      1
+    );
+
+  const [
+    volumeOpen,
+    setVolumeOpen,
+  ] =
+    useState(
+      false
+    );
+
+  const [
+    infoOpen,
+    setInfoOpen,
+  ] =
+    useState(
+      false
+    );
 
   const [
     supported,
     setSupported,
-  ] = useState(true);
+  ] =
+    useState(
+      true
+    );
 
   const [
     voices,
     setVoices,
-  ] = useState<
-    SpeechSynthesisVoice[]
-  >([]);
+  ] =
+    useState<
+      SpeechSynthesisVoice[]
+    >([]);
 
   const playingRef =
-    useRef(false);
+    useRef(
+      false
+    );
 
   const currentSegmentRef =
-    useRef(0);
+    useRef(
+      0
+    );
 
   const speedRef =
-    useRef(1);
+    useRef(
+      1
+    );
+
+  const volumeRef =
+    useRef(
+      1
+    );
 
   const segmentsRef =
-    useRef(segments);
+    useRef(
+      segments
+    );
 
   const elapsedRef =
-    useRef(0);
+    useRef(
+      0
+    );
 
   const timerRef =
-    useRef<ReturnType<
-      typeof setInterval
-    > | null>(null);
+    useRef<
+      ReturnType<
+        typeof setInterval
+      > | null
+    >(null);
 
   /* =======================================================
      DURATION
@@ -273,12 +402,17 @@ export function ArticleListenBar({
 
   const baseDuration =
     totalWords > 0
-      ? (totalWords / 170) * 60
+      ? (
+          totalWords /
+          170
+        ) *
+        60
       : 0;
 
   const totalDuration =
     speed > 0
-      ? baseDuration / speed
+      ? baseDuration /
+        speed
       : baseDuration;
 
   const progress =
@@ -297,27 +431,44 @@ export function ArticleListenBar({
   useEffect(() => {
     playingRef.current =
       isPlaying;
-  }, [isPlaying]);
+  }, [
+    isPlaying,
+  ]);
 
   useEffect(() => {
     currentSegmentRef.current =
       currentSegment;
-  }, [currentSegment]);
+  }, [
+    currentSegment,
+  ]);
 
   useEffect(() => {
     speedRef.current =
       speed;
-  }, [speed]);
+  }, [
+    speed,
+  ]);
+
+  useEffect(() => {
+    volumeRef.current =
+      volume;
+  }, [
+    volume,
+  ]);
 
   useEffect(() => {
     segmentsRef.current =
       segments;
-  }, [segments]);
+  }, [
+    segments,
+  ]);
 
   useEffect(() => {
     elapsedRef.current =
       elapsedSeconds;
-  }, [elapsedSeconds]);
+  }, [
+    elapsedSeconds,
+  ]);
 
   /* =======================================================
      SPEECH SUPPORT + VOICES
@@ -332,29 +483,37 @@ export function ArticleListenBar({
         window
       )
     ) {
-      setSupported(false);
+      setSupported(
+        false
+      );
+
       return;
     }
 
     function loadVoices() {
       setVoices(
-        window.speechSynthesis
+        window
+          .speechSynthesis
           .getVoices()
       );
     }
 
     loadVoices();
 
-    window.speechSynthesis.addEventListener(
-      'voiceschanged',
-      loadVoices
-    );
-
-    return () => {
-      window.speechSynthesis.removeEventListener(
+    window
+      .speechSynthesis
+      .addEventListener(
         'voiceschanged',
         loadVoices
       );
+
+    return () => {
+      window
+        .speechSynthesis
+        .removeEventListener(
+          'voiceschanged',
+          loadVoices
+        );
     };
   }, []);
 
@@ -363,36 +522,44 @@ export function ArticleListenBar({
   ======================================================= */
 
   const getVoice =
-    useCallback(() => {
-      const language =
-        locale === 'es'
-          ? 'es'
-          : 'en';
+    useCallback(
+      () => {
+        const language =
+          locale ===
+          'es'
+            ? 'es'
+            : 'en';
 
-      return (
-        voices.find(
-          (voice) =>
-            voice.lang
-              .toLowerCase()
-              .startsWith(
-                language
-              ) &&
-            voice.default
-        ) ??
-        voices.find(
-          (voice) =>
-            voice.lang
-              .toLowerCase()
-              .startsWith(
-                language
-              )
-        ) ??
-        null
-      );
-    }, [
-      locale,
-      voices,
-    ]);
+        return (
+          voices.find(
+            (
+              voice
+            ) =>
+              voice.lang
+                .toLowerCase()
+                .startsWith(
+                  language
+                ) &&
+              voice.default
+          ) ??
+          voices.find(
+            (
+              voice
+            ) =>
+              voice.lang
+                .toLowerCase()
+                .startsWith(
+                  language
+                )
+          ) ??
+          null
+        );
+      },
+      [
+        locale,
+        voices,
+      ]
+    );
 
   /* =======================================================
      SPEAK SEGMENT
@@ -400,7 +567,9 @@ export function ArticleListenBar({
 
   const speakSegment =
     useCallback(
-      (index: number) => {
+      (
+        index: number
+      ) => {
         if (
           typeof window ===
             'undefined' ||
@@ -418,31 +587,43 @@ export function ArticleListenBar({
           index >=
             currentSegments.length
         ) {
-          window.speechSynthesis.cancel();
+          window
+            .speechSynthesis
+            .cancel();
 
           playingRef.current =
             false;
 
-          setIsPlaying(false);
+          setIsPlaying(
+            false
+          );
 
           return;
         }
 
-        window.speechSynthesis.cancel();
+        window
+          .speechSynthesis
+          .cancel();
 
         const utterance =
           new SpeechSynthesisUtterance(
-            currentSegments[index]
+            currentSegments[
+              index
+            ]
           );
 
         utterance.rate =
           speedRef.current;
 
-        utterance.pitch = 1;
-        utterance.volume = 1;
+        utterance.pitch =
+          1;
+
+        utterance.volume =
+          volumeRef.current;
 
         utterance.lang =
-          locale === 'es'
+          locale ===
+          'es'
             ? 'es'
             : 'en';
 
@@ -450,7 +631,8 @@ export function ArticleListenBar({
           getVoice();
 
         if (voice) {
-          utterance.voice = voice;
+          utterance.voice =
+            voice;
         }
 
         utterance.onstart =
@@ -481,7 +663,9 @@ export function ArticleListenBar({
               playingRef.current =
                 false;
 
-              setIsPlaying(false);
+              setIsPlaying(
+                false
+              );
 
               setElapsedSeconds(
                 totalDuration
@@ -500,11 +684,15 @@ export function ArticleListenBar({
             currentSegmentRef.current =
               next;
 
-            speakSegment(next);
+            speakSegment(
+              next
+            );
           };
 
         utterance.onerror =
-          (event) => {
+          (
+            event
+          ) => {
             if (
               event.error ===
                 'canceled' ||
@@ -522,12 +710,16 @@ export function ArticleListenBar({
             playingRef.current =
               false;
 
-            setIsPlaying(false);
+            setIsPlaying(
+              false
+            );
           };
 
-        window.speechSynthesis.speak(
-          utterance
-        );
+        window
+          .speechSynthesis
+          .speak(
+            utterance
+          );
       },
       [
         getVoice,
@@ -541,8 +733,12 @@ export function ArticleListenBar({
   ======================================================= */
 
   useEffect(() => {
-    if (!isPlaying) {
-      if (timerRef.current) {
+    if (
+      !isPlaying
+    ) {
+      if (
+        timerRef.current
+      ) {
         clearInterval(
           timerRef.current
         );
@@ -555,37 +751,45 @@ export function ArticleListenBar({
     }
 
     timerRef.current =
-      setInterval(() => {
-        setElapsedSeconds(
-          (current) => {
-            const next =
-              Math.min(
-                current + 1,
+      setInterval(
+        () => {
+          setElapsedSeconds(
+            (
+              current
+            ) => {
+              const next =
+                Math.min(
+                  current +
+                    1,
+                  totalDuration
+                );
+
+              elapsedRef.current =
+                next;
+
+              if (
+                next >=
                 totalDuration
-              );
+              ) {
+                playingRef.current =
+                  false;
 
-            elapsedRef.current =
-              next;
+                setIsPlaying(
+                  false
+                );
+              }
 
-            if (
-              next >=
-              totalDuration
-            ) {
-              playingRef.current =
-                false;
-
-              setIsPlaying(
-                false
-              );
+              return next;
             }
-
-            return next;
-          }
-        );
-      }, 1000);
+          );
+        },
+        1000
+      );
 
     return () => {
-      if (timerRef.current) {
+      if (
+        timerRef.current
+      ) {
         clearInterval(
           timerRef.current
         );
@@ -609,10 +813,14 @@ export function ArticleListenBar({
         typeof window !==
         'undefined'
       ) {
-        window.speechSynthesis?.cancel();
+        window
+          .speechSynthesis
+          ?.cancel();
       }
 
-      if (timerRef.current) {
+      if (
+        timerRef.current
+      ) {
         clearInterval(
           timerRef.current
         );
@@ -621,24 +829,62 @@ export function ArticleListenBar({
   }, []);
 
   /* =======================================================
+     RESTART CURRENT SPEECH SEGMENT
+  ======================================================= */
+
+  function restartCurrentSegment() {
+    if (
+      !isPlaying ||
+      typeof window ===
+        'undefined'
+    ) {
+      return;
+    }
+
+    window
+      .speechSynthesis
+      .cancel();
+
+    window.setTimeout(
+      () => {
+        if (
+          playingRef.current
+        ) {
+          speakSegment(
+            currentSegmentRef.current
+          );
+        }
+      },
+      60
+    );
+  }
+
+  /* =======================================================
      PLAY / PAUSE
   ======================================================= */
 
   function togglePlayback() {
     if (
       !supported ||
-      segments.length === 0
+      segments.length ===
+        0
     ) {
       return;
     }
 
-    if (isPlaying) {
-      window.speechSynthesis.cancel();
+    if (
+      isPlaying
+    ) {
+      window
+        .speechSynthesis
+        .cancel();
 
       playingRef.current =
         false;
 
-      setIsPlaying(false);
+      setIsPlaying(
+        false
+      );
 
       return;
     }
@@ -650,24 +896,34 @@ export function ArticleListenBar({
       elapsedRef.current >=
       totalDuration
     ) {
-      startIndex = 0;
+      startIndex =
+        0;
 
-      setCurrentSegment(0);
+      setCurrentSegment(
+        0
+      );
 
       currentSegmentRef.current =
         0;
 
-      setElapsedSeconds(0);
+      setElapsedSeconds(
+        0
+      );
 
-      elapsedRef.current = 0;
+      elapsedRef.current =
+        0;
     }
 
     playingRef.current =
       true;
 
-    setIsPlaying(true);
+    setIsPlaying(
+      true
+    );
 
-    speakSegment(startIndex);
+    speakSegment(
+      startIndex
+    );
   }
 
   /* =======================================================
@@ -686,14 +942,17 @@ export function ArticleListenBar({
           previousTotal
         : 0;
 
-    setSpeed(value);
+    setSpeed(
+      value
+    );
 
     speedRef.current =
       value;
 
     const nextTotal =
       value > 0
-        ? baseDuration / value
+        ? baseDuration /
+          value
         : baseDuration;
 
     const nextElapsed =
@@ -707,27 +966,81 @@ export function ArticleListenBar({
     elapsedRef.current =
       nextElapsed;
 
-    if (
-      isPlaying &&
-      typeof window !==
-        'undefined'
-    ) {
-      window.speechSynthesis.cancel();
+    restartCurrentSegment();
+  }
 
-      window.setTimeout(
-        () => {
-          if (
-            playingRef.current
-          ) {
-            speakSegment(
-              currentSegmentRef.current
-            );
-          }
-        },
-        60
+  /* =======================================================
+     VOLUME
+  ======================================================= */
+
+  function changeVolume(
+    value: number
+  ) {
+    const next =
+      Math.min(
+        Math.max(
+          value,
+          0
+        ),
+        1
+      );
+
+    setVolume(
+      next
+    );
+
+    volumeRef.current =
+      next;
+
+    if (
+      next > 0
+    ) {
+      setPreviousVolume(
+        next
       );
     }
+
+    restartCurrentSegment();
   }
+
+  function toggleMute() {
+    if (
+      volume > 0
+    ) {
+      setPreviousVolume(
+        volume
+      );
+
+      setVolume(
+        0
+      );
+
+      volumeRef.current =
+        0;
+    } else {
+      const restored =
+        previousVolume >
+        0
+          ? previousVolume
+          : 1;
+
+      setVolume(
+        restored
+      );
+
+      volumeRef.current =
+        restored;
+    }
+
+    restartCurrentSegment();
+  }
+
+  const VolumeIcon =
+    volume === 0
+      ? VolumeX
+      : volume < 0.5
+        ? Volume1
+        : Volume2;
 
   /* =======================================================
      SEEK
@@ -737,7 +1050,8 @@ export function ArticleListenBar({
     ratio: number
   ) {
     if (
-      segments.length === 0
+      segments.length ===
+      0
     ) {
       return;
     }
@@ -780,7 +1094,9 @@ export function ArticleListenBar({
       typeof window !==
         'undefined'
     ) {
-      window.speechSynthesis.cancel();
+      window
+        .speechSynthesis
+        .cancel();
 
       window.setTimeout(
         () => {
@@ -801,21 +1117,28 @@ export function ArticleListenBar({
     event: React.MouseEvent<HTMLDivElement>
   ) {
     const rect =
-      event.currentTarget.getBoundingClientRect();
+      event.currentTarget
+        .getBoundingClientRect();
 
     const ratio =
-      (event.clientX -
-        rect.left) /
+      (
+        event.clientX -
+        rect.left
+      ) /
       rect.width;
 
-    seekToRatio(ratio);
+    seekToRatio(
+      ratio
+    );
   }
 
   /* =======================================================
      UNSUPPORTED BROWSER
   ======================================================= */
 
-  if (!supported) {
+  if (
+    !supported
+  ) {
     return (
       <section
         className="
@@ -832,7 +1155,10 @@ export function ArticleListenBar({
             text-deep
           "
         >
-          Listen to article
+          {locale ===
+          'es'
+            ? 'Escuchar artículo'
+            : 'Listen to article'}
         </p>
 
         <p
@@ -843,8 +1169,10 @@ export function ArticleListenBar({
             text-muted-foreground
           "
         >
-          Audio playback is not
-          supported by this browser.
+          {locale ===
+          'es'
+            ? 'La reproducción de audio no es compatible con este navegador.'
+            : 'Audio playback is not supported by this browser.'}
         </p>
       </section>
     );
@@ -859,48 +1187,57 @@ export function ArticleListenBar({
       className="
         mb-8
         bg-white
-        py-4
+        py-3
       "
     >
-      {/* ==================================================
-          TOP ROW
-      ================================================== */}
-
       <div
         className="
           flex
           items-center
-          gap-4
+          gap-3
         "
       >
-        {/* Play */}
+        {/* =================================================
+            PLAY BUTTON
+        ================================================= */}
+
         <button
           type="button"
           onClick={
             togglePlayback
           }
           disabled={
-            segments.length === 0
+            segments.length ===
+            0
           }
           className="
-            flex
+            inline-flex
             h-11
             w-11
             shrink-0
             items-center
             justify-center
             rounded-full
-            bg-[hsl(var(--color-article-accent))]
+            bg-deep
             text-white
-            transition-opacity
-            hover:opacity-90
-            disabled:cursor-not-allowed
-            disabled:opacity-40
+            transition-colors
+            hover:bg-deep/90
+            focus-visible:outline-none
+            focus-visible:ring-2
+            focus-visible:ring-ring
+            disabled:pointer-events-none
+            disabled:opacity-50
           "
           aria-label={
             isPlaying
-              ? 'Pause article'
-              : 'Listen to article'
+              ? locale ===
+                'es'
+                ? 'Pausar'
+                : 'Pause'
+              : locale ===
+                  'es'
+                ? 'Reproducir'
+                : 'Play'
           }
         >
           {isPlaying ? (
@@ -908,7 +1245,6 @@ export function ArticleListenBar({
               className="
                 h-4
                 w-4
-                fill-current
               "
               aria-hidden
             />
@@ -918,14 +1254,16 @@ export function ArticleListenBar({
                 ml-0.5
                 h-4
                 w-4
-                fill-current
               "
               aria-hidden
             />
           )}
         </button>
 
-        {/* Label */}
+        {/* =================================================
+            PLAYER CONTENT
+        ================================================= */}
+
         <div
           className="
             min-w-0
@@ -936,19 +1274,10 @@ export function ArticleListenBar({
             className="
               flex
               items-center
-              gap-2
+              justify-between
+              gap-3
             "
           >
-            <Volume2
-              className="
-                h-4
-                w-4
-                shrink-0
-                text-[hsl(var(--color-article-accent))]
-              "
-              aria-hidden
-            />
-
             <p
               className="
                 font-interface
@@ -957,252 +1286,559 @@ export function ArticleListenBar({
                 text-deep
               "
             >
-              Listen to article
+              {locale ===
+              'es'
+                ? 'Escuchar artículo'
+                : 'Listen to article'}
+            </p>
+
+            <p
+              className="
+                shrink-0
+                font-interface
+                text-[11px]
+                tabular-nums
+                text-muted-foreground
+              "
+            >
+              {formatTime(
+                elapsedSeconds
+              )}
+              {' / '}
+              {formatTime(
+                totalDuration
+              )}
             </p>
           </div>
 
-          <p
-            className="
-              mt-0.5
-              font-interface
-              text-[0.68rem]
-              text-muted-foreground
-            "
-          >
-            {formatTime(
-              totalDuration
-            )}{' '}
-            listen
-          </p>
-        </div>
+          {/* =================================================
+              PROGRESS + CONTROLS
+          ================================================= */}
 
-        {/* ==================================================
-            SPEED SELECT
-        ================================================== */}
-
-        <div
-          className="
-            relative
-            shrink-0
-          "
-        >
-          <label
-            htmlFor="article-playback-speed"
-            className="sr-only"
-          >
-            Playback speed
-          </label>
-
-          <select
-            id="article-playback-speed"
-            value={speed}
-            onChange={(event) =>
-              changeSpeed(
-                Number(
-                  event.target
-                    .value
-                )
-              )
-            }
-            className="
-              h-9
-              cursor-pointer
-              appearance-none
-              rounded-lg
-              border-0
-              bg-white
-              pl-3
-              pr-10
-              font-interface
-              text-xs
-              font-semibold
-              text-deep
-              shadow-sm
-              outline-none
-              ring-1
-              ring-border
-              transition-colors
-              hover:bg-surface-muted
-              focus:ring-2
-              focus:ring-[hsl(var(--color-article-accent))]
-            "
-          >
-            {SPEED_OPTIONS.map(
-              (option) => (
-                <option
-                  key={option}
-                  value={option}
-                >
-                  {option}x
-                </option>
-              )
-            )}
-          </select>
-
-          <ChevronDown
-            className="
-              pointer-events-none
-              absolute
-              right-3.5
-              top-1/2
-              h-4
-              w-4
-              -translate-y-1/2
-              text-deep
-            "
-            aria-hidden
-          />
-        </div>
-      </div>
-
-      {/* ==================================================
-          PROGRESS BAR
-      ================================================== */}
-
-      <div
-        className="
-          mt-4
-          flex
-          items-center
-          gap-3
-        "
-      >
-        {/* Current time */}
-        <span
-          className="
-            w-9
-            shrink-0
-            font-interface
-            text-[0.65rem]
-            tabular-nums
-            text-muted-foreground
-          "
-        >
-          {formatTime(
-            elapsedSeconds
-          )}
-        </span>
-
-        {/* Seek bar */}
-        <div
-          role="slider"
-          tabIndex={0}
-          aria-label="Article playback position"
-          aria-valuemin={0}
-          aria-valuemax={100}
-          aria-valuenow={Math.round(
-            progress * 100
-          )}
-          onClick={
-            handleProgressClick
-          }
-          onKeyDown={(event) => {
-            if (
-              event.key ===
-              'ArrowRight'
-            ) {
-              event.preventDefault();
-
-              seekToRatio(
-                progress + 0.05
-              );
-            }
-
-            if (
-              event.key ===
-              'ArrowLeft'
-            ) {
-              event.preventDefault();
-
-              seekToRatio(
-                progress - 0.05
-              );
-            }
-          }}
-          className="
-            group
-            relative
-            h-6
-            min-w-0
-            flex-1
-            cursor-pointer
-            outline-none
-          "
-        >
-          {/* Track */}
           <div
             className="
-              absolute
-              left-0
-              right-0
-              top-1/2
-              h-1.5
-              -translate-y-1/2
-              overflow-hidden
-              rounded-full
-              bg-deep/10
-              transition-[height]
-              group-hover:h-2
-              group-focus-visible:h-2
+              mt-2
+              flex
+              items-center
+              gap-2
             "
           >
-            {/* Filled progress */}
+            {/* Progress */}
+            <div
+              role="slider"
+              aria-label={
+                locale ===
+                'es'
+                  ? 'Progreso del audio'
+                  : 'Audio progress'
+              }
+              aria-valuemin={
+                0
+              }
+              aria-valuemax={
+                100
+              }
+              aria-valuenow={Math.round(
+                progress *
+                  100
+              )}
+              tabIndex={
+                0
+              }
+              onClick={
+                handleProgressClick
+              }
+              onKeyDown={(
+                event
+              ) => {
+                if (
+                  event.key ===
+                    'ArrowRight' ||
+                  event.key ===
+                    'ArrowLeft'
+                ) {
+                  event.preventDefault();
+
+                  const delta =
+                    event.key ===
+                    'ArrowRight'
+                      ? 0.05
+                      : -0.05;
+
+                  seekToRatio(
+                    progress +
+                      delta
+                  );
+                }
+              }}
+              className="
+                relative
+                h-5
+                min-w-0
+                flex-1
+                cursor-pointer
+                focus-visible:outline-none
+              "
+            >
+              <div
+                className="
+                  absolute
+                  left-0
+                  right-0
+                  top-1/2
+                  h-[3px]
+                  -translate-y-1/2
+                  rounded-full
+                  bg-border
+                "
+              />
+
+              <div
+                className="
+                  absolute
+                  left-0
+                  top-1/2
+                  h-[3px]
+                  -translate-y-1/2
+                  rounded-full
+                  bg-deep
+                "
+                style={{
+                  width: `${progress * 100}%`,
+                }}
+              />
+
+              <div
+                className="
+                  absolute
+                  top-1/2
+                  h-3
+                  w-3
+                  -translate-x-1/2
+                  -translate-y-1/2
+                  rounded-full
+                  bg-deep
+                "
+                style={{
+                  left: `${progress * 100}%`,
+                }}
+              />
+            </div>
+
+            {/* ===============================================
+                SPEED
+            =============================================== */}
+
             <div
               className="
-                h-full
-                rounded-full
-                bg-[hsl(var(--color-article-accent))]
+                relative
+                shrink-0
               "
-              style={{
-                width: `${
-                  progress * 100
-                }%`,
-              }}
-            />
+            >
+              <select
+                value={
+                  speed
+                }
+                onChange={(
+                  event
+                ) =>
+                  changeSpeed(
+                    Number(
+                      event
+                        .target
+                        .value
+                    )
+                  )
+                }
+                aria-label={
+                  locale ===
+                  'es'
+                    ? 'Velocidad'
+                    : 'Playback speed'
+                }
+                className="
+                  h-9
+                  cursor-pointer
+                  appearance-none
+                  rounded-md
+                  border
+                  border-border
+                  bg-white
+                  pl-3
+                  pr-8
+                  font-interface
+                  text-xs
+                  font-semibold
+                  text-deep
+                  outline-none
+                  transition-colors
+                  hover:bg-surface-muted
+                  focus-visible:ring-2
+                  focus-visible:ring-ring
+                "
+              >
+                {SPEED_OPTIONS.map(
+                  (
+                    option
+                  ) => (
+                    <option
+                      key={
+                        option
+                      }
+                      value={
+                        option
+                      }
+                    >
+                      {option}x
+                    </option>
+                  )
+                )}
+              </select>
+
+              <ChevronDown
+                className="
+                  pointer-events-none
+                  absolute
+                  right-2.5
+                  top-1/2
+                  h-3.5
+                  w-3.5
+                  -translate-y-1/2
+                  text-muted-foreground
+                "
+                aria-hidden
+              />
+            </div>
+
+            {/* ===============================================
+                VOLUME
+            =============================================== */}
+
+            <div
+              className="
+                relative
+                shrink-0
+              "
+            >
+              <button
+                type="button"
+                onClick={() => {
+                  setVolumeOpen(
+                    (
+                      current
+                    ) =>
+                      !current
+                  );
+
+                  setInfoOpen(
+                    false
+                  );
+                }}
+                className="
+                  inline-flex
+                  h-9
+                  w-9
+                  items-center
+                  justify-center
+                  rounded-md
+                  border
+                  border-border
+                  bg-white
+                  text-deep
+                  transition-colors
+                  hover:bg-surface-muted
+                  focus-visible:outline-none
+                  focus-visible:ring-2
+                  focus-visible:ring-ring
+                "
+                aria-label={
+                  locale ===
+                  'es'
+                    ? 'Volumen'
+                    : 'Volume'
+                }
+                aria-expanded={
+                  volumeOpen
+                }
+              >
+                <VolumeIcon
+                  className="
+                    h-4
+                    w-4
+                  "
+                  aria-hidden
+                />
+              </button>
+
+              {volumeOpen && (
+                <div
+                  className="
+                    absolute
+                    right-0
+                    top-[calc(100%+0.5rem)]
+                    z-30
+                    w-48
+                    rounded-lg
+                    border
+                    border-border
+                    bg-white
+                    p-3
+                    shadow-lg
+                  "
+                >
+                  <div
+                    className="
+                      flex
+                      items-center
+                      gap-3
+                    "
+                  >
+                    <button
+                      type="button"
+                      onClick={
+                        toggleMute
+                      }
+                      className="
+                        inline-flex
+                        h-8
+                        w-8
+                        shrink-0
+                        items-center
+                        justify-center
+                        rounded-md
+                        text-deep
+                        transition-colors
+                        hover:bg-surface-muted
+                      "
+                      aria-label={
+                        volume ===
+                        0
+                          ? locale ===
+                            'es'
+                            ? 'Activar sonido'
+                            : 'Unmute'
+                          : locale ===
+                              'es'
+                            ? 'Silenciar'
+                            : 'Mute'
+                      }
+                    >
+                      <VolumeIcon
+                        className="
+                          h-4
+                          w-4
+                        "
+                        aria-hidden
+                      />
+                    </button>
+
+                    <input
+                      type="range"
+                      min="0"
+                      max="1"
+                      step="0.05"
+                      value={
+                        volume
+                      }
+                      onChange={(
+                        event
+                      ) =>
+                        changeVolume(
+                          Number(
+                            event
+                              .target
+                              .value
+                          )
+                        )
+                      }
+                      className="
+                        w-full
+                        accent-deep
+                      "
+                      aria-label={
+                        locale ===
+                        'es'
+                          ? 'Nivel de volumen'
+                          : 'Volume level'
+                      }
+                    />
+                  </div>
+
+                  <p
+                    className="
+                      mt-2
+                      text-center
+                      font-interface
+                      text-[11px]
+                      text-muted-foreground
+                    "
+                  >
+                    {Math.round(
+                      volume *
+                        100
+                    )}
+                    %
+                  </p>
+                </div>
+              )}
+            </div>
+
+            {/* ===============================================
+                INFO
+            =============================================== */}
+
+            <div
+              className="
+                relative
+                shrink-0
+              "
+            >
+              <button
+                type="button"
+                onClick={() => {
+                  setInfoOpen(
+                    (
+                      current
+                    ) =>
+                      !current
+                  );
+
+                  setVolumeOpen(
+                    false
+                  );
+                }}
+                className="
+                  inline-flex
+                  h-9
+                  w-9
+                  items-center
+                  justify-center
+                  rounded-full
+                  border
+                  border-border
+                  bg-white
+                  text-deep
+                  transition-colors
+                  hover:bg-surface-muted
+                  focus-visible:outline-none
+                  focus-visible:ring-2
+                  focus-visible:ring-ring
+                "
+                aria-label={
+                  locale ===
+                  'es'
+                    ? 'Información'
+                    : 'Listen information'
+                }
+                aria-expanded={
+                  infoOpen
+                }
+              >
+                <Info
+                  className="
+                    h-4
+                    w-4
+                  "
+                  aria-hidden
+                />
+              </button>
+
+              {infoOpen && (
+                <div
+                  className="
+                    absolute
+                    right-0
+                    top-[calc(100%+0.5rem)]
+                    z-30
+                    w-72
+                    rounded-lg
+                    border
+                    border-border
+                    bg-white
+                    p-4
+                    shadow-lg
+                  "
+                >
+                  <div
+                    className="
+                      flex
+                      items-start
+                      justify-between
+                      gap-4
+                    "
+                  >
+                    <div>
+                      <p
+                        className="
+                          font-interface
+                          text-sm
+                          font-semibold
+                          text-deep
+                        "
+                      >
+                        {locale ===
+                        'es'
+                          ? 'Acerca de Escuchar'
+                          : 'About Listen'}
+                      </p>
+
+                      <p
+                        className="
+                          mt-2
+                          font-body
+                          text-xs
+                          leading-5
+                          text-muted-foreground
+                        "
+                      >
+                        {locale ===
+                        'es'
+                          ? 'Esta función utiliza la voz disponible en tu navegador para leer el artículo en voz alta. La duración y el progreso son estimados.'
+                          : 'This feature uses a voice available in your browser to read the article aloud. Duration and progress are estimates.'}
+                      </p>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setInfoOpen(
+                          false
+                        )
+                      }
+                      className="
+                        inline-flex
+                        h-7
+                        w-7
+                        shrink-0
+                        items-center
+                        justify-center
+                        rounded-md
+                        text-muted-foreground
+                        transition-colors
+                        hover:bg-surface-muted
+                        hover:text-deep
+                      "
+                      aria-label={
+                        locale ===
+                        'es'
+                          ? 'Cerrar'
+                          : 'Close'
+                      }
+                    >
+                      <X
+                        className="
+                          h-4
+                          w-4
+                        "
+                        aria-hidden
+                      />
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
-
-          {/* Seek handle */}
-          <span
-            className="
-              absolute
-              top-1/2
-              h-3
-              w-3
-              -translate-x-1/2
-              -translate-y-1/2
-              rounded-full
-              bg-[hsl(var(--color-article-accent))]
-              opacity-0
-              shadow-sm
-              transition-opacity
-              group-hover:opacity-100
-              group-focus-visible:opacity-100
-            "
-            style={{
-              left: `${
-                progress * 100
-              }%`,
-            }}
-            aria-hidden
-          />
         </div>
-
-        {/* Total */}
-        <span
-          className="
-            w-9
-            shrink-0
-            text-right
-            font-interface
-            text-[0.65rem]
-            tabular-nums
-            text-muted-foreground
-          "
-        >
-          {formatTime(
-            totalDuration
-          )}
-        </span>
       </div>
     </section>
   );

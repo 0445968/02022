@@ -107,6 +107,10 @@ export interface StoryAuthor {
   editorialTitle:
     | string
     | null;
+
+  headshotUrl:
+    | string
+    | null;
 }
 
 /**
@@ -157,6 +161,10 @@ export interface StoryEditor {
     | null;
 
   editorialTitle:
+    | string
+    | null;
+
+  headshotUrl:
     | string
     | null;
 }

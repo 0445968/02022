@@ -23,25 +23,24 @@ interface DesktopNavProps {
   inline?: boolean;
 }
 
-const PRIMARY_KEYS = [
-  'latest',
-  'news',
+const PRIMARY_KEYS = [  
   'sanAndres',
   'oldProvidence',
-  'saintCatalina',
-  'raizal',
+  'sports',
+  'politics',
+  'opinion',  
+  'colombia',
+  'caribbean',
+  'world',
 ];
 
 const MORE_KEYS = [
   'environment',
-  'politics',
   'business',
-  'sports',
   'health',
   'culture',
   'religion',
   'music',
-  'world',
   'community',
   'education',
   'entertainment',

@@ -97,25 +97,23 @@ export function ArticleHeader({
 
               {/* Headline */}
               <h1
-                className="
-                  mt-5
-                  max-w-5xl
-                  font-headline
-                  text-3xl
-                  font-bold
-                  tracking-[-0.02em]
-                  text-white
-                  text-balance
-                  sm:text-4xl
-                  lg:text-[2.85rem]
-                  xl:text-[3.2rem]
-                "
-                style={{
-                  lineHeight: '1.22',
-                }}
-              >
-                {story.headline}
-              </h1>
+  className="
+    mt-5
+    max-w-5xl
+    font-headline
+    text-[1.75rem]
+    font-bold
+    tracking-[-0.02em]
+    text-white
+    text-balance
+    sm:text-[2.1rem]
+    lg:text-[2.55rem]
+    xl:text-[2.85rem]
+  "
+  style={{ lineHeight: '1.2' }}
+>
+  {story.headline}
+</h1>
             </div>
 
             {/* Empty cells */}
@@ -254,46 +252,117 @@ export function ArticleHeader({
                 )}
 
                 {/* Author / editor */}
-                <div
-                  className="
-                    font-interface
-                    text-sm
-                    leading-6
-                    text-white/85
-                  "
-                >
-                  {story.author && (
-                    <p>
-                      <span className="text-white/55">
-                        {dict.common.by}{' '}
-                      </span>
+<div className="font-interface">
+  {story.author && (
+    <div>
+      {/* Author headshot */}
+      <div
+  className="
+    flex
+    h-11
+    w-11
+    items-center
+    justify-center
+    overflow-hidden
+    rounded-full
+    bg-white/10
+    ring-1
+    ring-white/10
+  "
+>
+        {story.author.headshotUrl ? (
+          <img
+            src={story.author.headshotUrl}
+            alt={
+              story.author.name
+                ? `${story.author.name} profile photo`
+                : 'Author profile photo'
+            }
+            className="
+  h-full
+  w-full
+  object-cover
+  grayscale
+"
+          />
+        ) : (
+          <span
+            className="
+              text-sm
+              font-semibold
+              uppercase
+              text-white/80
+            "
+          >
+            {story.author.name
+              ?.trim()
+              .split(/\s+/)
+              .slice(0, 2)
+              .map((part) =>
+                part.charAt(0)
+              )
+              .join('') || '?'}
+          </span>
+        )}
+      </div>
 
-                      <span className="font-semibold text-white">
-                        {story.author.name}
-                      </span>
+      {/* Author details */}
+<div className="mt-3">
+  <p
+    className="
+      text-sm
+      leading-5
+      text-white/55
+    "
+  >
+    {dict.common.by}{' '}
+    <span
+      className="
+        font-semibold
+        text-white
+      "
+    >
+      {story.author.name}
+    </span>
+  </p>
 
-                      {story.author.editorialTitle && (
-                        <span className="text-white/55">
-                          {' '}
-                          ·{' '}
-                          {story.author.editorialTitle}
-                        </span>
-                      )}
-                    </p>
-                  )}
+  {story.author.editorialTitle && (
+    <p
+      className="
+        mt-0.5
+        text-xs
+        leading-4
+        text-white/55
+      "
+    >
+      {story.author.editorialTitle}
+    </p>
+  )}
+</div>
+    </div>
+  )}
 
-                  {story.editor &&
-                    !isSameAuthorEditor && (
-                      <p className="mt-1 text-white/55">
-                        {dict.common.editedBy}{' '}
-
-                        <span className="font-medium text-white/85">
-                          {story.editor.name}
-                        </span>
-                      </p>
-                    )}
-                </div>
-
+  {story.editor && !isSameAuthorEditor && (
+    <p
+      className="
+        mt-4
+        text-xs
+        leading-5
+        text-white/55
+      "
+    >
+      {dict.common.editedBy}{' '}
+      <span
+        className="
+          font-medium
+          text-white/85
+        "
+      >
+        {story.editor.name}
+      </span>
+    </p>
+  )}
+</div>
                 {/* Metadata */}
                 <div
                   className="
