@@ -43,6 +43,7 @@ import {
 import {
   getLatestStories,
   getPublishedStoryBySlug,
+  getRelatedStories,
 } from '@/lib/services/stories';
 
 import type {
@@ -154,7 +155,10 @@ export default async function ArticlePage({
     return (
       <div className="container-wide py-20 text-center">
         <h1 className="font-headline text-3xl font-bold text-deep">
-          {dict.article.notFound}
+          {
+            dict.article
+              .notFound
+          }
         </h1>
 
         <p className="mt-2 text-sm text-muted-foreground">
@@ -185,14 +189,16 @@ export default async function ArticlePage({
     };
 
   /*
-   * Fetch a few extra recent stories so the current
-   * article can be removed before limiting the rail
-   * to five items.
+   * Fetch article support data in parallel.
+   *
+   * Trending currently uses recent published stories.
+   * Related stories use the article's primary category.
    */
   const [
     initialBookmarked,
     initialThread,
     latestStoriesResult,
+    relatedStories,
   ] = await Promise.all([
     reader
       ? isStoryBookmarked(
@@ -247,6 +253,22 @@ export default async function ArticlePage({
           perPage: 8,
           totalPages: 0,
         };
+      }
+    ),
+
+    getRelatedStories(
+      story.id,
+      story.primaryCategory?.slug ??
+        null,
+      4
+    ).catch(
+      (error) => {
+        console.error(
+          'Unable to load related stories:',
+          error
+        );
+
+        return [];
       }
     ),
   ]);
@@ -305,6 +327,9 @@ export default async function ArticlePage({
         }}
         trendingStories={
           trendingStories
+        }
+        relatedStories={
+          relatedStories
         }
       />
 

@@ -36,7 +36,7 @@ export function Masthead({
       aria-label="Simply Raizal"
     >
       <Image
-        src="/images/logo-10.png"
+        src="/images/logo-11.png"
         alt="Simply Raizal"
         width={
           compact

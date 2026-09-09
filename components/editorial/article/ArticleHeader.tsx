@@ -41,6 +41,13 @@ export function ArticleHeader({
     story.editor &&
     story.author.id === story.editor.id;
 
+  const hasAuthorMetadata =
+    Boolean(story.author) ||
+    Boolean(
+      story.editor &&
+        !isSameAuthorEditor
+    );
+
   return (
     <div
       className="
@@ -97,23 +104,25 @@ export function ArticleHeader({
 
               {/* Headline */}
               <h1
-  className="
-    mt-5
-    max-w-5xl
-    font-headline
-    text-[1.75rem]
-    font-bold
-    tracking-[-0.02em]
-    text-white
-    text-balance
-    sm:text-[2.1rem]
-    lg:text-[2.55rem]
-    xl:text-[2.85rem]
-  "
-  style={{ lineHeight: '1.2' }}
->
-  {story.headline}
-</h1>
+                className="
+                  mt-5
+                  max-w-5xl
+                  text-balance
+                  font-headline
+                  text-[1.75rem]
+                  font-bold
+                  tracking-[-0.02em]
+                  text-white
+                  sm:text-[2.1rem]
+                  lg:text-[2.55rem]
+                  xl:text-[2.85rem]
+                "
+                style={{
+                  lineHeight: '1.2',
+                }}
+              >
+                {story.headline}
+              </h1>
             </div>
 
             {/* Empty cells */}
@@ -127,24 +136,24 @@ export function ArticleHeader({
           FEATURED IMAGE + METADATA
       ====================================================== */}
       <section>
-  <div className="container-wide">
-    <div
-      className="
-        mx-auto
-        grid
-        max-w-[1180px]
-        gap-8
-        pb-10
-        pt-5
-        lg:grid-cols-[52px_minmax(0,42rem)_280px]
-        lg:items-stretch
-        lg:gap-8
-        lg:pb-12
-        lg:pt-1
-        xl:grid-cols-[64px_minmax(0,42rem)_320px]
-        xl:gap-10
-      "
-    >
+        <div className="container-wide">
+          <div
+            className="
+              mx-auto
+              grid
+              max-w-[1180px]
+              gap-8
+              pb-10
+              pt-5
+              lg:grid-cols-[52px_minmax(0,42rem)_280px]
+              lg:items-stretch
+              lg:gap-8
+              lg:pb-12
+              lg:pt-1
+              xl:grid-cols-[64px_minmax(0,42rem)_320px]
+              xl:gap-10
+            "
+          >
             {/* Empty left actions column */}
             <div className="hidden lg:block" />
 
@@ -179,32 +188,32 @@ export function ArticleHeader({
 
               {(story.imageCaption ||
                 story.imageCredit) && (
-                  <figcaption
-                    className="
-                      mt-3
-                      font-interface
-                      text-xs
-                      leading-[1.55]
-                      text-white/[0.5]
-                    "
-                  >
-                    {story.imageCaption && (
-                      <span>
-                        {story.imageCaption}
-                      </span>
-                    )}
+                <figcaption
+                  className="
+                    mt-3
+                    font-interface
+                    text-xs
+                    leading-[1.55]
+                    text-white/[0.5]
+                  "
+                >
+                  {story.imageCaption && (
+                    <span>
+                      {story.imageCaption}
+                    </span>
+                  )}
 
-                    {story.imageCaption &&
-                      story.imageCredit &&
-                      ' '}
+                  {story.imageCaption &&
+                    story.imageCredit &&
+                    ' '}
 
-                    {story.imageCredit && (
-                      <em>
-                        ({story.imageCredit})
-                      </em>
-                    )}
-                  </figcaption>
-                )}
+                  {story.imageCredit && (
+                    <em>
+                      ({story.imageCredit})
+                    </em>
+                  )}
+                </figcaption>
+              )}
             </figure>
 
             {/* ==================================================
@@ -240,7 +249,7 @@ export function ArticleHeader({
                   </p>
                 )}
 
-                {/* Divider */}
+                {/* Summary divider */}
                 {story.summary && (
                   <div
                     className="
@@ -251,159 +260,210 @@ export function ArticleHeader({
                   />
                 )}
 
-                {/* Author / editor */}
-<div className="font-interface">
-  {story.author && (
-    <div>
-      {/* Author headshot */}
-      <div
-  className="
-    flex
-    h-11
-    w-11
-    items-center
-    justify-center
-    overflow-hidden
-    rounded-full
-    bg-white/10
-    ring-1
-    ring-white/10
-  "
->
-        {story.author.headshotUrl ? (
-          <img
-            src={story.author.headshotUrl}
-            alt={
-              story.author.name
-                ? `${story.author.name} profile photo`
-                : 'Author profile photo'
-            }
-            className="
-  h-full
-  w-full
-  object-cover
-  grayscale
-"
-          />
-        ) : (
-          <span
-            className="
-              text-sm
-              font-semibold
-              uppercase
-              text-white/80
-            "
-          >
-            {story.author.name
-              ?.trim()
-              .split(/\s+/)
-              .slice(0, 2)
-              .map((part) =>
-                part.charAt(0)
-              )
-              .join('') || '?'}
-          </span>
-        )}
-      </div>
-
-      {/* Author details */}
-<div className="mt-3">
-  <p
-    className="
-      text-sm
-      leading-5
-      text-white/55
-    "
-  >
-    {dict.common.by}{' '}
-    <span
-      className="
-        font-semibold
-        text-white
-      "
-    >
-      {story.author.name}
-    </span>
-  </p>
-
-  {story.author.editorialTitle && (
-    <p
-      className="
-        mt-0.5
-        text-xs
-        leading-4
-        text-white/55
-      "
-    >
-      {story.author.editorialTitle}
-    </p>
-  )}
-</div>
-    </div>
-  )}
-
-  {story.editor && !isSameAuthorEditor && (
-    <p
-      className="
-        mt-4
-        text-xs
-        leading-5
-        text-white/55
-      "
-    >
-      {dict.common.editedBy}{' '}
-      <span
-        className="
-          font-medium
-          text-white/85
-        "
-      >
-        {story.editor.name}
-      </span>
-    </p>
-  )}
-</div>
-                {/* Metadata */}
+                {/* ==================================================
+                    PINNED BOTTOM METADATA
+                ================================================== */}
                 <div
                   className="
                     mt-auto
                     pt-6
                     font-interface
-                    text-xs
-                    leading-5
-                    text-white/55
                   "
                 >
-                  {story.publishedAt && (
-                    <p>
-                      <time
-                        dateTime={story.publishedAt}
-                      >
-                        {dict.common.published}{' '}
+                  {/* Author / editor */}
+                  {hasAuthorMetadata && (
+                    <div>
+                      {story.author && (
+                        <div>
+                          {/* Author headshot */}
+                          <div
+                            className="
+                              flex
+                              h-11
+                              w-11
+                              items-center
+                              justify-center
+                              overflow-hidden
+                              rounded-full
+                              bg-white/10
+                              ring-1
+                              ring-white/10
+                            "
+                          >
+                            {story.author.headshotUrl ? (
+                              <img
+                                src={
+                                  story.author
+                                    .headshotUrl
+                                }
+                                alt={
+                                  story.author.name
+                                    ? `${story.author.name} profile photo`
+                                    : 'Author profile photo'
+                                }
+                                className="
+                                  h-full
+                                  w-full
+                                  object-cover
+                                  grayscale
+                                "
+                              />
+                            ) : (
+                              <span
+                                className="
+                                  text-sm
+                                  font-semibold
+                                  uppercase
+                                  text-white/80
+                                "
+                              >
+                                {story.author.name
+                                  ?.trim()
+                                  .split(/\s+/)
+                                  .slice(0, 2)
+                                  .map((part) =>
+                                    part.charAt(0)
+                                  )
+                                  .join('') ||
+                                  '?'}
+                              </span>
+                            )}
+                          </div>
 
-                        {new Date(
-                          story.publishedAt
-                        ).toLocaleDateString(
-                          locale === 'es'
-                            ? 'es'
-                            : 'en',
-                          {
-                            month: 'long',
-                            day: 'numeric',
-                            year: 'numeric',
-                          }
+                          {/* Author details */}
+                          <div className="mt-3">
+                            <p
+                              className="
+                                text-sm
+                                leading-5
+                                text-white/55
+                              "
+                            >
+                              {dict.common.by}{' '}
+
+                              <span
+                                className="
+                                  font-semibold
+                                  text-white
+                                "
+                              >
+                                {
+                                  story.author
+                                    .name
+                                }
+                              </span>
+                            </p>
+
+                            {story.author
+                              .editorialTitle && (
+                              <p
+                                className="
+                                  mt-0.5
+                                  text-xs
+                                  leading-4
+                                  text-white/55
+                                "
+                              >
+                                {
+                                  story.author
+                                    .editorialTitle
+                                }
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      )}
+
+                      {story.editor &&
+                        !isSameAuthorEditor && (
+                          <p
+                            className="
+                              mt-4
+                              text-xs
+                              leading-5
+                              text-white/55
+                            "
+                          >
+                            {
+                              dict.common
+                                .editedBy
+                            }{' '}
+
+                            <span
+                              className="
+                                font-medium
+                                text-white/85
+                              "
+                            >
+                              {
+                                story.editor
+                                  .name
+                              }
+                            </span>
+                          </p>
                         )}
-                      </time>
-                    </p>
+                    </div>
                   )}
 
-                  {story.updatedAt !==
-                    story.publishedAt && (
+                  {/* Author / metadata divider */}
+                  {hasAuthorMetadata && (
+                    <div
+                      className="
+                        my-5
+                        h-px
+                        bg-white/15
+                      "
+                    />
+                  )}
+
+                  {/* Publication metadata */}
+                  <div
+                    className="
+                      text-xs
+                      leading-5
+                      text-white/55
+                    "
+                  >
+                    {story.publishedAt && (
+                      <p>
+                        <time
+                          dateTime={
+                            story.publishedAt
+                          }
+                        >
+                          {
+                            dict.common
+                              .published
+                          }{' '}
+
+                          {new Date(
+                            story.publishedAt
+                          ).toLocaleDateString(
+                            locale === 'es'
+                              ? 'es'
+                              : 'en',
+                            {
+                              month: 'long',
+                              day: 'numeric',
+                              year: 'numeric',
+                            }
+                          )}
+                        </time>
+                      </p>
+                    )}
+
+                    {story.updatedAt !==
+                      story.publishedAt && (
                       <p className="mt-1">
                         <time
-                          dateTime={story.updatedAt}
+                          dateTime={
+                            story.updatedAt
+                          }
                         >
-                          {dict.common.updated}{' '}
+                          {
+                            dict.common
+                              .updated
+                          }{' '}
 
                           {new Date(
                             story.updatedAt
@@ -421,30 +481,36 @@ export function ArticleHeader({
                       </p>
                     )}
 
-                  {story.language !== locale && (
-                    <p
-                      className="
-                        mt-1
-                        font-semibold
-                        uppercase
-                        tracking-wide
-                        text-white/75
-                      "
-                    >
-                      {story.language === 'en'
-                        ? dict.common.languageEN
-                        : dict.common.languageES}
-                    </p>
-                  )}
+                    {story.language !==
+                      locale && (
+                      <p
+                        className="
+                          mt-1
+                          font-semibold
+                          uppercase
+                          tracking-wide
+                          text-white/75
+                        "
+                      >
+                        {story.language ===
+                        'en'
+                          ? dict.common
+                              .languageEN
+                          : dict.common
+                              .languageES}
+                      </p>
+                    )}
 
-                  {story.island !== 'none' && (
-                    <p className="mt-1">
-                      {islandLabel(
-                        story.island,
-                        locale
-                      )}
-                    </p>
-                  )}
+                    {story.island !==
+                      'none' && (
+                      <p className="mt-1">
+                        {islandLabel(
+                          story.island,
+                          locale
+                        )}
+                      </p>
+                    )}
+                  </div>
                 </div>
               </div>
             </aside>

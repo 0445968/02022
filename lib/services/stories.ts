@@ -1564,53 +1564,134 @@ export async function getRelatedStories(
   categorySlug:
     | string
     | null,
-  limit = 3
+  limit = 4
 ): Promise<
   PublicStoryListItem[]
 > {
   const supabase =
     await getDataClient();
 
-  let query =
-    supabase
-      .from('stories')
-      .select(
-        PUBLIC_STORY_SELECT
-      )
-      .eq(
-        'status',
-        'published'
-      )
-      .lte(
-        'published_at',
-        new Date().toISOString()
-      )
-      .neq(
-        'id',
-        storyId
-      )
-      .order(
-        'published_at',
-        {
-          ascending:
-            false,
-          nullsFirst:
-            false,
-        }
-      )
-      .limit(
-        limit
-      );
+  const now =
+    new Date().toISOString();
 
-  if (
-    categorySlug
-  ) {
+  function mapPublicStory(
+    row: Record<
+      string,
+      unknown
+    >
+  ): PublicStoryListItem {
+    const category =
+      row.primary_category as
+        | Record<
+            string,
+            unknown
+          >
+        | null;
+
+    const image =
+      row.featured_image as
+        | Record<
+            string,
+            unknown
+          >
+        | null;
+
+    const author =
+      row.author as
+        | Record<
+            string,
+            unknown
+          >
+        | null;
+
+    return {
+      id:
+        row.id as string,
+
+      slug:
+        row.slug as string,
+
+      headline:
+        row.headline as string,
+
+      shortTitle:
+        (row.short_title as
+          | string
+          | null) ??
+        null,
+
+      summary:
+        (row.summary as
+          | string
+          | null) ??
+        null,
+
+      language:
+        row.language as StoryLanguage,
+
+      island:
+        row.island as IslandScope,
+
+      publishedAt:
+        (row.published_at as
+          | string
+          | null) ??
+        null,
+
+      primaryCategorySlug:
+        (category?.slug as
+          | string
+          | null) ??
+        null,
+
+      primaryCategoryNameEn:
+        (category?.name_en as
+          | string
+          | null) ??
+        null,
+
+      primaryCategoryNameEs:
+        (category?.name_es as
+          | string
+          | null) ??
+        null,
+
+      featuredImageUrl:
+        (image?.url as
+          | string
+          | null) ??
+        null,
+
+      featuredImageAlt:
+        (image?.alt_text as
+          | string
+          | null) ??
+        null,
+
+      authorName:
+        (author?.name as
+          | string
+          | null) ??
+        null,
+    };
+  }
+
+  const related:
+    PublicStoryListItem[] =
+    [];
+
+  /*
+   * First priority:
+   * newest published stories from the
+   * same primary category.
+   */
+  if (categorySlug) {
     const {
       data: category,
+      error:
+        categoryError,
     } = await supabase
-      .from(
-        'categories'
-      )
+      .from('categories')
       .select('id')
       .eq(
         'slug',
@@ -1618,9 +1699,37 @@ export async function getRelatedStories(
       )
       .maybeSingle();
 
+    if (categoryError) {
+      console.error(
+        'Unable to resolve related-story category:',
+        categoryError
+      );
+    }
+
     if (category) {
-      query =
-        query.eq(
+      const {
+        data:
+          categoryStories,
+        error:
+          categoryStoriesError,
+      } = await supabase
+        .from('stories')
+        .select(
+          PUBLIC_STORY_SELECT
+        )
+        .eq(
+          'status',
+          'published'
+        )
+        .lte(
+          'published_at',
+          now
+        )
+        .neq(
+          'id',
+          storyId
+        )
+        .eq(
           'primary_category_id',
           (
             category as Record<
@@ -1628,129 +1737,134 @@ export async function getRelatedStories(
               unknown
             >
           ).id as string
+        )
+        .order(
+          'published_at',
+          {
+            ascending:
+              false,
+            nullsFirst:
+              false,
+          }
+        )
+        .limit(limit);
+
+      if (
+        categoryStoriesError
+      ) {
+        console.error(
+          'Unable to fetch category-related stories:',
+          categoryStoriesError
+        );
+      } else {
+        related.push(
+          ...(
+            categoryStories ??
+            []
+          ).map(
+            (row) =>
+              mapPublicStory(
+                row as Record<
+                  string,
+                  unknown
+                >
+              )
+          )
+        );
+      }
+    }
+  }
+
+  /*
+   * If the category doesn't contain enough
+   * stories, fill the remaining slots with
+   * the newest published articles.
+   */
+  if (
+    related.length <
+    limit
+  ) {
+    const excludedIds = [
+      storyId,
+      ...related.map(
+        (story) =>
+          story.id
+      ),
+    ];
+
+    let fallbackQuery =
+      supabase
+        .from('stories')
+        .select(
+          PUBLIC_STORY_SELECT
+        )
+        .eq(
+          'status',
+          'published'
+        )
+        .lte(
+          'published_at',
+          now
+        )
+        .order(
+          'published_at',
+          {
+            ascending:
+              false,
+            nullsFirst:
+              false,
+          }
+        )
+        .limit(
+          limit -
+            related.length
+        );
+
+    for (
+      const excludedId of
+      excludedIds
+    ) {
+      fallbackQuery =
+        fallbackQuery.neq(
+          'id',
+          excludedId
         );
     }
-  }
 
-  const {
-    data,
-    error,
-  } = await query;
+    const {
+      data:
+        fallbackStories,
+      error:
+        fallbackError,
+    } =
+      await fallbackQuery;
 
-  if (error) {
-    console.error(
-      'Unable to fetch related stories:',
-      error
-    );
-
-    return [];
-  }
-
-  return (
-    data ?? []
-  ).map(
-    (row) => {
-      const r =
-        row as Record<
-          string,
-          unknown
-        >;
-
-      const category =
-        r.primary_category as
-          | Record<
-              string,
-              unknown
-            >
-          | null;
-
-      const image =
-        r.featured_image as
-          | Record<
-              string,
-              unknown
-            >
-          | null;
-
-      const author =
-        r.author as
-          | Record<
-              string,
-              unknown
-            >
-          | null;
-
-      return {
-        id:
-          r.id as string,
-
-        slug:
-          r.slug as string,
-
-        headline:
-          r.headline as string,
-
-        shortTitle:
-          (r.short_title as
-            | string
-            | null) ??
-          null,
-
-        summary:
-          (r.summary as
-            | string
-            | null) ??
-          null,
-
-        language:
-          r.language as StoryLanguage,
-
-        island:
-          r.island as IslandScope,
-
-        publishedAt:
-          (r.published_at as
-            | string
-            | null) ??
-          null,
-
-        primaryCategorySlug:
-          (category?.slug as
-            | string
-            | null) ??
-          null,
-
-        primaryCategoryNameEn:
-          (category?.name_en as
-            | string
-            | null) ??
-          null,
-
-        primaryCategoryNameEs:
-          (category?.name_es as
-            | string
-            | null) ??
-          null,
-
-        featuredImageUrl:
-          (image?.url as
-            | string
-            | null) ??
-          null,
-
-        featuredImageAlt:
-          (image?.alt_text as
-            | string
-            | null) ??
-          null,
-
-        authorName:
-          (author?.name as
-            | string
-            | null) ??
-          null,
-      };
+    if (fallbackError) {
+      console.error(
+        'Unable to fetch fallback related stories:',
+        fallbackError
+      );
+    } else {
+      related.push(
+        ...(
+          fallbackStories ??
+          []
+        ).map(
+          (row) =>
+            mapPublicStory(
+              row as Record<
+                string,
+                unknown
+              >
+            )
+        )
+      );
     }
+  }
+
+  return related.slice(
+    0,
+    limit
   );
 }
 

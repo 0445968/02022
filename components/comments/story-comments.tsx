@@ -128,99 +128,205 @@ function CommentEntry({
     <div
       className={
         depth > 0
-          ? 'ml-5 border-l border-border pl-4 sm:ml-10 sm:pl-5'
+          ? `
+              ml-4
+              border-l
+              border-border
+              pl-4
+              sm:ml-8
+              sm:pl-6
+            `
           : ''
       }
     >
-      <article className="border-b border-border py-5 last:border-b-0">
-        <header className="flex items-start gap-3">
-          {comment.author
-            ?.avatarUrl ? (
-            <img
-              src={
-                comment.author
-                  .avatarUrl
-              }
-              alt=""
-              className="h-9 w-9 shrink-0 rounded-full object-cover"
-            />
-          ) : (
-            <span
-              aria-hidden="true"
-              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-deep text-xs font-bold text-white"
-            >
-              {initial}
-            </span>
-          )}
-
-          <div className="min-w-0">
-            <p className="truncate text-sm font-bold text-foreground">
-              {authorName}
-            </p>
-
-            <p className="mt-0.5 text-xs text-muted-foreground">
-              <time
-                dateTime={
-                  comment.createdAt
+      <article
+        className="
+          border-b
+          border-border
+          py-6
+          last:border-b-0
+        "
+      >
+        <div className="flex gap-3 sm:gap-4">
+          {/* Avatar */}
+          <div className="shrink-0">
+            {comment.author
+              ?.avatarUrl ? (
+              <img
+                src={
+                  comment.author
+                    .avatarUrl
                 }
+                alt=""
+                className="
+                  h-10
+                  w-10
+                  rounded-full
+                  object-cover
+                  sm:h-11
+                  sm:w-11
+                "
+              />
+            ) : (
+              <span
+                aria-hidden="true"
+                className="
+                  flex
+                  h-10
+                  w-10
+                  items-center
+                  justify-center
+                  rounded-full
+                  bg-deep
+                  font-interface
+                  text-xs
+                  font-bold
+                  text-white
+                  sm:h-11
+                  sm:w-11
+                "
               >
-                {formatCommentDate(
-                  comment.createdAt,
-                  locale
-                )}
-              </time>
-
-              {wasEdited ? (
-                <>
-                  {' · '}
-                  {labels.edited}
-                </>
-              ) : null}
-            </p>
+                {initial}
+              </span>
+            )}
           </div>
-        </header>
 
-        <p className="mt-3 whitespace-pre-wrap break-words text-sm leading-6 text-foreground">
-          {comment.body}
-        </p>
+          {/* Comment content */}
+          <div className="min-w-0 flex-1">
+            <header>
+              <div
+                className="
+                  flex
+                  flex-wrap
+                  items-baseline
+                  gap-x-2
+                  gap-y-1
+                "
+              >
+                <p
+                  className="
+                    font-interface
+                    text-sm
+                    font-bold
+                    text-foreground
+                  "
+                >
+                  {authorName}
+                </p>
 
-        <div className="mt-3">
-          {isAuthenticated ? (
-            <button
-              type="button"
-              onClick={() =>
-                onReply({
-                  id:
-                    comment.id,
+                <p
+                  className="
+                    font-interface
+                    text-[0.72rem]
+                    text-muted-foreground
+                  "
+                >
+                  <time
+                    dateTime={
+                      comment.createdAt
+                    }
+                  >
+                    {formatCommentDate(
+                      comment.createdAt,
+                      locale
+                    )}
+                  </time>
 
-                  name:
-                    authorName,
-                })
-              }
-              className="inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-xs font-bold text-primary transition-colors hover:bg-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                  {wasEdited ? (
+                    <>
+                      {' · '}
+                      {labels.edited}
+                    </>
+                  ) : null}
+                </p>
+              </div>
+            </header>
+
+            <p
+              className="
+                mt-3
+                whitespace-pre-wrap
+                break-words
+                font-body
+                text-[0.95rem]
+                leading-7
+                text-foreground
+              "
             >
-              <Reply
-                aria-hidden="true"
-                className="h-3.5 w-3.5"
-              />
+              {comment.body}
+            </p>
 
-              {labels.reply}
-            </button>
-          ) : (
-            <Link
-              href={
-                signInHref
-              }
-              className="inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-xs font-bold text-primary transition-colors hover:bg-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-            >
-              <Reply
-                aria-hidden="true"
-                className="h-3.5 w-3.5"
-              />
+            <div className="mt-3">
+              {isAuthenticated ? (
+                <button
+                  type="button"
+                  onClick={() =>
+                    onReply({
+                      id:
+                        comment.id,
 
-              {labels.reply}
-            </Link>
-          )}
+                      name:
+                        authorName,
+                    })
+                  }
+                  className="
+                    inline-flex
+                    items-center
+                    gap-1.5
+                    rounded-full
+                    px-3
+                    py-1.5
+                    font-interface
+                    text-xs
+                    font-bold
+                    text-primary
+                    transition-colors
+                    hover:bg-primary/5
+                    focus-visible:outline-none
+                    focus-visible:ring-2
+                    focus-visible:ring-primary
+                  "
+                >
+                  <Reply
+                    aria-hidden="true"
+                    className="h-3.5 w-3.5"
+                  />
+
+                  {labels.reply}
+                </button>
+              ) : (
+                <Link
+                  href={
+                    signInHref
+                  }
+                  className="
+                    inline-flex
+                    items-center
+                    gap-1.5
+                    rounded-full
+                    px-3
+                    py-1.5
+                    font-interface
+                    text-xs
+                    font-bold
+                    text-primary
+                    transition-colors
+                    hover:bg-primary/5
+                    focus-visible:outline-none
+                    focus-visible:ring-2
+                    focus-visible:ring-primary
+                  "
+                >
+                  <Reply
+                    aria-hidden="true"
+                    className="h-3.5 w-3.5"
+                  />
+
+                  {labels.reply}
+                </Link>
+              )}
+            </div>
+          </div>
         </div>
       </article>
 
@@ -286,9 +392,10 @@ export function StoryComments({
   const [
     replyTarget,
     setReplyTarget,
-  ] = useState<ReplyTarget | null>(
-    null
-  );
+  ] =
+    useState<ReplyTarget | null>(
+      null
+    );
 
   const [
     submitting,
@@ -308,16 +415,18 @@ export function StoryComments({
   const [
     submitError,
     setSubmitError,
-  ] = useState<string | null>(
-    null
-  );
+  ] =
+    useState<string | null>(
+      null
+    );
 
   const [
     loadError,
     setLoadError,
-  ] = useState<string | null>(
-    null
-  );
+  ] =
+    useState<string | null>(
+      null
+    );
 
   const [
     submitted,
@@ -479,11 +588,6 @@ export function StoryComments({
         nextThread
       );
 
-      /*
-       * The initial implementation intentionally caps
-       * a public thread at 500 records. Cursor-based
-       * pagination can replace this when required.
-       */
       setLoadedMaximum(
         true
       );
@@ -509,261 +613,549 @@ export function StoryComments({
     <section
       id="comments"
       aria-labelledby="comments-heading"
-      className="border-t border-border bg-white"
+      className="
+        border-t
+        border-border
+        bg-white
+      "
     >
-      <div className="container-wide py-8 lg:py-10">
-        <div className="mx-auto max-w-2xl">
-          <header className="border-b border-border pb-5">
-            <div className="flex items-center gap-3">
+      <div
+        className="
+          container-wide
+          py-10
+          lg:py-12
+        "
+      >
+        {/* ====================================================
+            SAME OUTER WIDTH AS RELATED STORIES
+        ==================================================== */}
+        <div className="mx-auto max-w-[1180px]">
+          {/* ==================================================
+              SECTION HEADER
+          ================================================== */}
+          <header
+            className="
+              border-b
+              border-border
+              pb-4
+            "
+          >
+            <div
+              className="
+                flex
+                items-center
+                gap-3
+              "
+            >
               <MessageSquare
                 aria-hidden="true"
-                className="h-5 w-5 text-primary"
+                className="
+                  h-5
+                  w-5
+                  text-primary
+                "
               />
 
               <h2
                 id="comments-heading"
-                className="font-headline text-2xl font-bold text-deep"
+                className="
+                  font-headline
+                  text-xl
+                  font-bold
+                  tracking-[-0.02em]
+                  text-deep
+                  sm:text-2xl
+                "
               >
                 {labels.heading}
 
                 {thread.total >
                 0 ? (
-                  <span className="ml-2 text-lg font-normal text-muted-foreground">
+                  <span
+                    className="
+                      ml-2
+                      font-interface
+                      text-base
+                      font-medium
+                      text-muted-foreground
+                    "
+                  >
                     {thread.total}
                   </span>
                 ) : null}
               </h2>
             </div>
 
-            <p className="mt-2 text-sm leading-6 text-muted-foreground">
+            <p
+              className="
+                mt-2
+                max-w-2xl
+                font-body
+                text-sm
+                leading-6
+                text-muted-foreground
+              "
+            >
               {labels.intro}
             </p>
           </header>
 
-          {isAuthenticated ? (
-            <form
-              onSubmit={
-                submitComment
-              }
-              className="border-b border-border py-5"
-            >
-              {replyTarget ? (
-                <div className="mb-3 flex flex-wrap items-center justify-between gap-2 rounded-md bg-surface-muted px-3 py-2">
-                  <p className="text-xs font-semibold text-foreground">
+          {/* ==================================================
+              READABLE COMMENTS COLUMN
+          ================================================== */}
+          <div
+            className="
+              mt-6
+              max-w-[760px]
+            "
+          >
+            {/* ================================================
+                COMMENT FORM
+            ================================================ */}
+            {isAuthenticated ? (
+              <form
+                onSubmit={
+                  submitComment
+                }
+                className="
+                  rounded-2xl
+                  border
+                  border-border
+                  bg-surface-muted
+                  p-4
+                  sm:p-5
+                "
+              >
+                {replyTarget ? (
+                  <div
+                    className="
+                      mb-4
+                      flex
+                      flex-wrap
+                      items-center
+                      justify-between
+                      gap-2
+                      rounded-xl
+                      border
+                      border-border
+                      bg-white
+                      px-3
+                      py-2.5
+                    "
+                  >
+                    <p
+                      className="
+                        font-interface
+                        text-xs
+                        font-semibold
+                        text-foreground
+                      "
+                    >
+                      {replaceToken(
+                        labels.replyingTo,
+                        'name',
+                        replyTarget.name
+                      )}
+                    </p>
+
+                    <button
+                      type="button"
+                      onClick={
+                        cancelReply
+                      }
+                      className="
+                        rounded-full
+                        px-3
+                        py-1
+                        font-interface
+                        text-xs
+                        font-bold
+                        text-primary
+                        transition-colors
+                        hover:bg-primary/5
+                      "
+                    >
+                      {
+                        labels.cancelReply
+                      }
+                    </button>
+                  </div>
+                ) : null}
+
+                <label
+                  htmlFor={`story-comment-${storyId}`}
+                  className="sr-only"
+                >
+                  {
+                    labels.placeholder
+                  }
+                </label>
+
+                <textarea
+                  ref={
+                    textareaRef
+                  }
+                  id={`story-comment-${storyId}`}
+                  value={
+                    body
+                  }
+                  onChange={(
+                    event
+                  ) =>
+                    setBody(
+                      event.target
+                        .value
+                    )
+                  }
+                  rows={5}
+                  maxLength={
+                    MAX_COMMENT_LENGTH
+                  }
+                  placeholder={
+                    labels.placeholder
+                  }
+                  disabled={
+                    submitting
+                  }
+                  className="
+                    w-full
+                    resize-y
+                    rounded-xl
+                    border
+                    border-border
+                    bg-white
+                    px-4
+                    py-3.5
+                    font-body
+                    text-[0.95rem]
+                    leading-6
+                    text-foreground
+                    placeholder:text-muted-foreground
+                    transition
+                    focus:border-primary
+                    focus-visible:outline-none
+                    focus-visible:ring-2
+                    focus-visible:ring-primary/20
+                    disabled:opacity-60
+                  "
+                />
+
+                <div
+                  className="
+                    mt-3
+                    flex
+                    flex-wrap
+                    items-center
+                    justify-between
+                    gap-3
+                  "
+                >
+                  <p
+                    className="
+                      font-interface
+                      text-[0.7rem]
+                      text-muted-foreground
+                    "
+                  >
                     {replaceToken(
-                      labels.replyingTo,
-                      'name',
-                      replyTarget.name
+                      labels.charactersRemaining,
+                      'count',
+                      String(
+                        remainingCharacters
+                      )
                     )}
                   </p>
 
                   <button
-                    type="button"
-                    onClick={
-                      cancelReply
+                    type="submit"
+                    disabled={
+                      submitting ||
+                      !body.trim()
                     }
-                    className="rounded-md px-2 py-1 text-xs font-bold text-primary hover:bg-white"
+                    className="
+                      inline-flex
+                      min-h-10
+                      items-center
+                      justify-center
+                      gap-2
+                      rounded-full
+                      bg-deep
+                      px-5
+                      py-2
+                      font-interface
+                      text-sm
+                      font-bold
+                      text-white
+                      transition-colors
+                      hover:bg-primary
+                      focus-visible:outline-none
+                      focus-visible:ring-2
+                      focus-visible:ring-primary
+                      focus-visible:ring-offset-2
+                      disabled:cursor-not-allowed
+                      disabled:opacity-50
+                    "
                   >
-                    {
-                      labels.cancelReply
-                    }
+                    {submitting ? (
+                      <LoaderCircle
+                        aria-hidden="true"
+                        className="
+                          h-4
+                          w-4
+                          animate-spin
+                        "
+                      />
+                    ) : null}
+
+                    {submitting
+                      ? labels.submitting
+                      : labels.submit}
                   </button>
                 </div>
-              ) : null}
 
-              <label
-                htmlFor={`story-comment-${storyId}`}
-                className="sr-only"
+                {submitted ? (
+                  <p
+                    role="status"
+                    className="
+                      mt-4
+                      rounded-xl
+                      border
+                      border-primary/20
+                      bg-primary/5
+                      px-4
+                      py-3
+                      font-body
+                      text-sm
+                      font-medium
+                      text-deep
+                    "
+                  >
+                    {
+                      labels.pendingNotice
+                    }
+                  </p>
+                ) : null}
+
+                {submitError ? (
+                  <p
+                    role="alert"
+                    className="
+                      mt-4
+                      font-body
+                      text-sm
+                      font-medium
+                      text-breaking
+                    "
+                  >
+                    {submitError}
+                  </p>
+                ) : null}
+              </form>
+            ) : (
+              <div
+                className="
+                  rounded-2xl
+                  border
+                  border-border
+                  bg-surface-muted
+                  p-5
+                  sm:p-6
+                "
               >
-                {
-                  labels.placeholder
-                }
-              </label>
-
-              <textarea
-                ref={
-                  textareaRef
-                }
-                id={`story-comment-${storyId}`}
-                value={
-                  body
-                }
-                onChange={(
-                  event
-                ) =>
-                  setBody(
-                    event.target
-                      .value
-                  )
-                }
-                rows={4}
-                maxLength={
-                  MAX_COMMENT_LENGTH
-                }
-                placeholder={
-                  labels.placeholder
-                }
-                disabled={
-                  submitting
-                }
-                className="w-full resize-y rounded-md border border-border bg-white px-3 py-3 text-sm leading-6 text-foreground placeholder:text-muted-foreground focus:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:opacity-60"
-              />
-
-              <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
-                <p className="text-xs text-muted-foreground">
-                  {replaceToken(
-                    labels.charactersRemaining,
-                    'count',
-                    String(
-                      remainingCharacters
-                    )
-                  )}
+                <p
+                  className="
+                    max-w-xl
+                    font-body
+                    text-sm
+                    leading-6
+                    text-muted-foreground
+                  "
+                >
+                  {
+                    labels.signInPrompt
+                  }
                 </p>
 
-                <button
-                  type="submit"
-                  disabled={
-                    submitting ||
-                    !body.trim()
+                <Link
+                  href={
+                    signInHref
                   }
-                  className="inline-flex min-h-10 items-center justify-center gap-2 rounded-md bg-deep px-5 py-2 text-sm font-bold text-white transition-colors hover:bg-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                  className="
+                    mt-4
+                    inline-flex
+                    min-h-10
+                    items-center
+                    justify-center
+                    rounded-full
+                    bg-deep
+                    px-5
+                    py-2
+                    font-interface
+                    text-sm
+                    font-bold
+                    text-white
+                    transition-colors
+                    hover:bg-primary
+                    focus-visible:outline-none
+                    focus-visible:ring-2
+                    focus-visible:ring-primary
+                    focus-visible:ring-offset-2
+                  "
                 >
-                  {submitting ? (
+                  {
+                    labels.signInAction
+                  }
+                </Link>
+              </div>
+            )}
+
+            {/* ================================================
+                COMMENTS LIST
+            ================================================ */}
+            {thread.comments.length ===
+            0 ? (
+              <div
+                className="
+                  py-14
+                  text-left
+                "
+              >
+                <h3
+                  className="
+                    font-headline
+                    text-xl
+                    font-bold
+                    text-deep
+                  "
+                >
+                  {
+                    labels.emptyTitle
+                  }
+                </h3>
+
+                <p
+                  className="
+                    mt-2
+                    max-w-lg
+                    font-body
+                    text-sm
+                    leading-6
+                    text-muted-foreground
+                  "
+                >
+                  {
+                    labels.emptyDescription
+                  }
+                </p>
+              </div>
+            ) : (
+              <div className="mt-7">
+                {thread.comments.map(
+                  (comment) => (
+                    <CommentEntry
+                      key={
+                        comment.id
+                      }
+                      comment={
+                        comment
+                      }
+                      locale={
+                        locale
+                      }
+                      isAuthenticated={
+                        isAuthenticated
+                      }
+                      signInHref={
+                        signInHref
+                      }
+                      labels={
+                        labels
+                      }
+                      depth={0}
+                      onReply={
+                        beginReply
+                      }
+                    />
+                  )
+                )}
+              </div>
+            )}
+
+            {/* ================================================
+                LOAD MORE
+            ================================================ */}
+            {canLoadMore ? (
+              <div
+                className="
+                  border-t
+                  border-border
+                  pt-6
+                "
+              >
+                <button
+                  type="button"
+                  onClick={
+                    loadMoreComments
+                  }
+                  disabled={
+                    loadingMore
+                  }
+                  className="
+                    inline-flex
+                    min-h-10
+                    items-center
+                    justify-center
+                    gap-2
+                    rounded-full
+                    border
+                    border-border
+                    bg-white
+                    px-5
+                    py-2
+                    font-interface
+                    text-sm
+                    font-bold
+                    text-deep
+                    transition-colors
+                    hover:border-primary
+                    hover:text-primary
+                    disabled:cursor-not-allowed
+                    disabled:opacity-60
+                  "
+                >
+                  {loadingMore ? (
                     <LoaderCircle
                       aria-hidden="true"
-                      className="h-4 w-4 animate-spin"
+                      className="
+                        h-4
+                        w-4
+                        animate-spin
+                      "
                     />
                   ) : null}
 
-                  {submitting
-                    ? labels.submitting
-                    : labels.submit}
+                  {
+                    labels.loadMore
+                  }
                 </button>
               </div>
+            ) : null}
 
-              {submitted ? (
-                <p
-                  role="status"
-                  className="mt-3 rounded-md border border-primary/20 bg-primary/5 px-3 py-2 text-sm font-medium text-deep"
-                >
-                  {
-                    labels.pendingNotice
-                  }
-                </p>
-              ) : null}
-
-              {submitError ? (
-                <p
-                  role="alert"
-                  className="mt-3 text-sm font-medium text-breaking"
-                >
-                  {submitError}
-                </p>
-              ) : null}
-            </form>
-          ) : (
-            <div className="border-b border-border py-5">
-              <p className="text-sm text-muted-foreground">
-                {
-                  labels.signInPrompt
-                }
-              </p>
-
-              <Link
-                href={
-                  signInHref
-                }
-                className="mt-3 inline-flex min-h-10 items-center justify-center rounded-md bg-deep px-5 py-2 text-sm font-bold text-white transition-colors hover:bg-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+            {loadError ? (
+              <p
+                role="alert"
+                className="
+                  mt-4
+                  font-body
+                  text-sm
+                  font-medium
+                  text-breaking
+                "
               >
-                {
-                  labels.signInAction
-                }
-              </Link>
-            </div>
-          )}
-
-          {thread.comments.length ===
-          0 ? (
-            <div className="py-12 text-center">
-              <h3 className="font-headline text-xl font-bold text-deep">
-                {
-                  labels.emptyTitle
-                }
-              </h3>
-
-              <p className="mt-2 text-sm text-muted-foreground">
-                {
-                  labels.emptyDescription
-                }
+                {loadError}
               </p>
-            </div>
-          ) : (
-            <div>
-              {thread.comments.map(
-                (comment) => (
-                  <CommentEntry
-                    key={
-                      comment.id
-                    }
-                    comment={
-                      comment
-                    }
-                    locale={
-                      locale
-                    }
-                    isAuthenticated={
-                      isAuthenticated
-                    }
-                    signInHref={
-                      signInHref
-                    }
-                    labels={
-                      labels
-                    }
-                    depth={0}
-                    onReply={
-                      beginReply
-                    }
-                  />
-                )
-              )}
-            </div>
-          )}
-
-          {canLoadMore ? (
-            <div className="border-t border-border pt-5 text-center">
-              <button
-                type="button"
-                onClick={
-                  loadMoreComments
-                }
-                disabled={
-                  loadingMore
-                }
-                className="inline-flex min-h-10 items-center justify-center gap-2 rounded-md border border-border bg-white px-5 py-2 text-sm font-bold text-deep transition-colors hover:border-primary hover:text-primary disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                {loadingMore ? (
-                  <LoaderCircle
-                    aria-hidden="true"
-                    className="h-4 w-4 animate-spin"
-                  />
-                ) : null}
-
-                {
-                  labels.loadMore
-                }
-              </button>
-            </div>
-          ) : null}
-
-          {loadError ? (
-            <p
-              role="alert"
-              className="mt-4 text-center text-sm font-medium text-breaking"
-            >
-              {loadError}
-            </p>
-          ) : null}
+            ) : null}
+          </div>
         </div>
       </div>
     </section>

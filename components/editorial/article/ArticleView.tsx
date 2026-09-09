@@ -14,6 +14,7 @@ import { ArticleBody } from './ArticleBody';
 import { ArticleHeader } from './ArticleHeader';
 import { ArticleRightRail } from './ArticleRightRail';
 import { ArticleListenBar } from './ArticleListenBar';
+import { ArticleRelatedStories } from './ArticleRelatedStories';
 
 interface ArticleBookmarkState {
   isAuthenticated: boolean;
@@ -28,6 +29,7 @@ interface ArticleViewProps {
   isPreview?: boolean;
   bookmarkState?: ArticleBookmarkState;
   trendingStories?: PublicStoryListItem[];
+  relatedStories?: PublicStoryListItem[];
   commentCount?: number;
 }
 
@@ -38,6 +40,7 @@ export function ArticleView({
   isPreview,
   bookmarkState,
   trendingStories = [],
+  relatedStories = [],
   commentCount = 0,
 }: ArticleViewProps) {
   return (
@@ -84,14 +87,14 @@ export function ArticleView({
               ARTICLE BODY
           ================================================== */}
           <main className="min-w-0">
-          <ArticleListenBar
-  body={story.body}
-  locale={locale}
-/>
+            <ArticleListenBar
+              body={story.body}
+              locale={locale}
+            />
 
-  <ArticleBody
-    body={story.body}
-  />
+            <ArticleBody
+              body={story.body}
+            />
 
             {/* Tags */}
             {story.tags.length > 0 && (
@@ -157,45 +160,15 @@ export function ArticleView({
       {/* ======================================================
           RELATED STORIES
       ====================================================== */}
-      <section
-        className="
-          border-t
-          border-border
-          bg-surface-muted
-        "
-      >
-        <div className="container-wide py-10">
-          <div className="mx-auto max-w-[1180px]">
-            <h2
-              className="
-                font-headline
-                text-xl
-                font-bold
-                text-deep
-              "
-            >
-              {
-                dict.article
-                  .relatedStories
-              }
-            </h2>
-
-            <p
-              className="
-                mt-1
-                font-body
-                text-sm
-                text-muted-foreground
-              "
-            >
-              {
-                dict.article
-                  .comingSoon
-              }
-            </p>
-          </div>
-        </div>
-      </section>
+      {relatedStories.length > 0 && (
+        <ArticleRelatedStories
+          stories={relatedStories}
+          locale={locale}
+          title={
+            dict.article.relatedStories
+          }
+        />
+      )}
     </article>
   );
 }
