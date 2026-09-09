@@ -55,14 +55,405 @@ export interface Tag {
 /* MEDIA */
 /* ========================================================= */
 
+export type MediaAssetType =
+  | 'image'
+  | 'graphic'
+  | 'video'
+  | 'audio'
+  | 'document'
+  | 'logo'
+  | 'social'
+  | 'broadcast'
+  | 'other';
+
+export type MediaStatus =
+  | 'draft'
+  | 'approved'
+  | 'restricted'
+  | 'archived'
+  | 'trashed';
+
+export type MediaRightsStatus =
+  | 'owned'
+  | 'staff_created'
+  | 'freelancer'
+  | 'licensed'
+  | 'wire_service'
+  | 'government'
+  | 'public_domain'
+  | 'creative_commons'
+  | 'reader_submitted'
+  | 'restricted'
+  | 'unknown';
+
+export type MediaSensitiveLevel =
+  | 'none'
+  | 'sensitive'
+  | 'disturbing'
+  | 'graphic';
+
+export type MediaAllowedUse =
+  | 'website'
+  | 'app'
+  | 'social_media'
+  | 'newsletter'
+  | 'print'
+  | 'advertising'
+  | 'promotional'
+  | 'archive';
+
 export interface MediaAsset {
   id: string;
+
+  /* ------------------------------------------------------- */
+  /* FILE */
+  /* ------------------------------------------------------- */
 
   url: string;
 
   storagePath: string;
 
   fileName: string;
+
+  originalFileName:
+    | string
+    | null;
+
+  mimeType: string;
+
+  assetType: MediaAssetType;
+
+  width:
+    | number
+    | null;
+
+  height:
+    | number
+    | null;
+
+  fileSize:
+    | number
+    | null;
+
+  checksum:
+    | string
+    | null;
+
+  /* ------------------------------------------------------- */
+  /* CORE EDITORIAL METADATA */
+  /* ------------------------------------------------------- */
+
+  title:
+    | string
+    | null;
+
+  altText: string;
+
+  caption:
+    | string
+    | null;
+
+  description:
+    | string
+    | null;
+
+  credit:
+    | string
+    | null;
+
+  photographer:
+    | string
+    | null;
+
+  creatorName:
+    | string
+    | null;
+
+  copyrightHolder:
+    | string
+    | null;
+
+  sourceName:
+    | string
+    | null;
+
+  sourceUrl:
+    | string
+    | null;
+
+  /* ------------------------------------------------------- */
+  /* WORKFLOW */
+  /* ------------------------------------------------------- */
+
+  status: MediaStatus;
+
+  approvedBy:
+    | string
+    | null;
+
+  approvedAt:
+    | string
+    | null;
+
+  archivedAt:
+    | string
+    | null;
+
+  trashedAt:
+    | string
+    | null;
+
+  /* ------------------------------------------------------- */
+  /* RIGHTS + LICENSING */
+  /* ------------------------------------------------------- */
+
+  rightsStatus: MediaRightsStatus;
+
+  licenseName:
+    | string
+    | null;
+
+  rightsNotes:
+    | string
+    | null;
+
+  allowedUses: string[];
+
+  restrictions: string[];
+
+  licenseExpiresAt:
+    | string
+    | null;
+
+  embargoUntil:
+    | string
+    | null;
+
+  /* ------------------------------------------------------- */
+  /* DATE / ARCHIVAL METADATA */
+  /* ------------------------------------------------------- */
+
+  dateCreated:
+    | string
+    | null;
+
+  approximateDate:
+    | string
+    | null;
+
+  /* ------------------------------------------------------- */
+  /* LOCATION */
+  /* ------------------------------------------------------- */
+
+  island:
+    | IslandScope
+    | null;
+
+  country:
+    | string
+    | null;
+
+  region:
+    | string
+    | null;
+
+  city:
+    | string
+    | null;
+
+  neighborhood:
+    | string
+    | null;
+
+  locationName:
+    | string
+    | null;
+
+  latitude:
+    | number
+    | null;
+
+  longitude:
+    | number
+    | null;
+
+  /* ------------------------------------------------------- */
+  /* TAXONOMY */
+  /* ------------------------------------------------------- */
+
+  language:
+    | string
+    | null;
+
+  categoryId:
+    | string
+    | null;
+
+  category:
+    | Category
+    | null;
+
+  tags: MediaTag[];
+
+  /* ------------------------------------------------------- */
+  /* IMAGE PRESENTATION */
+  /* ------------------------------------------------------- */
+
+  focalPointX:
+    | number
+    | null;
+
+  focalPointY:
+    | number
+    | null;
+
+  displayCaption: boolean;
+
+  displayCredit: boolean;
+
+  decorative: boolean;
+
+  sensitiveLevel: MediaSensitiveLevel;
+
+  /* ------------------------------------------------------- */
+  /* NEWSROOM */
+  /* ------------------------------------------------------- */
+
+  internalNotes:
+    | string
+    | null;
+
+  uploadedBy: string;
+
+  uploadedByName:
+    | string
+    | null;
+
+  lastEditedBy:
+    | string
+    | null;
+
+  lastEditedByName:
+    | string
+    | null;
+
+  /* ------------------------------------------------------- */
+  /* SUPERSESSION */
+  /* ------------------------------------------------------- */
+
+  isSuperseded: boolean;
+
+  supersededBy:
+    | string
+    | null;
+
+  /* ------------------------------------------------------- */
+  /* RELATIONS / COMPUTED VALUES */
+  /* ------------------------------------------------------- */
+
+  collections: MediaCollectionSummary[];
+
+  usageCount: number;
+
+  isFavorite: boolean;
+
+  /* ------------------------------------------------------- */
+  /* TIMESTAMPS */
+  /* ------------------------------------------------------- */
+
+  createdAt: string;
+
+  updatedAt: string;
+}
+
+export interface MediaTag {
+  id: string;
+
+  slug: string;
+
+  name: string;
+}
+
+export interface MediaCollectionSummary {
+  id: string;
+
+  name: string;
+}
+
+export interface MediaCollection {
+  id: string;
+
+  name: string;
+
+  description:
+    | string
+    | null;
+
+  coverAssetId:
+    | string
+    | null;
+
+  isShared: boolean;
+
+  createdBy:
+    | string
+    | null;
+
+  createdAt: string;
+
+  updatedAt: string;
+
+  itemCount: number;
+}
+
+export interface MediaUsage {
+  id: string;
+
+  mediaAssetId: string;
+
+  usageType: string;
+
+  storyId:
+    | string
+    | null;
+
+  entityType:
+    | string
+    | null;
+
+  entityId:
+    | string
+    | null;
+
+  placement:
+    | string
+    | null;
+
+  metadata: Record<
+    string,
+    unknown
+  >;
+
+  createdBy:
+    | string
+    | null;
+
+  createdAt: string;
+}
+
+export interface MediaVersion {
+  id: string;
+
+  mediaAssetId: string;
+
+  versionNumber: number;
+
+  url: string;
+
+  storagePath: string;
+
+  fileName: string;
+
   mimeType: string;
 
   width:
@@ -77,21 +468,230 @@ export interface MediaAsset {
     | number
     | null;
 
-  altText: string;
-
-  caption:
+  checksum:
     | string
     | null;
 
-  credit:
+  changeNote:
     | string
     | null;
 
-  uploadedBy: string;
+  createdBy:
+    | string
+    | null;
 
   createdAt: string;
-  updatedAt: string;
 }
+
+export interface MediaAuditEntry {
+  id: string;
+
+  mediaAssetId:
+    | string
+    | null;
+
+  userId:
+    | string
+    | null;
+
+  action: string;
+
+  beforeData:
+    | Record<string, unknown>
+    | null;
+
+  afterData:
+    | Record<string, unknown>
+    | null;
+
+  metadata: Record<
+    string,
+    unknown
+  >;
+
+  createdAt: string;
+}
+
+/* ========================================================= */
+/* MEDIA LABEL MAPS */
+/* ========================================================= */
+
+export const MEDIA_STATUS_LABELS: Record<
+  MediaStatus,
+  {
+    en: string;
+    es: string;
+  }
+> = {
+  draft: {
+    en: 'Draft',
+    es: 'Borrador',
+  },
+
+  approved: {
+    en: 'Approved',
+    es: 'Aprobado',
+  },
+
+  restricted: {
+    en: 'Restricted',
+    es: 'Restringido',
+  },
+
+  archived: {
+    en: 'Archived',
+    es: 'Archivado',
+  },
+
+  trashed: {
+    en: 'Trash',
+    es: 'Papelera',
+  },
+};
+
+export const MEDIA_ASSET_TYPE_LABELS: Record<
+  MediaAssetType,
+  {
+    en: string;
+    es: string;
+  }
+> = {
+  image: {
+    en: 'Image',
+    es: 'Imagen',
+  },
+
+  graphic: {
+    en: 'Graphic',
+    es: 'Gráfico',
+  },
+
+  video: {
+    en: 'Video',
+    es: 'Video',
+  },
+
+  audio: {
+    en: 'Audio',
+    es: 'Audio',
+  },
+
+  document: {
+    en: 'Document',
+    es: 'Documento',
+  },
+
+  logo: {
+    en: 'Logo',
+    es: 'Logo',
+  },
+
+  social: {
+    en: 'Social',
+    es: 'Social',
+  },
+
+  broadcast: {
+    en: 'Broadcast',
+    es: 'Transmisión',
+  },
+
+  other: {
+    en: 'Other',
+    es: 'Otro',
+  },
+};
+
+export const MEDIA_RIGHTS_LABELS: Record<
+  MediaRightsStatus,
+  {
+    en: string;
+    es: string;
+  }
+> = {
+  owned: {
+    en: 'Owned by West Island Times',
+    es: 'Propiedad de West Island Times',
+  },
+
+  staff_created: {
+    en: 'Staff created',
+    es: 'Creado por el personal',
+  },
+
+  freelancer: {
+    en: 'Freelancer',
+    es: 'Colaborador independiente',
+  },
+
+  licensed: {
+    en: 'Licensed',
+    es: 'Con licencia',
+  },
+
+  wire_service: {
+    en: 'Wire / agency',
+    es: 'Agencia de noticias',
+  },
+
+  government: {
+    en: 'Government',
+    es: 'Gobierno',
+  },
+
+  public_domain: {
+    en: 'Public domain',
+    es: 'Dominio público',
+  },
+
+  creative_commons: {
+    en: 'Creative Commons',
+    es: 'Creative Commons',
+  },
+
+  reader_submitted: {
+    en: 'Reader submitted',
+    es: 'Enviado por un lector',
+  },
+
+  restricted: {
+    en: 'Restricted',
+    es: 'Restringido',
+  },
+
+  unknown: {
+    en: 'Unknown',
+    es: 'Desconocido',
+  },
+};
+
+export const MEDIA_SENSITIVE_LABELS: Record<
+  MediaSensitiveLevel,
+  {
+    en: string;
+    es: string;
+  }
+> = {
+  none: {
+    en: 'None',
+    es: 'Ninguno',
+  },
+
+  sensitive: {
+    en: 'Sensitive',
+    es: 'Sensible',
+  },
+
+  disturbing: {
+    en: 'Disturbing',
+    es: 'Perturbador',
+  },
+
+  graphic: {
+    en: 'Graphic',
+    es: 'Gráfico',
+  },
+};
 
 /* ========================================================= */
 /* PEOPLE */

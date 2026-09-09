@@ -38,6 +38,43 @@ export type IslandScope =
   | 'archipelago'
   | 'none';
 
+  export type MediaAssetType =
+  | 'image'
+  | 'graphic'
+  | 'video'
+  | 'audio'
+  | 'document'
+  | 'logo'
+  | 'social'
+  | 'broadcast'
+  | 'other';
+
+export type MediaStatus =
+  | 'draft'
+  | 'approved'
+  | 'restricted'
+  | 'archived'
+  | 'trashed';
+
+export type MediaRightsStatus =
+  | 'owned'
+  | 'staff_created'
+  | 'freelancer'
+  | 'licensed'
+  | 'wire_service'
+  | 'government'
+  | 'public_domain'
+  | 'creative_commons'
+  | 'reader_submitted'
+  | 'restricted'
+  | 'unknown';
+
+export type MediaSensitiveLevel =
+  | 'none'
+  | 'sensitive'
+  | 'disturbing'
+  | 'graphic';
+
   export type EditorialBylineStatus =
   | 'active'
   | 'former'
@@ -1184,69 +1221,705 @@ export interface Database {
       media_assets: {
         Row: {
           id: string;
+      
           url: string;
+      
           storage_path: string;
+      
           file_name: string;
+      
+          original_file_name:
+            | string
+            | null;
+      
           mime_type: string;
-          width: number | null;
-          height: number | null;
+      
+          asset_type:
+            MediaAssetType;
+      
+          width:
+            | number
+            | null;
+      
+          height:
+            | number
+            | null;
+      
           file_size:
             | number
             | null;
+      
+          checksum:
+            | string
+            | null;
+      
+          title:
+            | string
+            | null;
+      
           alt_text: string;
+      
           caption:
             | string
             | null;
+      
+          description:
+            | string
+            | null;
+      
           credit:
             | string
             | null;
+      
+          photographer:
+            | string
+            | null;
+      
+          creator_name:
+            | string
+            | null;
+      
+          copyright_holder:
+            | string
+            | null;
+      
+          source_name:
+            | string
+            | null;
+      
+          source_url:
+            | string
+            | null;
+      
+          status:
+            MediaStatus;
+      
+          rights_status:
+            MediaRightsStatus;
+      
+          license_name:
+            | string
+            | null;
+      
+          rights_notes:
+            | string
+            | null;
+      
+          allowed_uses:
+            string[];
+      
+          restrictions:
+            string[];
+      
+          license_expires_at:
+            | string
+            | null;
+      
+          embargo_until:
+            | string
+            | null;
+      
+          date_created:
+            | string
+            | null;
+      
+          approximate_date:
+            | string
+            | null;
+      
+          island:
+            | IslandScope
+            | null;
+      
+          country:
+            | string
+            | null;
+      
+          region:
+            | string
+            | null;
+      
+          city:
+            | string
+            | null;
+      
+          neighborhood:
+            | string
+            | null;
+      
+          location_name:
+            | string
+            | null;
+      
+          latitude:
+            | number
+            | null;
+      
+          longitude:
+            | number
+            | null;
+      
+          language:
+            | string
+            | null;
+      
+          category_id:
+            | string
+            | null;
+      
+          focal_point_x:
+            | number
+            | null;
+      
+          focal_point_y:
+            | number
+            | null;
+      
+          display_caption: boolean;
+      
+          display_credit: boolean;
+      
+          decorative: boolean;
+      
+          sensitive_level:
+            MediaSensitiveLevel;
+      
+          internal_notes:
+            | string
+            | null;
+      
+          is_superseded: boolean;
+      
+          superseded_by:
+            | string
+            | null;
+      
+          approved_by:
+            | string
+            | null;
+      
+          approved_at:
+            | string
+            | null;
+      
+          last_edited_by:
+            | string
+            | null;
+      
+          archived_at:
+            | string
+            | null;
+      
+          trashed_at:
+            | string
+            | null;
+      
           uploaded_by: string;
+      
           created_at: string;
+      
           updated_at: string;
         };
-
+      
         Insert: {
           id?: string;
+      
           url: string;
+      
           storage_path: string;
+      
           file_name: string;
+      
+          original_file_name?:
+            | string
+            | null;
+      
           mime_type: string;
+      
+          asset_type?:
+            MediaAssetType;
+      
           width?:
             | number
             | null;
+      
           height?:
             | number
             | null;
+      
           file_size?:
             | number
             | null;
+      
+          checksum?:
+            | string
+            | null;
+      
+          title?:
+            | string
+            | null;
+      
           alt_text?: string;
+      
           caption?:
             | string
             | null;
+      
+          description?:
+            | string
+            | null;
+      
           credit?:
             | string
             | null;
+      
+          photographer?:
+            | string
+            | null;
+      
+          creator_name?:
+            | string
+            | null;
+      
+          copyright_holder?:
+            | string
+            | null;
+      
+          source_name?:
+            | string
+            | null;
+      
+          source_url?:
+            | string
+            | null;
+      
+          status?:
+            MediaStatus;
+      
+          rights_status?:
+            MediaRightsStatus;
+      
+          license_name?:
+            | string
+            | null;
+      
+          rights_notes?:
+            | string
+            | null;
+      
+          allowed_uses?:
+            string[];
+      
+          restrictions?:
+            string[];
+      
+          license_expires_at?:
+            | string
+            | null;
+      
+          embargo_until?:
+            | string
+            | null;
+      
+          date_created?:
+            | string
+            | null;
+      
+          approximate_date?:
+            | string
+            | null;
+      
+          island?:
+            | IslandScope
+            | null;
+      
+          country?:
+            | string
+            | null;
+      
+          region?:
+            | string
+            | null;
+      
+          city?:
+            | string
+            | null;
+      
+          neighborhood?:
+            | string
+            | null;
+      
+          location_name?:
+            | string
+            | null;
+      
+          latitude?:
+            | number
+            | null;
+      
+          longitude?:
+            | number
+            | null;
+      
+          language?:
+            | string
+            | null;
+      
+          category_id?:
+            | string
+            | null;
+      
+          focal_point_x?:
+            | number
+            | null;
+      
+          focal_point_y?:
+            | number
+            | null;
+      
+          display_caption?: boolean;
+      
+          display_credit?: boolean;
+      
+          decorative?: boolean;
+      
+          sensitive_level?:
+            MediaSensitiveLevel;
+      
+          internal_notes?:
+            | string
+            | null;
+      
+          is_superseded?: boolean;
+      
+          superseded_by?:
+            | string
+            | null;
+      
+          approved_by?:
+            | string
+            | null;
+      
+          approved_at?:
+            | string
+            | null;
+      
+          last_edited_by?:
+            | string
+            | null;
+      
+          archived_at?:
+            | string
+            | null;
+      
+          trashed_at?:
+            | string
+            | null;
+      
           uploaded_by: string;
+      
+          created_at?: string;
+      
+          updated_at?: string;
         };
-
+      
         Update: {
+          url?: string;
+      
+          storage_path?: string;
+      
+          file_name?: string;
+      
+          original_file_name?:
+            | string
+            | null;
+      
+          mime_type?: string;
+      
+          asset_type?:
+            MediaAssetType;
+      
+          width?:
+            | number
+            | null;
+      
+          height?:
+            | number
+            | null;
+      
+          file_size?:
+            | number
+            | null;
+      
+          checksum?:
+            | string
+            | null;
+      
+          title?:
+            | string
+            | null;
+      
           alt_text?: string;
+      
           caption?:
             | string
             | null;
+      
+          description?:
+            | string
+            | null;
+      
           credit?:
             | string
             | null;
+      
+          photographer?:
+            | string
+            | null;
+      
+          creator_name?:
+            | string
+            | null;
+      
+          copyright_holder?:
+            | string
+            | null;
+      
+          source_name?:
+            | string
+            | null;
+      
+          source_url?:
+            | string
+            | null;
+      
+          status?:
+            MediaStatus;
+      
+          rights_status?:
+            MediaRightsStatus;
+      
+          license_name?:
+            | string
+            | null;
+      
+          rights_notes?:
+            | string
+            | null;
+      
+          allowed_uses?:
+            string[];
+      
+          restrictions?:
+            string[];
+      
+          license_expires_at?:
+            | string
+            | null;
+      
+          embargo_until?:
+            | string
+            | null;
+      
+          date_created?:
+            | string
+            | null;
+      
+          approximate_date?:
+            | string
+            | null;
+      
+          island?:
+            | IslandScope
+            | null;
+      
+          country?:
+            | string
+            | null;
+      
+          region?:
+            | string
+            | null;
+      
+          city?:
+            | string
+            | null;
+      
+          neighborhood?:
+            | string
+            | null;
+      
+          location_name?:
+            | string
+            | null;
+      
+          latitude?:
+            | number
+            | null;
+      
+          longitude?:
+            | number
+            | null;
+      
+          language?:
+            | string
+            | null;
+      
+          category_id?:
+            | string
+            | null;
+      
+          focal_point_x?:
+            | number
+            | null;
+      
+          focal_point_y?:
+            | number
+            | null;
+      
+          display_caption?: boolean;
+      
+          display_credit?: boolean;
+      
+          decorative?: boolean;
+      
+          sensitive_level?:
+            MediaSensitiveLevel;
+      
+          internal_notes?:
+            | string
+            | null;
+      
+          is_superseded?: boolean;
+      
+          superseded_by?:
+            | string
+            | null;
+      
+          approved_by?:
+            | string
+            | null;
+      
+          approved_at?:
+            | string
+            | null;
+      
+          last_edited_by?:
+            | string
+            | null;
+      
+          archived_at?:
+            | string
+            | null;
+      
+          trashed_at?:
+            | string
+            | null;
+      
+          uploaded_by?: string;
+      
+          updated_at?: string;
         };
 
+
+      
         Relationships: [
           {
-            foreignKeyName: 'media_assets_uploaded_by_fkey';
+            foreignKeyName:
+              'media_assets_uploaded_by_fkey';
             columns: ['uploaded_by'];
             isOneToOne: false;
-            referencedRelation: 'profiles';
+            referencedRelation:
+              'profiles';
             referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName:
+              'media_assets_category_id_fkey';
+            columns: ['category_id'];
+            isOneToOne: false;
+            referencedRelation:
+              'categories';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName:
+              'media_assets_superseded_by_fkey';
+            columns: ['superseded_by'];
+            isOneToOne: false;
+            referencedRelation:
+              'media_assets';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName:
+              'media_assets_approved_by_fkey';
+            columns: ['approved_by'];
+            isOneToOne: false;
+            referencedRelation:
+              'profiles';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName:
+              'media_assets_last_edited_by_fkey';
+            columns: ['last_edited_by'];
+            isOneToOne: false;
+            referencedRelation:
+              'profiles';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+
+      media_favorites: {
+        Row: {
+          id: string;
+          media_asset_id: string;
+          user_id: string;
+          created_at: string;
+        };
+      
+        Insert: {
+          id?: string;
+          media_asset_id: string;
+          user_id: string;
+          created_at?: string;
+        };
+      
+        Update: {
+          id?: string;
+          media_asset_id?: string;
+          user_id?: string;
+          created_at?: string;
+        };
+      
+        Relationships: [
+          {
+            foreignKeyName:
+              'media_favorites_media_asset_id_fkey';
+            columns: [
+              'media_asset_id',
+            ];
+            isOneToOne: false;
+            referencedRelation:
+              'media_assets';
+            referencedColumns: [
+              'id',
+            ];
+          },
+          {
+            foreignKeyName:
+              'media_favorites_user_id_fkey';
+            columns: [
+              'user_id',
+            ];
+            isOneToOne: false;
+            referencedRelation:
+              'profiles';
+            referencedColumns: [
+              'id',
+            ];
           },
         ];
       };

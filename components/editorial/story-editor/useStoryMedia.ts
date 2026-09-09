@@ -1,8 +1,13 @@
+
 'use client';
 
 import {
   useState,
 } from 'react';
+
+import {
+  getStoryMediaMetadata,
+} from '@/lib/editorial/media-selection';
 
 import type {
   MediaAsset,
@@ -63,6 +68,10 @@ export function useStoryMedia({
     setMediaPickerOpen,
   ] = useState(false);
 
+  /* ======================================================= */
+  /* FEATURED IMAGE */
+  /* ======================================================= */
+
   function setStoryFeaturedImage(
     media:
       | MediaAsset
@@ -78,40 +87,49 @@ export function useStoryMedia({
     );
   }
 
+  /* ======================================================= */
+  /* SELECT FROM MEDIA LIBRARY */
+  /* ======================================================= */
+
   function selectFeaturedImage(
     media: MediaAsset
   ) {
+    const metadata =
+      getStoryMediaMetadata(
+        media
+      );
+
     setStoryFeaturedImage(
       media
     );
 
-    /**
-     * Use Media Library metadata as defaults,
-     * but do not overwrite story-specific values
-     * already entered by the editor.
+    /*
+     * Selecting a new Media Library image should
+     * populate the story-specific image fields from
+     * the selected asset.
+     *
+     * These are copied values, not live references,
+     * so the editor can still customize them for
+     * this individual story afterward.
      */
-    if (
-      !imageCaption &&
-      media.caption
-    ) {
-      setImageCaption(
-        media.caption
-      );
-    }
+    setImageCaption(
+      metadata.description ||
+        metadata.caption ||
+        ''
+    );
 
-    if (
-      !imageCredit &&
-      media.credit
-    ) {
-      setImageCredit(
-        media.credit
-      );
-    }
+    setImageCredit(
+      metadata.credit
+    );
 
     setMediaPickerOpen(
       false
     );
   }
+
+  /* ======================================================= */
+  /* REMOVE FEATURED IMAGE */
+  /* ======================================================= */
 
   function removeFeaturedImage() {
     setStoryFeaturedImage(
@@ -126,6 +144,10 @@ export function useStoryMedia({
       ''
     );
   }
+
+  /* ======================================================= */
+  /* LOAD REVISION */
+  /* ======================================================= */
 
   /**
    * Used when an existing unpublished revision
@@ -166,7 +188,7 @@ export function useStoryMedia({
       revisionFeaturedImageId
     );
 
-    /**
+    /*
      * If the revision uses the currently published
      * image, keep the full MediaAsset object.
      *
@@ -220,3 +242,4 @@ export function useStoryMedia({
     loadRevisionMedia,
   };
 }
+
