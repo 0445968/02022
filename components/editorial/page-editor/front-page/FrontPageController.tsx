@@ -195,8 +195,8 @@ function countSelectionChanges(
 
   const keys =
     new Set([
-      ...draftMap.keys(),
-      ...publishedMap.keys(),
+      ...Array.from(draftMap.keys()),
+      ...Array.from(publishedMap.keys()),
     ]);
 
   let count =

@@ -1,5 +1,5 @@
 import { getDataClient } from '@/lib/db/supabase-data-access';
-import type { Database } from '@/lib/db/database.types';
+import type { Database, IslandScope } from '@/lib/db/database.types';
 
 import type {
   MediaAsset,
@@ -692,8 +692,8 @@ export async function getMediaAssets(
   );
 
   const favoriteMediaIds =
-  new Set(
-    options.favoriteMediaIds ??
+  new Set<string>(
+    opts?.favoriteMediaIds ??
       []
   );
 
@@ -766,7 +766,7 @@ export async function getMediaAssets(
   if (opts?.island) {
     query = query.eq(
       'island',
-      opts.island
+      opts.island as IslandScope
     );
   }
 
@@ -799,7 +799,7 @@ export async function getMediaAssets(
   }
 
   if (
-    options.favoriteOnly
+    opts?.favoriteOnly
   ) {
     const ids =
       Array.from(

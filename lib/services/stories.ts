@@ -4,6 +4,10 @@ import {
   getEditorialProfilesByAccountIds,
 } from '@/lib/services/editorial-profiles';
 
+import {
+  mapMediaRow as mapFullMediaRow,
+} from '@/lib/services/media';
+
 import type {
   AccessLevel,
   Database,
@@ -206,65 +210,7 @@ function mapMediaRow(
     unknown
   >
 ): MediaAsset {
-  return {
-    id:
-      row.id as string,
-
-    url:
-      row.url as string,
-
-    storagePath:
-      row.storage_path as string,
-
-    fileName:
-      row.file_name as string,
-
-    mimeType:
-      row.mime_type as string,
-
-    width:
-      (row.width as
-        | number
-        | null) ??
-      null,
-
-    height:
-      (row.height as
-        | number
-        | null) ??
-      null,
-
-    fileSize:
-      (row.file_size as
-        | number
-        | null) ??
-      null,
-
-    altText:
-      (row.alt_text as string) ??
-      '',
-
-    caption:
-      (row.caption as
-        | string
-        | null) ??
-      null,
-
-    credit:
-      (row.credit as
-        | string
-        | null) ??
-      null,
-
-    uploadedBy:
-      row.uploaded_by as string,
-
-    createdAt:
-      row.created_at as string,
-
-    updatedAt:
-      row.updated_at as string,
-  };
+  return mapFullMediaRow(row);
 }
 
 // --------------------------------------------------
@@ -2827,6 +2773,12 @@ export async function getStoryVersions(
 
         headline:
           item.headline as string,
+
+        shortTitle:
+          (item.short_title as
+            | string
+            | null) ??
+          null,
 
         subheadline:
           (item.subheadline as

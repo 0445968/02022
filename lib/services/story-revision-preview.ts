@@ -9,6 +9,10 @@ import {
   import {
     getEditorialProfilesByAccountIds,
   } from '@/lib/services/editorial-profiles';
+
+  import {
+    mapMediaRow,
+  } from '@/lib/services/media';
   
   import type {
     Category,
@@ -174,6 +178,12 @@ return {
       ?.editorialTitle ??
     legacyProfile
       ?.editorialTitle ??
+    null,
+
+  headshotUrl:
+    editorialProfile
+      ?.headshot
+      ?.url ??
     null,
 };
 }
@@ -428,49 +438,12 @@ resolveRevisionIdentity(
             .maybeSingle();
   
         if (mediaRow) {
-          featuredImage = {
-            id:
-              mediaRow.id,
-  
-            url:
-              mediaRow.url,
-  
-            storagePath:
-              mediaRow.storage_path,
-  
-            fileName:
-              mediaRow.file_name,
-  
-            mimeType:
-              mediaRow.mime_type,
-  
-            width:
-              mediaRow.width,
-  
-            height:
-              mediaRow.height,
-  
-            fileSize:
-              mediaRow.file_size,
-  
-            altText:
-              mediaRow.alt_text,
-  
-            caption:
-              mediaRow.caption,
-  
-            credit:
-              mediaRow.credit,
-  
-            uploadedBy:
-              mediaRow.uploaded_by,
-  
-            createdAt:
-              mediaRow.created_at,
-  
-            updatedAt:
-              mediaRow.updated_at,
-          };
+          featuredImage = mapMediaRow(
+            mediaRow as unknown as Record<
+              string,
+              unknown
+            >
+          );
         }
       }
     }

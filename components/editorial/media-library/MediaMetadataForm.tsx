@@ -323,9 +323,9 @@ export function mediaAssetToMetadataValues(
       Array.isArray(
         asset.allowedUses
       )
-        ? [
+        ? ([
             ...asset.allowedUses,
-          ]
+          ] as MediaAllowedUse[])
         : [],
 
     restrictions:

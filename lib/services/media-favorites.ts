@@ -1,6 +1,6 @@
 import {
-    createClient,
-  } from '@/lib/db/supabase-server';
+    getDataClient,
+  } from '@/lib/db/supabase-data-access';
   
   /* ========================================================= */
   /* TYPES */
@@ -21,7 +21,7 @@ import {
     userId: string
   ): Promise<boolean> {
     const supabase =
-      createClient();
+      await getDataClient();
   
     const {
       data,
@@ -66,7 +66,7 @@ import {
     userId: string
   ): Promise<boolean> {
     const supabase =
-      createClient();
+      await getDataClient();
   
     /*
      * Check first so repeated clicks remain
@@ -120,7 +120,7 @@ import {
     userId: string
   ): Promise<boolean> {
     const supabase =
-      createClient();
+      await getDataClient();
   
     const {
       error,
@@ -215,7 +215,7 @@ import {
     userId: string
   ): Promise<string[]> {
     const supabase =
-      createClient();
+      await getDataClient();
   
     const {
       data,
