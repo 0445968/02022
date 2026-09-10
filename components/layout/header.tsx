@@ -33,6 +33,10 @@ import {
 } from '@/components/navigation/mobile-nav';
 
 import {
+  SearchMegaMenu,
+} from '@/components/navigation/search-mega-menu';
+
+import {
   localizedPath,
 } from '@/lib/i18n/config';
 
@@ -59,9 +63,29 @@ export function Header({
   const [
     mobileOpen,
     setMobileOpen,
-  ] = useState(
-    false
-  );
+  ] = useState(false);
+
+  const [
+    searchOpen,
+    setSearchOpen,
+  ] = useState(false);
+
+  function toggleSearch() {
+    setSearchOpen(
+      (current) =>
+        !current
+    );
+  }
+
+  function openMobileMenu() {
+    setSearchOpen(
+      false
+    );
+
+    setMobileOpen(
+      true
+    );
+  }
 
   return (
     <>
@@ -79,23 +103,21 @@ export function Header({
       >
         <div
           className="
-          container-wide
-          relative
-          flex
-          h-14
-          items-center
-          gap-3
-          lg:h-[64px]
-          lg:justify-between
-        "
+            container-wide
+            relative
+            flex
+            h-14
+            items-center
+            gap-3
+            lg:h-[64px]
+            lg:justify-between
+          "
         >
           {/* Mobile menu */}
           <button
             type="button"
-            onClick={() =>
-              setMobileOpen(
-                true
-              )
+            onClick={
+              openMobileMenu
             }
             className="
               inline-flex
@@ -133,49 +155,55 @@ export function Header({
             "
           >
             <Masthead
-              locale={locale}
+              locale={
+                locale
+              }
               compact
             />
           </div>
 
           {/* Centered desktop navigation */}
           <div
-  className="
-    absolute
-    left-1/2
-    hidden
-    h-full
-    -translate-x-1/2
-    items-center
-    lg:flex
-  "
->
-  <DesktopNav
-    dict={dict}
-    locale={locale}
-    inline
-  />
-</div>
+            className="
+              absolute
+              left-1/2
+              hidden
+              h-full
+              -translate-x-1/2
+              items-center
+              lg:flex
+            "
+          >
+            <DesktopNav
+              dict={
+                dict
+              }
+              locale={
+                locale
+              }
+              inline
+            />
+          </div>
 
           {/* Right controls */}
           <div
-  className="
-    ml-auto
-    flex
-    shrink-0
-    items-center
-    gap-1
-    lg:ml-0
-    lg:justify-self-end
-    lg:gap-2
-  "
->
+            className="
+              ml-auto
+              flex
+              shrink-0
+              items-center
+              gap-1
+              lg:ml-0
+              lg:justify-self-end
+              lg:gap-2
+            "
+          >
             {/* Search */}
-            <Link
-              href={localizedPath(
-                locale,
-                '/search'
-              )}
+            <button
+              type="button"
+              onClick={
+                toggleSearch
+              }
               className="
                 inline-flex
                 h-9
@@ -196,6 +224,10 @@ export function Header({
                   ? 'Buscar'
                   : 'Search'
               }
+              aria-expanded={
+                searchOpen
+              }
+              aria-haspopup="dialog"
             >
               <Search
                 className="
@@ -204,7 +236,7 @@ export function Header({
                 "
                 aria-hidden
               />
-            </Link>
+            </button>
 
             {/* Listen */}
             <Link
@@ -212,6 +244,11 @@ export function Header({
                 locale,
                 '/listen'
               )}
+              onClick={() =>
+                setSearchOpen(
+                  false
+                )
+              }
               className="
                 hidden
                 h-9
@@ -247,7 +284,9 @@ export function Header({
             </Link>
 
             <LanguageSwitcher
-              locale={locale}
+              locale={
+                locale
+              }
               label={
                 dict.utility
                   .language
@@ -255,12 +294,33 @@ export function Header({
             />
 
             <AccountButton
-              user={user}
-              dict={dict}
-              locale={locale}
+              user={
+                user
+              }
+              dict={
+                dict
+              }
+              locale={
+                locale
+              }
             />
           </div>
         </div>
+
+        {/* Search mega menu */}
+        <SearchMegaMenu
+          open={
+            searchOpen
+          }
+          locale={
+            locale
+          }
+          onClose={() =>
+            setSearchOpen(
+              false
+            )
+          }
+        />
       </header>
 
       <MobileNav
@@ -272,9 +332,15 @@ export function Header({
             false
           )
         }
-        dict={dict}
-        locale={locale}
-        user={user}
+        dict={
+          dict
+        }
+        locale={
+          locale
+        }
+        user={
+          user
+        }
       />
     </>
   );
