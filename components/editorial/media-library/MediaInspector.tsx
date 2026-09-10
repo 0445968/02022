@@ -480,36 +480,38 @@ export function MediaInspector({
   async function handleSave() {
     if (
       saving ||
-      !dirty
+      !dirty ||
+      !asset ||
+      !values
     ) {
       return;
     }
-
+  
     setSaving(
       true
     );
-
+  
     setError(
       null
     );
-
+  
     setSaved(
       false
     );
-
+  
     try {
       const response =
         await fetch(
-          `/api/media/${asset?.id}`,
+          `/api/media/${asset.id}`,
           {
             method:
               'PATCH',
-
+  
             headers: {
               'Content-Type':
                 'application/json',
             },
-
+  
             body:
               JSON.stringify(
                 buildUpdatePayload(
@@ -518,7 +520,7 @@ export function MediaInspector({
               ),
           }
         );
-
+  
       const result =
         await response
           .json()
@@ -526,7 +528,7 @@ export function MediaInspector({
             () =>
               null
           );
-
+  
       if (
         !response.ok
       ) {
@@ -535,11 +537,11 @@ export function MediaInspector({
             'Unable to save media metadata.'
         );
       }
-
+  
       const updated =
         result?.item ??
         result;
-
+  
       if (
         !updated?.id
       ) {
@@ -547,17 +549,17 @@ export function MediaInspector({
           'The media record was saved but the updated asset was not returned.'
         );
       }
-
+  
       onUpdated?.(
         updated as MediaAsset
       );
-
+  
       setValues(
         mediaAssetToMetadataValues(
           updated as MediaAsset
         )
       );
-
+  
       setSaved(
         true
       );
