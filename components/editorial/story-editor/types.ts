@@ -399,7 +399,9 @@ setShortTitle: (
   setFeaturedImage: (
     media: MediaAsset | null
   ) => void;
-
+  
+  removeFeaturedImage: () => void;
+  
   setMediaPickerOpen: (
     open: boolean
   ) => void;

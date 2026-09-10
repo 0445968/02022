@@ -589,10 +589,14 @@ export function StoryEditor({
     createTag:
       taxonomy.createTag,
 
-    setFeaturedImage:
+      setFeaturedImage:
       media
         .setStoryFeaturedImage,
-
+    
+    removeFeaturedImage:
+      media
+        .removeFeaturedImage,
+    
     setMediaPickerOpen:
       media
         .setMediaPickerOpen,

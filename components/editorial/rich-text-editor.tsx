@@ -13,24 +13,17 @@ import {
 
 import StarterKit from '@tiptap/starter-kit';
 import Link from '@tiptap/extension-link';
-import Image from '@tiptap/extension-image';
 import Underline from '@tiptap/extension-underline';
 import Placeholder from '@tiptap/extension-placeholder';
+import Color from '@tiptap/extension-color';
+import Highlight from '@tiptap/extension-highlight';
+import Subscript from '@tiptap/extension-subscript';
+import Superscript from '@tiptap/extension-superscript';
+import TextAlign from '@tiptap/extension-text-align';
+import TextStyle from '@tiptap/extension-text-style';
 
 import {
-  Bold,
-  Heading2,
-  Heading3,
   Image as ImageIcon,
-  Italic,
-  Link as LinkIcon,
-  List,
-  ListOrdered,
-  Minus,
-  Quote,
-  Redo,
-  Underline as UnderlineIcon,
-  Undo,
   X,
 } from 'lucide-react';
 
@@ -47,95 +40,20 @@ import {
 } from '@/components/editorial/media-picker';
 
 import {
-  cn,
-} from '@/lib/utils';
+  StoryEditorToolbar,
+} from '@/components/editorial/story-editor/StoryEditorToolbar';
 
-/**
- * Extends TipTap's regular image node with
- * story-specific editorial metadata.
- *
- * These values are stored directly inside the
- * story body JSON:
- *
- * {
- *   type: 'image',
- *   attrs: {
- *     src: '...',
- *     alt: '...',
- *     description: '...',
- *     credit: '...'
- *   }
- * }
- */
-const StoryImage =
-  Image.extend({
-    addAttributes() {
-      return {
-        ...this.parent?.(),
+import {
+  StoryImageExtension,
+} from '@/components/editorial/story-editor/StoryImageExtension';
 
-        description: {
-          default: null,
+import {
+  mediaAssetToStoryImageAttributes,
+} from '@/components/editorial/story-editor/story-image-metadata';
 
-          parseHTML: (
-            element
-          ) =>
-            element.getAttribute(
-              'data-description'
-            ),
-
-          renderHTML: (
-            attributes
-          ) => {
-            if (
-              !attributes.description
-            ) {
-              return {};
-            }
-
-            return {
-              'data-description':
-                attributes.description,
-            };
-          },
-        },
-
-        credit: {
-          default: null,
-
-          parseHTML: (
-            element
-          ) =>
-            element.getAttribute(
-              'data-credit'
-            ),
-
-          renderHTML: (
-            attributes
-          ) => {
-            if (
-              !attributes.credit
-            ) {
-              return {};
-            }
-
-            return {
-              'data-credit':
-                attributes.credit,
-            };
-          },
-        },
-      };
-    },
-  }).configure({
-    inline: false,
-
-    allowBase64: false,
-
-    HTMLAttributes: {
-      class:
-        'story-inline-image',
-    },
-  });
+/* ========================================================= */
+/* TYPES */
+/* ========================================================= */
 
 interface RichTextEditorProps {
   content: Record<
@@ -157,6 +75,10 @@ interface RichTextEditorProps {
   userId: string;
 }
 
+/* ========================================================= */
+/* COMPONENT */
+/* ========================================================= */
+
 export function RichTextEditor({
   content,
   onChange,
@@ -172,10 +94,9 @@ export function RichTextEditor({
   const [
     selectedImage,
     setSelectedImage,
-  ] =
-    useState<MediaAsset | null>(
-      null
-    );
+  ] = useState<
+    MediaAsset | null
+  >(null);
 
   const [
     imageDescription,
@@ -188,91 +109,120 @@ export function RichTextEditor({
   ] = useState('');
 
   /**
-   * Remember where the cursor was before
-   * the Media Library/modal opens.
+   * Keeps the position where the cursor was
+   * before opening the Media Library.
    */
   const imageInsertPositionRef =
-    useRef<number | null>(
-      null
-    );
+    useRef<
+      number | null
+    >(null);
 
-  const editor = useEditor({
-    extensions: [
-      StarterKit.configure({
-        heading: {
-          levels: [2, 3],
-        },
-      }),
+  /* ======================================================= */
+  /* TIPTAP */
+  /* ======================================================= */
 
-      Underline,
-
-      Link.configure({
-        openOnClick: false,
-
-        HTMLAttributes: {
-          class:
-            'text-primary underline',
-        },
-      }),
-
-      StoryImage,
-
-      Placeholder.configure({
-        placeholder:
-          placeholder ??
-          'Begin writing your story…',
-
-        emptyEditorClass:
-          'before:text-muted-foreground before:content-[attr(data-placeholder)] before:float-left before:h-0 before:pointer-events-none',
-      }),
-    ],
-
-    content:
-      content &&
-      Object.keys(content)
-        .length > 0
-        ? content
-        : {
-            type: 'doc',
-
-            content: [
-              {
-                type:
-                  'paragraph',
-              },
+  const editor =
+    useEditor({
+      extensions: [
+        StarterKit.configure({
+          heading: {
+            levels: [
+              2,
+              3,
             ],
           },
+        }),
 
-    editorProps: {
-      attributes: {
-        class:
-          'prose-editor focus:outline-none min-h-[400px] font-interface text-base leading-relaxed text-foreground',
+        Underline,
+
+        TextStyle,
+
+        Color,
+
+        Highlight.configure({
+          multicolor:
+            true,
+        }),
+
+        Subscript,
+
+        Superscript,
+
+        TextAlign.configure({
+          types: [
+            'heading',
+            'paragraph',
+          ],
+        }),
+
+        Link.configure({
+          openOnClick:
+            false,
+
+          HTMLAttributes: {
+            class:
+              'text-primary underline',
+          },
+        }),
+
+        StoryImageExtension,
+
+        Placeholder.configure({
+          placeholder:
+            placeholder ??
+            'Begin writing your story…',
+
+          emptyEditorClass:
+            'before:text-muted-foreground before:content-[attr(data-placeholder)] before:float-left before:h-0 before:pointer-events-none',
+        }),
+      ],
+
+      content:
+        content &&
+        Object.keys(
+          content
+        ).length > 0
+          ? content
+          : {
+              type:
+                'doc',
+
+              content: [
+                {
+                  type:
+                    'paragraph',
+                },
+              ],
+            },
+
+      editorProps: {
+        attributes: {
+          class:
+            'prose-editor min-h-[400px] w-full max-w-none bg-white px-6 pb-8 pt-6 font-interface text-base leading-relaxed text-foreground focus:outline-none',
+        },
       },
-    },
 
-    onUpdate: ({
-      editor:
-        updatedEditor,
-    }) => {
-      onChange(
-        updatedEditor.getJSON() as Record<
-          string,
-          unknown
-        >
-      );
-    },
-  });
+      onUpdate: ({
+        editor:
+          updatedEditor,
+      }) => {
+        onChange(
+          updatedEditor.getJSON() as Record<
+            string,
+            unknown
+          >
+        );
+      },
+    });
 
-  /**
-   * Keep TipTap synchronized if the body is
-   * replaced externally, for example after
-   * restoring a saved version.
-   *
-   * emitUpdate=false prevents this synchronization
-   * from being treated as a user edit.
-   */
+  /* ======================================================= */
+  /* EXTERNAL CONTENT SYNC */
+  /* ======================================================= */
+
   useEffect(() => {
-    if (!editor) {
+    if (
+      !editor
+    ) {
       return;
     }
 
@@ -283,11 +233,13 @@ export function RichTextEditor({
 
     const nextContent =
       content &&
-      Object.keys(content)
-        .length > 0
+      Object.keys(
+        content
+      ).length > 0
         ? content
         : {
-            type: 'doc',
+            type:
+              'doc',
 
             content: [
               {
@@ -316,21 +268,25 @@ export function RichTextEditor({
     editor,
   ]);
 
-  if (!editor) {
+  if (
+    !editor
+  ) {
     return (
-      <div className="min-h-[400px] bg-surface-muted" />
+      <div
+        className="
+          min-h-[400px]
+          bg-white
+        "
+      />
     );
   }
 
-  /**
-   * TypeScript will not preserve the non-null
-   * editor narrowing inside nested callbacks.
-   */
-  const ed = editor;
+  const ed =
+    editor;
 
-  // --------------------------------------------------
-  // Links
-  // --------------------------------------------------
+  /* ======================================================= */
+  /* LINKS */
+  /* ======================================================= */
 
   function setLink() {
     const previousUrl =
@@ -347,11 +303,15 @@ export function RichTextEditor({
           'https://'
       );
 
-    if (url === null) {
+    if (
+      url === null
+    ) {
       return;
     }
 
-    if (url === '') {
+    if (
+      url === ''
+    ) {
       ed
         .chain()
         .focus()
@@ -371,14 +331,15 @@ export function RichTextEditor({
         'link'
       )
       .setLink({
-        href: url,
+        href:
+          url,
       })
       .run();
   }
 
-  // --------------------------------------------------
-  // Media Library
-  // --------------------------------------------------
+  /* ======================================================= */
+  /* OPEN MEDIA LIBRARY */
+  /* ======================================================= */
 
   function openImagePicker() {
     imageInsertPositionRef.current =
@@ -401,38 +362,40 @@ export function RichTextEditor({
     );
   }
 
-  /**
-   * Selecting an image no longer inserts it
-   * immediately.
-   *
-   * Instead, we close the media library and
-   * open the image metadata step.
-   */
+  /* ======================================================= */
+  /* SELECT MEDIA ASSET */
+  /* ======================================================= */
+
   function handleImageSelected(
     media: MediaAsset
   ) {
+    const metadata =
+      mediaAssetToStoryImageAttributes(
+        media
+      );
+
     setSelectedImage(
       media
     );
 
-    /*
-     * Use the Media Library metadata as defaults.
-     * The author can override these for this
-     * particular story without altering the
-     * original media record.
-     */
     setImageDescription(
-      media.caption ?? ''
+      metadata.description ??
+        ''
     );
 
     setImageCredit(
-      media.credit ?? ''
+      metadata.credit ??
+        ''
     );
 
     setMediaPickerOpen(
       false
     );
   }
+
+  /* ======================================================= */
+  /* CANCEL IMAGE INSERT */
+  /* ======================================================= */
 
   function cancelImageInsert() {
     setSelectedImage(
@@ -456,10 +419,21 @@ export function RichTextEditor({
       .run();
   }
 
+  /* ======================================================= */
+  /* INSERT IMAGE */
+  /* ======================================================= */
+
   function insertSelectedImage() {
-    if (!selectedImage) {
+    if (
+      !selectedImage
+    ) {
       return;
     }
+
+    const baseAttributes =
+      mediaAssetToStoryImageAttributes(
+        selectedImage
+      );
 
     const position =
       imageInsertPositionRef.current;
@@ -469,10 +443,6 @@ export function RichTextEditor({
         .chain()
         .focus();
 
-    /**
-     * Restore the cursor position that existed before
-     * the Media Library opened.
-     */
     if (
       position !== null
     ) {
@@ -492,25 +462,13 @@ export function RichTextEditor({
         );
     }
 
-    /**
-     * Use insertContent instead of setImage so
-     * our custom image attributes can be stored
-     * directly in the TipTap document JSON.
-     */
     chain
       .insertContent({
-        type: 'image',
+        type:
+          'image',
 
         attrs: {
-          src:
-            selectedImage.url,
-
-          alt:
-            selectedImage.altText ||
-            selectedImage.fileName,
-
-          title:
-            selectedImage.fileName,
+          ...baseAttributes,
 
           description:
             imageDescription.trim() ||
@@ -539,245 +497,104 @@ export function RichTextEditor({
     );
   }
 
+  /* ======================================================= */
+  /* RENDER */
+  /* ======================================================= */
+
   return (
     <>
-      <div className="border border-border bg-white">
-        {/* Toolbar */}
-        <div className="flex flex-wrap items-center gap-0.5 border-b border-border bg-surface-muted px-2 py-1.5">
-          <ToolbarButton
-            onClick={() =>
-              ed
-                .chain()
-                .focus()
-                .toggleBold()
-                .run()
-            }
-            active={ed.isActive(
-              'bold'
-            )}
-            label="Bold"
-            icon={Bold}
-          />
+      {/*
+       * IMPORTANT:
+       *
+       * Do not add overflow-hidden / overflow-auto here.
+       *
+       * StoryEditorToolbar uses position: sticky and needs
+       * to attach to the StoryEditorContent scrolling
+       * container above this component.
+       */}
+      <div
+        className="
+          relative
+          w-full
+          bg-white
+        "
+      >
+        {/* ================================================= */}
+        {/* STICKY TOOLBAR */}
+        {/* ================================================= */}
 
-          <ToolbarButton
-            onClick={() =>
-              ed
-                .chain()
-                .focus()
-                .toggleItalic()
-                .run()
-            }
-            active={ed.isActive(
-              'italic'
-            )}
-            label="Italic"
-            icon={Italic}
-          />
+        <StoryEditorToolbar
+          editor={
+            ed
+          }
+          dict={
+            dict
+          }
+          onSetLink={
+            setLink
+          }
+          onOpenImagePicker={
+            openImagePicker
+          }
+        />
 
-          <ToolbarButton
-            onClick={() =>
-              ed
-                .chain()
-                .focus()
-                .toggleUnderline()
-                .run()
-            }
-            active={ed.isActive(
-              'underline'
-            )}
-            label="Underline"
-            icon={
-              UnderlineIcon
-            }
-          />
+        {/* ================================================= */}
+        {/* EDITOR BODY */}
+        {/* ================================================= */}
 
-          <Divider />
-
-          <ToolbarButton
-            onClick={() =>
-              ed
-                .chain()
-                .focus()
-                .toggleHeading({
-                  level: 2,
-                })
-                .run()
-            }
-            active={ed.isActive(
-              'heading',
-              {
-                level: 2,
-              }
-            )}
-            label="Heading 2"
-            icon={Heading2}
-          />
-
-          <ToolbarButton
-            onClick={() =>
-              ed
-                .chain()
-                .focus()
-                .toggleHeading({
-                  level: 3,
-                })
-                .run()
-            }
-            active={ed.isActive(
-              'heading',
-              {
-                level: 3,
-              }
-            )}
-            label="Heading 3"
-            icon={Heading3}
-          />
-
-          <Divider />
-
-          <ToolbarButton
-            onClick={() =>
-              ed
-                .chain()
-                .focus()
-                .toggleBulletList()
-                .run()
-            }
-            active={ed.isActive(
-              'bulletList'
-            )}
-            label="Bullet list"
-            icon={List}
-          />
-
-          <ToolbarButton
-            onClick={() =>
-              ed
-                .chain()
-                .focus()
-                .toggleOrderedList()
-                .run()
-            }
-            active={ed.isActive(
-              'orderedList'
-            )}
-            label="Numbered list"
-            icon={ListOrdered}
-          />
-
-          <ToolbarButton
-            onClick={() =>
-              ed
-                .chain()
-                .focus()
-                .toggleBlockquote()
-                .run()
-            }
-            active={ed.isActive(
-              'blockquote'
-            )}
-            label="Block quote"
-            icon={Quote}
-          />
-
-          <ToolbarButton
-            onClick={() =>
-              ed
-                .chain()
-                .focus()
-                .setHorizontalRule()
-                .run()
-            }
-            active={false}
-            label="Divider"
-            icon={Minus}
-          />
-
-          <Divider />
-
-          <ToolbarButton
-            onClick={
-              setLink
-            }
-            active={ed.isActive(
-              'link'
-            )}
-            label="Link"
-            icon={LinkIcon}
-          />
-
-          <ToolbarButton
-            onClick={
-              openImagePicker
-            }
-            active={false}
-            label={
-              dict.story
-                .selectFromMedia
-            }
-            icon={ImageIcon}
-          />
-
-          <Divider />
-
-          <ToolbarButton
-            onClick={() =>
-              ed
-                .chain()
-                .focus()
-                .undo()
-                .run()
-            }
-            active={false}
-            label="Undo"
-            icon={Undo}
-            disabled={
-              !ed
-                .can()
-                .undo()
-            }
-          />
-
-          <ToolbarButton
-            onClick={() =>
-              ed
-                .chain()
-                .focus()
-                .redo()
-                .run()
-            }
-            active={false}
-            label="Redo"
-            icon={Redo}
-            disabled={
-              !ed
-                .can()
-                .redo()
-            }
-          />
-        </div>
-
-        {/* Editor */}
-        <div className="px-6 py-5">
+        <div
+          className="
+            w-full
+            bg-white
+          "
+        >
           <EditorContent
-            editor={ed}
+            editor={
+              ed
+            }
           />
         </div>
 
-        <style jsx global>{`
+        {/* ================================================= */}
+        {/* EDITOR STYLES */}
+        {/* ================================================= */}
+
+        <style
+          jsx
+          global
+        >{`
+          .prose-editor {
+            width: 100%;
+            background: white;
+          }
+
           .prose-editor h2 {
             font-family:
               var(--font-headline),
               Georgia,
               serif;
-            font-size: 1.5rem;
-            font-weight: 700;
-            margin-top: 1.5rem;
-            margin-bottom: 0.75rem;
-            line-height: 1.25;
-            color: hsl(
-              var(--color-deep)
-            );
+
+            font-size:
+              1.5rem;
+
+            font-weight:
+              700;
+
+            margin-top:
+              1.5rem;
+
+            margin-bottom:
+              0.75rem;
+
+            line-height:
+              1.25;
+
+            color:
+              hsl(
+                var(
+                  --color-deep
+                )
+              );
           }
 
           .prose-editor h3 {
@@ -785,96 +602,226 @@ export function RichTextEditor({
               var(--font-headline),
               Georgia,
               serif;
-            font-size: 1.25rem;
-            font-weight: 600;
-            margin-top: 1.25rem;
-            margin-bottom: 0.5rem;
-            line-height: 1.3;
-            color: hsl(
-              var(--color-deep)
-            );
+
+            font-size:
+              1.25rem;
+
+            font-weight:
+              600;
+
+            margin-top:
+              1.25rem;
+
+            margin-bottom:
+              0.5rem;
+
+            line-height:
+              1.3;
+
+            color:
+              hsl(
+                var(
+                  --color-deep
+                )
+              );
           }
 
           .prose-editor p {
-            margin-bottom: 1rem;
-            line-height: 1.75;
+            margin-bottom:
+              1rem;
+
+            line-height:
+              1.75;
           }
 
           .prose-editor ul {
-            list-style-type: disc;
-            padding-left: 1.5rem;
-            margin-bottom: 1rem;
+            list-style-type:
+              disc;
+
+            padding-left:
+              1.5rem;
+
+            margin-bottom:
+              1rem;
           }
 
           .prose-editor ol {
-            list-style-type: decimal;
-            padding-left: 1.5rem;
-            margin-bottom: 1rem;
+            list-style-type:
+              decimal;
+
+            padding-left:
+              1.5rem;
+
+            margin-bottom:
+              1rem;
           }
 
           .prose-editor li {
-            margin-bottom: 0.5rem;
-            line-height: 1.75;
+            margin-bottom:
+              0.5rem;
+
+            line-height:
+              1.75;
           }
 
           .prose-editor blockquote {
-            border-left: 3px solid
+            border-left:
+              3px
+              solid
               hsl(
                 var(
                   --color-primary
                 )
               );
-            padding-left: 1rem;
-            font-style: italic;
-            color: hsl(
-              var(
-                --color-muted-foreground
-              )
-            );
-            margin: 1.5rem 0;
+
+            padding-left:
+              1rem;
+
+            font-style:
+              italic;
+
+            color:
+              hsl(
+                var(
+                  --color-muted-foreground
+                )
+              );
+
+            margin:
+              1.5rem
+              0;
+          }
+
+          .prose-editor pre {
+            overflow-x:
+              auto;
+
+            border-radius:
+              0.5rem;
+
+            background:
+              hsl(
+                var(
+                  --color-deep
+                )
+              );
+
+            color:
+              white;
+
+            padding:
+              1rem;
+
+            margin:
+              1.5rem
+              0;
+
+            font-size:
+              0.875rem;
+
+            line-height:
+              1.6;
+          }
+
+          .prose-editor code {
+            border-radius:
+              0.25rem;
+
+            background:
+              hsl(
+                var(
+                  --color-surface-subtle
+                )
+              );
+
+            padding:
+              0.1rem
+              0.3rem;
+
+            font-size:
+              0.9em;
+          }
+
+          .prose-editor pre code {
+            background:
+              transparent;
+
+            padding:
+              0;
           }
 
           .prose-editor hr {
-            border: none;
-            border-top: 1px solid
+            border:
+              none;
+
+            border-top:
+              1px
+              solid
               hsl(
                 var(
                   --color-border
                 )
               );
-            margin: 2rem 0;
+
+            margin:
+              2rem
+              0;
           }
 
           .prose-editor img,
           .prose-editor
             .story-inline-image {
-            display: block;
-            width: 100%;
-            max-width: 100%;
-            height: auto;
-            margin: 1.5rem 0;
+            display:
+              block;
+
+            width:
+              100%;
+
+            max-width:
+              100%;
+
+            height:
+              auto;
+
+            margin:
+              1.5rem
+              0;
+
+            border-radius:
+              0.75rem;
           }
 
           .prose-editor a {
-            color: hsl(
-              var(
-                --color-primary
-              )
-            );
-            text-decoration: underline;
+            color:
+              hsl(
+                var(
+                  --color-primary
+                )
+              );
+
+            text-decoration:
+              underline;
           }
 
           .prose-editor:focus {
-            outline: none;
+            outline:
+              none;
           }
         `}</style>
       </div>
 
-      {/* Inline image Media Library */}
+      {/* =================================================== */}
+      {/* MEDIA LIBRARY */}
+      {/* =================================================== */}
+
       {mediaPickerOpen && (
         <MediaPicker
-          dict={dict}
-          userId={userId}
+          dict={
+            dict
+          }
+          userId={
+            userId
+          }
           onSelect={
             handleImageSelected
           }
@@ -894,7 +841,10 @@ export function RichTextEditor({
         />
       )}
 
-      {/* Inline image metadata */}
+      {/* =================================================== */}
+      {/* IMAGE METADATA MODAL */}
+      {/* =================================================== */}
+
       {selectedImage && (
         <div
           className="
@@ -923,6 +873,7 @@ export function RichTextEditor({
             "
           >
             {/* Header */}
+
             <div
               className="
                 flex
@@ -944,11 +895,20 @@ export function RichTextEditor({
                     text-deep
                   "
                 >
-                  {dict.story.imageCaption}
+                  {
+                    dict.story
+                      .imageCaption
+                  }
                 </h2>
 
-                <p className="mt-0.5 text-xs text-muted-foreground">
-                  Add the description and credit that should appear beneath this image.
+                <p
+                  className="
+                    mt-0.5
+                    text-xs
+                    text-muted-foreground
+                  "
+                >
+                  The Media Library description and credit have been added automatically. You can customize them for this story.
                 </p>
               </div>
 
@@ -957,6 +917,7 @@ export function RichTextEditor({
                 onClick={
                   cancelImageInsert
                 }
+                aria-label="Close"
                 className="
                   inline-flex
                   h-8
@@ -972,17 +933,25 @@ export function RichTextEditor({
                   focus-visible:ring-2
                   focus-visible:ring-ring
                 "
-                aria-label="Close"
               >
                 <X
-                  className="h-4 w-4"
+                  className="
+                    h-4
+                    w-4
+                  "
                   aria-hidden
                 />
               </button>
             </div>
 
-            <div className="space-y-4 p-5">
-              {/* Selected image preview */}
+            {/* Content */}
+
+            <div
+              className="
+                space-y-4
+                p-5
+              "
+            >
               <img
                 src={
                   selectedImage.url
@@ -1001,10 +970,15 @@ export function RichTextEditor({
               />
 
               {/* Description */}
+
               <div>
                 <label
                   htmlFor="inline-image-description"
-                  className="text-xs font-semibold text-foreground"
+                  className="
+                    text-xs
+                    font-semibold
+                    text-foreground
+                  "
                 >
                   Description
                 </label>
@@ -1018,11 +992,12 @@ export function RichTextEditor({
                     event
                   ) =>
                     setImageDescription(
-                      event.target
-                        .value
+                      event.target.value
                     )
                   }
-                  rows={3}
+                  rows={
+                    3
+                  }
                   placeholder="Describe what is shown in the image…"
                   className="
                     mt-1
@@ -1046,10 +1021,15 @@ export function RichTextEditor({
               </div>
 
               {/* Credit */}
+
               <div>
                 <label
                   htmlFor="inline-image-credit"
-                  className="text-xs font-semibold text-foreground"
+                  className="
+                    text-xs
+                    font-semibold
+                    text-foreground
+                  "
                 >
                   Credit
                 </label>
@@ -1064,8 +1044,7 @@ export function RichTextEditor({
                     event
                   ) =>
                     setImageCredit(
-                      event.target
-                        .value
+                      event.target.value
                     )
                   }
                   placeholder="Photographer / Agency / Source"
@@ -1089,7 +1068,8 @@ export function RichTextEditor({
                 />
               </div>
 
-              {/* Caption preview */}
+              {/* Preview */}
+
               {(imageDescription ||
                 imageCredit) && (
                 <div
@@ -1099,7 +1079,16 @@ export function RichTextEditor({
                     pt-4
                   "
                 >
-                  <p className="mb-1 text-[0.6875rem] font-semibold uppercase tracking-wide text-muted-foreground">
+                  <p
+                    className="
+                      mb-1
+                      text-[0.6875rem]
+                      font-semibold
+                      uppercase
+                      tracking-wide
+                      text-muted-foreground
+                    "
+                  >
                     Preview
                   </p>
 
@@ -1111,7 +1100,9 @@ export function RichTextEditor({
                       text-muted-foreground
                     "
                   >
-                    {imageDescription}
+                    {
+                      imageDescription
+                    }
 
                     {imageDescription &&
                       imageCredit &&
@@ -1129,9 +1120,46 @@ export function RichTextEditor({
                   </p>
                 </div>
               )}
+
+              {/* Asset reference */}
+
+              <div
+                className="
+                  rounded-lg
+                  bg-surface-muted
+                  px-3
+                  py-2.5
+                "
+              >
+                <p
+                  className="
+                    text-[10px]
+                    font-bold
+                    uppercase
+                    tracking-[0.08em]
+                    text-muted-foreground
+                  "
+                >
+                  Media Library asset
+                </p>
+
+                <p
+                  className="
+                    mt-1
+                    truncate
+                    text-xs
+                    font-medium
+                    text-foreground
+                  "
+                >
+                  {selectedImage.title ||
+                    selectedImage.fileName}
+                </p>
+              </div>
             </div>
 
             {/* Actions */}
+
             <div
               className="
                 flex
@@ -1169,7 +1197,10 @@ export function RichTextEditor({
                   focus-visible:ring-ring
                 "
               >
-                {dict.common.cancel}
+                {
+                  dict.common
+                    .cancel
+                }
               </button>
 
               <button
@@ -1196,7 +1227,11 @@ export function RichTextEditor({
                 "
               >
                 <ImageIcon
-                  className="mr-1.5 h-4 w-4"
+                  className="
+                    mr-1.5
+                    h-4
+                    w-4
+                  "
                   aria-hidden
                 />
 
@@ -1207,61 +1242,5 @@ export function RichTextEditor({
         </div>
       )}
     </>
-  );
-}
-
-function ToolbarButton({
-  onClick,
-  active,
-  label,
-  icon: Icon,
-  disabled,
-}: {
-  onClick: () => void;
-  active: boolean;
-  label: string;
-  icon: React.ElementType;
-  disabled?: boolean;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      disabled={disabled}
-      className={cn(
-        `
-          inline-flex
-          h-8
-          w-8
-          items-center
-          justify-center
-          transition-colors
-          focus-visible:outline-none
-          focus-visible:ring-2
-          focus-visible:ring-ring
-          disabled:opacity-30
-        `,
-        active
-          ? 'bg-deep text-white'
-          : 'text-foreground hover:bg-surface-subtle'
-      )}
-      aria-label={label}
-      aria-pressed={active}
-      title={label}
-    >
-      <Icon
-        className="h-4 w-4"
-        aria-hidden
-      />
-    </button>
-  );
-}
-
-function Divider() {
-  return (
-    <span
-      className="mx-1 h-5 w-px bg-border"
-      aria-hidden
-    />
   );
 }

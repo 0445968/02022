@@ -113,6 +113,7 @@ export function StorySettingsPanel({
   searchTags,
   createTag,
   setFeaturedImage,
+  removeFeaturedImage,
   setMediaPickerOpen,
   handleRestoreVersion,
 }: StorySettingsPanelProps) {
@@ -1181,32 +1182,54 @@ export function StorySettingsPanel({
       {/* Featured image */}
 <Section
   title={
-    dict.story
-      .featuredImage
+    language === 'es'
+      ? 'Imagen destacada'
+      : 'Featured image'
   }
 >
   {featuredImage ? (
-    <>
-      <div>
+    <div
+      className="
+        overflow-hidden
+        rounded-xl
+        border
+        border-border
+        bg-white
+      "
+    >
+      <div
+        className="
+          relative
+          aspect-[16/9]
+          overflow-hidden
+          bg-surface-subtle
+        "
+      >
         <img
           src={
             featuredImage.url
           }
           alt={
             featuredImage.altText ||
-            imageCaption ||
             ''
           }
           className="
-            aspect-video
+            h-full
             w-full
-            rounded-lg
-            bg-surface-subtle
             object-cover
           "
         />
 
-        <div className="mt-2 flex items-center gap-3">
+        <div
+          className="
+            absolute
+            right-2
+            top-2
+            flex
+            items-center
+            gap-2
+          "
+        >
           <button
             type="button"
             onClick={() =>
@@ -1215,193 +1238,237 @@ export function StorySettingsPanel({
               )
             }
             className="
+              inline-flex
+              h-8
+              items-center
+              justify-center
+              rounded-lg
+              border
+              border-black/10
+              bg-white/95
+              px-3
               text-xs
-              font-medium
-              text-primary
-              hover:underline
+              font-semibold
+              text-foreground
+              shadow-sm
+              backdrop-blur
+              transition
+              hover:bg-white
             "
           >
-            {
-              dict.story
-                .selectFromMedia
-            }
+            {language === 'es'
+              ? 'Cambiar'
+              : 'Change'}
           </button>
 
           <button
             type="button"
-            onClick={() => {
-              setFeaturedImage(
-                null
-              );
-
-              setImageCaption(
-                ''
-              );
-
-              setImageCredit(
-                ''
-              );
-            }}
+            onClick={
+              removeFeaturedImage
+            }
+            aria-label={
+              language === 'es'
+                ? 'Eliminar imagen destacada'
+                : 'Remove featured image'
+            }
+            title={
+              language === 'es'
+                ? 'Eliminar imagen'
+                : 'Remove image'
+            }
             className="
-              text-xs
-              font-medium
-              text-breaking
-              hover:underline
+              inline-flex
+              h-8
+              w-8
+              items-center
+              justify-center
+              rounded-lg
+              border
+              border-black/10
+              bg-white/95
+              text-muted-foreground
+              shadow-sm
+              backdrop-blur
+              transition
+              hover:text-breaking
             "
           >
-            {
-              dict.story
-                .removeImage
-            }
+            <X
+              className="
+                h-4
+                w-4
+              "
+              aria-hidden
+            />
           </button>
         </div>
       </div>
 
-      {/* Description */}
-      <Field
-        label={
-          language === 'es'
-            ? 'Descripción'
-            : 'Description'
-        }
-        hint={
-          language === 'es'
-            ? 'Describe lo que aparece en la imagen.'
-            : 'Describe what is shown in the image.'
-        }
+      <div
+        className="
+          space-y-4
+          p-4
+        "
       >
-        <textarea
-          value={
-            imageCaption
-          }
-          onChange={(
-            event
-          ) =>
-            setImageCaption(
-              event.target.value
-            )
-          }
-          rows={3}
-          placeholder={
-            language === 'es'
-              ? 'Describe la imagen…'
-              : 'Describe the image…'
-          }
-          className="
-            w-full
-            resize-y
-            rounded-lg
-            border
-            border-border
-            bg-white
-            px-3
-            py-2
-            text-sm
-            leading-relaxed
-            text-foreground
-            placeholder:text-muted-foreground
-            focus:border-primary
-            focus-visible:outline-none
-            focus-visible:ring-2
-            focus-visible:ring-ring
-          "
-        />
-      </Field>
+        <div>
+          <p
+            className="
+              truncate
+              text-sm
+              font-semibold
+              text-foreground
+            "
+          >
+            {featuredImage.title ||
+              featuredImage.fileName}
+          </p>
 
-      {/* Credit */}
-      <Field
-        label={
-          language === 'es'
-            ? 'Crédito'
-            : 'Credit'
-        }
-        hint={
-          language === 'es'
-            ? 'Fotógrafo, agencia o fuente de la imagen.'
-            : 'Photographer, agency or image source.'
-        }
-      >
-        <input
-          type="text"
-          value={
-            imageCredit
-          }
-          onChange={(
-            event
-          ) =>
-            setImageCredit(
-              event.target.value
-            )
-          }
-          placeholder={
-            language === 'es'
-              ? 'Fotógrafo / Agencia / Fuente'
-              : 'Photographer / Agency / Source'
-          }
-          className="
-            h-9
-            w-full
-            rounded-lg
-            border
-            border-border
-            bg-white
-            px-3
-            text-sm
-            text-foreground
-            placeholder:text-muted-foreground
-            focus:border-primary
-            focus-visible:outline-none
-            focus-visible:ring-2
-            focus-visible:ring-ring
-          "
-        />
-      </Field>
+          {(featuredImage.description ||
+            featuredImage.caption) && (
+            <p
+              className="
+                mt-1
+                text-xs
+                leading-5
+                text-muted-foreground
+              "
+            >
+              {featuredImage.description ||
+                featuredImage.caption}
+            </p>
+          )}
 
-      {/* Caption preview */}
-      {(imageCaption ||
-        imageCredit) && (
+          {(featuredImage.credit ||
+            featuredImage.photographer ||
+            featuredImage.creatorName) && (
+            <p
+              className="
+                mt-1
+                text-[11px]
+                font-medium
+                text-muted-foreground
+              "
+            >
+              {featuredImage.credit ||
+                featuredImage.photographer ||
+                featuredImage.creatorName}
+            </p>
+          )}
+        </div>
+
         <div
           className="
             border-t
             border-border
-            pt-3
+            pt-4
           "
         >
-          <p className="mb-1 text-[0.6875rem] font-semibold uppercase tracking-[0.1em] text-muted-foreground">
-            {language === 'es'
-              ? 'Vista previa'
-              : 'Preview'}
-          </p>
+          <Field
+            label={
+              language === 'es'
+                ? 'Descripción / pie de foto'
+                : 'Description / caption'
+            }
+            hint={
+              language === 'es'
+                ? 'Se completa automáticamente desde la Biblioteca de Medios cuando eliges una imagen. Puedes editarlo para esta historia.'
+                : 'Automatically populated from the Media Library when you select an image. You can customize it for this story.'
+            }
+          >
+            <textarea
+              value={
+                imageCaption
+              }
+              onChange={(
+                event
+              ) =>
+                setImageCaption(
+                  event.target.value
+                )
+              }
+              rows={3}
+              placeholder={
+                language === 'es'
+                  ? 'Describe la imagen'
+                  : 'Describe the image'
+              }
+              className="
+                w-full
+                resize-y
+                rounded-lg
+                border
+                border-border
+                bg-white
+                px-3
+                py-2
+                text-sm
+                leading-5
+                text-foreground
+                placeholder:text-muted-foreground/60
+                focus:border-primary
+                focus-visible:outline-none
+                focus-visible:ring-2
+                focus-visible:ring-ring
+              "
+            />
+          </Field>
 
-          <p
+          <div
             className="
-              font-headline
-              text-sm
-              leading-[1.45]
-              text-muted-foreground
+              mt-4
             "
           >
-            {imageCaption && (
-              <span>
-                {imageCaption}
-              </span>
-            )}
-
-            {imageCaption &&
-              imageCredit &&
-              ' '}
-
-            {imageCredit && (
-              <em>
-                (
-                {imageCredit}
-                )
-              </em>
-            )}
-          </p>
+            <Field
+              label={
+                language === 'es'
+                  ? 'Crédito'
+                  : 'Credit'
+              }
+              hint={
+                language === 'es'
+                  ? 'También se completa automáticamente desde la Biblioteca de Medios.'
+                  : 'Also populated automatically from the Media Library.'
+              }
+            >
+              <input
+                type="text"
+                value={
+                  imageCredit
+                }
+                onChange={(
+                  event
+                ) =>
+                  setImageCredit(
+                    event.target.value
+                  )
+                }
+                placeholder={
+                  language === 'es'
+                    ? 'Crédito de la imagen'
+                    : 'Image credit'
+                }
+                className="
+                  h-9
+                  w-full
+                  rounded-lg
+                  border
+                  border-border
+                  bg-white
+                  px-3
+                  text-sm
+                  text-foreground
+                  placeholder:text-muted-foreground/60
+                  focus:border-primary
+                  focus-visible:outline-none
+                  focus-visible:ring-2
+                  focus-visible:ring-ring
+                "
+              />
+            </Field>
+          </div>
         </div>
-      )}
-    </>
+      </div>
+    </div>
   ) : (
     <button
       type="button"
@@ -1413,25 +1480,70 @@ export function StorySettingsPanel({
       className="
         flex
         w-full
+        flex-col
         items-center
         justify-center
-        rounded-lg
+        rounded-xl
         border
         border-dashed
         border-border
-        bg-white
+        bg-surface-muted/40
+        px-4
         py-8
-        text-sm
-        text-muted-foreground
-        transition-colors
-        hover:border-primary
-        hover:text-primary
+        text-center
+        transition
+        hover:border-primary/40
+        hover:bg-primary/5
       "
     >
-      {
-        dict.story
-          .selectFromMedia
-      }
+      <div
+        className="
+          flex
+          h-10
+          w-10
+          items-center
+          justify-center
+          rounded-lg
+          bg-white
+          text-muted-foreground
+          shadow-sm
+        "
+      >
+        <span
+          className="
+            text-lg
+          "
+        >
+          +
+        </span>
+      </div>
+
+      <p
+        className="
+          mt-3
+          text-sm
+          font-semibold
+          text-foreground
+        "
+      >
+        {language === 'es'
+          ? 'Seleccionar imagen'
+          : 'Select image'}
+      </p>
+
+      <p
+        className="
+          mt-1
+          max-w-xs
+          text-xs
+          leading-5
+          text-muted-foreground
+        "
+      >
+        {language === 'es'
+          ? 'Elige una imagen de la Biblioteca de Medios.'
+          : 'Choose an image from the Media Library.'}
+      </p>
     </button>
   )}
 </Section>

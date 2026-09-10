@@ -5,7 +5,9 @@ import {
   useRef,
 } from 'react';
 
-import { Save } from 'lucide-react';
+import {
+  Save,
+} from 'lucide-react';
 
 import type {
   Dictionary,
@@ -18,6 +20,10 @@ import type {
 import {
   RichTextEditor,
 } from '@/components/editorial/rich-text-editor';
+
+/* ========================================================= */
+/* TYPES */
+/* ========================================================= */
 
 interface StoryEditorContentProps {
   dict: Dictionary;
@@ -61,6 +67,10 @@ interface StoryEditorContentProps {
   onSaveVersion: () => void;
 }
 
+/* ========================================================= */
+/* COMPONENT */
+/* ========================================================= */
+
 export function StoryEditorContent({
   dict,
   userId,
@@ -81,15 +91,17 @@ export function StoryEditorContent({
       null
     );
 
-  // --------------------------------------------------
-  // Auto-grow headline
-  // --------------------------------------------------
+  /* ======================================================= */
+  /* AUTO-GROW HEADLINE */
+  /* ======================================================= */
 
   useEffect(() => {
     const textarea =
       headlineRef.current;
 
-    if (!textarea) {
+    if (
+      !textarea
+    ) {
       return;
     }
 
@@ -98,10 +110,13 @@ export function StoryEditorContent({
 
     textarea.style.height =
       `${textarea.scrollHeight}px`;
-  }, [headline]);
+  }, [
+    headline,
+  ]);
 
   function handleHeadlineChange(
-    event: React.ChangeEvent<HTMLTextAreaElement>
+    event:
+      React.ChangeEvent<HTMLTextAreaElement>
   ) {
     setHeadline(
       event.target.value
@@ -114,41 +129,90 @@ export function StoryEditorContent({
       `${event.target.scrollHeight}px`;
   }
 
+  /* ======================================================= */
+  /* RENDER */
+  /* ======================================================= */
+
   return (
     <div
       className="
         flex-1
         overflow-y-auto
-        px-6
-        py-6
-        lg:px-12
-        lg:py-8
+        bg-white
       "
     >
-      <div className="mx-auto max-w-3xl">
+      {/* =================================================== */}
+      {/* STORY HEADER */}
+      {/* =================================================== */}
+
+      <div
+        className="
+          mx-auto
+          w-full
+          max-w-3xl
+          px-6
+          pt-6
+          lg:px-12
+          lg:pt-8
+        "
+      >
         {/* Language indicator */}
-        <div className="mb-4 flex items-center gap-2">
-          <span className="eyebrow text-primary">
-            {language === 'en'
+
+        <div
+          className="
+            mb-4
+            flex
+            items-center
+            gap-2
+          "
+        >
+          <span
+            className="
+              eyebrow
+              text-primary
+            "
+          >
+            {language ===
+            'en'
               ? dict.common
                   .languageEN
               : dict.common
                   .languageES}
           </span>
 
-          <span className="text-xs text-muted-foreground">
+          <span
+            className="
+              text-xs
+              text-muted-foreground
+            "
+          >
             ·
           </span>
 
-          <span className="text-xs text-muted-foreground">
-            {dict.story.language}
+          <span
+            className="
+              text-xs
+              text-muted-foreground
+            "
+          >
+            {
+              dict.story
+                .language
+            }
           </span>
         </div>
 
-        {/* Headline */}
+        {/* ================================================= */}
+        {/* HEADLINE */}
+        {/* ================================================= */}
+
         <textarea
-          ref={headlineRef}
-          value={headline}
+          ref={
+            headlineRef
+          }
+          value={
+            headline
+          }
           onChange={
             handleHeadlineChange
           }
@@ -157,10 +221,13 @@ export function StoryEditorContent({
               .headlinePlaceholder
           }
           aria-label={
-            dict.stories.columns
+            dict.stories
+              .columns
               .headline
           }
-          rows={1}
+          rows={
+            1
+          }
           className="
             block
             w-full
@@ -183,11 +250,18 @@ export function StoryEditorContent({
           "
         />
 
-        {/* Subheadline */}
+        {/* ================================================= */}
+        {/* SUBHEADLINE */}
+        {/* ================================================= */}
+
         <input
           type="text"
-          value={subheadline}
-          onChange={(event) =>
+          value={
+            subheadline
+          }
+          onChange={(
+            event
+          ) =>
             setSubheadline(
               event.target.value
             )
@@ -217,10 +291,17 @@ export function StoryEditorContent({
           "
         />
 
-        {/* Summary */}
+        {/* ================================================= */}
+        {/* SUMMARY */}
+        {/* ================================================= */}
+
         <textarea
-          value={summary}
-          onChange={(event) =>
+          value={
+            summary
+          }
+          onChange={(
+            event
+          ) =>
             setSummary(
               event.target.value
             )
@@ -233,7 +314,9 @@ export function StoryEditorContent({
             dict.story
               .summaryPlaceholder
           }
-          rows={2}
+          rows={
+            2
+          }
           className="
             mt-4
             w-full
@@ -249,22 +332,76 @@ export function StoryEditorContent({
           "
         />
 
-        <hr className="my-6 border-border" />
+        <hr
+          className="
+            mb-0
+            mt-6
+            border-border
+          "
+        />
+      </div>
 
-        {/* Body editor */}
+      {/* =================================================== */}
+      {/* BODY EDITOR */}
+      {/* =================================================== */}
+      {/*
+       * Important:
+       *
+       * RichTextEditor is intentionally OUTSIDE max-w-3xl.
+       *
+       * This lets its toolbar stretch across the entire
+       * writing pane and gives position: sticky access
+       * to this component's overflow-y-auto scroll area.
+       */}
+
+      <div
+        className="
+          w-full
+          bg-white
+        "
+      >
         <RichTextEditor
-          content={body}
-          onChange={setBody}
+          content={
+            body
+          }
+          onChange={
+            setBody
+          }
           placeholder={
             dict.story
               .bodyPlaceholder
           }
-          dict={dict}
-          userId={userId}
+          dict={
+            dict
+          }
+          userId={
+            userId
+          }
         />
+      </div>
 
-        {/* Manual version save */}
-        <div className="mt-6 flex justify-end">
+      {/* =================================================== */}
+      {/* VERSION SAVE */}
+      {/* =================================================== */}
+
+      <div
+        className="
+          mx-auto
+          w-full
+          max-w-3xl
+          bg-white
+          px-6
+          pb-8
+          pt-6
+          lg:px-12
+        "
+      >
+        <div
+          className="
+            flex
+            justify-end
+          "
+        >
           <button
             type="button"
             onClick={
@@ -295,12 +432,20 @@ export function StoryEditorContent({
             "
           >
             <Save
-              className="h-3.5 w-3.5"
+              className="
+                h-3.5
+                w-3.5
+              "
               aria-hidden
             />
 
-            {dict.story.save}
+            {
+              dict.story
+                .save
+            }
+
             {' + '}
+
             {
               dict.story
                 .versionHistory
