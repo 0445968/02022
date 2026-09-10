@@ -591,19 +591,20 @@ export function MediaInspector({
       | 'restore'
   ) {
     if (
-      actionLoading
+      actionLoading ||
+      !asset
     ) {
       return;
     }
-
+  
     setActionLoading(
       action
     );
-
+  
     setError(
       null
     );
-
+  
     try {
       const response =
         await fetch(
@@ -611,12 +612,12 @@ export function MediaInspector({
           {
             method:
               'PATCH',
-
+  
             headers: {
               'Content-Type':
                 'application/json',
             },
-
+  
             body:
               JSON.stringify({
                 action,
