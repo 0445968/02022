@@ -16,44 +16,75 @@ import type {
 /* TYPES */
 /* ========================================================= */
 
+interface UseStoryMediaOptions {
+  initialFeaturedImage?:
+  | MediaAsset
+  | null;
+
+  initialImageCaption?: string;
+
+  initialImageCredit?: string;
+}
+
 interface LoadRevisionMediaOptions {
-  featuredImage?: MediaAsset | null;
+  featuredImage?:
+  | MediaAsset
+  | null;
 
-  featuredImageId?: string | null;
+  featuredImageId?:
+  | string
+  | null;
 
-  imageCaption?: string | null;
+  imageCaption?:
+  | string
+  | null;
 
-  imageCredit?: string | null;
+  imageCredit?:
+  | string
+  | null;
 }
 
 /* ========================================================= */
 /* HOOK */
 /* ========================================================= */
 
-export function useStoryMedia() {
+export function useStoryMedia({
+  initialFeaturedImage = null,
+  initialImageCaption = '',
+  initialImageCredit = '',
+}: UseStoryMediaOptions = {}) {
   const [
     featuredImage,
     setFeaturedImage,
   ] = useState<
     MediaAsset | null
-  >(null);
+  >(
+    initialFeaturedImage
+  );
 
   const [
     featuredImageId,
     setFeaturedImageId,
   ] = useState<
     string | null
-  >(null);
+  >(
+    initialFeaturedImage?.id ??
+    null
+  );
 
   const [
     imageCaption,
     setImageCaption,
-  ] = useState('');
+  ] = useState(
+    initialImageCaption
+  );
 
   const [
     imageCredit,
     setImageCredit,
-  ] = useState('');
+  ] = useState(
+    initialImageCredit
+  );
 
   const [
     mediaPickerOpen,
@@ -65,7 +96,9 @@ export function useStoryMedia() {
   /* ======================================================= */
 
   function setStoryFeaturedImage(
-    media: MediaAsset | null
+    media:
+      | MediaAsset
+      | null
   ) {
     setFeaturedImage(
       media
@@ -100,7 +133,8 @@ export function useStoryMedia() {
     );
 
     setImageCredit(
-      metadata.credit
+      metadata.credit ||
+      ''
     );
 
     setMediaPickerOpen(

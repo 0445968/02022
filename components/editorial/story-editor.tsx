@@ -380,9 +380,9 @@ export function StoryEditor({
 
     if (
       autosave.saveState ===
-      'unsaved' ||
+        'unsaved' ||
       autosave.saveState ===
-      'saving'
+        'saving'
     ) {
       revision
         .markRevisionPending();
