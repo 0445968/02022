@@ -500,7 +500,7 @@ export function MediaInspector({
     try {
       const response =
         await fetch(
-          `/api/media/${asset.id}`,
+          `/api/media/${asset?.id}`,
           {
             method:
               'PATCH',
