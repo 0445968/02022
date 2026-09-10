@@ -1,4 +1,3 @@
-
 'use client';
 
 import {
@@ -118,13 +117,13 @@ function isUsableImage(
 ): boolean {
   return (
     asset.assetType ===
-      'image' ||
+    'image' ||
     asset.assetType ===
-      'graphic' ||
+    'graphic' ||
     asset.assetType ===
-      'logo' ||
+    'logo' ||
     asset.assetType ===
-      'social'
+    'social'
   );
 }
 
@@ -294,8 +293,8 @@ export function MediaPicker({
           const result:
             | MediaListResponse
             | {
-                error?: string;
-              }
+              error?: string;
+            }
             | null =
             await response
               .json()
@@ -309,10 +308,10 @@ export function MediaPicker({
           ) {
             throw new Error(
               result &&
-              'error' in
+                'error' in
                 result
                 ? result.error ||
-                    'Unable to load media.'
+                'Unable to load media.'
                 : 'Unable to load media.'
             );
           }
@@ -339,14 +338,14 @@ export function MediaPicker({
 
           setTotal(
             responseData.total ??
-              imageItems.length
+            imageItems.length
           );
 
           setTotalPages(
             Math.max(
               1,
               responseData.totalPages ??
-                1
+              1
             )
           );
 
@@ -373,7 +372,7 @@ export function MediaPicker({
             }
           );
         } catch (
-          fetchError
+        fetchError
         ) {
           setMedia(
             []
@@ -548,7 +547,7 @@ export function MediaPicker({
       ) {
         throw new Error(
           result?.error ??
-            dict.media.uploadError
+          dict.media.uploadError
         );
       }
 
@@ -577,7 +576,7 @@ export function MediaPicker({
         );
       }
     } catch (
-      uploadFailure
+    uploadFailure
     ) {
       setUploadError(
         uploadFailure instanceof
@@ -639,7 +638,7 @@ export function MediaPicker({
       ) {
         throw new Error(
           result?.error ??
-            'Unable to update favorite.'
+          'Unable to update favorite.'
         );
       }
 
@@ -657,11 +656,11 @@ export function MediaPicker({
               item
             ) =>
               item.id ===
-              asset.id
+                asset.id
                 ? {
-                    ...item,
-                    isFavorite,
-                  }
+                  ...item,
+                  isFavorite,
+                }
                 : item
           )
       );
@@ -671,15 +670,15 @@ export function MediaPicker({
           current
         ) =>
           current?.id ===
-          asset.id
+            asset.id
             ? {
-                ...current,
-                isFavorite,
-              }
+              ...current,
+              isFavorite,
+            }
             : current
       );
     } catch (
-      favoriteError
+    favoriteError
     ) {
       setError(
         favoriteError instanceof
@@ -703,8 +702,8 @@ export function MediaPicker({
       () =>
         selected
           ? getStoryMediaMetadata(
-              selected
-            )
+            selected
+          )
           : null,
       [
         selected,
@@ -936,7 +935,7 @@ export function MediaPicker({
                   hover:bg-primary/90
                 `,
                 uploading &&
-                  `
+                `
                     pointer-events-none
                     opacity-60
                   `
@@ -953,7 +952,7 @@ export function MediaPicker({
               {uploading
                 ? 'Uploading…'
                 : dict.media
-                    .upload}
+                  .upload}
 
               <input
                 type="file"
@@ -977,9 +976,9 @@ export function MediaPicker({
 
           {(error ||
             uploadError) && (
-            <div
-              role="alert"
-              className="
+              <div
+                role="alert"
+                className="
                 border-b
                 border-breaking/20
                 bg-breaking/5
@@ -988,11 +987,11 @@ export function MediaPicker({
                 text-sm
                 text-breaking
               "
-            >
-              {uploadError ||
-                error}
-            </div>
-          )}
+              >
+                {uploadError ||
+                  error}
+              </div>
+            )}
 
           {/* =============================================== */}
           {/* GRID */}
@@ -1294,7 +1293,7 @@ export function MediaPicker({
                                 w-4
                               `,
                               item.isFavorite &&
-                                'fill-current'
+                              'fill-current'
                             )}
                             aria-hidden
                           />
@@ -1352,7 +1351,7 @@ export function MediaPicker({
                       Math.max(
                         1,
                         current -
-                          1
+                        1
                       )
                   )
                 }
@@ -1410,13 +1409,13 @@ export function MediaPicker({
                       Math.min(
                         totalPages,
                         current +
-                          1
+                        1
                       )
                   )
                 }
                 disabled={
                   page >=
-                    totalPages ||
+                  totalPages ||
                   loading
                 }
                 className="
@@ -1598,7 +1597,7 @@ export function MediaPicker({
                       )}
 
                       {selected.width &&
-                      selected.height
+                        selected.height
                         ? ` · ${selected.width} × ${selected.height}`
                         : ''}
                     </p>
@@ -1848,4 +1847,3 @@ function MetadataItem({
     </div>
   );
 }
-

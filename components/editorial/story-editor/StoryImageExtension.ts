@@ -1,29 +1,12 @@
 import Image from '@tiptap/extension-image';
 
-/**
- * Story image node used inside TipTap article bodies.
- *
- * Besides TipTap's normal:
- * - src
- * - alt
- * - title
- *
- * we store newsroom-specific metadata directly
- * in the story body JSON:
- *
- * - mediaAssetId
- * - description
- * - credit
- */
 export const StoryImageExtension =
   Image.extend({
+    name: 'image',
+
     addAttributes() {
       return {
         ...this.parent?.(),
-
-        /* ================================================= */
-        /* MEDIA LIBRARY ID */
-        /* ================================================= */
 
         mediaAssetId: {
           default: null,
@@ -51,10 +34,6 @@ export const StoryImageExtension =
           },
         },
 
-        /* ================================================= */
-        /* DESCRIPTION / CAPTION */
-        /* ================================================= */
-
         description: {
           default: null,
 
@@ -80,10 +59,6 @@ export const StoryImageExtension =
             };
           },
         },
-
-        /* ================================================= */
-        /* CREDIT */
-        /* ================================================= */
 
         credit: {
           default: null,

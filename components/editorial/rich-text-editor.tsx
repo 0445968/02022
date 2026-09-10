@@ -108,10 +108,6 @@ export function RichTextEditor({
     setImageCredit,
   ] = useState('');
 
-  /**
-   * Keeps the position where the cursor was
-   * before opening the Media Library.
-   */
   const imageInsertPositionRef =
     useRef<
       number | null
@@ -140,8 +136,7 @@ export function RichTextEditor({
         Color,
 
         Highlight.configure({
-          multicolor:
-            true,
+          multicolor: true,
         }),
 
         Subscript,
@@ -179,32 +174,32 @@ export function RichTextEditor({
 
       content:
         content &&
-        Object.keys(
-          content
-        ).length > 0
+          Object.keys(
+            content
+          ).length > 0
           ? content
           : {
-              type:
-                'doc',
+            type:
+              'doc',
 
-              content: [
-                {
-                  type:
-                    'paragraph',
-                },
-              ],
-            },
+            content: [
+              {
+                type:
+                  'paragraph',
+              },
+            ],
+          },
 
       editorProps: {
         attributes: {
           class:
-            'prose-editor min-h-[400px] w-full max-w-none bg-white px-6 pb-8 pt-6 font-interface text-base leading-relaxed text-foreground focus:outline-none',
+            'prose-editor min-h-[400px] w-full bg-white pb-8 pt-6 font-interface text-base leading-relaxed text-foreground focus:outline-none',
         },
       },
 
       onUpdate: ({
         editor:
-          updatedEditor,
+        updatedEditor,
       }) => {
         onChange(
           updatedEditor.getJSON() as Record<
@@ -220,9 +215,7 @@ export function RichTextEditor({
   /* ======================================================= */
 
   useEffect(() => {
-    if (
-      !editor
-    ) {
+    if (!editor) {
       return;
     }
 
@@ -233,21 +226,21 @@ export function RichTextEditor({
 
     const nextContent =
       content &&
-      Object.keys(
-        content
-      ).length > 0
+        Object.keys(
+          content
+        ).length > 0
         ? content
         : {
-            type:
-              'doc',
+          type:
+            'doc',
 
-            content: [
-              {
-                type:
-                  'paragraph',
-              },
-            ],
-          };
+          content: [
+            {
+              type:
+                'paragraph',
+            },
+          ],
+        };
 
     const nextJson =
       JSON.stringify(
@@ -268,9 +261,7 @@ export function RichTextEditor({
     editor,
   ]);
 
-  if (
-    !editor
-  ) {
+  if (!editor) {
     return (
       <div
         className="
@@ -293,14 +284,14 @@ export function RichTextEditor({
       ed.getAttributes(
         'link'
       ).href as
-        | string
-        | undefined;
+      | string
+      | undefined;
 
     const url =
       window.prompt(
         'URL',
         previousUrl ??
-          'https://'
+        'https://'
       );
 
     if (
@@ -331,8 +322,7 @@ export function RichTextEditor({
         'link'
       )
       .setLink({
-        href:
-          url,
+        href: url,
       })
       .run();
   }
@@ -380,12 +370,12 @@ export function RichTextEditor({
 
     setImageDescription(
       metadata.description ??
-        ''
+      ''
     );
 
     setImageCredit(
       metadata.credit ??
-        ''
+      ''
     );
 
     setMediaPickerOpen(
@@ -424,9 +414,7 @@ export function RichTextEditor({
   /* ======================================================= */
 
   function insertSelectedImage() {
-    if (
-      !selectedImage
-    ) {
+    if (!selectedImage) {
       return;
     }
 
@@ -503,15 +491,6 @@ export function RichTextEditor({
 
   return (
     <>
-      {/*
-       * IMPORTANT:
-       *
-       * Do not add overflow-hidden / overflow-auto here.
-       *
-       * StoryEditorToolbar uses position: sticky and needs
-       * to attach to the StoryEditorContent scrolling
-       * container above this component.
-       */}
       <div
         className="
           relative
@@ -519,28 +498,18 @@ export function RichTextEditor({
           bg-white
         "
       >
-        {/* ================================================= */}
-        {/* STICKY TOOLBAR */}
-        {/* ================================================= */}
+        {/* Formatting toolbar */}
 
         <StoryEditorToolbar
-          editor={
-            ed
-          }
-          dict={
-            dict
-          }
-          onSetLink={
-            setLink
-          }
+          editor={ed}
+          dict={dict}
+          onSetLink={setLink}
           onOpenImagePicker={
             openImagePicker
           }
         />
 
-        {/* ================================================= */}
-        {/* EDITOR BODY */}
-        {/* ================================================= */}
+        {/* Article body */}
 
         <div
           className="
@@ -548,16 +517,22 @@ export function RichTextEditor({
             bg-white
           "
         >
-          <EditorContent
-            editor={
-              ed
-            }
-          />
+          <div
+            className="
+              mx-auto
+              w-full
+              max-w-3xl
+              px-6
+              lg:px-12
+            "
+          >
+            <EditorContent
+              editor={ed}
+            />
+          </div>
         </div>
 
-        {/* ================================================= */}
-        {/* EDITOR STYLES */}
-        {/* ================================================= */}
+        {/* Editor styles */}
 
         <style
           jsx
@@ -810,18 +785,12 @@ export function RichTextEditor({
         `}</style>
       </div>
 
-      {/* =================================================== */}
-      {/* MEDIA LIBRARY */}
-      {/* =================================================== */}
+      {/* Media Library */}
 
       {mediaPickerOpen && (
         <MediaPicker
-          dict={
-            dict
-          }
-          userId={
-            userId
-          }
+          dict={dict}
+          userId={userId}
           onSelect={
             handleImageSelected
           }
@@ -841,9 +810,7 @@ export function RichTextEditor({
         />
       )}
 
-      {/* =================================================== */}
-      {/* IMAGE METADATA MODAL */}
-      {/* =================================================== */}
+      {/* Image metadata modal */}
 
       {selectedImage && (
         <div
@@ -969,8 +936,6 @@ export function RichTextEditor({
                 "
               />
 
-              {/* Description */}
-
               <div>
                 <label
                   htmlFor="inline-image-description"
@@ -995,9 +960,7 @@ export function RichTextEditor({
                       event.target.value
                     )
                   }
-                  rows={
-                    3
-                  }
+                  rows={3}
                   placeholder="Describe what is shown in the image…"
                   className="
                     mt-1
@@ -1019,8 +982,6 @@ export function RichTextEditor({
                   "
                 />
               </div>
-
-              {/* Credit */}
 
               <div>
                 <label
@@ -1068,19 +1029,17 @@ export function RichTextEditor({
                 />
               </div>
 
-              {/* Preview */}
-
               {(imageDescription ||
                 imageCredit) && (
-                <div
-                  className="
+                  <div
+                    className="
                     border-t
                     border-border
                     pt-4
                   "
-                >
-                  <p
-                    className="
+                  >
+                    <p
+                      className="
                       mb-1
                       text-[0.6875rem]
                       font-semibold
@@ -1088,40 +1047,36 @@ export function RichTextEditor({
                       tracking-wide
                       text-muted-foreground
                     "
-                  >
-                    Preview
-                  </p>
+                    >
+                      Preview
+                    </p>
 
-                  <p
-                    className="
+                    <p
+                      className="
                       font-headline
                       text-sm
                       leading-relaxed
                       text-muted-foreground
                     "
-                  >
-                    {
-                      imageDescription
-                    }
+                    >
+                      {imageDescription}
 
-                    {imageDescription &&
-                      imageCredit &&
-                      ' '}
+                      {imageDescription &&
+                        imageCredit &&
+                        ' '}
 
-                    {imageCredit && (
-                      <em>
-                        (
-                        {
-                          imageCredit
-                        }
-                        )
-                      </em>
-                    )}
-                  </p>
-                </div>
-              )}
-
-              {/* Asset reference */}
+                      {imageCredit && (
+                        <em>
+                          (
+                          {
+                            imageCredit
+                          }
+                          )
+                        </em>
+                      )}
+                    </p>
+                  </div>
+                )}
 
               <div
                 className="
