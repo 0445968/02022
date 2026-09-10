@@ -89,37 +89,26 @@ export function StoryEditorToolbar({
     setToolbarWidth,
   ] = useState(1200);
 
-  /* ======================================================= */
-  /* RESPONSIVE TOOLBAR WIDTH */
-  /* ======================================================= */
-
   useEffect(() => {
     const element =
       toolbarRef.current;
 
-    if (
-      !element
-    ) {
+    if (!element) {
       return;
     }
 
     const observer =
       new ResizeObserver(
-        (
-          entries
-        ) => {
+        (entries) => {
           const entry =
             entries[0];
 
-          if (
-            !entry
-          ) {
+          if (!entry) {
             return;
           }
 
           setToolbarWidth(
-            entry.contentRect
-              .width
+            entry.contentRect.width
           );
         }
       );
@@ -135,11 +124,9 @@ export function StoryEditorToolbar({
 
   const mode:
     ToolbarMode =
-    toolbarWidth >=
-    1080
+    toolbarWidth >= 1080
       ? 'wide'
-      : toolbarWidth >=
-          760
+      : toolbarWidth >= 760
         ? 'medium'
         : 'compact';
 
@@ -147,20 +134,15 @@ export function StoryEditorToolbar({
     editor.getAttributes(
       'textStyle'
     ).color as
-      | string
-      | undefined;
-
-  /* ======================================================= */
-  /* HELPERS */
-  /* ======================================================= */
+    | string
+    | undefined;
 
   function toggleHighlight() {
     editor
       .chain()
       .focus()
       .toggleHighlight({
-        color:
-          '#FFD735',
+        color: '#FFD735',
       })
       .run();
   }
@@ -175,18 +157,12 @@ export function StoryEditorToolbar({
       .run();
   }
 
-  /* ======================================================= */
-  /* RENDER */
-  /* ======================================================= */
-
   return (
     <div
-      ref={
-        toolbarRef
-      }
+      ref={toolbarRef}
       className="
         sticky
-        top-0
+        top-12
         z-40
         w-full
         border-b
@@ -204,9 +180,7 @@ export function StoryEditorToolbar({
           gap-1
         "
       >
-        {/* ================================================= */}
-        {/* CORE TEXT */}
-        {/* ================================================= */}
+        {/* Core text */}
 
         <ToolbarButton
           onClick={() =>
@@ -222,9 +196,7 @@ export function StoryEditorToolbar({
             )
           }
           label="Bold"
-          icon={
-            Bold
-          }
+          icon={Bold}
         />
 
         <ToolbarButton
@@ -241,13 +213,10 @@ export function StoryEditorToolbar({
             )
           }
           label="Italic"
-          icon={
-            Italic
-          }
+          icon={Italic}
         />
 
-        {mode ===
-          'wide' && (
+        {mode === 'wide' && (
           <>
             <ToolbarButton
               onClick={() =>
@@ -289,9 +258,7 @@ export function StoryEditorToolbar({
           </>
         )}
 
-        {/* ================================================= */}
-        {/* TEXT MENU */}
-        {/* ================================================= */}
+        {/* Text menu */}
 
         <ToolbarMenu
           label="Text"
@@ -299,8 +266,7 @@ export function StoryEditorToolbar({
             UnderlineIcon
           }
         >
-          {mode !==
-            'wide' && (
+          {mode !== 'wide' && (
             <>
               <MenuAction
                 label="Underline"
@@ -384,9 +350,7 @@ export function StoryEditorToolbar({
 
           <MenuAction
             label="Inline code"
-            icon={
-              Code2
-            }
+            icon={Code2}
             active={
               editor.isActive(
                 'code'
@@ -500,9 +464,7 @@ export function StoryEditorToolbar({
                     .chain()
                     .focus()
                     .setColor(
-                      event
-                        .target
-                        .value
+                      event.target.value
                     )
                     .run()
                 }
@@ -518,9 +480,7 @@ export function StoryEditorToolbar({
 
           <MenuAction
             label="Remove text color"
-            icon={
-              Eraser
-            }
+            icon={Eraser}
             onSelect={() =>
               editor
                 .chain()
@@ -533,12 +493,9 @@ export function StoryEditorToolbar({
 
         <Divider />
 
-        {/* ================================================= */}
-        {/* STYLES */}
-        {/* ================================================= */}
+        {/* Styles */}
 
-        {mode ===
-          'wide' ? (
+        {mode === 'wide' ? (
           <>
             <ToolbarButton
               onClick={() =>
@@ -554,9 +511,7 @@ export function StoryEditorToolbar({
                 )
               }
               label="Paragraph"
-              icon={
-                Pilcrow
-              }
+              icon={Pilcrow}
             />
 
             <ToolbarButton
@@ -565,8 +520,7 @@ export function StoryEditorToolbar({
                   .chain()
                   .focus()
                   .toggleHeading({
-                    level:
-                      2,
+                    level: 2,
                   })
                   .run()
               }
@@ -574,15 +528,12 @@ export function StoryEditorToolbar({
                 editor.isActive(
                   'heading',
                   {
-                    level:
-                      2,
+                    level: 2,
                   }
                 )
               }
               label="Heading 2"
-              icon={
-                Heading2
-              }
+              icon={Heading2}
             />
 
             <ToolbarButton
@@ -591,8 +542,7 @@ export function StoryEditorToolbar({
                   .chain()
                   .focus()
                   .toggleHeading({
-                    level:
-                      3,
+                    level: 3,
                   })
                   .run()
               }
@@ -600,29 +550,22 @@ export function StoryEditorToolbar({
                 editor.isActive(
                   'heading',
                   {
-                    level:
-                      3,
+                    level: 3,
                   }
                 )
               }
               label="Heading 3"
-              icon={
-                Heading3
-              }
+              icon={Heading3}
             />
           </>
         ) : (
           <ToolbarMenu
             label="Styles"
-            icon={
-              Pilcrow
-            }
+            icon={Pilcrow}
           >
             <MenuAction
               label="Paragraph"
-              icon={
-                Pilcrow
-              }
+              icon={Pilcrow}
               active={
                 editor.isActive(
                   'paragraph'
@@ -639,15 +582,12 @@ export function StoryEditorToolbar({
 
             <MenuAction
               label="Heading 2"
-              icon={
-                Heading2
-              }
+              icon={Heading2}
               active={
                 editor.isActive(
                   'heading',
                   {
-                    level:
-                      2,
+                    level: 2,
                   }
                 )
               }
@@ -656,8 +596,7 @@ export function StoryEditorToolbar({
                   .chain()
                   .focus()
                   .toggleHeading({
-                    level:
-                      2,
+                    level: 2,
                   })
                   .run()
               }
@@ -665,15 +604,12 @@ export function StoryEditorToolbar({
 
             <MenuAction
               label="Heading 3"
-              icon={
-                Heading3
-              }
+              icon={Heading3}
               active={
                 editor.isActive(
                   'heading',
                   {
-                    level:
-                      3,
+                    level: 3,
                   }
                 )
               }
@@ -682,8 +618,7 @@ export function StoryEditorToolbar({
                   .chain()
                   .focus()
                   .toggleHeading({
-                    level:
-                      3,
+                    level: 3,
                   })
                   .run()
               }
@@ -693,12 +628,9 @@ export function StoryEditorToolbar({
 
         <Divider />
 
-        {/* ================================================= */}
-        {/* ALIGNMENT */}
-        {/* ================================================= */}
+        {/* Alignment */}
 
-        {mode ===
-          'wide' ? (
+        {mode === 'wide' ? (
           <>
             <ToolbarButton
               onClick={() =>
@@ -717,9 +649,7 @@ export function StoryEditorToolbar({
                 })
               }
               label="Align left"
-              icon={
-                AlignLeft
-              }
+              icon={AlignLeft}
             />
 
             <ToolbarButton
@@ -761,9 +691,7 @@ export function StoryEditorToolbar({
                 })
               }
               label="Align right"
-              icon={
-                AlignRight
-              }
+              icon={AlignRight}
             />
 
             <ToolbarButton
@@ -791,15 +719,11 @@ export function StoryEditorToolbar({
         ) : (
           <ToolbarMenu
             label="Alignment"
-            icon={
-              AlignLeft
-            }
+            icon={AlignLeft}
           >
             <MenuAction
               label="Align left"
-              icon={
-                AlignLeft
-              }
+              icon={AlignLeft}
               active={
                 editor.isActive({
                   textAlign:
@@ -841,9 +765,7 @@ export function StoryEditorToolbar({
 
             <MenuAction
               label="Align right"
-              icon={
-                AlignRight
-              }
+              icon={AlignRight}
               active={
                 editor.isActive({
                   textAlign:
@@ -887,12 +809,9 @@ export function StoryEditorToolbar({
 
         <Divider />
 
-        {/* ================================================= */}
-        {/* BLOCKS */}
-        {/* ================================================= */}
+        {/* Blocks */}
 
-        {mode ===
-          'wide' ? (
+        {mode === 'wide' ? (
           <>
             <ToolbarButton
               onClick={() =>
@@ -908,9 +827,7 @@ export function StoryEditorToolbar({
                 )
               }
               label="Bullet list"
-              icon={
-                List
-              }
+              icon={List}
             />
 
             <ToolbarButton
@@ -946,23 +863,47 @@ export function StoryEditorToolbar({
                 )
               }
               label="Block quote"
-              icon={
-                Quote
+              icon={Quote}
+            />
+
+            <ToolbarButton
+              onClick={() =>
+                editor
+                  .chain()
+                  .focus()
+                  .toggleCodeBlock()
+                  .run()
               }
+              active={
+                editor.isActive(
+                  'codeBlock'
+                )
+              }
+              label="Code block"
+              icon={Code2}
+            />
+
+            <ToolbarButton
+              onClick={() =>
+                editor
+                  .chain()
+                  .focus()
+                  .setHorizontalRule()
+                  .run()
+              }
+              active={false}
+              label="Divider"
+              icon={Minus}
             />
           </>
         ) : (
           <ToolbarMenu
             label="Blocks"
-            icon={
-              List
-            }
+            icon={List}
           >
             <MenuAction
               label="Bullet list"
-              icon={
-                List
-              }
+              icon={List}
               active={
                 editor.isActive(
                   'bulletList'
@@ -998,9 +939,7 @@ export function StoryEditorToolbar({
 
             <MenuAction
               label="Block quote"
-              icon={
-                Quote
-              }
+              icon={Quote}
               active={
                 editor.isActive(
                   'blockquote'
@@ -1017,9 +956,7 @@ export function StoryEditorToolbar({
 
             <MenuAction
               label="Code block"
-              icon={
-                Code2
-              }
+              icon={Code2}
               active={
                 editor.isActive(
                   'codeBlock'
@@ -1036,9 +973,7 @@ export function StoryEditorToolbar({
 
             <MenuAction
               label="Divider"
-              icon={
-                Minus
-              }
+              icon={Minus}
               onSelect={() =>
                 editor
                   .chain()
@@ -1050,66 +985,19 @@ export function StoryEditorToolbar({
           </ToolbarMenu>
         )}
 
-        {mode ===
-          'wide' && (
-          <>
-            <ToolbarButton
-              onClick={() =>
-                editor
-                  .chain()
-                  .focus()
-                  .toggleCodeBlock()
-                  .run()
-              }
-              active={
-                editor.isActive(
-                  'codeBlock'
-                )
-              }
-              label="Code block"
-              icon={
-                Code2
-              }
-            />
-
-            <ToolbarButton
-              onClick={() =>
-                editor
-                  .chain()
-                  .focus()
-                  .setHorizontalRule()
-                  .run()
-              }
-              active={
-                false
-              }
-              label="Divider"
-              icon={
-                Minus
-              }
-            />
-          </>
-        )}
-
         <Divider />
 
-        {/* ================================================= */}
-        {/* INSERT */}
-        {/* ================================================= */}
+        {/* Insert */}
 
         {mode ===
           'compact' ? (
           <ToolbarMenu
             label="Insert"
-            icon={
-              LinkIcon
-            }
+            icon={LinkIcon}
           >
             <MenuAction
               label="Link"
-              icon={
-                LinkIcon
-              }
+              icon={LinkIcon}
               active={
                 editor.isActive(
                   'link'
@@ -1145,18 +1033,14 @@ export function StoryEditorToolbar({
                 )
               }
               label="Link"
-              icon={
-                LinkIcon
-              }
+              icon={LinkIcon}
             />
 
             <ToolbarButton
               onClick={
                 onOpenImagePicker
               }
-              active={
-                false
-              }
+              active={false}
               label={
                 dict.story
                   .selectFromMedia
@@ -1167,10 +1051,6 @@ export function StoryEditorToolbar({
             />
           </>
         )}
-
-        {/* ================================================= */}
-        {/* FLEX SPACER */}
-        {/* ================================================= */}
 
         <div
           className="
@@ -1179,21 +1059,15 @@ export function StoryEditorToolbar({
           "
         />
 
-        {/* ================================================= */}
-        {/* MORE */}
-        {/* ================================================= */}
+        {/* More */}
 
         <ToolbarMenu
           label="More"
-          icon={
-            Eraser
-          }
+          icon={Eraser}
         >
           <MenuAction
             label="Clear formatting"
-            icon={
-              Eraser
-            }
+            icon={Eraser}
             onSelect={
               clearFormatting
             }
@@ -1202,9 +1076,7 @@ export function StoryEditorToolbar({
 
         <Divider />
 
-        {/* ================================================= */}
-        {/* HISTORY */}
-        {/* ================================================= */}
+        {/* History */}
 
         <ToolbarButton
           onClick={() =>
@@ -1214,13 +1086,9 @@ export function StoryEditorToolbar({
               .undo()
               .run()
           }
-          active={
-            false
-          }
+          active={false}
           label="Undo"
-          icon={
-            Undo
-          }
+          icon={Undo}
           disabled={
             !editor
               .can()
@@ -1236,13 +1104,9 @@ export function StoryEditorToolbar({
               .redo()
               .run()
           }
-          active={
-            false
-          }
+          active={false}
           label="Redo"
-          icon={
-            Redo
-          }
+          icon={Redo}
           disabled={
             !editor
               .can()
@@ -1272,28 +1136,18 @@ function ToolbarButton({
   label: string;
 
   icon:
-    React.ElementType;
+  React.ElementType;
 
   disabled?: boolean;
 }) {
   return (
     <button
       type="button"
-      onClick={
-        onClick
-      }
-      disabled={
-        disabled
-      }
-      title={
-        label
-      }
-      aria-label={
-        label
-      }
-      aria-pressed={
-        active
-      }
+      onClick={onClick}
+      disabled={disabled}
+      title={label}
+      aria-label={label}
+      aria-pressed={active}
       className={cn(
         `
           inline-flex
@@ -1333,7 +1187,7 @@ function ToolbarButton({
 }
 
 /* ========================================================= */
-/* TOOLBAR DROPDOWN */
+/* TOOLBAR MENU */
 /* ========================================================= */
 
 function ToolbarMenu({
@@ -1344,10 +1198,10 @@ function ToolbarMenu({
   label: string;
 
   icon:
-    React.ElementType;
+  React.ElementType;
 
   children:
-    React.ReactNode;
+  React.ReactNode;
 }) {
   return (
     <DropdownMenu.Root>
@@ -1356,12 +1210,8 @@ function ToolbarMenu({
       >
         <button
           type="button"
-          title={
-            label
-          }
-          aria-label={
-            label
-          }
+          title={label}
+          aria-label={label}
           className="
             inline-flex
             h-8
@@ -1400,9 +1250,7 @@ function ToolbarMenu({
 
       <DropdownMenu.Portal>
         <DropdownMenu.Content
-          sideOffset={
-            6
-          }
+          sideOffset={6}
           align="start"
           className="
             z-[100]
@@ -1435,12 +1283,12 @@ function MenuAction({
   label: string;
 
   icon:
-    React.ElementType;
+  React.ElementType;
 
   active?: boolean;
 
   onSelect:
-    () => void;
+  () => void;
 }) {
   return (
     <DropdownMenu.Item
@@ -1510,7 +1358,7 @@ function MenuSeparator() {
 }
 
 /* ========================================================= */
-/* TOOLBAR DIVIDER */
+/* DIVIDER */
 /* ========================================================= */
 
 function Divider() {

@@ -3,7 +3,6 @@
 import {
   useEffect,
   useRef,
-  useState,
 } from 'react';
 
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
@@ -29,8 +28,8 @@ interface StoryDetailsToolbarProps {
   dict: Dictionary;
 
   /**
-   * Kept in the props for compatibility with StoryEditorContent.
-   * We no longer display a language indicator in this toolbar.
+   * Kept for compatibility with StoryEditorContent.
+   * Language is intentionally not displayed in this toolbar.
    */
   language: StoryLanguage;
 
@@ -86,18 +85,12 @@ export function StoryDetailsToolbar({
           items-stretch
         "
       >
-        {/* ================================================= */}
-        {/* HEADLINE */}
-        {/* ================================================= */}
+        {/* Headline */}
 
         <StoryFieldEditor
           label="Headline"
-          value={
-            headline
-          }
-          onChange={
-            setHeadline
-          }
+          value={headline}
+          onChange={setHeadline}
           placeholder={
             dict.story
               .headlinePlaceholder
@@ -113,18 +106,12 @@ export function StoryDetailsToolbar({
           "
         />
 
-        {/* ================================================= */}
-        {/* SUBHEADLINE */}
-        {/* ================================================= */}
+        {/* Subheadline */}
 
         <StoryFieldEditor
           label="Subheadline"
-          value={
-            subheadline
-          }
-          onChange={
-            setSubheadline
-          }
+          value={subheadline}
+          onChange={setSubheadline}
           placeholder={
             dict.story
               .subheadlinePlaceholder
@@ -142,18 +129,12 @@ export function StoryDetailsToolbar({
           "
         />
 
-        {/* ================================================= */}
-        {/* DESCRIPTION */}
-        {/* ================================================= */}
+        {/* Description */}
 
         <StoryFieldEditor
           label="Description"
-          value={
-            summary
-          }
-          onChange={
-            setSummary
-          }
+          value={summary}
+          onChange={setSummary}
           placeholder={
             dict.story
               .summaryPlaceholder
@@ -170,32 +151,16 @@ export function StoryDetailsToolbar({
           "
         />
 
-        {/* ================================================= */}
-        {/* COMPACT DETAILS MENU */}
-        {/* ================================================= */}
+        {/* Compact menu */}
 
         <CompactStoryDetailsMenu
-          dict={
-            dict
-          }
-          headline={
-            headline
-          }
-          subheadline={
-            subheadline
-          }
-          summary={
-            summary
-          }
-          setHeadline={
-            setHeadline
-          }
-          setSubheadline={
-            setSubheadline
-          }
-          setSummary={
-            setSummary
-          }
+          dict={dict}
+          headline={headline}
+          subheadline={subheadline}
+          summary={summary}
+          setHeadline={setHeadline}
+          setSubheadline={setSubheadline}
+          setSummary={setSummary}
         />
       </div>
     </div>
@@ -231,11 +196,6 @@ function StoryFieldEditor({
 
   textClassName?: string;
 }) {
-  const [
-    open,
-    setOpen,
-  ] = useState(false);
-
   return (
     <div
       className={`
@@ -244,14 +204,7 @@ function StoryFieldEditor({
         ${className}
       `}
     >
-      <DropdownMenu.Root
-        open={
-          open
-        }
-        onOpenChange={
-          setOpen
-        }
-      >
+      <DropdownMenu.Root>
         <DropdownMenu.Trigger
           asChild
         >
@@ -314,13 +267,9 @@ function StoryFieldEditor({
 
         <DropdownMenu.Portal>
           <DropdownMenu.Content
-            sideOffset={
-              4
-            }
+            sideOffset={4}
             align="start"
-            collisionPadding={
-              12
-            }
+            collisionPadding={12}
             className="
               z-[110]
               w-[min(620px,calc(100vw-24px))]
@@ -346,18 +295,10 @@ function StoryFieldEditor({
             </DropdownMenu.Label>
 
             <AutoGrowTextarea
-              value={
-                value
-              }
-              onChange={
-                onChange
-              }
-              placeholder={
-                placeholder
-              }
-              multiline={
-                multiline
-              }
+              value={value}
+              onChange={onChange}
+              placeholder={placeholder}
+              multiline={multiline}
               textClassName={
                 textClassName
               }
@@ -401,9 +342,7 @@ function AutoGrowTextarea({
     const textarea =
       textareaRef.current;
 
-    if (
-      !textarea
-    ) {
+    if (!textarea) {
       return;
     }
 
@@ -416,9 +355,7 @@ function AutoGrowTextarea({
 
   useEffect(() => {
     resize();
-  }, [
-    value,
-  ]);
+  }, [value]);
 
   useEffect(() => {
     const frame =
@@ -435,15 +372,9 @@ function AutoGrowTextarea({
 
   return (
     <textarea
-      ref={
-        textareaRef
-      }
-      value={
-        value
-      }
-      onChange={(
-        event
-      ) => {
+      ref={textareaRef}
+      value={value}
+      onChange={(event) => {
         onChange(
           event.target.value
         );
@@ -452,22 +383,16 @@ function AutoGrowTextarea({
           resize
         );
       }}
-      placeholder={
-        placeholder
-      }
+      placeholder={placeholder}
       rows={
         multiline
           ? 3
           : 2
       }
-      onPointerDown={(
-        event
-      ) =>
+      onPointerDown={(event) =>
         event.stopPropagation()
       }
-      onKeyDown={(
-        event
-      ) =>
+      onKeyDown={(event) =>
         event.stopPropagation()
       }
       className={`
@@ -496,7 +421,7 @@ function AutoGrowTextarea({
 }
 
 /* ========================================================= */
-/* COMPACT STORY DETAILS MENU */
+/* COMPACT DETAILS MENU */
 /* ========================================================= */
 
 function CompactStoryDetailsMenu({
@@ -592,13 +517,9 @@ function CompactStoryDetailsMenu({
 
         <DropdownMenu.Portal>
           <DropdownMenu.Content
-            sideOffset={
-              4
-            }
+            sideOffset={4}
             align="end"
-            collisionPadding={
-              12
-            }
+            collisionPadding={12}
             className="
               z-[110]
               w-[min(620px,calc(100vw-24px))]
@@ -621,16 +542,10 @@ function CompactStoryDetailsMenu({
               Story details
             </DropdownMenu.Label>
 
-            {/* Headline */}
-
             <DropdownField
               label="Headline"
-              value={
-                headline
-              }
-              onChange={
-                setHeadline
-              }
+              value={headline}
+              onChange={setHeadline}
               placeholder={
                 dict.story
                   .headlinePlaceholder
@@ -642,13 +557,9 @@ function CompactStoryDetailsMenu({
               "
             />
 
-            {/* Subheadline */}
-
             <DropdownField
               label="Subheadline"
-              value={
-                subheadline
-              }
+              value={subheadline}
               onChange={
                 setSubheadline
               }
@@ -662,16 +573,10 @@ function CompactStoryDetailsMenu({
               "
             />
 
-            {/* Description */}
-
             <DropdownField
               label="Description"
-              value={
-                summary
-              }
-              onChange={
-                setSummary
-              }
+              value={summary}
+              onChange={setSummary}
               placeholder={
                 dict.story
                   .summaryPlaceholder
@@ -686,7 +591,7 @@ function CompactStoryDetailsMenu({
 }
 
 /* ========================================================= */
-/* COMPACT DROPDOWN FIELD */
+/* COMPACT FIELD */
 /* ========================================================= */
 
 function DropdownField({
@@ -733,18 +638,10 @@ function DropdownField({
       </label>
 
       <AutoGrowTextarea
-        value={
-          value
-        }
-        onChange={
-          onChange
-        }
-        placeholder={
-          placeholder
-        }
-        multiline={
-          multiline
-        }
+        value={value}
+        onChange={onChange}
+        placeholder={placeholder}
+        multiline={multiline}
         textClassName={
           textClassName
         }
