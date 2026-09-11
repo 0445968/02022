@@ -3,7 +3,7 @@ import {
 } from 'next/server';
 
 import {
-  searchPublishedStories,
+  searchPublishedStorySuggestions,
 } from '@/lib/services/search';
 
 export async function GET(
@@ -19,8 +19,12 @@ export async function GET(
       'q'
     ) ?? '';
 
+  /*
+   * Live search begins with the very first character.
+   */
   if (
-    query.trim().length < 2
+    query.trim().length <
+    1
   ) {
     return NextResponse.json(
       {
@@ -31,7 +35,7 @@ export async function GET(
 
   try {
     const results =
-      await searchPublishedStories(
+      await searchPublishedStorySuggestions(
         query,
         {
           limit: 6,
@@ -53,6 +57,7 @@ export async function GET(
       {
         error:
           'Unable to search stories',
+
         results: [],
       },
       {

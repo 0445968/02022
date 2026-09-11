@@ -162,7 +162,7 @@ export function SearchMegaMenu({
     query.trim();
 
   const hasSearch =
-    trimmedQuery.length >= 2;
+    trimmedQuery.length >= 1;
 
   useEffect(() => {
     if (!open) {
@@ -215,7 +215,7 @@ export function SearchMegaMenu({
   useEffect(() => {
     if (
       !open ||
-      trimmedQuery.length < 2
+      trimmedQuery.length < 1
     ) {
       setResults([]);
       setLoading(false);
@@ -293,7 +293,7 @@ export function SearchMegaMenu({
             }
           }
         },
-        250
+        120
       );
 
     return () => {

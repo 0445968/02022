@@ -99,6 +99,44 @@ interface SearchRpcRow {
   | null;
 }
 
+interface SearchSuggestionRpcRow {
+  id: string;
+  slug: string;
+  headline: string;
+
+  short_title:
+  | string
+  | null;
+
+  subheadline:
+  | string
+  | null;
+
+  summary:
+  | string
+  | null;
+
+  published_at:
+  | string
+  | null;
+
+  primary_category_id:
+  | string
+  | null;
+
+  featured_image_id:
+  | string
+  | null;
+
+  relevance:
+  | number
+  | null;
+}
+
+interface SearchSuggestionOptions {
+  limit?: number;
+}
+
 interface SearchOptions {
   limit?: number;
 }
@@ -751,4 +789,303 @@ export async function searchPublishedStoriesPage(
       page <
       totalPages,
   };
+}
+
+export async function searchPublishedStorySuggestions(
+  query: string,
+  options: SearchSuggestionOptions = {}
+): Promise<SearchResult[]> {
+  const cleanedQuery =
+    cleanSearchTerm(
+      query
+    );
+
+  /*
+   * Suggestions intentionally start at one character.
+   */
+  if (
+    cleanedQuery.length <
+    1
+  ) {
+    return [];
+  }
+
+  const limit =
+    Math.max(
+      1,
+      Math.min(
+        options.limit ??
+        6,
+        20
+      )
+    );
+
+  const supabase =
+    await getDataClient();
+
+  const rpcClient =
+    supabase as unknown as {
+      rpc: (
+        functionName: string,
+        params: {
+          p_query: string;
+          p_limit: number;
+        }
+      ) => Promise<{
+        data:
+        | SearchSuggestionRpcRow[]
+        | null;
+
+        error:
+        | {
+          code?: string;
+          message?: string;
+          details?: string;
+          hint?: string;
+        }
+        | null;
+      }>;
+    };
+
+  const {
+    data,
+    error,
+  } = await rpcClient.rpc(
+    'search_published_story_suggestions',
+    {
+      p_query:
+        cleanedQuery,
+
+      p_limit:
+        limit,
+    }
+  );
+
+  if (error) {
+    console.error(
+      'Unable to load live search suggestions:',
+      {
+        query:
+          cleanedQuery,
+
+        code:
+          error.code,
+
+        message:
+          error.message,
+
+        details:
+          error.details,
+
+        hint:
+          error.hint,
+      }
+    );
+
+    return [];
+  }
+
+  const rows =
+    data ?? [];
+
+  if (
+    rows.length === 0
+  ) {
+    return [];
+  }
+
+  /*
+   * Load category and featured-image metadata
+   * for the returned suggestions.
+   */
+
+  const categoryIds =
+    Array.from(
+      new Set(
+        rows
+          .map(
+            (row) =>
+              row.primary_category_id
+          )
+          .filter(
+            (
+              id
+            ): id is string =>
+              Boolean(id)
+          )
+      )
+    );
+
+  const imageIds =
+    Array.from(
+      new Set(
+        rows
+          .map(
+            (row) =>
+              row.featured_image_id
+          )
+          .filter(
+            (
+              id
+            ): id is string =>
+              Boolean(id)
+          )
+      )
+    );
+
+  const categoryMap =
+    new Map<
+      string,
+      SearchResult['category']
+    >();
+
+  const imageMap =
+    new Map<
+      string,
+      {
+        url: string;
+        altText: string;
+      }
+    >();
+
+  if (
+    categoryIds.length >
+    0
+  ) {
+    const {
+      data:
+      categories,
+    } = await supabase
+      .from(
+        'categories'
+      )
+      .select(
+        `
+          id,
+          slug,
+          name_en,
+          name_es,
+          active,
+          sort_order
+        `
+      )
+      .in(
+        'id',
+        categoryIds
+      );
+
+    for (
+      const category of
+      categories ?? []
+    ) {
+      categoryMap.set(
+        category.id,
+        {
+          id:
+            category.id,
+
+          slug:
+            category.slug,
+
+          nameEn:
+            category.name_en,
+
+          nameEs:
+            category.name_es,
+
+          active:
+            category.active,
+
+          sortOrder:
+            category.sort_order,
+        }
+      );
+    }
+  }
+
+  if (
+    imageIds.length >
+    0
+  ) {
+    const {
+      data:
+      images,
+    } = await supabase
+      .from(
+        'media_assets'
+      )
+      .select(
+        `
+          id,
+          url,
+          alt_text
+        `
+      )
+      .in(
+        'id',
+        imageIds
+      );
+
+    for (
+      const image of
+      images ?? []
+    ) {
+      imageMap.set(
+        image.id,
+        {
+          url:
+            image.url,
+
+          altText:
+            image.alt_text ??
+            '',
+        }
+      );
+    }
+  }
+
+  return rows.map(
+    (row) => ({
+      id:
+        row.id,
+
+      slug:
+        row.slug,
+
+      headline:
+        row.headline,
+
+      shortTitle:
+        row.short_title,
+
+      subheadline:
+        row.subheadline,
+
+      summary:
+        row.summary,
+
+      publishedAt:
+        row.published_at,
+
+      relevanceScore:
+        Number(
+          row.relevance ??
+          0
+        ),
+
+      category:
+        row.primary_category_id
+          ? categoryMap.get(
+            row.primary_category_id
+          ) ?? null
+          : null,
+
+      image:
+        row.featured_image_id
+          ? imageMap.get(
+            row.featured_image_id
+          ) ?? null
+          : null,
+    })
+  );
 }
