@@ -59,6 +59,10 @@ import type {
   StoryEditorProps,
 } from '@/components/editorial/story-editor/types';
 
+/* ========================================================= */
+/* COMPONENT */
+/* ========================================================= */
+
 export function StoryEditor({
   dict,
   locale,
@@ -72,9 +76,9 @@ export function StoryEditor({
   const router =
     useRouter();
 
-  // ==================================================
-  // Permissions / story mode
-  // ==================================================
+  /* ======================================================= */
+  /* PERMISSIONS / STORY MODE */
+  /* ======================================================= */
 
   const userIsEditor =
     user.profile?.isEditor ??
@@ -85,11 +89,11 @@ export function StoryEditor({
     false;
 
   /**
-   * This never changes while the editor is open.
+   * This value never changes while this editor instance
+   * is open.
    *
-   * A published story keeps its live version in
-   * public.stories while edits are saved separately
-   * in story_revisions.
+   * Published stories keep the live version in stories
+   * while edits are stored through the revision workflow.
    */
   const isPublishedStory =
     story.status ===
@@ -99,9 +103,9 @@ export function StoryEditor({
     isPublishedStory &&
     !userIsEditor;
 
-  // ==================================================
-  // Interface state
-  // ==================================================
+  /* ======================================================= */
+  /* INTERFACE STATE */
+  /* ======================================================= */
 
   const [
     mobileSettingsOpen,
@@ -115,9 +119,9 @@ export function StoryEditor({
     string | null
   >(null);
 
-  // ==================================================
-  // Taxonomy
-  // ==================================================
+  /* ======================================================= */
+  /* TAXONOMY */
+  /* ======================================================= */
 
   const taxonomy =
     useStoryTaxonomy({
@@ -129,15 +133,16 @@ export function StoryEditor({
 
       initialPrimaryCategoryId:
         story.primaryCategory
-          ?.id ?? null,
+          ?.id ??
+        null,
 
       initialTags:
         story.tags,
     });
 
-  // ==================================================
-  // Featured media
-  // ==================================================
+  /* ======================================================= */
+  /* FEATURED MEDIA */
+  /* ======================================================= */
 
   const media =
     useStoryMedia({
@@ -153,9 +158,9 @@ export function StoryEditor({
         '',
     });
 
-  // ==================================================
-  // Main editable state
-  // ==================================================
+  /* ======================================================= */
+  /* MAIN EDITABLE STATE */
+  /* ======================================================= */
 
   const editor =
     useStoryEditorState({
@@ -182,9 +187,9 @@ export function StoryEditor({
           .primaryCategoryId,
     });
 
-  // ==================================================
-  // Autosave
-  // ==================================================
+  /* ======================================================= */
+  /* AUTOSAVE */
+  /* ======================================================= */
 
   const autosave =
     useStoryAutosave({
@@ -199,8 +204,8 @@ export function StoryEditor({
           .errorDesc,
 
       /**
-       * Published stories never autosave directly
-       * into their live stories row.
+       * Published stories never autosave directly into
+       * their live stories row.
        */
       saveEndpoint:
         isPublishedStory
@@ -208,14 +213,9 @@ export function StoryEditor({
           : undefined,
     });
 
-  // ==================================================
-  // Stable revision adapters
-  // ==================================================
-  //
-  // useStoryRevision performs an initial effect.
-  // These adapter objects must remain stable so that
-  // effect does not continuously reload the revision.
-  // ==================================================
+  /* ======================================================= */
+  /* STABLE REVISION ADAPTERS */
+  /* ======================================================= */
 
   const revisionState =
     useMemo(
@@ -310,10 +310,8 @@ export function StoryEditor({
     );
 
   /**
-   * useStoryMedia currently exposes a normal function
-   * for loadRevisionMedia, so keep the latest function
-   * in a ref while giving useStoryRevision a stable
-   * adapter object.
+   * Keep the latest media revision loader in a ref while
+   * exposing a stable object to useStoryRevision.
    */
   const loadRevisionMediaRef =
     useRef(
@@ -344,9 +342,9 @@ export function StoryEditor({
       []
     );
 
-  // ==================================================
-  // Revision lifecycle
-  // ==================================================
+  /* ======================================================= */
+  /* REVISION LIFECYCLE */
+  /* ======================================================= */
 
   const revision =
     useStoryRevision({
@@ -370,9 +368,8 @@ export function StoryEditor({
     });
 
   /**
-   * As soon as a published story changes, there are
-   * effectively unpublished changes even if the
-   * debounce request has not completed yet.
+   * A changed published story effectively has unpublished
+   * changes as soon as autosave enters unsaved/saving.
    */
   useEffect(() => {
     if (
@@ -397,9 +394,9 @@ export function StoryEditor({
       .markRevisionPending,
   ]);
 
-  // ==================================================
-  // Workflow
-  // ==================================================
+  /* ======================================================= */
+  /* WORKFLOW */
+  /* ======================================================= */
 
   const workflow =
     useStoryWorkflow({
@@ -440,9 +437,9 @@ export function StoryEditor({
           .clearPendingRevision,
     });
 
-  // ==================================================
-  // Shared settings props
-  // ==================================================
+  /* ======================================================= */
+  /* SHARED SETTINGS PROPS */
+  /* ======================================================= */
 
   const settingsProps = {
     dict,
@@ -457,6 +454,9 @@ export function StoryEditor({
 
     accessLevel:
       editor.accessLevel,
+
+    shortTitle:
+      editor.shortTitle,
 
     authorId:
       editor.authorId,
@@ -504,18 +504,12 @@ export function StoryEditor({
 
     slugLocked,
 
-    shortTitle:
-      editor.shortTitle,
-
-    setShortTitle:
-      editor.setShortTitle,
-
     originallyPublishedAt:
       editor
         .originallyPublishedAt,
 
     /**
-     * This remains display-only.
+     * Display-only.
      *
      * Actual West Island Times publication time is
      * controlled by the server.
@@ -536,11 +530,18 @@ export function StoryEditor({
 
     editors,
 
+    /* ----------------------------------------------------- */
+    /* Setters */
+    /* ----------------------------------------------------- */
+
     setLanguage:
       editor.setLanguage,
 
     setAccessLevel:
       editor.setAccessLevel,
+
+    setShortTitle:
+      editor.setShortTitle,
 
     setAuthorId:
       editor.setAuthorId,
@@ -559,7 +560,8 @@ export function StoryEditor({
       editor.setSlug,
 
     setOriginallyPublishedAt:
-      editor.setOriginallyPublishedAt,
+      editor
+        .setOriginallyPublishedAt,
 
     setScheduledAt:
       editor.setScheduledAt,
@@ -589,14 +591,14 @@ export function StoryEditor({
     createTag:
       taxonomy.createTag,
 
-      setFeaturedImage:
+    setFeaturedImage:
       media
         .setStoryFeaturedImage,
-    
+
     removeFeaturedImage:
       media
         .removeFeaturedImage,
-    
+
     setMediaPickerOpen:
       media
         .setMediaPickerOpen,
@@ -606,17 +608,17 @@ export function StoryEditor({
         .handleRestoreVersion,
   };
 
-  // ==================================================
-  // Errors
-  // ==================================================
+  /* ======================================================= */
+  /* ERRORS */
+  /* ======================================================= */
 
   const error =
     autosave.error ??
     workflowError;
 
-  // ==================================================
-  // Initial revision loading
-  // ==================================================
+  /* ======================================================= */
+  /* INITIAL REVISION LOADING */
+  /* ======================================================= */
 
   if (
     !revision
@@ -632,7 +634,12 @@ export function StoryEditor({
           bg-white
         "
       >
-        <div className="text-sm text-muted-foreground">
+        <div
+          className="
+            text-sm
+            text-muted-foreground
+          "
+        >
           {locale === 'es'
             ? 'Cargando cambios…'
             : 'Loading changes…'}
@@ -641,19 +648,25 @@ export function StoryEditor({
     );
   }
 
+  /* ======================================================= */
+  /* RENDER */
+  /* ======================================================= */
+
   return (
-    <div className="flex h-full flex-col">
-      {/* ==================================================
-          Editor header
-      ================================================== */}
+    <div
+      className="
+        flex
+        h-full
+        flex-col
+      "
+    >
+      {/* =================================================== */}
+      {/* EDITOR HEADER */}
+      {/* =================================================== */}
 
       <StoryEditorHeader
-        dict={
-          dict
-        }
-        locale={
-          locale
-        }
+        dict={dict}
+        locale={locale}
         status={
           editor.status
         }
@@ -714,9 +727,9 @@ export function StoryEditor({
         }}
       />
 
-      {/* ==================================================
-          Error banner
-      ================================================== */}
+      {/* =================================================== */}
+      {/* ERROR BANNER */}
+      {/* =================================================== */}
 
       {error && (
         <div
@@ -735,15 +748,20 @@ export function StoryEditor({
         </div>
       )}
 
-      {/* ==================================================
-          Main editor
-      ================================================== */}
+      {/* =================================================== */}
+      {/* MAIN EDITOR */}
+      {/* =================================================== */}
 
-      <div className="flex flex-1 overflow-hidden">
+      <div
+        className="
+          flex
+          min-h-0
+          flex-1
+          overflow-hidden
+        "
+      >
         <StoryEditorContent
-          dict={
-            dict
-          }
+          dict={dict}
           language={
             editor.language
           }
@@ -784,7 +802,10 @@ export function StoryEditor({
           }}
         />
 
-        {/* Desktop settings */}
+        {/* ================================================= */}
+        {/* DESKTOP SETTINGS */}
+        {/* ================================================= */}
+
         <aside
           className="
             hidden
@@ -803,9 +824,9 @@ export function StoryEditor({
         </aside>
       </div>
 
-      {/* ==================================================
-          Mobile settings trigger
-      ================================================== */}
+      {/* =================================================== */}
+      {/* MOBILE SETTINGS TRIGGER */}
+      {/* =================================================== */}
 
       <button
         type="button"
@@ -842,9 +863,9 @@ export function StoryEditor({
           : 'Settings'}
       </button>
 
-      {/* ==================================================
-          Mobile settings drawer
-      ================================================== */}
+      {/* =================================================== */}
+      {/* MOBILE SETTINGS DRAWER */}
+      {/* =================================================== */}
 
       {mobileSettingsOpen && (
         <div
@@ -864,7 +885,11 @@ export function StoryEditor({
                 false
               )
             }
-            className="absolute inset-0 bg-deep/60"
+            className="
+              absolute
+              inset-0
+              bg-deep/60
+            "
             aria-label={
               dict.nav.close
             }
@@ -895,7 +920,12 @@ export function StoryEditor({
                 py-3
               "
             >
-              <span className="font-semibold text-deep">
+              <span
+                className="
+                  font-semibold
+                  text-deep
+                "
+              >
                 {locale === 'es'
                   ? 'Ajustes'
                   : 'Settings'}
@@ -924,7 +954,10 @@ export function StoryEditor({
                 }
               >
                 <X
-                  className="h-5 w-5"
+                  className="
+                    h-5
+                    w-5
+                  "
                   aria-hidden
                 />
               </button>
@@ -937,15 +970,13 @@ export function StoryEditor({
         </div>
       )}
 
-      {/* ==================================================
-          Featured image picker
-      ================================================== */}
+      {/* =================================================== */}
+      {/* FEATURED IMAGE PICKER */}
+      {/* =================================================== */}
 
       {media.mediaPickerOpen && (
         <MediaPicker
-          dict={
-            dict
-          }
+          dict={dict}
           userId={
             user.id
           }

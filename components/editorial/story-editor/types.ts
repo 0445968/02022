@@ -253,9 +253,9 @@ export interface StorySettingsPanelProps {
 
   shortTitle: string;
 
-setShortTitle: (
-  value: string
-) => void;
+  setShortTitle: (
+    value: string
+  ) => void;
 
   authorId:
     | string
@@ -359,7 +359,7 @@ setShortTitle: (
   setOriginallyPublishedAt: (
     value: string
   ) => void;
-  
+
   setScheduledAt: (
     value: string
   ) => void;
@@ -399,9 +399,10 @@ setShortTitle: (
   setFeaturedImage: (
     media: MediaAsset | null
   ) => void;
-  
-  removeFeaturedImage: () => void;
-  
+
+  removeFeaturedImage:
+    () => void;
+
   setMediaPickerOpen: (
     open: boolean
   ) => void;

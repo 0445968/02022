@@ -228,6 +228,12 @@ return {
     legacyProfile
       ?.editorialTitle ??
     null,
+
+  headshotUrl:
+    editorialProfile
+      ?.headshot
+      ?.url ??
+    null,
 };
 }
 

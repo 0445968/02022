@@ -1,4 +1,3 @@
-
 'use client';
 
 import {
@@ -13,23 +12,47 @@ import type {
   MediaAsset,
 } from '@/types/editorial';
 
+/* ========================================================= */
+/* TYPES */
+/* ========================================================= */
+
 interface UseStoryMediaOptions {
-  initialFeaturedImage:
-    | MediaAsset
-    | null;
+  initialFeaturedImage?:
+  | MediaAsset
+  | null;
 
-  initialImageCaption:
-    string;
+  initialImageCaption?: string;
 
-  initialImageCredit:
-    string;
+  initialImageCredit?: string;
 }
 
+interface LoadRevisionMediaOptions {
+  featuredImage?:
+  | MediaAsset
+  | null;
+
+  featuredImageId?:
+  | string
+  | null;
+
+  imageCaption?:
+  | string
+  | null;
+
+  imageCredit?:
+  | string
+  | null;
+}
+
+/* ========================================================= */
+/* HOOK */
+/* ========================================================= */
+
 export function useStoryMedia({
-  initialFeaturedImage,
-  initialImageCaption,
-  initialImageCredit,
-}: UseStoryMediaOptions) {
+  initialFeaturedImage = null,
+  initialImageCaption = '',
+  initialImageCredit = '',
+}: UseStoryMediaOptions = {}) {
   const [
     featuredImage,
     setFeaturedImage,
@@ -46,7 +69,7 @@ export function useStoryMedia({
     string | null
   >(
     initialFeaturedImage?.id ??
-      null
+    null
   );
 
   const [
@@ -83,13 +106,9 @@ export function useStoryMedia({
 
     setFeaturedImageId(
       media?.id ??
-        null
+      null
     );
   }
-
-  /* ======================================================= */
-  /* SELECT FROM MEDIA LIBRARY */
-  /* ======================================================= */
 
   function selectFeaturedImage(
     media: MediaAsset
@@ -99,27 +118,23 @@ export function useStoryMedia({
         media
       );
 
-    setStoryFeaturedImage(
+    setFeaturedImage(
       media
     );
 
-    /*
-     * Selecting a new Media Library image should
-     * populate the story-specific image fields from
-     * the selected asset.
-     *
-     * These are copied values, not live references,
-     * so the editor can still customize them for
-     * this individual story afterward.
-     */
+    setFeaturedImageId(
+      media.id
+    );
+
     setImageCaption(
       metadata.description ||
-        metadata.caption ||
-        ''
+      metadata.caption ||
+      ''
     );
 
     setImageCredit(
-      metadata.credit
+      metadata.credit ||
+      ''
     );
 
     setMediaPickerOpen(
@@ -127,12 +142,12 @@ export function useStoryMedia({
     );
   }
 
-  /* ======================================================= */
-  /* REMOVE FEATURED IMAGE */
-  /* ======================================================= */
-
   function removeFeaturedImage() {
-    setStoryFeaturedImage(
+    setFeaturedImage(
+      null
+    );
+
+    setFeaturedImageId(
       null
     );
 
@@ -146,100 +161,73 @@ export function useStoryMedia({
   }
 
   /* ======================================================= */
-  /* LOAD REVISION */
+  /* REVISION LOAD */
   /* ======================================================= */
 
-  /**
-   * Used when an existing unpublished revision
-   * is loaded.
-   *
-   * The revision may contain a featured image ID
-   * different from the currently published asset.
-   */
   function loadRevisionMedia({
+    featuredImage:
+    nextFeaturedImage,
     featuredImageId:
-      revisionFeaturedImageId,
-
+    nextFeaturedImageId,
     imageCaption:
-      revisionImageCaption,
-
+    nextImageCaption,
     imageCredit:
-      revisionImageCredit,
-
-    publishedFeaturedImage,
-  }: {
-    featuredImageId:
-      | string
-      | null;
-
-    imageCaption:
-      | string
-      | null;
-
-    imageCredit:
-      | string
-      | null;
-
-    publishedFeaturedImage:
-      | MediaAsset
-      | null;
-  }) {
-    setFeaturedImageId(
-      revisionFeaturedImageId
+    nextImageCredit,
+  }: LoadRevisionMediaOptions) {
+    setFeaturedImage(
+      nextFeaturedImage ??
+      null
     );
 
-    /*
-     * If the revision uses the currently published
-     * image, keep the full MediaAsset object.
-     *
-     * If it references another asset, preserve the
-     * ID even though the full object is not loaded yet.
-     */
-    if (
-      revisionFeaturedImageId ===
-      publishedFeaturedImage?.id
-    ) {
-      setFeaturedImage(
-        publishedFeaturedImage
-      );
-    } else {
-      setFeaturedImage(
-        null
-      );
-    }
+    setFeaturedImageId(
+      nextFeaturedImageId ??
+      nextFeaturedImage?.id ??
+      null
+    );
 
     setImageCaption(
-      revisionImageCaption ??
-        ''
+      nextImageCaption ??
+      ''
     );
 
     setImageCredit(
-      revisionImageCredit ??
-        ''
+      nextImageCredit ??
+      ''
     );
   }
 
+  /* ======================================================= */
+  /* RETURN */
+  /* ======================================================= */
+
   return {
     featuredImage,
+
     featuredImageId,
 
     imageCaption,
+
     imageCredit,
 
     mediaPickerOpen,
 
-    setFeaturedImage,
+    setFeaturedImage:
+      setStoryFeaturedImage,
+
+    setStoryFeaturedImage,
+
     setFeaturedImageId,
 
     setImageCaption,
+
     setImageCredit,
 
     setMediaPickerOpen,
 
-    setStoryFeaturedImage,
     selectFeaturedImage,
+
     removeFeaturedImage,
+
     loadRevisionMedia,
   };
 }
-

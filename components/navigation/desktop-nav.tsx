@@ -23,12 +23,12 @@ interface DesktopNavProps {
   inline?: boolean;
 }
 
-const PRIMARY_KEYS = [  
+const PRIMARY_KEYS = [
   'sanAndres',
   'oldProvidence',
   'sports',
   'politics',
-  'opinion',  
+  'opinion',
   'colombia',
   'caribbean',
   'world',
@@ -53,6 +53,72 @@ const MORE_KEYS = [
   'vault',
 ];
 
+function getPrimaryVisibilityClass(
+  key: string
+) {
+  switch (key) {
+    case 'world':
+      return 'hidden 2xl:inline-flex';
+
+    case 'caribbean':
+      return 'hidden min-[1450px]:inline-flex';
+
+    case 'colombia':
+      return 'hidden min-[1360px]:inline-flex';
+
+    case 'opinion':
+      return 'hidden min-[1280px]:inline-flex';
+
+    case 'politics':
+      return 'hidden min-[1200px]:inline-flex';
+
+    case 'sports':
+      return 'hidden min-[1120px]:inline-flex';
+
+    default:
+      return 'inline-flex';
+  }
+}
+
+function shouldAppearInMore(
+  key: string
+) {
+  return PRIMARY_KEYS.includes(
+    key
+  );
+}
+
+function getMoreVisibilityClass(
+  key: string
+) {
+  switch (key) {
+    case 'world':
+      return '2xl:hidden';
+
+    case 'caribbean':
+      return 'min-[1450px]:hidden';
+
+    case 'colombia':
+      return 'min-[1360px]:hidden';
+
+    case 'opinion':
+      return 'min-[1280px]:hidden';
+
+    case 'politics':
+      return 'min-[1200px]:hidden';
+
+    case 'sports':
+      return 'min-[1120px]:hidden';
+
+    case 'sanAndres':
+    case 'oldProvidence':
+      return 'hidden';
+
+    default:
+      return '';
+  }
+}
+
 export function DesktopNav({
   dict,
   locale,
@@ -72,10 +138,18 @@ export function DesktopNav({
         )
     );
 
-  const more =
+  const standardMore =
     all.filter(
       (item) =>
         MORE_KEYS.includes(
+          item.key
+        )
+    );
+
+  const responsiveMore =
+    primary.filter(
+      (item) =>
+        shouldAppearInMore(
           item.key
         )
     );
@@ -85,8 +159,8 @@ export function DesktopNav({
       className="
         flex
         h-full
+        min-w-0
         items-center
-        gap-0
       "
     >
       {primary.map(
@@ -96,6 +170,9 @@ export function DesktopNav({
               item.key
             }
             item={item}
+            className={getPrimaryVisibilityClass(
+              item.key
+            )}
           />
         )
       )}
@@ -106,6 +183,7 @@ export function DesktopNav({
           relative
           flex
           h-full
+          shrink-0
           items-center
         "
       >
@@ -128,7 +206,6 @@ export function DesktopNav({
             focus-visible:ring-ring
           "
           aria-haspopup="true"
-          aria-expanded="false"
         >
           {dict.nav.more}
 
@@ -147,10 +224,10 @@ export function DesktopNav({
           className="
             invisible
             absolute
-            left-0
+            right-0
             top-full
             z-50
-            w-64
+            w-72
             border
             border-border
             bg-white
@@ -167,9 +244,46 @@ export function DesktopNav({
             className="
               grid
               grid-cols-2
+              py-1
             "
           >
-            {more.map(
+            {responsiveMore.map(
+              (item) => (
+                <li
+                  key={
+                    `responsive-${item.key}`
+                  }
+                  className={getMoreVisibilityClass(
+                    item.key
+                  )}
+                >
+                  <Link
+                    href={
+                      item.href
+                    }
+                    className="
+                      block
+                      px-3
+                      py-2.5
+                      text-sm
+                      font-medium
+                      text-foreground
+                      transition-colors
+                      hover:bg-surface-muted
+                      hover:text-primary
+                      focus-visible:bg-surface-muted
+                      focus-visible:outline-none
+                    "
+                  >
+                    {
+                      item.label
+                    }
+                  </Link>
+                </li>
+              )
+            )}
+
+            {standardMore.map(
               (item) => (
                 <li
                   key={
@@ -213,6 +327,7 @@ export function DesktopNav({
         className="
           hidden
           h-full
+          min-w-0
           lg:block
         "
         aria-label="Primary"
@@ -247,16 +362,17 @@ export function DesktopNav({
 
 function NavLink({
   item,
+  className = '',
 }: {
   item: NavItem;
+  className?: string;
 }) {
   return (
     <Link
       href={
         item.href
       }
-      className="
-        inline-flex
+      className={`
         h-full
         items-center
         whitespace-nowrap
@@ -269,7 +385,8 @@ function NavLink({
         focus-visible:outline-none
         focus-visible:ring-2
         focus-visible:ring-ring
-      "
+        ${className}
+      `}
     >
       {item.label}
     </Link>

@@ -1,8 +1,6 @@
 'use client';
 
-import {
-  useState,
-} from 'react';
+import { useState } from 'react';
 
 import {
   ExternalLink,
@@ -30,6 +28,10 @@ import type {
 import {
   StoryVersionHistory,
 } from './StoryVersionHistory';
+
+/* ========================================================= */
+/* DATE HELPERS */
+/* ========================================================= */
 
 function getLocalDateTimeValue(
   date = new Date()
@@ -64,6 +66,10 @@ function getLocalDateValue(
     .toISOString()
     .slice(0, 10);
 }
+
+/* ========================================================= */
+/* COMPONENT */
+/* ========================================================= */
 
 export function StorySettingsPanel({
   dict,
@@ -112,7 +118,6 @@ export function StorySettingsPanel({
   toggleTag,
   searchTags,
   createTag,
-  setFeaturedImage,
   removeFeaturedImage,
   setMediaPickerOpen,
   handleRestoreVersion,
@@ -126,7 +131,8 @@ export function StorySettingsPanel({
     )
   );
 
-  const islandOptions: IslandScope[] = [
+  const islandOptions:
+    IslandScope[] = [
     'san_andres',
     'old_providence',
     'saint_catalina',
@@ -134,7 +140,8 @@ export function StorySettingsPanel({
     'none',
   ];
 
-  const accessOptions: AccessLevel[] = [
+  const accessOptions:
+    AccessLevel[] = [
     'public',
     'registered',
     'subscriber',
@@ -153,6 +160,10 @@ export function StorySettingsPanel({
 
   const today =
     getLocalDateValue();
+
+  /* ======================================================= */
+  /* PUBLICATION HELPERS */
+  /* ======================================================= */
 
   function selectPublishNow() {
     setScheduledAt('');
@@ -174,9 +185,7 @@ export function StorySettingsPanel({
       return;
     }
 
-    if (
-      value < now
-    ) {
+    if (value < now) {
       return;
     }
 
@@ -209,9 +218,7 @@ export function StorySettingsPanel({
       return;
     }
 
-    if (
-      value > today
-    ) {
+    if (value > today) {
       return;
     }
 
@@ -220,22 +227,44 @@ export function StorySettingsPanel({
     );
   }
 
+  /* ======================================================= */
+  /* RENDER */
+  /* ======================================================= */
+
   return (
     <div className="space-y-6 p-4">
-      {/* Publication */}
+      {/* =================================================== */}
+      {/* PUBLICATION */}
+      {/* =================================================== */}
+
       <Section
         title={
           dict.story.publication
         }
       >
-        {/* Status */}
         <Field
           label={
             dict.story.status
           }
         >
           <div className="flex items-center gap-2">
-            <span className="inline-flex items-center rounded-full border border-border bg-white px-2 py-1 text-xs font-semibold uppercase tracking-wide text-primary">
+            <span
+              className="
+                inline-flex
+                items-center
+                rounded-full
+                border
+                border-border
+                bg-white
+                px-2
+                py-1
+                text-xs
+                font-semibold
+                uppercase
+                tracking-wide
+                text-primary
+              "
+            >
               {status}
             </span>
 
@@ -286,7 +315,6 @@ export function StorySettingsPanel({
           </div>
         </Field>
 
-        {/* Originally published */}
         <Field
           label={
             dict.story
@@ -353,9 +381,7 @@ export function StorySettingsPanel({
                       )
                     : ''
                 }
-                max={
-                  today
-                }
+                max={today}
                 onChange={(
                   event
                 ) =>
@@ -384,7 +410,6 @@ export function StorySettingsPanel({
           )}
         </Field>
 
-        {/* Scheduled for */}
         <Field
           label={
             dict.story
@@ -486,9 +511,7 @@ export function StorySettingsPanel({
                 value={
                   scheduledAt
                 }
-                min={
-                  now
-                }
+                min={now}
                 onChange={(
                   event
                 ) =>
@@ -518,8 +541,11 @@ export function StorySettingsPanel({
         </Field>
       </Section>
 
-            {/* Short title */}
-            <Section
+      {/* =================================================== */}
+      {/* SHORT TITLE */}
+      {/* =================================================== */}
+
+      <Section
         title={
           language === 'es'
             ? 'Título corto'
@@ -540,8 +566,12 @@ export function StorySettingsPanel({
         >
           <input
             type="text"
-            value={shortTitle}
-            onChange={(event) =>
+            value={
+              shortTitle
+            }
+            onChange={(
+              event
+            ) =>
               setShortTitle(
                 event.target.value
               )
@@ -579,24 +609,28 @@ export function StorySettingsPanel({
             <span
               className={cn(
                 'shrink-0 text-[11px]',
-                shortTitle.length > 60
+                shortTitle.length >
+                  60
                   ? 'font-medium text-breaking'
                   : 'text-muted-foreground'
               )}
             >
-              {shortTitle.length}/60
+              {shortTitle.length}
+              /60
             </span>
           </div>
         </Field>
       </Section>
 
-      {/* Language */}
+      {/* =================================================== */}
+      {/* LANGUAGE */}
+      {/* =================================================== */}
+
       <Section
         title={
           dict.story.language
         }
       >
-
         <div className="flex gap-2">
           {(
             [
@@ -630,8 +664,7 @@ export function StorySettingsPanel({
                     : 'border-border bg-white text-foreground hover:bg-surface-muted'
                 )}
               >
-                {item ===
-                'en'
+                {item === 'en'
                   ? dict.common
                       .languageEN
                   : dict.common
@@ -642,7 +675,10 @@ export function StorySettingsPanel({
         </div>
       </Section>
 
-      {/* Author & Editor */}
+      {/* =================================================== */}
+      {/* AUTHOR + EDITOR */}
+      {/* =================================================== */}
+
       <Section
         title={
           dict.story.author
@@ -657,7 +693,9 @@ export function StorySettingsPanel({
             value={
               authorId ?? ''
             }
-            onChange={(event) =>
+            onChange={(
+              event
+            ) =>
               setAuthorId(
                 event.target
                   .value ||
@@ -701,9 +739,7 @@ export function StorySettingsPanel({
                     author.id
                   }
                 >
-                  {
-                    author.name
-                  }
+                  {author.name}
                 </option>
               )
             )}
@@ -719,7 +755,9 @@ export function StorySettingsPanel({
             value={
               editorId ?? ''
             }
-            onChange={(event) =>
+            onChange={(
+              event
+            ) =>
               setEditorId(
                 event.target
                   .value ||
@@ -763,9 +801,7 @@ export function StorySettingsPanel({
                     editor.id
                   }
                 >
-                  {
-                    editor.name
-                  }
+                  {editor.name}
                 </option>
               )
             )}
@@ -773,7 +809,10 @@ export function StorySettingsPanel({
         </Field>
       </Section>
 
-      {/* Categories */}
+      {/* =================================================== */}
+      {/* CATEGORIES */}
+      {/* =================================================== */}
+
       <Section
         title={
           dict.story
@@ -791,7 +830,9 @@ export function StorySettingsPanel({
               primaryCategoryId ??
               ''
             }
-            onChange={(event) =>
+            onChange={(
+              event
+            ) =>
               setPrimaryCategoryId(
                 event.target
                   .value ||
@@ -847,7 +888,7 @@ export function StorySettingsPanel({
               .additionalCategories
           }
         >
-          <div className="max-h-40 overflow-y-auto border border-border bg-white p-2">
+          <div className="max-h-40 overflow-y-auto rounded-lg border border-border bg-white p-2">
             {categories.map(
               (category) => (
                 <label
@@ -859,6 +900,8 @@ export function StorySettingsPanel({
                     cursor-pointer
                     items-center
                     gap-2
+                    rounded-md
+                    px-1
                     py-1
                     text-sm
                     hover:bg-surface-muted
@@ -890,7 +933,10 @@ export function StorySettingsPanel({
         </Field>
       </Section>
 
-      {/* Tags */}
+      {/* =================================================== */}
+      {/* TAGS */}
+      {/* =================================================== */}
+
       <Section
         title={
           dict.story.tags
@@ -898,8 +944,12 @@ export function StorySettingsPanel({
       >
         <input
           type="search"
-          value={tagSearch}
-          onChange={(event) =>
+          value={
+            tagSearch
+          }
+          onChange={(
+            event
+          ) =>
             searchTags(
               event.target.value
             )
@@ -974,7 +1024,7 @@ export function StorySettingsPanel({
           .length >= 2 &&
           allTags.length >
             0 && (
-            <div className="mt-2 max-h-32 overflow-y-auto border border-border bg-white">
+            <div className="mt-2 max-h-32 overflow-y-auto rounded-lg border border-border bg-white">
               {allTags
                 .filter(
                   (tag) =>
@@ -1013,18 +1063,14 @@ export function StorySettingsPanel({
                         hover:bg-surface-muted
                       "
                     >
-                      +{' '}
-                      {
-                        tag.name
-                      }
+                      + {tag.name}
                     </button>
                   )
                 )}
             </div>
           )}
 
-        {tags.length >
-          0 && (
+        {tags.length > 0 && (
           <div className="mt-2 flex flex-wrap gap-1.5">
             {tags.map(
               (tag) => (
@@ -1067,7 +1113,10 @@ export function StorySettingsPanel({
         )}
       </Section>
 
-      {/* Island */}
+      {/* =================================================== */}
+      {/* ISLAND */}
+      {/* =================================================== */}
+
       <Section
         title={
           dict.story.island
@@ -1075,7 +1124,9 @@ export function StorySettingsPanel({
       >
         <select
           value={island}
-          onChange={(event) =>
+          onChange={(
+            event
+          ) =>
             setIsland(
               event.target
                 .value as IslandScope
@@ -1100,12 +1151,8 @@ export function StorySettingsPanel({
           {islandOptions.map(
             (option) => (
               <option
-                key={
-                  option
-                }
-                value={
-                  option
-                }
+                key={option}
+                value={option}
               >
                 {islandLabel(
                   option,
@@ -1117,7 +1164,10 @@ export function StorySettingsPanel({
         </select>
       </Section>
 
-      {/* Access */}
+      {/* =================================================== */}
+      {/* ACCESS */}
+      {/* =================================================== */}
+
       <Section
         title={
           dict.story.access
@@ -1127,7 +1177,9 @@ export function StorySettingsPanel({
           value={
             accessLevel
           }
-          onChange={(event) =>
+          onChange={(
+            event
+          ) =>
             setAccessLevel(
               event.target
                 .value as AccessLevel
@@ -1152,12 +1204,8 @@ export function StorySettingsPanel({
           {accessOptions.map(
             (option) => (
               <option
-                key={
-                  option
-                }
-                value={
-                  option
-                }
+                key={option}
+                value={option}
               >
                 {option ===
                 'public'
@@ -1179,57 +1227,299 @@ export function StorySettingsPanel({
         </select>
       </Section>
 
-      {/* Featured image */}
-<Section
-  title={
-    language === 'es'
-      ? 'Imagen destacada'
-      : 'Featured image'
-  }
->
-  {featuredImage ? (
-    <div
-      className="
-        overflow-hidden
-        rounded-xl
-        border
-        border-border
-        bg-white
-      "
-    >
-      <div
-        className="
-          relative
-          aspect-[16/9]
-          overflow-hidden
-          bg-surface-subtle
-        "
-      >
-        <img
-          src={
-            featuredImage.url
-          }
-          alt={
-            featuredImage.altText ||
-            ''
-          }
-          className="
-            h-full
-            w-full
-            object-cover
-          "
-        />
+      {/* =================================================== */}
+      {/* FEATURED IMAGE */}
+      {/* =================================================== */}
 
-        <div
-          className="
-            absolute
-            right-2
-            top-2
-            flex
-            items-center
-            gap-2
-          "
-        >
+      <Section
+        title={
+          language === 'es'
+            ? 'Imagen destacada'
+            : 'Featured image'
+        }
+      >
+        {featuredImage ? (
+          <div
+            className="
+              overflow-hidden
+              rounded-xl
+              border
+              border-border
+              bg-white
+            "
+          >
+            <div
+              className="
+                relative
+                aspect-[16/9]
+                overflow-hidden
+                bg-surface-subtle
+              "
+            >
+              <img
+                src={
+                  featuredImage.url
+                }
+                alt={
+                  featuredImage.altText ||
+                  ''
+                }
+                className="
+                  h-full
+                  w-full
+                  object-cover
+                "
+              />
+
+              <div
+                className="
+                  absolute
+                  right-2
+                  top-2
+                  flex
+                  items-center
+                  gap-2
+                "
+              >
+                <button
+                  type="button"
+                  onClick={() =>
+                    setMediaPickerOpen(
+                      true
+                    )
+                  }
+                  className="
+                    inline-flex
+                    h-8
+                    items-center
+                    justify-center
+                    rounded-lg
+                    border
+                    border-black/10
+                    bg-white/95
+                    px-3
+                    text-xs
+                    font-semibold
+                    text-foreground
+                    shadow-sm
+                    backdrop-blur
+                    transition
+                    hover:bg-white
+                  "
+                >
+                  {language ===
+                  'es'
+                    ? 'Cambiar'
+                    : 'Change'}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={
+                    removeFeaturedImage
+                  }
+                  aria-label={
+                    language ===
+                    'es'
+                      ? 'Eliminar imagen destacada'
+                      : 'Remove featured image'
+                  }
+                  title={
+                    language ===
+                    'es'
+                      ? 'Eliminar imagen'
+                      : 'Remove image'
+                  }
+                  className="
+                    inline-flex
+                    h-8
+                    w-8
+                    items-center
+                    justify-center
+                    rounded-lg
+                    border
+                    border-black/10
+                    bg-white/95
+                    text-muted-foreground
+                    shadow-sm
+                    backdrop-blur
+                    transition
+                    hover:text-breaking
+                  "
+                >
+                  <X
+                    className="h-4 w-4"
+                    aria-hidden
+                  />
+                </button>
+              </div>
+            </div>
+
+            <div className="space-y-4 p-4">
+              <div>
+                <p
+                  className="
+                    truncate
+                    text-sm
+                    font-semibold
+                    text-foreground
+                  "
+                >
+                  {featuredImage.title ||
+                    featuredImage.fileName}
+                </p>
+
+                {(featuredImage.description ||
+                  featuredImage.caption) && (
+                  <p
+                    className="
+                      mt-1
+                      text-xs
+                      leading-5
+                      text-muted-foreground
+                    "
+                  >
+                    {featuredImage.description ||
+                      featuredImage.caption}
+                  </p>
+                )}
+
+                {(featuredImage.credit ||
+                  featuredImage.photographer ||
+                  featuredImage.creatorName) && (
+                  <p
+                    className="
+                      mt-1
+                      text-[11px]
+                      font-medium
+                      text-muted-foreground
+                    "
+                  >
+                    {featuredImage.credit ||
+                      featuredImage.photographer ||
+                      featuredImage.creatorName}
+                  </p>
+                )}
+              </div>
+
+              <div
+                className="
+                  border-t
+                  border-border
+                  pt-4
+                "
+              >
+                <Field
+                  label={
+                    language ===
+                    'es'
+                      ? 'Descripción / pie de foto'
+                      : 'Description / caption'
+                  }
+                  hint={
+                    language ===
+                    'es'
+                      ? 'Se completa automáticamente desde la Biblioteca de Medios cuando eliges una imagen. Puedes editarlo para esta historia.'
+                      : 'Automatically populated from the Media Library when you select an image. You can customize it for this story.'
+                  }
+                >
+                  <textarea
+                    value={
+                      imageCaption
+                    }
+                    onChange={(
+                      event
+                    ) =>
+                      setImageCaption(
+                        event.target
+                          .value
+                      )
+                    }
+                    rows={3}
+                    placeholder={
+                      language ===
+                      'es'
+                        ? 'Describe la imagen'
+                        : 'Describe the image'
+                    }
+                    className="
+                      w-full
+                      resize-y
+                      rounded-lg
+                      border
+                      border-border
+                      bg-white
+                      px-3
+                      py-2
+                      text-sm
+                      leading-5
+                      text-foreground
+                      placeholder:text-muted-foreground/60
+                      focus:border-primary
+                      focus-visible:outline-none
+                      focus-visible:ring-2
+                      focus-visible:ring-ring
+                    "
+                  />
+                </Field>
+
+                <div className="mt-4">
+                  <Field
+                    label={
+                      language ===
+                      'es'
+                        ? 'Crédito'
+                        : 'Credit'
+                    }
+                    hint={
+                      language ===
+                      'es'
+                        ? 'También se completa automáticamente desde la Biblioteca de Medios.'
+                        : 'Also populated automatically from the Media Library.'
+                    }
+                  >
+                    <input
+                      type="text"
+                      value={
+                        imageCredit
+                      }
+                      onChange={(
+                        event
+                      ) =>
+                        setImageCredit(
+                          event.target
+                            .value
+                        )
+                      }
+                      placeholder={
+                        language ===
+                        'es'
+                          ? 'Crédito de la imagen'
+                          : 'Image credit'
+                      }
+                      className="
+                        h-9
+                        w-full
+                        rounded-lg
+                        border
+                        border-border
+                        bg-white
+                        px-3
+                        text-sm
+                        text-foreground
+                        placeholder:text-muted-foreground/60
+                        focus:border-primary
+                        focus-visible:outline-none
+                        focus-visible:ring-2
+                        focus-visible:ring-ring
+                      "
+                    />
+                  </Field>
+                </div>
+              </div>
+            </div>
+          </div>
+        ) : (
           <button
             type="button"
             onClick={() =>
@@ -1238,317 +1528,78 @@ export function StorySettingsPanel({
               )
             }
             className="
-              inline-flex
-              h-8
+              flex
+              w-full
+              flex-col
               items-center
               justify-center
-              rounded-lg
+              rounded-xl
               border
-              border-black/10
-              bg-white/95
-              px-3
-              text-xs
-              font-semibold
-              text-foreground
-              shadow-sm
-              backdrop-blur
+              border-dashed
+              border-border
+              bg-surface-muted/40
+              px-4
+              py-8
+              text-center
               transition
-              hover:bg-white
+              hover:border-primary/40
+              hover:bg-primary/5
             "
           >
-            {language === 'es'
-              ? 'Cambiar'
-              : 'Change'}
-          </button>
-
-          <button
-            type="button"
-            onClick={
-              removeFeaturedImage
-            }
-            aria-label={
-              language === 'es'
-                ? 'Eliminar imagen destacada'
-                : 'Remove featured image'
-            }
-            title={
-              language === 'es'
-                ? 'Eliminar imagen'
-                : 'Remove image'
-            }
-            className="
-              inline-flex
-              h-8
-              w-8
-              items-center
-              justify-center
-              rounded-lg
-              border
-              border-black/10
-              bg-white/95
-              text-muted-foreground
-              shadow-sm
-              backdrop-blur
-              transition
-              hover:text-breaking
-            "
-          >
-            <X
+            <div
               className="
-                h-4
-                w-4
+                flex
+                h-10
+                w-10
+                items-center
+                justify-center
+                rounded-lg
+                bg-white
+                text-muted-foreground
+                shadow-sm
               "
-              aria-hidden
-            />
-          </button>
-        </div>
-      </div>
+            >
+              <span className="text-lg">
+                +
+              </span>
+            </div>
 
-      <div
-        className="
-          space-y-4
-          p-4
-        "
-      >
-        <div>
-          <p
-            className="
-              truncate
-              text-sm
-              font-semibold
-              text-foreground
-            "
-          >
-            {featuredImage.title ||
-              featuredImage.fileName}
-          </p>
+            <p
+              className="
+                mt-3
+                text-sm
+                font-semibold
+                text-foreground
+              "
+            >
+              {language ===
+              'es'
+                ? 'Seleccionar imagen'
+                : 'Select image'}
+            </p>
 
-          {(featuredImage.description ||
-            featuredImage.caption) && (
             <p
               className="
                 mt-1
+                max-w-xs
                 text-xs
                 leading-5
                 text-muted-foreground
               "
             >
-              {featuredImage.description ||
-                featuredImage.caption}
+              {language ===
+              'es'
+                ? 'Elige una imagen de la Biblioteca de Medios.'
+                : 'Choose an image from the Media Library.'}
             </p>
-          )}
+          </button>
+        )}
+      </Section>
 
-          {(featuredImage.credit ||
-            featuredImage.photographer ||
-            featuredImage.creatorName) && (
-            <p
-              className="
-                mt-1
-                text-[11px]
-                font-medium
-                text-muted-foreground
-              "
-            >
-              {featuredImage.credit ||
-                featuredImage.photographer ||
-                featuredImage.creatorName}
-            </p>
-          )}
-        </div>
-
-        <div
-          className="
-            border-t
-            border-border
-            pt-4
-          "
-        >
-          <Field
-            label={
-              language === 'es'
-                ? 'Descripción / pie de foto'
-                : 'Description / caption'
-            }
-            hint={
-              language === 'es'
-                ? 'Se completa automáticamente desde la Biblioteca de Medios cuando eliges una imagen. Puedes editarlo para esta historia.'
-                : 'Automatically populated from the Media Library when you select an image. You can customize it for this story.'
-            }
-          >
-            <textarea
-              value={
-                imageCaption
-              }
-              onChange={(
-                event
-              ) =>
-                setImageCaption(
-                  event.target.value
-                )
-              }
-              rows={3}
-              placeholder={
-                language === 'es'
-                  ? 'Describe la imagen'
-                  : 'Describe the image'
-              }
-              className="
-                w-full
-                resize-y
-                rounded-lg
-                border
-                border-border
-                bg-white
-                px-3
-                py-2
-                text-sm
-                leading-5
-                text-foreground
-                placeholder:text-muted-foreground/60
-                focus:border-primary
-                focus-visible:outline-none
-                focus-visible:ring-2
-                focus-visible:ring-ring
-              "
-            />
-          </Field>
-
-          <div
-            className="
-              mt-4
-            "
-          >
-            <Field
-              label={
-                language === 'es'
-                  ? 'Crédito'
-                  : 'Credit'
-              }
-              hint={
-                language === 'es'
-                  ? 'También se completa automáticamente desde la Biblioteca de Medios.'
-                  : 'Also populated automatically from the Media Library.'
-              }
-            >
-              <input
-                type="text"
-                value={
-                  imageCredit
-                }
-                onChange={(
-                  event
-                ) =>
-                  setImageCredit(
-                    event.target.value
-                  )
-                }
-                placeholder={
-                  language === 'es'
-                    ? 'Crédito de la imagen'
-                    : 'Image credit'
-                }
-                className="
-                  h-9
-                  w-full
-                  rounded-lg
-                  border
-                  border-border
-                  bg-white
-                  px-3
-                  text-sm
-                  text-foreground
-                  placeholder:text-muted-foreground/60
-                  focus:border-primary
-                  focus-visible:outline-none
-                  focus-visible:ring-2
-                  focus-visible:ring-ring
-                "
-              />
-            </Field>
-          </div>
-        </div>
-      </div>
-    </div>
-  ) : (
-    <button
-      type="button"
-      onClick={() =>
-        setMediaPickerOpen(
-          true
-        )
-      }
-      className="
-        flex
-        w-full
-        flex-col
-        items-center
-        justify-center
-        rounded-xl
-        border
-        border-dashed
-        border-border
-        bg-surface-muted/40
-        px-4
-        py-8
-        text-center
-        transition
-        hover:border-primary/40
-        hover:bg-primary/5
-      "
-    >
-      <div
-        className="
-          flex
-          h-10
-          w-10
-          items-center
-          justify-center
-          rounded-lg
-          bg-white
-          text-muted-foreground
-          shadow-sm
-        "
-      >
-        <span
-          className="
-            text-lg
-          "
-        >
-          +
-        </span>
-      </div>
-
-      <p
-        className="
-          mt-3
-          text-sm
-          font-semibold
-          text-foreground
-        "
-      >
-        {language === 'es'
-          ? 'Seleccionar imagen'
-          : 'Select image'}
-      </p>
-
-      <p
-        className="
-          mt-1
-          max-w-xs
-          text-xs
-          leading-5
-          text-muted-foreground
-        "
-      >
-        {language === 'es'
-          ? 'Elige una imagen de la Biblioteca de Medios.'
-          : 'Choose an image from the Media Library.'}
-      </p>
-    </button>
-  )}
-</Section>
-
+      {/* =================================================== */}
       {/* SEO */}
+      {/* =================================================== */}
+
       <Section title="SEO">
         <Field
           label={
@@ -1562,7 +1613,9 @@ export function StorySettingsPanel({
           <input
             type="text"
             value={seoTitle}
-            onChange={(event) =>
+            onChange={(
+              event
+            ) =>
               setSeoTitle(
                 event.target.value
               )
@@ -1585,9 +1638,7 @@ export function StorySettingsPanel({
           />
 
           <CharCount
-            value={
-              seoTitle
-            }
+            value={seoTitle}
             target={60}
           />
         </Field>
@@ -1606,7 +1657,9 @@ export function StorySettingsPanel({
             value={
               seoDescription
             }
-            onChange={(event) =>
+            onChange={(
+              event
+            ) =>
               setSeoDescription(
                 event.target.value
               )
@@ -1638,7 +1691,10 @@ export function StorySettingsPanel({
         </Field>
       </Section>
 
-      {/* Slug */}
+      {/* =================================================== */}
+      {/* SLUG */}
+      {/* =================================================== */}
+
       <Section
         title={
           dict.story.slug
@@ -1647,7 +1703,9 @@ export function StorySettingsPanel({
         <input
           type="text"
           value={slug}
-          onChange={(event) =>
+          onChange={(
+            event
+          ) =>
             setSlug(
               event.target.value
             )
@@ -1683,7 +1741,10 @@ export function StorySettingsPanel({
         )}
       </Section>
 
-      {/* Version history */}
+      {/* =================================================== */}
+      {/* VERSION HISTORY */}
+      {/* =================================================== */}
+
       <Section
         title={
           dict.story
@@ -1705,16 +1766,38 @@ export function StorySettingsPanel({
   );
 }
 
+/* ========================================================= */
+/* SECTION */
+/* ========================================================= */
+
 function Section({
   title,
   children,
 }: {
   title: string;
-  children: React.ReactNode;
+  children:
+    React.ReactNode;
 }) {
   return (
-    <div className="rounded-lg border border-border bg-white p-3">
-      <h3 className="mb-3 text-[0.6875rem] font-bold uppercase tracking-[0.14em] text-deep">
+    <div
+      className="
+        rounded-lg
+        border
+        border-border
+        bg-white
+        p-3
+      "
+    >
+      <h3
+        className="
+          mb-3
+          text-[0.6875rem]
+          font-bold
+          uppercase
+          tracking-[0.14em]
+          text-deep
+        "
+      >
         {title}
       </h3>
 
@@ -1725,6 +1808,10 @@ function Section({
   );
 }
 
+/* ========================================================= */
+/* FIELD */
+/* ========================================================= */
+
 function Field({
   label,
   hint,
@@ -1732,7 +1819,8 @@ function Field({
 }: {
   label: string;
   hint?: string;
-  children: React.ReactNode;
+  children:
+    React.ReactNode;
 }) {
   return (
     <div>
@@ -1752,6 +1840,10 @@ function Field({
     </div>
   );
 }
+
+/* ========================================================= */
+/* CHARACTER COUNT */
+/* ========================================================= */
 
 function CharCount({
   value,

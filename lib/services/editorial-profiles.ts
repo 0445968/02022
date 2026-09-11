@@ -10,6 +10,10 @@ import {
     EditorialProfile,
     MediaAsset,
   } from '@/types/editorial';
+
+  import {
+    mapMediaRow,
+  } from '@/lib/services/media';
   
   type EditorialProfileRow =
     Database['public']['Tables']['editorial_profiles']['Row'];
@@ -24,49 +28,12 @@ import {
   function mapMediaAsset(
     row: MediaAssetRow
   ): MediaAsset {
-    return {
-      id:
-        row.id,
-  
-      url:
-        row.url,
-  
-      storagePath:
-        row.storage_path,
-  
-      fileName:
-        row.file_name,
-  
-      mimeType:
-        row.mime_type,
-  
-      width:
-        row.width,
-  
-      height:
-        row.height,
-  
-      fileSize:
-        row.file_size,
-  
-      altText:
-        row.alt_text,
-  
-      caption:
-        row.caption,
-  
-      credit:
-        row.credit,
-  
-      uploadedBy:
-        row.uploaded_by,
-  
-      createdAt:
-        row.created_at,
-  
-      updatedAt:
-        row.updated_at,
-    };
+    return mapMediaRow(
+      row as unknown as Record<
+        string,
+        unknown
+      >
+    );
   }
   
   function mapEditorialProfile(
