@@ -23,6 +23,11 @@ Before applying this staged SQL:
 3. Audit security warnings (authenticated-callable privileged publisher; leaked-password setting); preserve current publish behavior.
 4. Obtain explicit user approval for production SQL, account mapping, grant changes and deployment target. No assumption that approval of this code PR authorizes hosted mutation.
 
+## Actual verification added
+- GitHub Actions `Clear Talks quality gates` run `45280957343` passed: 38 Node tests, TypeScript, ESLint (existing warnings), Next.js build.
+- Separate isolated PostgreSQL **17** workflow `.github/workflows/ct02b-postgres-rls.yml`, SQL fixture `tests/ct02b-postgres-rls.sql`, run `45280957435` passed. This executes the migration against disposable PostgreSQL with mocked Supabase Auth roles/uid to verify grant and RLS scope. It does **not** prove production-specific Auth, storage, or existing story/publication RPC behavior; those await CT-02c.
+- Read-only hosted preflight after code commit confirmed `staff_memberships` absent and intact 23 stories/4 revisions. No hosted schema changes.
+
 ## Verification and rollback
 - Static SQL contract tests run in existing CI, plus TypeScript/lint/Next build. They do **not** execute migration or validate Postgres RLS on hosted DB. Do not label migration TESTED until disposable database checks pass.
 - Rollback before apply: revert the feature PR, no production DB effects. After apply: must back up audit and membership data, revoke app adapter and plan a reversible, dependency-ordered drop of new objects; no blind drop of active team records.

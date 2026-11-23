@@ -1,6 +1,6 @@
 # Clear Talks — Staff Roles, Permissions & Onboarding Contract
 Version: 1.0 proposal | 2026-11-23 | Companion to MASTER_COMPLETION_PLAN.md.
-Status: DESIGN ONLY. No schema migration, Vercel setting or role assignment has been applied.
+Status: CT-02b schema **proposed in draft PR #6**, not merged or applied. Role labels are seeded by the unapplied SQL but **zero capability grants, memberships or production permissions have been created**. CT-02c must review presets, owner backfill, RLS/API cutover and approval.
 
 ## 1. Principles
 

@@ -1,3 +1,23 @@
+# CT-02b handoff — 2026-11-23 (CURRENT)
+**CT-02 still IN PROGRESS. No production deployment or hosted migration.**
+
+## Current stack
+- PR #2 planning -> PR #3 CT-00 -> PR #4 CT-01 -> PR #5 CT-02a -> **draft PR #6 CT-02b** https://github.com/0445968/02022/pull/6, branch `feature/ct02b-staff-schema-2026-11-23` stacked on CT-02a.
+- CT-02a pure capability policy is not yet connected to active routes.
+- CT-02b adds migration `supabase/migrations/20261123222804_ct02b_staff_access.sql` (CLI v3.2.0 generated), `lib/permissions/server.ts` (disabled by default via `CT_STAFF_ACCESS_V2_ENABLED`), static SQL+policy tests, disposable PostgreSQL 17 RLS CI and `CT02B_REVIEW.md`.
+- GitHub Actions run `45280957343`: **38 tests, typecheck, lint, build passed**. PostgreSQL RLS run `45280957435`: **passed**. No direct hosted Auth role test or existing API/RPC/storage integration completed.
+- Supabase project `yqqzohrlhiitctwacdad`, 0 recorded hosted migrations, 23 stories / 4 revisions intact, new staff table not created on live. Existing security warnings remain publisher definer and leaked-password protection.
+- Database migration is READ-ONLY IN GITHUB (never applied). RLS enforces own-only SELECT for NEW tables in disposable PG tests; no authenticated writes; role preset names seeded with no grants. No restored account is automatically elevated.
+- Fonts, existing Newsroom, drafts, published media, old profile flags and auth path unchanged. DEV_AUTH_BYPASS still must stay off. No production merge, Vercel deployment or hosted SQL.
+
+## Next (CT-02c)
+1. Verify fresh GitHub HEAD/PR checks and live Supabase schema/migration state, then review `CT02B_REVIEW.md` and `ROLE_AND_PERMISSION_MATRIX.md`.
+2. Reconcile historic live migration history without replaying dev-bypass migrations; obtain verified backup/rollback plan and independently review team-owner mapping to restored auth accounts.
+3. Secure active admin role grants and last-owner invariant with DB-enforced, audited operations; finalize role presets with user approval.
+4. Wire new resolver to existing server endpoints and direct Postgres policies/RPC/storage checks in compatibility-safe slices. Revoked staff must never recover access via old `is_editor` flags. Run full authenticated negative matrix.
+5. Do NOT apply hosted migration, change privileged publishing SQL, enable feature flag, send invites or deploy/merge production without explicit approval.
+---
+## Prior handoff (historical)
 # CT-02a implementation handoff — 2026-11-23
 Current active work: CT-02 authorization foundation, **not production-activated**.
 
