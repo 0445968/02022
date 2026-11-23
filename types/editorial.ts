@@ -953,6 +953,15 @@ export interface StoryListItem {
     | null;
 
   updatedAt: string;
+
+  /** Main stories.featured_image_id; not the active revision's replacement image. */
+  featuredImageId: string | null;
+  featuredImageUrl: string | null;
+  featuredImageAlt: string | null;
+
+  /** Independent of stories.status (which remains Published during revisions). */
+  hasUnpublishedChanges: boolean;
+  unpublishedChangesUpdatedAt: string | null;
 }
 
 /* ========================================================= */

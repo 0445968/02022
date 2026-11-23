@@ -1,4 +1,5 @@
 import { getDataClient } from '@/lib/db/supabase-data-access';
+import { enrichStoryListItems } from '@/lib/services/story-list-metadata';
 
 import {
   getEditorialProfilesByAccountIds,
@@ -886,6 +887,7 @@ export async function listStories(
           island,
           published_at,
           updated_at,
+          featured_image_id,
           author:profiles!stories_author_id_fkey(
             id,
             name
@@ -1157,15 +1159,51 @@ export async function listStories(
 
           updatedAt:
             r.updated_at as string,
+
+          // Main/published image metadata, never the unpublished revision image.
+          featuredImageId:
+            (r.featured_image_id as string | null) ?? null,
+          featuredImageUrl: null,
+          featuredImageAlt: null,
+          hasUnpublishedChanges: false,
+          unpublishedChangesUpdatedAt: null,
         };
       }
     );
+
+  // Fetch metadata only for this paginated, RLS-filtered page.
+  // Two batched reads, not a media/revision request per story.
+  const storyIds = items.map((item) => item.id);
+  const featuredIds = [...new Set(
+    items.map((item) => item.featuredImageId).filter((id): id is string => Boolean(id))
+  )];
+
+  let enrichedItems = items;
+  if (storyIds.length > 0) {
+    const [imageResult, revisionResult] = await Promise.all([
+      featuredIds.length > 0
+        ? supabase.from('media_assets').select('id, url, alt_text').in('id', featuredIds)
+        : Promise.resolve({ data: [], error: null }),
+      supabase.from('story_revisions').select('story_id, updated_at').in('story_id', storyIds),
+    ]);
+
+    // Never silently label active revisions as "None" if the metadata read fails.
+    if (imageResult.error || revisionResult.error) {
+      throw new Error('Unable to load Newsroom story image/revision metadata.');
+    }
+
+    enrichedItems = enrichStoryListItems(
+      items,
+      imageResult.data ?? [],
+      revisionResult.data ?? []
+    );
+  }
 
   const total =
     count ?? 0;
 
   return {
-    items,
+    items: enrichedItems,
     total,
     page,
     perPage,
