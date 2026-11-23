@@ -6,9 +6,9 @@ create role authenticated nologin;
 create role service_role nologin bypassrls;
 create schema auth;
 create table auth.users (id uuid primary key);
-create function auth.uid() returns uuid stable language sql as $
+create function auth.uid() returns uuid stable language sql as $$
   select nullif(current_setting('request.jwt.claim.sub', true), '')::uuid;
-$;
+$$;
 grant usage on schema auth to authenticated;
 grant execute on function auth.uid() to authenticated;
 create table public.stories (id uuid primary key);
@@ -72,7 +72,7 @@ values ('10000000-0000-0000-0000-000000000001',
 begin;
 set local role authenticated;
 set local request.jwt.claim.sub = '00000000-0000-0000-0000-000000000001';
-do $
+do $$
 begin
   if (select count(*) from public.staff_memberships) <> 1 or
      (select count(*) from public.staff_member_roles) <> 1 or
@@ -89,7 +89,7 @@ rollback;
 begin;
 set local role authenticated;
 set local request.jwt.claim.sub = '00000000-0000-0000-0000-000000000003';
-do $
+do $$
 begin
   if (select count(*) from public.staff_memberships) <> 0 or
      (select count(*) from public.staff_role_capabilities) <> 0 or
@@ -103,7 +103,7 @@ rollback;
 begin;
 set local role authenticated;
 set local request.jwt.claim.sub = '00000000-0000-0000-0000-000000000002';
-do $
+do $$
 begin
   if (select count(*) from public.staff_memberships) <> 1 or
      (select count(*) from public.staff_role_capabilities) <> 0 or
