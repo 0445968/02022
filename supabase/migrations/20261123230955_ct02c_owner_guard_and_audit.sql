@@ -90,13 +90,18 @@ begin
     ) into v_new_is_owner;
   end if;
 
-  if v_old_is_owner and (
-    tg_op = 'DELETE' or
-    (tg_op = 'UPDATE' and (
-      new.role_preset_id is distinct from old.role_preset_id or
-      new.membership_id is distinct from old.membership_id
-    ))
-  ) then
+  if v_old_is_owner then
+    if tg_op = 'DELETE' then
+      v_old_is_owner := true;
+    elsif tg_op = 'UPDATE' then
+      v_old_is_owner := new.role_preset_id is distinct from old.role_preset_id
+        or new.membership_id is distinct from old.membership_id;
+    else
+      v_old_is_owner := false;
+    end if;
+  end if;
+
+  if v_old_is_owner then
     perform pg_catalog.pg_advisory_xact_lock(202611, 2302);
     select count(*) into v_other_owners
     from public.staff_memberships m
@@ -130,6 +135,32 @@ $function$;
 create trigger staff_owner_role_guard
   before insert or update or delete on public.staff_member_roles
   for each row execute function public.staff_guard_owner_role();
+
+-- Built-in role identifiers must not be swapped to sidestep the owner
+-- invariant. Display names may be revised in a later approved admin workflow.
+create function public.staff_guard_builtin_role_preset()
+returns trigger language plpgsql security invoker set search_path = ''
+as $function$
+begin
+  if old.is_builtin = true then
+    if tg_op = 'DELETE' then
+      raise exception 'Built-in role presets cannot be deleted'
+        using errcode = '42501';
+    end if;
+    if new.role_key is distinct from old.role_key or
+       new.is_builtin is distinct from old.is_builtin then
+      raise exception 'Built-in role identities are immutable'
+        using errcode = '42501';
+    end if;
+  end if;
+  if tg_op = 'DELETE' then return old; end if;
+  return new;
+end;
+$function$;
+
+create trigger staff_builtin_role_preset_guard
+  before update or delete on public.staff_role_presets
+  for each row execute function public.staff_guard_builtin_role_preset();
 
 -- The audit hook runs in the caller's privileges (SECURITY INVOKER).
 -- A normal staff mutation must originate from a valid active owner actor.
@@ -169,10 +200,10 @@ begin
 
   if tg_op <> 'INSERT' then v_before := pg_catalog.to_jsonb(old); end if;
   if tg_op <> 'DELETE' then v_after := pg_catalog.to_jsonb(new); end if;
-  v_membership_id := nullif(pg_catalog.coalesce(
+  v_membership_id := nullif(coalesce(
     v_after->>'membership_id',v_before->>'membership_id',
     case when tg_table_name = 'staff_memberships'
-      then pg_catalog.coalesce(v_after->>'id',v_before->>'id')
+      then coalesce(v_after->>'id',v_before->>'id')
     end
   ), '')::uuid;
 
@@ -182,7 +213,7 @@ begin
   ) values (
     v_actor, v_membership_id, tg_table_name || '.' || pg_catalog.lower(tg_op),
     v_before, v_after,
-    pg_catalog.coalesce(v_reason, 'Manually reviewed database operation'),
+    coalesce(v_reason, 'Manually reviewed database operation'),
     v_request_id
   );
   return null;
@@ -194,6 +225,9 @@ create trigger staff_memberships_audit
   for each row execute function public.staff_record_access_change();
 create trigger staff_member_roles_audit
   after insert or update or delete on public.staff_member_roles
+  for each row execute function public.staff_record_access_change();
+create trigger staff_role_presets_audit
+  after insert or update or delete on public.staff_role_presets
   for each row execute function public.staff_record_access_change();
 create trigger staff_role_capabilities_audit
   after insert or update or delete on public.staff_role_capabilities
@@ -298,7 +332,7 @@ begin
     get diagnostics v_changed = row_count;
   elsif p_operation = 'reactivate' then
     update public.staff_memberships
-      set status = 'active', activated_at = pg_catalog.coalesce(activated_at,now()),
+      set status = 'active', activated_at = coalesce(activated_at,now()),
           suspended_at = null, updated_at = now()
       where id = p_target_membership_id and status = 'suspended'
         and (expires_at is null or expires_at > now());
@@ -330,5 +364,10 @@ grant execute on function public.staff_apply_role_change(
 revoke all on function public.staff_guard_owner_membership() from public,anon,authenticated;
 revoke all on function public.staff_guard_owner_role() from public,anon,authenticated;
 revoke all on function public.staff_record_access_change() from public,anon,authenticated;
+revoke all on function public.staff_guard_builtin_role_preset() from public,anon,authenticated;
+grant execute on function public.staff_guard_owner_membership() to service_role;
+grant execute on function public.staff_guard_owner_role() to service_role;
+grant execute on function public.staff_record_access_change() to service_role;
+grant execute on function public.staff_guard_builtin_role_preset() to service_role;
 
 commit;
