@@ -137,6 +137,6 @@ test('reader.personal requires same authenticated owner and no staff membership'
 
 test('there are no role grants derived from JWT/user_metadata or user-editable profiles', () => {
   const source = readFileSync(new URL('../lib/permissions/capabilities.ts', import.meta.url), 'utf8');
-  assert.doesNotMatch(source, /auth\\.jwt\\(|raw_user_meta_data|profile\\.is_editor|profile\\.is_author/);
+  assert.doesNotMatch(source, /auth\.jwt\(|raw_user_meta_data|profile\.is_editor|profile\.is_author/);
   assert.match(source, /server\/database/);
 });
