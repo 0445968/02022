@@ -172,10 +172,21 @@ Every batch starts only after reading the current repo HEAD and ledger. Marked P
 - Keep /account/saved and /comments stable; check paginated lists, bookmarks, content access levels and denied entitlements. Never launch mock billing.
 - Gate: provider test mode flows, cancel/refund/failed payment reconciliation, webhook retry, role-independent entitlement security. If paid product not approved, finish the page with truthful 'not offered' state and keep charging disabled.
 
-### CT-15 — Cross-site release readiness and closure [P1/P2]
-- Review broken links, route completion, reader and newsroom navigation in both languages, keyboard/accessibility and responsive behavior, SEO/indexing/auth redirects, email templates, edge/API errors, media access, performance and Vercel runtime logs.
-- Re-run RLS advisors and permission matrices; explicitly document retained warnings and justified exceptions; retire fictional accounts only through separate reviewed preservation plan.
-- Final acceptance: no dead-end sidebar routes, no unauthenticated access to protected pages/data, no regression in live article publishing, media uploads, reader experience, or existing look and feel. Obtain explicit production approval and record deployment verification.
+### CT-15 — Cross-site final refinement, release readiness and closure [P1/P2]
+Following the November 23, 2026 user decision, reserve a **dedicated final visual refinement phase** after the major Newsroom/reader features are functional; do not merely combine visual polish with last-minute debugging. Through CT-03–CT-14, keep lightweight UI cleanup and consistent responsiveness in each delivered batch, without changing the existing fonts or established style.
+
+#### CT-15a — Final UI/UX refinement [dedicated]
+- Review the **completed** public website, Newsroom dashboard/stories/editor/media/team manager, freelancer workspace and reader account portal together as one product. Inspect desktop, tablet and phone breakpoints.
+- Refine hierarchy, whitespace, table density, filters, menus, interactive feedback, forms, empty/loading/error states, typography consistency, accessible contrast and mobile overflow. Compare EN/ES copy and layouts.
+- Preserve existing Figtree, Source Serif 4, IBM Plex Sans and Inter and the current visual language **unless the user explicitly approves a design or font change** at this deliberate review gate. Do not redesign feature pages prematurely.
+
+#### CT-15b — Accessibility, responsiveness and performance
+- Run keyboard/screen-reader checks, focus/order, WCAG contrast, mobile/tablet/browser testing, layout shifts, images and font loading, interactive states and performance baselines; resolve regressions without compromising editorial and account workflows.
+
+#### CT-15c — Release regression and closeout
+- Review broken links, route completion, reader and Newsroom navigation in both languages, SEO/indexing/auth redirects, email templates, edge/API errors, media access and Vercel runtime logs.
+- Re-run RLS advisors and permission matrices; document retained warnings and justified exceptions; retire fictional accounts only via separately reviewed preservation plan.
+- Final acceptance: no dead-end sidebar routes, no unauthenticated access to protected pages/data, no regression in article publishing, media uploads, reader experience or approved visual design. Obtain explicit production approval and record deployment verification.
 
 ## 7. Batch execution protocol — modeled on user's My Texas Case approach
 

@@ -1,3 +1,23 @@
+# CURRENT CT-02d HANDOFF — 2026-11-23
+**CT-02 remains IN PROGRESS; PR #8 is draft/unmerged. No Supabase hosted migration or production deployment.**
+
+## Review stack and state
+- Planning PR #2 -> CT-00 #3 -> CT-01 #4 -> CT-02a #5 -> CT-02b #6 -> CT-02c #7 -> **CT-02d draft PR #8** https://github.com/0445968/02022/pull/8.
+- Feature branch `feature/ct02d-role-presets-route-gates-2026-11-23`, parent CT-02c at `c2b9c11d5802fa35420194b9797127157cd18975`. New `role-presets.ts` proposes nine permission preset mappings; they are not inserted into the DB.
+- New `staff-route-gates.ts` offers fresh server authorization to Newsroom entry, story PUT, revision GET/PUT/DELETE and revision publishing. It is active **ONLY IF `CT_STAFF_ACCESS_V2_ENABLED=true`**, which remains false. It rejects revoked legacy editors on these guarded paths when enabled, but direct data policies and other routes still need secure migration. **DO NOT ACTIVATE YET**.
+- Existing fonts/style preserved. User-approved final UI refinement stages added to master blueprint: CT-15a final UI/UX, CT-15b accessibility/performance, CT-15c regression/release.
+
+## Live and release
+- Clear Talks Supabase `yqqzohrlhiitctwacdad`: healthy, 0 recorded hosted migrations, staff_memberships absent, 23 stories and 4 active revisions unchanged; publisher definer and password-protection warnings remain.
+- PR #8 CI/test results are in checks and session log; CT-02b and CT-02c inherited disposable PG17 tests remain green. No main merge, browser test, preview/deployment, owner assignment, role seed, or auth/SQL changes.
+
+## Next CT-02e
+- Review nine proposed preset rights and verified real owner Auth identity before writing approved SQL/grants.
+- Reconcile baseline/history and restorable backup; never replay historical dev-auth-bypass migration or reset live DB.
+- Migrate direct RLS for story, revision, media and storage and secure publish RPC, **plus other API/server-action checks**, with full revoke/reader/assigned freelancer negative matrix and real Supabase test environment. An activated server-only flag is insufficient.
+- Obtain explicit user approval before applying any hosted migration, first-owner bootstrap, role activation, env change, or main deployment.
+---
+## Previous handoffs (historical)
 # CURRENT CT-02c HANDOFF — 2026-11-23
 **CT-02 still IN PROGRESS. CT-02c PR #7 is committed but NOT merged, production SQL-applied or deployed.**
 

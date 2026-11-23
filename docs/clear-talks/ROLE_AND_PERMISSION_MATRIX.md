@@ -1,6 +1,6 @@
 # Clear Talks — Staff Roles, Permissions & Onboarding Contract
 Version: 1.0 proposal | 2026-11-23 | Companion to MASTER_COMPLETION_PLAN.md.
-Status: CT-02b draft PR #6 and CT-02c owner/audit draft PR #7 are staged and CI-tested, **not merged or applied**. Built-in role labels only are present in the proposed SQL: **zero preset grants, memberships or production permissions have been created**. CT-02d must review role grants, verified first-owner backfill, existing RLS/API/storage/RPC cutover and human approval.
+Status: CT-02b PR #6 and CT-02c PR #7 are staged (not applied); CT-02d draft PR #8 introduces a **proposed TypeScript role/grant registry and disabled-by-default route checks**, not a production SQL seed. No memberships, role grants or changed production permissions exist. All preset mappings remain subject to explicit approval; verified owner backfill, direct RLS/API/storage/publishing RPC cutover and tests remain required.
 
 ## 1. Principles
 
@@ -49,6 +49,22 @@ Definitions / important defaults:
 - Staff writer and freelancer differences may include internal team visibility, assignment pools, editor-only note visibility, upload quotas, or contract expiration. Default freelancer view = only assigned content. Decide precise differences in CT-04.
 - User's own reader account and bookmarks remain private even when the user is staff/admin.
 - Membership suspension/revoke removes effective capabilities immediately; a person can keep a historical public author/byline record independently.
+
+### CT-02d proposed preset detail — implementation candidate, not yet granted
+
+The finite TypeScript proposals live in `lib/permissions/role-presets.ts`. Only a reviewed, later versioned migration may populate `staff_role_capabilities`. All role presets include `newsroom.access` but there is no membership backfill or automatic access. Scopes: `all` for team-wide actions, `assigned` only when a current database story assignment exists, and `own` only when database ownership is verified. Current media ownership enforcement is not yet migrated.
+
+- **Owner:** all standard editorial, media, publishing, audience and team-management capabilities, excluding reserved `settings.security_admin` and independent `reader.personal`.
+- **Managing editor:** all-story editorial/publishing/review, media oversight, Page Editor publish, editorial operations, team view only; cannot change roles without separately reviewed override.
+- **Editor:** all-story create/edit/review/publish/schedule/assign, revision publishing, media oversight; cannot manage team roles.
+- **Staff writer:** own article creation and assigned-only view/edit/review submission; media upload and own-media edit; no publish.
+- **Copy editor:** assigned-only story revision/edit/review; no general publish or team management.
+- **Media editor:** media management plus assigned-only visual revision/story preview; no story publishing.
+- **Moderator:** comment moderation/report queue only, no backstage story publishing.
+- **Audience staff:** audience insights/notification/newsletter duties only, no general editorial access.
+- **Freelancer:** **assigned-only** story/revision view/edit/submit, media upload and own-media editing; cannot create unassigned stories, publish, schedule, delete, assign colleagues, manage the homepage or team.
+
+The CT-02d route gates are experimental **and disabled**. Before enabling, finish existing direct RLS and publishing/media RPC transition, verified first-owner membership and production authorization. A status flag alone is not secure deployment.
 
 ## 4. Proposed effective-permission resolution
 
