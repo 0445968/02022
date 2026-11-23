@@ -14,9 +14,9 @@ Every code batch must update the row AND append an entry under Session log in th
 
 | ID | Feature | Priority | Depends on | State | Evidence / link |
 | --- | --- | --- | --- | --- | --- |
-| CT-00 | Baseline, safety, tests and CI | P0 | none | IMPLEMENTED | [Draft PR #3](https://github.com/0445968/02022/pull/3); CI pending |
+| CT-00 | Baseline, safety, tests and CI | P0 | none | IMPLEMENTED | [Draft PR #3](https://github.com/0445968/02022/pull/3); CI passed, browser QA pending |
 | CT-01 | Stories thumbnails + active unpublished revision indicator | P0 | CT-00 baseline | IMPLEMENTED | [Draft PR #4](https://github.com/0445968/02022/pull/4); 13 tests and CI green, browser QA pending |
-| CT-02 | Permissions schema, server API and RLS foundation | P0 | CT-00 | PLANNED | Roles contract |
+| CT-02 | Permissions schema, server API and RLS foundation | P0 | CT-00 | IN PROGRESS | CT-02a [draft PR #5](https://github.com/0445968/02022/pull/5): 29 unit tests and CI green; DB/RLS migration pending |
 | CT-03 | Newsroom team/admin permission manager | P0 | CT-02 | PLANNED | Roles contract |
 | CT-04 | Invited staff/freelancer onboarding and preset assignment | P0 | CT-02/03 | PLANNED | Roles contract |
 | CT-05 | Freelancer/contributor and staff-scoped newsroom | P0 | CT-02/04 | PLANNED | Roles contract |
@@ -105,3 +105,21 @@ Notes: CT-00 and CT-01 are the intended opening work in the next chat. CT-02 pre
 - Rollback: revert CT-01 feature commit and docs commit; no SQL rollback required.
 - Blockers/risks: preview access and actual browser visual/keyboard QA; authenticated negative role checks deferred to CT-02; review before merging stacked branches. Existing security warnings remain the privileged publisher RPC and leaked-password protection.
 - Next slice: CT-02 read-only legacy profile/byline/API/function-grant audit and reviewed minimum staff permission/RLS migration, then CT-03 team manager; do not send invitations, alter live role grants or deploy until the relevant approval gates.
+
+### 2026-11-23 — CT-02a: permission contract and restored-data audit
+- CT-02 overall state: **PLANNED -> IN PROGRESS**; CT-02a pure policy contract implemented, but **not activated**. CT-02b live/SQL RLS and API guards are not implemented or approved. No client-side UI-only permission is considered security.
+- Source baseline confirmed again: `main` `f5c0140fb2db165e43303a064f7bc15b765d4505`, planning draft PR #2, CT-00 draft PR #3, CT-01 draft PR #4 head `5b8480bf819d3989242e7f9bf16f78cb87a74ae9`. New isolated `feature/ct02a-capability-contract-2026-11-23`, draft PR https://github.com/0445968/02022/pull/5, stacked on PR #4.
+- Code commit: `3998a9048d862768fdaa32b158afe5bfc70c945b`; test syntax-fix commit `0261541c3ece9bbc951c8bdf43ecd6134ff10653`; documentation commit follows in the same feature PR.
+- Files: `lib/permissions/capabilities.ts` (typed finite registry, deny-first pure evaluator, active current verified identity + membership, assignment/ownership gating, explicit deny precedence, expiry, reserved owner-admin capability), `tests/capabilities.test.mjs` (16 policy cases), `docs/clear-talks/CT02_PERMISSION_AUDIT.md`, `docs/clear-talks/IMPLEMENTATION_LEDGER.md`, `docs/clear-talks/NEXT_CHAT_HANDOFF.md`.
+- Read-only live database preflight: Supabase `yqqzohrlhiitctwacdad`, PostgreSQL 17.12 healthy, 4 Auth users and matching 4 profiles (3 author, 2 editor, 2 both, 1 neither); 23 stories reference two unique author profiles and 14 stories reference one unique editor profile. Foreign-key story/byline history must be preserved. No real names/emails/IDs exported or rewritten.
+- Existing production permission findings: protected story/revision RLS depends on `profiles.is_author/is_editor`; media metadata SELECT currently public; privileged `public.publish_story_revision` is executable by `authenticated` (not `anon`) but has `auth.uid()`/editor checks and row locks internally. Security Advisor still reports this definer function and disabled leaked-password protection. Do not silently revoke the RPC and break publishing.
+- New policy evaluator is **not wired to runtime**: no fresh membership table exists, and accepting permission snapshots from a client would be unsafe. Future CT-02b introduces least-privilege RLS tables and server-only trusted loader; CT-02c migrates existing endpoints and function/storage policies after a carefully reviewed compatibility/backfill gate.
+- SQL migration IDs: **none created or applied** in CT-02a. No new tables, policies, grants, roles, Auth users, invitations, or restored data changes. Hosted migration history still empty. Rollback: revert CT-02a commits only; no DB rollback.
+- Automated CI: `npm ci`, `npm test`, `npm run typecheck`, `npm run lint`, `npm run build` on GitHub Actions. Initial test run was started on first commit; syntactic test-regex escape corrected in second commit. Final results are recorded in the PR checks; do not equate unit tests with effective Supabase RLS enforcement. Browser/preview/manual authorization still unverified.
+- Existing fonts/CSS, EN/ES UI and responsive layouts unchanged; this slice has **no UI change**. DEV_AUTH_BYPASS never enabled or modified. No Vercel production or preview deploy initiated. Preview URL unavailable through linked Vercel account.
+- Next: CT-02b versioned migrations on a safe disposable DB, owner backfill reconciliation without indiscriminate legacy elevation, server-side membership/capability loader, explicit deny precedence under database checks, negative permission matrix. Live application of any schema/grant change needs review/authorization and backup verification.
+
+### 2026-11-23 — CT-02a automated verification follow-up
+- After correcting test source regex on commit `0261541c3ece9bbc951c8bdf43ecd6134ff10653`, GitHub Actions run `45278724284` completed **SUCCESS**, confirmed via job 138057219766: `npm ci`, `npm test` **29 passed, 0 failed** (13 prior + 16 new), `npm run typecheck`, `npm run lint` and `npm run build` all passed. Existing nonfatal lint/image warnings remain.
+- First pre-correction commit `3998a9048d862768fdaa32b158afe5bfc70c945b` had an expected failed test parse; fixed within same draft PR, not hidden.
+- End-to-end authenticated roles, hosted Supabase RLS checks of new tables, and human review remain **NOT DONE**; maintain CT-02 = IN PROGRESS, CT-02a not deployed.

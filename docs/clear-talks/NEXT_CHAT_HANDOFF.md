@@ -1,3 +1,23 @@
+# CT-02a implementation handoff — 2026-11-23
+Current active work: CT-02 authorization foundation, **not production-activated**.
+
+## Review stack and current state
+- Planning PR #2 -> CT-00 PR #3 -> CT-01 PR #4 -> **CT-02a PR #5** https://github.com/0445968/02022/pull/5 (draft, based on CT-01 head `5b8480bf819d3989242e7f9bf16f78cb87a74ae9`).
+- Code commits CT-02a `3998a9048d862768fdaa32b158afe5bfc70c945b`, test correction `0261541c3ece9bbc951c8bdf43ecd6134ff10653`, ledger/handoff doc commit in PR #5. GitHub Actions run 45278724284 passed: 29 tests, typecheck, lint, Next.js build. Browser and real DB authorization tests remain pending; no main merge or deployment.
+- `lib/permissions/capabilities.ts`: pure typed finite authorization registry, matching verified principal/active membership, resource assignment or owner scope, deny precedence, expiration and reserved security-admin handling. Tests in `tests/capabilities.test.mjs`; audit and migration gate `docs/clear-talks/CT02_PERMISSION_AUDIT.md`.
+- **Do not call these permissions live.** There are no new membership tables or RLS integrations; the current app's legacy server checks and database policies remain active. Never trust user-supplied snapshots, bylines, JWT user_metadata or profile flags for newly granted capabilities.
+- Read-only database baseline: 4 Auth users/4 profiles (3 authors, 2 editors, 2 overlap, 1 reader). Stories reference 2 author profiles and 1 editor profile, so preserve historical FKs and byline mapping. New Supabase project healthy, 0 registered migrations; current two advisor warnings (publisher privileged function, leaked-password protection) remain.
+- No SQL, Vercel, Auth, data, media, font or UI changes; no dev auth bypass enabled. Current Vercel connector cannot confirm project identity.
+
+## Next safe implementation
+1. Re-verify GitHub current PR stack and CT-02a CI results, read four canonical planning documents plus `CT02_PERMISSION_AUDIT.md`.
+2. CT-02b: design the minimum membership, preset, capability grant, override, scoped assignment and audit schema with RLS on all exposed tables, unique indexes and owner guards; generate migration with current Supabase CLI instructions, NOT by replaying historical dev-bypass migrations. Test against disposable/local database and write rollback/preflight; review before hosted migration.
+3. Build server-only loader from verified `getUser()` identity and fresh DB membership/assignment rows. Carry the current owner/editor account forward only after validated, human-reviewed mapping. Revoked users must not fall back to old editor flags.
+4. Secure all API, direct PostgREST/RPC and storage paths by current DB permissions; run negative role matrix. Existing SECURITY DEFINER publishing RPC must be tested and kept compatible during permission switchover.
+5. After CT-02 reaches its security acceptance gate, proceed to CT-03 team manager. Never merge/deploy production without explicit approval.
+
+---
+## Prior handoff (historical)
 # Clear Talks — Implementation Handoff after CT-00/CT-01
 Updated: 2026-11-23 | Two implementation batches committed, NOT merged or production deployed.
 
