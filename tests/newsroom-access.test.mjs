@@ -33,7 +33,12 @@ test('newsroom layout enforces authentication and authorization server-side', ()
   const layout = readFileSync(new URL('../app/newsroom/(shell)/layout.tsx', import.meta.url), 'utf8');
   assert.match(layout, /await getCurrentUser\(\)/);
   assert.match(layout, /if \(!user\)/);
-  assert.match(layout, /if \(!canAccessNewsroom\(user\)\)/);
+  assert.match(layout, /if \(!\(await mayEnterNewsroom\(user\)\)\)/);
+  const gates = readFileSync(new URL('../lib/permissions/staff-route-gates.ts', import.meta.url), 'utf8');
+  // Existing author/editor access is preserved ONLY while the feature is off.
+  // Once enabled, the new gate must query current server permissions.
+  assert.match(gates, /if \(!v2Enabled\(\)\) return canAccessNewsroom\(user\)/);
+  assert.match(gates, /resolveStaffPermissionOnServer\('newsroom\.access'\)/);
 });
 
 test('CI never sets DEV_AUTH_BYPASS=true', () => {
