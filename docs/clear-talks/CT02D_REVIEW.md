@@ -1,0 +1,25 @@
+# CT-02d — Proposed preset grants and limited Newsroom API cutover
+Date: 2026-11-23 | Draft PR #8: https://github.com/0445968/02022/pull/8
+
+## Delivered
+- `lib/permissions/role-presets.ts` proposes a finite, least-privilege default grant set for the nine agreed role *types*, with explicit `all`/`assigned`/`own` scopes. Its import has **no Supabase side effects** and must not be treated as an authorization source; only database-approved role-capability rows can grant real access.
+- `lib/permissions/staff-route-gates.ts` bridges current legacy role checks and future fresh server membership checks behind the existing `CT_STAFF_ACCESS_V2_ENABLED` flag. When false, the legacy guards behave as before. When true, missing, revoked, suspended, mismatched or unassigned staff cannot obtain permission through legacy `is_editor/is_author` flags.
+- Initial gated surfaces: Newsroom shell entry; `PUT /api/stories/[id]`; `GET/PUT/DELETE /api/stories/[id]/revision`; `POST /api/stories/[id]/revision/publish`. Permission-scoped guards separately control assignment metadata, published slug and access tier, scheduling, change to Published, and live published-row edits. The publish path requires **both** `story.publish` and `revision.publish` when v2 enabled.
+- `tests/role-presets-route-gates.test.mjs`: negative tests for per-role capability defaults, freelancer assignment isolation, unauthorized publishing/team management, revoked members and route guard presence. Existing newsroom access regression test updated to verify the v2 async gate and default legacy behavior.
+- **CI results:** [quality run 45290839865](https://github.com/0445968/02022/actions/runs/45290839865) SUCCESS with **55 tests**, TypeScript, lint and Next.js build passing; inherited isolated PostgreSQL [CT-02b run 45290839676](https://github.com/0445968/02022/actions/runs/45290839676) and [CT-02c run 45290839801](https://github.com/0445968/02022/actions/runs/45290839801) also SUCCESS. These are not a real production security cutover or authenticated browser tests.
+- The user's accepted UI recommendation is recorded in the master plan as CT-15a dedicated final UI/UX refinement, CT-15b accessibility/responsive/performance, CT-15c release regression. Preserve Figtree, Source Serif 4, IBM Plex Sans, Inter and existing styles through CT-14. No UI/CSS/font changes in this batch.
+
+## Deliberate limits and security warnings
+This is **NOT A PRODUCTION AUTHORIZATION CUTOVER**. Even though certain server routes now offer a gated path, direct PostgREST RLS for `stories`, `story_revisions`, media tables and Storage, other API routes, the publishing RPC and other newsroom pages still rely on old profile booleans. Users with active new memberships could still bypass route checks by calling old direct RLS if the flag were enabled before a comprehensive migration. Therefore **do not enable `CT_STAFF_ACCESS_V2_ENABLED` in any public preview or production environment yet**.
+
+The live restored project has no staff memberships or hosted migration entries, and 2 security warnings persist. No verified first owner, preset grant mapping SQL migration, invitation or permission override has been deployed. Never auto-promote fictional/legacy author accounts; preserve existing byline FKs. Current server adapter calls `auth.getUser()` and fails closed when tables/roles are absent.
+
+## Gates before CT-02 completion
+1. Obtain explicit review of proposed `PROPOSED_STAFF_ROLE_GRANTS`, including selected first-owner identity, role rights and scope semantics. Especially review editorial role publication/assignment rights and media safety.
+2. Reconcile empty hosted migration history and verify a restorable backup. Safely install CT-02b and CT-02c only after approval, with explicit owner bootstrap and capability assignment (no automatic editor promotion).
+3. Write a new, reviewed migration for existing `stories`, `story_revisions`, media and Storage policies, plus publishing RPC. No legacy policy may remain a direct RLS loophole for a revoked member. Run disposable Supabase identity-level negative tests, not just PostgreSQL role-simulation tests.
+4. Gate **every** editorial route, service, import and server action, and reconcile direct data write fields so assigned writers never change live published stories outside review. Verify sign-in/out, public reads, 23 restored stories/4 revisions, publish/discard and historic bylines.
+5. Only then consider enabling the feature flag and performing controlled owner/role rollout and Vercel deployment with explicit approval. Keep the current live site unchanged until then.
+
+## Rollback and deployment
+Before live release: revert PR #8; no SQL rollback required because this slice created no migration, modified no hosted tables and changed no live env. No production deployment or merge. After a future approved rollout, use staged flag disable only in conjunction with consistent DB RLS rollback/recovery; do not reintroduce legacy grants to revoked users merely as a fallback.
