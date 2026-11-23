@@ -9,7 +9,7 @@
 
 ## Live and release
 - Clear Talks Supabase `yqqzohrlhiitctwacdad`: healthy, 0 recorded hosted migrations, staff_memberships absent, 23 stories and 4 active revisions unchanged; publisher definer and password-protection warnings remain.
-- PR #8 CI/test results are in checks and session log; CT-02b and CT-02c inherited disposable PG17 tests remain green. No main merge, browser test, preview/deployment, owner assignment, role seed, or auth/SQL changes.
+- CT-02d GitHub Actions run **45290839865 SUCCESS**: **55 tests**, TypeScript, lint, Next.js build all passed. Inherited CT-02b PG17 **45290839676** and CT-02c PG17 **45290839801** both passed. Earlier stale newsroom-test assertion was corrected at `d065806bfd7e475ea9c1446d053ab29bfee0d7d2`. No main merge, browser test, preview/deployment, owner assignment, role seed, or auth/SQL changes.
 
 ## Next CT-02e
 - Review nine proposed preset rights and verified real owner Auth identity before writing approved SQL/grants.
