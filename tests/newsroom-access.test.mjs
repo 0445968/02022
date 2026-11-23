@@ -1,0 +1,43 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import {
+  canAccessNewsroom,
+  canCreateStories,
+  canManageAllEditorialContent,
+} from '../lib/permissions/index.ts';
+
+const user = (isAuthor, isEditor) => ({
+  id: 'fixture',
+  email: null,
+  profile: { isAuthor, isEditor },
+});
+
+test('signed-out users and ordinary readers are denied newsroom/staff actions', () => {
+  for (const value of [null, user(false, false)]) {
+    assert.equal(canAccessNewsroom(value), false);
+    assert.equal(canCreateStories(value), false);
+    assert.equal(canManageAllEditorialContent(value), false);
+  }
+});
+
+test('legacy author/editor access is retained without privilege elevation', () => {
+  assert.equal(canAccessNewsroom(user(true, false)), true);
+  assert.equal(canCreateStories(user(true, false)), true);
+  assert.equal(canManageAllEditorialContent(user(true, false)), false);
+  assert.equal(canAccessNewsroom(user(false, true)), true);
+  assert.equal(canManageAllEditorialContent(user(false, true)), true);
+});
+
+test('newsroom layout enforces authentication and authorization server-side', () => {
+  const layout = readFileSync(new URL('../app/newsroom/(shell)/layout.tsx', import.meta.url), 'utf8');
+  assert.match(layout, /await getCurrentUser\(\)/);
+  assert.match(layout, /if \(!user\)/);
+  assert.match(layout, /if \(!canAccessNewsroom\(user\)\)/);
+});
+
+test('CI never sets DEV_AUTH_BYPASS=true', () => {
+  const ci = readFileSync(new URL('../.github/workflows/clear-talks-checks.yml', import.meta.url), 'utf8');
+  assert.match(ci, /DEV_AUTH_BYPASS: 'false'/);
+  assert.doesNotMatch(ci, /DEV_AUTH_BYPASS: ['"]?true/);
+});
