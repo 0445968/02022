@@ -6,9 +6,11 @@ create role authenticated nologin;
 create role service_role nologin bypassrls;
 create schema auth;
 create table auth.users (id uuid primary key);
-create function auth.uid() returns uuid stable language sql as $$
+create function auth.uid() returns uuid stable language sql as $
   select nullif(current_setting('request.jwt.claim.sub', true), '')::uuid;
-$$;
+$;
+grant usage on schema auth to authenticated;
+grant execute on function auth.uid() to authenticated;
 create table public.stories (id uuid primary key);
 
 \i supabase/migrations/20261123222804_ct02b_staff_access.sql
