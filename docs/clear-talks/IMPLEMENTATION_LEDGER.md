@@ -15,7 +15,7 @@ Every code batch must update the row AND append an entry under Session log in th
 | ID | Feature | Priority | Depends on | State | Evidence / link |
 | --- | --- | --- | --- | --- | --- |
 | CT-00 | Baseline, safety, tests and CI | P0 | none | IMPLEMENTED | [Draft PR #3](https://github.com/0445968/02022/pull/3); CI pending |
-| CT-01 | Stories thumbnails + active unpublished revision indicator | P0 | CT-00 baseline | PLANNED | Blueprint §4 |
+| CT-01 | Stories thumbnails + active unpublished revision indicator | P0 | CT-00 baseline | IMPLEMENTED | [Draft PR #4](https://github.com/0445968/02022/pull/4); 13 tests and CI green, browser QA pending |
 | CT-02 | Permissions schema, server API and RLS foundation | P0 | CT-00 | PLANNED | Roles contract |
 | CT-03 | Newsroom team/admin permission manager | P0 | CT-02 | PLANNED | Roles contract |
 | CT-04 | Invited staff/freelancer onboarding and preset assignment | P0 | CT-02/03 | PLANNED | Roles contract |
@@ -85,3 +85,23 @@ Notes: CT-00 and CT-01 are the intended opening work in the next chat. CT-02 pre
 - Production deployment: **none authorized or initiated**; preview URL: not verified. Connected Vercel account did not resolve project/hostname; confirm correct team/project prior to any release.
 - Rollback: revert commits in PR #3. No schema rollback required.
 - Next: CT-01 add batched metadata and Stories table image/active-draft indicators; add data-state unit tests. CT-02 later handles RPC and role security.
+
+### 2026-11-23 — CI completion evidence for CT-00 (append-only update)
+- GitHub Actions `Clear Talks quality gates`: commit `c7dd5638f36a0380f3f7afb394da8c0549c8a034`, run `45275485231`, completed **success**. `npm ci`, `npm test` (4 passed, 0 failed), `npm run typecheck`, `npm run lint`, and `npm run build` all finished successfully. ESLint reported existing non-fatal image/React-hook warnings; no appearance changes in CT-00.
+- CT-00 remains IMPLEMENTED rather than TESTED because the PR has not been independently reviewed and the EN/ES HTTP smoke against an approved preview has not been run. No production deployment.
+
+### 2026-11-23 — CT-01 Stories thumbnails and active unpublished changes
+- State: PLANNED -> IMPLEMENTED (automated tests passed; browser preview and user review still pending).
+- Source: CT-00 branch head `c7dd5638f36a0380f3f7afb394da8c0549c8a034` based on verified planning/main. Isolated feature branch `feature/ct01-stories-unpublished-changes-2026-11-23`.
+- Scope implemented: stories list now fetches main `featured_image_id`, batches `media_assets(id,url,alt_text)` and visible `story_revisions(story_id,updated_at)` for the paginated set. Render a small lazy-loaded main image or no-image placeholder next to headline; new independent Active draft / None column and EN/ES strings. Published `story.status` remains Published during revision. No unpublished replacement image is displayed as public/current featured image.
+- Existing search/status/language/author/category/island filters, sorting, 20-item page offset/count, other columns, Newsroom typography and CSS classes are preserved; table retains horizontal overflow for small screens. Revision-based filter/sort intentionally deferred to avoid miscounting pages without DB-side filtering.
+- Files: `lib/services/stories.ts`, `lib/services/story-list-metadata.ts`, `types/editorial.ts`, `components/editorial/stories-dashboard.tsx`, `messages/en.json`, `messages/es.json`, `tests/story-list-metadata.test.mjs`, `docs/clear-talks/IMPLEMENTATION_LEDGER.md`, `docs/clear-talks/NEXT_CHAT_HANDOFF.md`.
+- Feature commit: `0119f7b395c97fcad36f2b254bda521245b0ca24`; draft PR https://github.com/0445968/02022/pull/4 (base CT-00 branch, which bases on planning PR #2). Ledger/handoff recorded in follow-up docs commit.
+- CI: workflow `Clear Talks quality gates`, run `45275880755`, **success**. Commands: `npm ci` PASS, `npm test` **13 passed / 0 failed** (4 CT-00 plus 9 CT-01), `npm run typecheck` PASS, `npm run lint` PASS with existing non-blocking warnings, `npm run build` PASS. No runtime authenticated editor browser test was performed.
+- Security/RLS: direct, transaction-local role test with `SET LOCAL ROLE anon` was read-only and returned 18 visible published stories, **0** visible story revisions. Only RLS-authorized revision rows can affect the new indicator. No new RLS policies or grants added; future CT-02 performs reader/freelancer/editor negative API/RLS matrix.
+- SQL migrations: **none**; no schema/data/auth/publishing/storage mutation. No dev bypass enabled. Supabase project `yqqzohrlhiitctwacdad` and all restored data left unchanged.
+- UI parity: existing fonts Figtree/Source Serif 4/IBM Plex Sans/Inter unchanged; no global CSS/Tailwind/layout changes. EN/ES dictionary keys tested. Mobile and image delivery still require authorized preview visual QA.
+- Vercel: no production merge or deployment; no preview URL independently identified. Connected Vercel account did not reveal the project. CI build uses placeholder credentials if CI-specific variables are not configured, so it does not constitute an authenticated real-DB integration test.
+- Rollback: revert CT-01 feature commit and docs commit; no SQL rollback required.
+- Blockers/risks: preview access and actual browser visual/keyboard QA; authenticated negative role checks deferred to CT-02; review before merging stacked branches. Existing security warnings remain the privileged publisher RPC and leaked-password protection.
+- Next slice: CT-02 read-only legacy profile/byline/API/function-grant audit and reviewed minimum staff permission/RLS migration, then CT-03 team manager; do not send invitations, alter live role grants or deploy until the relevant approval gates.
