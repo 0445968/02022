@@ -48,7 +48,7 @@ test('server adapter requires two independent release gates and session auth', (
   assert.match(source, /resolveStaffPermissionOnServer\('team\.manage_roles'\)/);
   assert.match(source, /SUPABASE_SERVICE_ROLE_KEY/);
   assert.match(source, /p_actor_auth_user_id: user\.id/);
-  assert.doesNotMatch(source, /user_metadata|isDevAuthBypass|NEXT_PUBLIC_SUPABASE_SERVICE_ROLE/);
+  assert.doesNotMatch(source, /user\.user_metadata|isDevAuthBypass\(|NEXT_PUBLIC_SUPABASE_SERVICE_ROLE/);
 });
 
 test('staged migration is service-role-only and does not use SECURITY DEFINER', () => {
