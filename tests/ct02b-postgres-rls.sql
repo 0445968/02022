@@ -82,7 +82,7 @@ begin
      (select count(*) from public.staff_capability_overrides) <> 1 then
     raise exception 'Active freelancer RLS visibility violated';
   end if;
-end $;
+end $$;
 rollback;
 
 -- Authenticated reader cannot list any staff memberships, roles, or assignments.
@@ -96,7 +96,7 @@ begin
      (select count(*) from public.staff_story_assignments) <> 0 then
     raise exception 'Reader escaped staff RLS isolation';
   end if;
-end $;
+end $$;
 rollback;
 
 -- Suspended member can see only their own membership status, no grants/assignments.
@@ -111,7 +111,7 @@ begin
      (select count(*) from public.staff_member_roles) <> 0 then
     raise exception 'Suspended user retained staff access';
   end if;
-end $;
+end $$;
 rollback;
 
 select 'CT-02b PostgreSQL RLS fixture passed' as result;
