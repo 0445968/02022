@@ -14,7 +14,7 @@ Every code batch must update the row AND append an entry under Session log in th
 
 | ID | Feature | Priority | Depends on | State | Evidence / link |
 | --- | --- | --- | --- | --- | --- |
-| CT-00 | Baseline, safety, tests and CI | P0 | none | PLANNED | Blueprint §6 |
+| CT-00 | Baseline, safety, tests and CI | P0 | none | IMPLEMENTED | [Draft PR #3](https://github.com/0445968/02022/pull/3); CI pending |
 | CT-01 | Stories thumbnails + active unpublished revision indicator | P0 | CT-00 baseline | PLANNED | Blueprint §4 |
 | CT-02 | Permissions schema, server API and RLS foundation | P0 | CT-00 | PLANNED | Roles contract |
 | CT-03 | Newsroom team/admin permission manager | P0 | CT-02 | PLANNED | Roles contract |
@@ -71,3 +71,17 @@ Notes: CT-00 and CT-01 are the intended opening work in the next chat. CT-02 pre
 - Added MASTER_COMPLETION_PLAN.md, ROLE_AND_PERMISSION_MATRIX.md, this implementation ledger and NEXT_CHAT_HANDOFF.md.
 - Planning documents only. No application code, permissions, database records, API keys, or hosting settings changed. No build/test asserted from planning.
 - Next: new chat reads planning files and verifies latest HEAD; CT-00 preflight/test harness and CT-01 stories list thumbnails/unpublished-changes semantics are the first two slices. Do not begin role migrations until reviewed.
+
+### 2026-11-23 — CT-00 safety baseline and test harness
+- State: PLANNED -> IMPLEMENTED (automated CI run and browser/RLS integration not yet verified).
+- Verified source: main `f5c0140fb2db165e43303a064f7bc15b765d4505`; planning head `b47c89ffbf0a94e80078375c3c73adc564f1d144`.
+- Implemented on `feature/ct00-baseline-ci-2026-11-23`: `.github/workflows/clear-talks-checks.yml`, `tests/newsroom-access.test.mjs`, `scripts/smoke-routes.mjs`, `package.json`, `docs/clear-talks/CT00_BASELINE.md`, this ledger.
+- Code commit: `97472f5284bfcfcb90f98274126b59be99aef968`; review: https://github.com/0445968/02022/pull/3 (draft, base planning branch). Ledger recorded in follow-up commit within that PR.
+- SQL migrations applied: **none**. Read-only query confirmed hosted migration registry empty, 23 stories, 18 published, 4 published with active revisions, 11 featured image references, RLS enabled. No data/auth/publishing/storage modifications.
+- Security findings unchanged: authenticated-executable `publish_story_revision` SECURITY DEFINER warning; leaked-password protection disabled. DEV_AUTH_BYPASS remains disabled by required CI configuration; live Vercel env value not independently readable.
+- Tests configured: `npm test` (role-denial unit checks + Newsroom server gate source assertions); `npm run smoke:routes` optional EN/ES HTTP + signed-out Newsroom redirect against explicitly approved URL. CI: `npm ci`, `npm test`, `npm run typecheck`, `npm run lint`, `npm run build`.
+- Test results: **UNVERIFIED pending GitHub Actions**; local environment cannot clone external repository or install npm deps. This record does not claim tests passed. Manual signed-in API/RLS checks, mobile, live image delivery remain pending.
+- Font/style: no CSS, global font settings, existing Newsroom/reader shell files changed. Baseline components listed in CT00_BASELINE.md.
+- Production deployment: **none authorized or initiated**; preview URL: not verified. Connected Vercel account did not resolve project/hostname; confirm correct team/project prior to any release.
+- Rollback: revert commits in PR #3. No schema rollback required.
+- Next: CT-01 add batched metadata and Stories table image/active-draft indicators; add data-state unit tests. CT-02 later handles RPC and role security.
