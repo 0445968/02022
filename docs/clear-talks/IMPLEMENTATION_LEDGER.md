@@ -16,7 +16,7 @@ Every code batch must update the row AND append an entry under Session log in th
 | --- | --- | --- | --- | --- | --- |
 | CT-00 | Baseline, safety, tests and CI | P0 | none | IMPLEMENTED | [Draft PR #3](https://github.com/0445968/02022/pull/3); CI passed, browser QA pending |
 | CT-01 | Stories thumbnails + active unpublished revision indicator | P0 | CT-00 baseline | IMPLEMENTED | [Draft PR #4](https://github.com/0445968/02022/pull/4); 13 tests and CI green, browser QA pending |
-| CT-02 | Permissions schema, server API and RLS foundation | P0 | CT-00 | IN PROGRESS | CT-02a contract [draft PR #5](https://github.com/0445968/02022/pull/5); DB/RLS migration pending |
+| CT-02 | Permissions schema, server API and RLS foundation | P0 | CT-00 | IN PROGRESS | CT-02a [draft PR #5](https://github.com/0445968/02022/pull/5): 29 unit tests and CI green; DB/RLS migration pending |
 | CT-03 | Newsroom team/admin permission manager | P0 | CT-02 | PLANNED | Roles contract |
 | CT-04 | Invited staff/freelancer onboarding and preset assignment | P0 | CT-02/03 | PLANNED | Roles contract |
 | CT-05 | Freelancer/contributor and staff-scoped newsroom | P0 | CT-02/04 | PLANNED | Roles contract |
@@ -118,3 +118,8 @@ Notes: CT-00 and CT-01 are the intended opening work in the next chat. CT-02 pre
 - Automated CI: `npm ci`, `npm test`, `npm run typecheck`, `npm run lint`, `npm run build` on GitHub Actions. Initial test run was started on first commit; syntactic test-regex escape corrected in second commit. Final results are recorded in the PR checks; do not equate unit tests with effective Supabase RLS enforcement. Browser/preview/manual authorization still unverified.
 - Existing fonts/CSS, EN/ES UI and responsive layouts unchanged; this slice has **no UI change**. DEV_AUTH_BYPASS never enabled or modified. No Vercel production or preview deploy initiated. Preview URL unavailable through linked Vercel account.
 - Next: CT-02b versioned migrations on a safe disposable DB, owner backfill reconciliation without indiscriminate legacy elevation, server-side membership/capability loader, explicit deny precedence under database checks, negative permission matrix. Live application of any schema/grant change needs review/authorization and backup verification.
+
+### 2026-11-23 — CT-02a automated verification follow-up
+- After correcting test source regex on commit `0261541c3ece9bbc951c8bdf43ecd6134ff10653`, GitHub Actions run `45278724284` completed **SUCCESS**, confirmed via job 138057219766: `npm ci`, `npm test` **29 passed, 0 failed** (13 prior + 16 new), `npm run typecheck`, `npm run lint` and `npm run build` all passed. Existing nonfatal lint/image warnings remain.
+- First pre-correction commit `3998a9048d862768fdaa32b158afe5bfc70c945b` had an expected failed test parse; fixed within same draft PR, not hidden.
+- End-to-end authenticated roles, hosted Supabase RLS checks of new tables, and human review remain **NOT DONE**; maintain CT-02 = IN PROGRESS, CT-02a not deployed.
