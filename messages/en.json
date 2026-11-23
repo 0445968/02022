@@ -346,8 +346,13 @@
       "editor": "Editor",
       "category": "Category",
       "updated": "Updated",
-      "published": "Published"
+      "published": "Published",
+      "unpublishedChanges": "Unpublished changes"
     },
+    "activeDraft": "Active draft",
+    "noUnpublishedChanges": "None",
+    "noFeaturedImage": "No featured image",
+    "imageFallbackAlt": "Story featured image",
     "noStories": "No stories found",
     "noStoriesDesc": "Try adjusting your filters or create a new story.",
     "createFirst": "Create your first story"

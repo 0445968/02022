@@ -2,7 +2,8 @@
 
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useState, useMemo } from 'react';
-import { Search, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Search, ChevronLeft, ChevronRight, ImageOff } from 'lucide-react';
+import Image from 'next/image';
 import Link from 'next/link';
 import type { Dictionary } from '@/lib/i18n/dictionaries';
 import type { StoryListItem, Category, StaffOption } from '@/types/editorial';
@@ -130,6 +131,7 @@ export function StoriesDashboard({ dict, stories, page, totalPages, total, categ
             <tr className="border-b border-border bg-surface-muted text-left">
               <th className="px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">{dict.stories.columns.headline}</th>
               <th className="px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">{dict.stories.columns.status}</th>
+              <th className="px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">{dict.stories.columns.unpublishedChanges}</th>
               <th className="hidden px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground md:table-cell">{dict.stories.columns.language}</th>
               <th className="hidden px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground lg:table-cell">{dict.stories.columns.author}</th>
               <th className="hidden px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground lg:table-cell">{dict.stories.columns.editor}</th>
@@ -140,7 +142,7 @@ export function StoriesDashboard({ dict, stories, page, totalPages, total, categ
           <tbody>
             {stories.length === 0 ? (
               <tr>
-                <td colSpan={7} className="px-4 py-12 text-center">
+                <td colSpan={8} className="px-4 py-12 text-center">
                   <p className="font-headline text-lg font-semibold text-deep">{dict.stories.noStories}</p>
                   <p className="mt-1 text-sm text-muted-foreground">{dict.stories.noStoriesDesc}</p>
                   <Link
@@ -155,15 +157,45 @@ export function StoriesDashboard({ dict, stories, page, totalPages, total, categ
               stories.map((story) => (
                 <tr key={story.id} className="border-b border-border/60 transition-colors hover:bg-surface-muted/50">
                   <td className="px-4 py-3">
-                    <Link
-                      href={`/newsroom/stories/${story.id}/edit`}
-                      className="font-medium text-deep hover:text-primary focus-visible:outline-none focus-visible:underline"
-                    >
-                      {story.headline || '(untitled)'}
-                    </Link>
+                    <div className="flex min-w-[12rem] items-center gap-3">
+                      {story.featuredImageUrl ? (
+                        <Image
+                          src={story.featuredImageUrl}
+                          alt={story.featuredImageAlt || story.headline || dict.stories.imageFallbackAlt}
+                          width={56}
+                          height={40}
+                          unoptimized
+                          loading="lazy"
+                          className="h-10 w-14 shrink-0 border border-border object-cover"
+                        />
+                      ) : (
+                        <span className="flex h-10 w-14 shrink-0 items-center justify-center border border-border bg-surface-muted" title={dict.stories.noFeaturedImage}>
+                          <ImageOff className="h-4 w-4 text-muted-foreground" aria-hidden />
+                          <span className="sr-only">{dict.stories.noFeaturedImage}</span>
+                        </span>
+                      )}
+                      <Link
+                        href={`/newsroom/stories/${story.id}/edit`}
+                        className="font-medium text-deep hover:text-primary focus-visible:outline-none focus-visible:underline"
+                      >
+                        {story.headline || '(untitled)'}
+                      </Link>
+                    </div>
                   </td>
                   <td className="px-4 py-3">
                     <StatusBadge status={story.status} dict={dict} />
+                  </td>
+                  <td className="px-4 py-3">
+                    {story.hasUnpublishedChanges ? (
+                      <span
+                        className="inline-flex items-center border border-primary/30 bg-primary/10 px-2 py-0.5 text-xs font-semibold text-primary"
+                        title={story.unpublishedChangesUpdatedAt ? new Date(story.unpublishedChangesUpdatedAt).toLocaleString() : undefined}
+                      >
+                        {dict.stories.activeDraft}
+                      </span>
+                    ) : (
+                      <span className="text-xs text-muted-foreground">{dict.stories.noUnpublishedChanges}</span>
+                    )}
                   </td>
                   <td className="hidden px-4 py-3 md:table-cell">
                     <span className="font-semibold uppercase tracking-wide text-muted-foreground">{story.language}</span>

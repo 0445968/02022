@@ -346,8 +346,13 @@
       "editor": "Editor",
       "category": "Categoría",
       "updated": "Actualizada",
-      "published": "Publicada"
+      "published": "Publicada",
+      "unpublishedChanges": "Cambios sin publicar"
     },
+    "activeDraft": "Borrador activo",
+    "noUnpublishedChanges": "Ninguno",
+    "noFeaturedImage": "Sin imagen destacada",
+    "imageFallbackAlt": "Imagen destacada de la historia",
     "noStories": "No se encontraron historias",
     "noStoriesDesc": "Ajusta los filtros o crea una nueva historia.",
     "createFirst": "Crea tu primera historia"
