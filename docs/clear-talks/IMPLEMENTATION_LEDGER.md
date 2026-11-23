@@ -1,6 +1,7 @@
 # Clear Talks — Implementation Ledger and Session Log
 Last updated: 2026-11-23 | Plan version: 1.0
 Project: https://github.com/0445968/02022 | Planning branch: planning/clear-talks-completion-2026-11-23
+Planning draft PR: https://github.com/0445968/02022/pull/2 (documentation only; not merged)
 Master: MASTER_COMPLETION_PLAN.md | Roles: ROLE_AND_PERMISSION_MATRIX.md | Handoff: NEXT_CHAT_HANDOFF.md
 
 ## Rules for state labels
@@ -66,7 +67,7 @@ Notes: CT-00 and CT-01 are the intended opening work in the next chat. CT-02 pre
 ### 2026-11-23 — Planning and repository audit
 - Audited GitHub 0445968/02022 main at f5c0140fb2db165e43303a064f7bc15b765d4505, confirmed route tree, current Newsroom/sidebar, reader/sidebar, story list/revisions service, permissions, auth, application CSS and font mapping, package scripts, no AGENTS.md/tests/CI.
 - Documented current working Vercel/Supabase migration baseline and remaining 2 warnings from user-verified flow.
-- Created isolated branch planning/clear-talks-completion-2026-11-23.
+- Created isolated branch planning/clear-talks-completion-2026-11-23 and draft documentation PR #2 (https://github.com/0445968/02022/pull/2).
 - Added MASTER_COMPLETION_PLAN.md, ROLE_AND_PERMISSION_MATRIX.md, this implementation ledger and NEXT_CHAT_HANDOFF.md.
 - Planning documents only. No application code, permissions, database records, API keys, or hosting settings changed. No build/test asserted from planning.
 - Next: new chat reads planning files and verifies latest HEAD; CT-00 preflight/test harness and CT-01 stories list thumbnails/unpublished-changes semantics are the first two slices. Do not begin role migrations until reviewed.
