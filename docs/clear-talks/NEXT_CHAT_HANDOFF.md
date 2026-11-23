@@ -1,3 +1,26 @@
+# CURRENT CT-02c HANDOFF — 2026-11-23
+**CT-02 still IN PROGRESS. CT-02c PR #7 is committed but NOT merged, production SQL-applied or deployed.**
+
+## GitHub stack
+- Plan PR #2 -> CI CT-00 #3 -> Stories CT-01 #4 -> policy contract CT-02a #5 -> staff schema CT-02b #6 -> **owner/audit CT-02c draft PR #7** https://github.com/0445968/02022/pull/7.
+- Branch: `feature/ct02c-admin-mutations-2026-11-23` stacked on `feature/ct02b-staff-schema-2026-11-23` at `36fe8512bec2b73e1a878ea314019968f14db265`.
+- Staged SQL: `supabase/migrations/20261123230955_ct02c_owner_guard_and_audit.sql` (requires `20261123222804_ct02b_staff_access.sql`). Only local disposable PostgreSQL has received it.
+- Code: `lib/permissions/staff-admin-input.ts`, `lib/services/staff-role-admin.ts`, unit tests and isolated database tests. `CT02C_REVIEW.md` contains detailed security, rollout and rollback gates.
+- Real role changes and Auth/backfill are **NOT performed**. No role preset grants seeded or runtime API routes switched. Two env feature flags default FALSE; there is no endpoint invoking service_role logic.
+
+## Verified progress
+- PostgreSQL 17 owner/audit integration CI `45287094467` SUCCESS; follow-up `45287120144` SUCCESS. These test current-owner restrictions, anon/reader access denial, automatic per-record audit, expired/last owner constraints, manual SQL bypass attempts and owner succession.
+- Quality gates are on the PR checks; do not claim final CT-02 release based on unit tests alone.
+- Hosted Supabase `yqqzohrlhiitctwacdad`: 0 migrations, `staff_memberships` absent, 4 Auth/profile records, 23 stories and 4 unpublished revisions intact. Two existing warnings (publisher SECURITY DEFINER RPC, disabled leaked-password protection). No hosted mutation.
+- Existing fonts (Figtree, Source Serif 4, IBM Plex Sans, Inter), styles, auth, newsroom, drafts and publishing unaffected. No merge, preview or production deploy.
+
+## NEXT CT-02d
+1. Verify GitHub and CI, live read-only DB state and review all four canonical docs + `CT02C_REVIEW.md`.
+2. **Human signoff** on first owner Auth identity, full preset capability grants, bootstrap and migration-history reconciled backups; never auto-promote imported accounts or trust byline/editor flags.
+3. Design controlled migration/cutover: existing Newsroom APIs/server guards, direct story/revision RLS, storage, publishing RPC. Revocation must prevail over legacy editor flags; run negative tests for signed-out, reader, assigned/unassigned freelancer, specialist, editor, owner, suspended/revoked, forged metadata.
+4. Keep full migration/new credentials and flags off until explicit production authorization. Avoid historic bypass migrations. Do not claim CT-02 done until reviewed end-to-end enforcement is proven.
+---
+## Previous handoffs (historical)
 # CT-02b handoff — 2026-11-23 (CURRENT)
 **CT-02 still IN PROGRESS. No production deployment or hosted migration.**
 
