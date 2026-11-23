@@ -2,12 +2,14 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 const migration = readFileSync(new URL('../supabase/migrations/20261123235430_ct02e_story_revision_rls.sql',import.meta.url),'utf8');
+// Analyze statements, not review/rollout comments that mention legacy risks.
+const executableSQL = migration.split('\n').filter(line => !line.trimStart().startsWith('--')).join('\n');
 
 test('staff helper is invoker-scoped in an unexposed schema and never trusts legacy profile flags', () => {
   assert.match(migration, /create schema if not exists newsroom_private/);
-  assert.match(migration, /security invoker/g);
-  assert.doesNotMatch(migration, /security definer/i);
-  assert.doesNotMatch(migration, /is_editor|is_author|user_metadata|DEV_AUTH_BYPASS/i);
+  assert.match(executableSQL, /security invoker/g);
+  assert.doesNotMatch(executableSQL, /security definer/i);
+  assert.doesNotMatch(executableSQL, /is_editor|is_author|user_metadata|DEV_AUTH_BYPASS/i);
   assert.match(migration, /where m\.auth_user_id = \(select auth\.uid\(\)\)/);
 });
 
