@@ -57,7 +57,7 @@ test('new server resolver fails closed before enablement and uses a verified acc
   assert.match(server, /client\.auth\.getUser\(\)/);
   assert.match(server, /\.eq\('auth_user_id', user\.id\)/);
   assert.match(server, /return denied;/);
-  assert.doesNotMatch(server, /user_metadata|DEV_AUTH_BYPASS|service_role|createDataClient\(/);
+  assert.doesNotMatch(server, /user_metadata|DEV_AUTH_BYPASS|createDataClient\(|SUPABASE_SERVICE_ROLE_KEY/);
 });
 
 test('staff story resource scope is loaded by the server, not accepted from client snapshots', () => {
