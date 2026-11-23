@@ -1,6 +1,6 @@
 # Clear Talks — Staff Roles, Permissions & Onboarding Contract
 Version: 1.0 proposal | 2026-11-23 | Companion to MASTER_COMPLETION_PLAN.md.
-Status: CT-02b schema **proposed in draft PR #6**, not merged or applied. Role labels are seeded by the unapplied SQL but **zero capability grants, memberships or production permissions have been created**. CT-02c must review presets, owner backfill, RLS/API cutover and approval.
+Status: CT-02b draft PR #6 and CT-02c owner/audit draft PR #7 are staged and CI-tested, **not merged or applied**. Built-in role labels only are present in the proposed SQL: **zero preset grants, memberships or production permissions have been created**. CT-02d must review role grants, verified first-owner backfill, existing RLS/API/storage/RPC cutover and human approval.
 
 ## 1. Principles
 
