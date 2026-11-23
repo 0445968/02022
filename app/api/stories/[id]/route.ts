@@ -5,9 +5,11 @@ import {
 } from '@/lib/auth/session';
 
 import {
-  canChangeStatus,
-  canEditStory,
-} from '@/lib/permissions/stories';
+  mayEditStory,
+  mayChangeStoryStatus,
+  mayEditStoryControlFields,
+  mayWriteLiveStory,
+} from '@/lib/permissions/staff-route-gates';
 
 import {
   getStoryForEditing,
@@ -67,11 +69,12 @@ export async function PUT(
   }
 
   if (
-    !canEditStory(
+    !(await mayEditStory(
       user,
+      params.id,
       story.author?.id ??
         null
-    )
+    ))
   ) {
     return NextResponse.json(
       {
@@ -198,6 +201,22 @@ export async function PUT(
     );
   }
 
+  // CT-02d: a contributor who may edit assigned copy may NOT reassign a
+  // story, schedule/publish it or alter sensitive metadata.
+  if (!(await mayEditStoryControlFields(user, params.id, body))) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  }
+
+  // A published story has a separate draft-revision workflow. With v2
+  // enabled, only a publishing editor may directly change the live row.
+  if (
+    story.status === 'published' &&
+    body.workflowOnly !== true &&
+    !(await mayWriteLiveStory(user, params.id))
+  ) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  }
+
   // ==================================================
   // Permission check: status changes
   // ==================================================
@@ -208,10 +227,11 @@ export async function PUT(
       story.status
   ) {
     if (
-      !canChangeStatus(
+      !(await mayChangeStoryStatus(
         user,
+        params.id,
         body.status
-      )
+      ))
     ) {
       return NextResponse.json(
         {

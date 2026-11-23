@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation';
 import { getCurrentUser, RequireAuthError, RequireRoleError } from '@/lib/auth/session';
-import { canAccessNewsroom } from '@/lib/permissions';
+import { mayEnterNewsroom } from '@/lib/permissions/staff-route-gates';
 import { getDictionary } from '@/lib/i18n/dictionaries';
 import { defaultLocale } from '@/lib/i18n/config';
 import { NewsroomShell } from '@/components/editorial/newsroom-shell';
@@ -27,7 +27,7 @@ export default async function NewsroomLayout({
     redirect('/en/auth/sign-in');
   }
 
-  if (!canAccessNewsroom(user)) {
+  if (!(await mayEnterNewsroom(user))) {
     // Signed in but lacks staff role — send to access-denied page.
     redirect('/newsroom/denied');
   }

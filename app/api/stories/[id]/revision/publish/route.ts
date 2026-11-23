@@ -7,9 +7,9 @@ import {
   } from '@/lib/auth/session';
   
   import {
-    canEditStory,
-    canPublish,
-  } from '@/lib/permissions/stories';
+    mayEditStory,
+    mayPublishRevision,
+  } from '@/lib/permissions/staff-route-gates';
   
   import {
     getStoryForEditing,
@@ -68,11 +68,12 @@ import {
      * this story in the newsroom.
      */
     if (
-      !canEditStory(
+      !(await mayEditStory(
         user,
+        params.id,
         story.author?.id ??
           null
-      )
+      ))
     ) {
       return NextResponse.json(
         {
@@ -92,9 +93,10 @@ import {
      * but only editors can make that revision live.
      */
     if (
-      !canPublish(
-        user
-      )
+      !(await mayPublishRevision(
+        user,
+        params.id
+      ))
     ) {
       return NextResponse.json(
         {

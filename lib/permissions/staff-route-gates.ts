@@ -98,7 +98,10 @@ export async function mayChangeStoryStatus(
 export async function mayEditStoryControlFields(
   user: CurrentUser | null,
   storyId: string,
-  fields: Record<string, unknown>
+  fields: {
+    authorId?: unknown; editorId?: unknown; scheduledAt?: unknown;
+    originallyPublishedAt?: unknown; slug?: unknown; accessLevel?: unknown;
+  }
 ): Promise<boolean> {
   if (!v2Enabled()) return true;
   if (!user) return false;
@@ -121,4 +124,23 @@ export async function mayEditStoryControlFields(
     })).allowed) return false;
   }
   return true;
+}
+
+/**
+ * Direct edits to published rows bypass reviewable draft revisions.
+ * In v2 this requires full editorial rights AND publishing permission.
+ * Assigned contributors must use the separate unpublished revision API.
+ */
+export async function mayWriteLiveStory(
+  user: CurrentUser | null,
+  storyId: string
+): Promise<boolean> {
+  if (!v2Enabled()) return true; // legacy behavior unchanged until approval
+  if (!user) return false;
+  if (!(await resolveStaffPermissionOnServer('story.edit_all', {
+    kind: 'story', storyId,
+  })).allowed) return false;
+  return (await resolveStaffPermissionOnServer('story.publish', {
+    kind: 'story', storyId,
+  })).allowed;
 }

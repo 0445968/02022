@@ -7,8 +7,9 @@ import {
 } from '@/lib/auth/session';
 
 import {
-  canEditStory,
-} from '@/lib/permissions/stories';
+  mayEditStory,
+  mayEditStoryControlFields,
+} from '@/lib/permissions/staff-route-gates';
 
 import {
   getStoryForEditing,
@@ -158,11 +159,12 @@ export async function GET(
   }
 
   if (
-    !canEditStory(
+    !(await mayEditStory(
       user,
+      params.id,
       story.author?.id ??
         null
-    )
+    ))
   ) {
     return NextResponse.json(
       {
@@ -251,11 +253,12 @@ export async function PUT(
   }
 
   if (
-    !canEditStory(
+    !(await mayEditStory(
       user,
+      params.id,
       story.author?.id ??
         null
-    )
+    ))
   ) {
     return NextResponse.json(
       {
@@ -303,6 +306,12 @@ export async function PUT(
         status: 400,
       }
     );
+  }
+
+  // CT-02d: an assigned contributor can edit article copy, not
+  // change author/editor ownership, live slug, access tier or schedule.
+  if (!(await mayEditStoryControlFields(user, params.id, body))) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
 
   // --------------------------------------------------
@@ -628,11 +637,12 @@ export async function DELETE(
   }
 
   if (
-    !canEditStory(
+    !(await mayEditStory(
       user,
+      params.id,
       story.author?.id ??
         null
-    )
+    ))
   ) {
     return NextResponse.json(
       {
