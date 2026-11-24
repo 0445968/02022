@@ -1,0 +1,36 @@
+name: CT-02k REAL Supabase disposable Auth and Storage (manual only)
+on:
+  workflow_dispatch:
+    inputs:
+      disposable_ref:
+        description: "Explicit 20-character NONPRODUCTION Supabase project ref"
+        required: true
+        type: string
+permissions:
+  contents: read
+jobs:
+  disposable-jwt-storage:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      CT_E2E_DISPOSABLE_REF: ${{ inputs.disposable_ref }}
+      CT_E2E_SUPABASE_URL: ${{ secrets.CT_E2E_SUPABASE_URL }}
+      CT_E2E_ANON_KEY: ${{ secrets.CT_E2E_ANON_KEY }}
+      CT_E2E_READER_EMAIL: ${{ secrets.CT_E2E_READER_EMAIL }}
+      CT_E2E_READER_PASSWORD: ${{ secrets.CT_E2E_READER_PASSWORD }}
+      CT_E2E_REVOKED_EMAIL: ${{ secrets.CT_E2E_REVOKED_EMAIL }}
+      CT_E2E_REVOKED_PASSWORD: ${{ secrets.CT_E2E_REVOKED_PASSWORD }}
+      CT_E2E_WRITER_EMAIL: ${{ secrets.CT_E2E_WRITER_EMAIL }}
+      CT_E2E_WRITER_PASSWORD: ${{ secrets.CT_E2E_WRITER_PASSWORD }}
+      CT_E2E_REVIEWER_EMAIL: ${{ secrets.CT_E2E_REVIEWER_EMAIL }}
+      CT_E2E_REVIEWER_PASSWORD: ${{ secrets.CT_E2E_REVIEWER_PASSWORD }}
+      CT_E2E_ACK_DISPOSABLE_WRITES: YES_DISPOSABLE_WRITES
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '20'
+          cache: npm
+      - run: npm ci
+      - name: Refuse production and exercise real Auth/JWT/Storage
+        run: node scripts/ct02k-disposable-supabase-e2e.mjs
