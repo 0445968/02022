@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import {
   useState,
 } from 'react';
@@ -36,6 +37,7 @@ import {
 
 interface StoryEditorHeaderProps {
   dict: Dictionary;
+  assignmentHref?:string;
 
   locale:
     | 'en'
@@ -100,6 +102,7 @@ interface StoryEditorHeaderProps {
 
 export function StoryEditorHeader({
   dict,
+  assignmentHref,
   locale,
   status,
   saveState,
@@ -315,6 +318,7 @@ export function StoryEditorHeader({
             }
           </span>
 
+          {assignmentHref&&<Link href={assignmentHref} target="_blank" rel="noopener noreferrer" className="inline-flex h-8 items-center rounded-lg border border-border bg-white px-2 text-xs font-semibold hover:bg-surface-muted">{locale==='es'?'Asignaciones':'Assignments'}</Link>}
           {/* Preview */}
           <button
             type="button"

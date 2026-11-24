@@ -1,3 +1,4 @@
+import {canManageStoryAssignments} from '@/lib/services/story-assignments';
 import {requireWorkspacePage,scopedNewsroomEnabled,newsroomLocale,mayMountFullStoryEditor} from '@/lib/services/newsroom-workspace';
 import { notFound, redirect } from 'next/navigation';
 import { getCurrentUser } from '@/lib/auth/session';
@@ -48,6 +49,7 @@ export default async function EditStoryPage({ params }: PageProps) {
   return (
     <StoryEditor
       dict={dict}
+      assignmentHref={await canManageStoryAssignments(params.id)?'/newsroom/stories/'+params.id+'/assignments':undefined}
       locale={locale}
       story={story!}
       user={{
