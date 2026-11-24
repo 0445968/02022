@@ -20,6 +20,7 @@ interface NewsroomShellProps {
   locale: Locale;
   user: CurrentUser;
   children: React.ReactNode;
+  showTeamNav?: boolean;
 }
 
 export function NewsroomShell({
@@ -27,6 +28,7 @@ export function NewsroomShell({
   locale,
   user,
   children,
+  showTeamNav = false,
 }: NewsroomShellProps) {
   return (
     <div className="flex h-screen flex-col overflow-hidden bg-surface-subtle">
@@ -39,6 +41,7 @@ export function NewsroomShell({
         <NewsroomSidebar
           dict={dict}
           user={user}
+          showTeamNav={showTeamNav}
         />
 
         <main

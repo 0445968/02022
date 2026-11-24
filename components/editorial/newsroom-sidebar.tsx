@@ -12,6 +12,7 @@ import {
   MessageSquare,
   BarChart3,
   Calendar,
+  ShieldCheck,
   User,
   Users,
 } from 'lucide-react';
@@ -31,6 +32,7 @@ import {
 interface NewsroomSidebarProps {
   dict: Dictionary;
   user: CurrentUser;
+  showTeamNav?: boolean;
 }
 
 const NAV = [
@@ -86,6 +88,11 @@ const NAV = [
     href: '/newsroom/schedule',
   },
   {
+    key: 'team',
+    icon: ShieldCheck,
+    href: '/newsroom/team',
+  },
+  {
     key: 'profile',
     icon: User,
     href: '/newsroom/profile',
@@ -95,6 +102,7 @@ const NAV = [
 export function NewsroomSidebar({
   dict,
   user,
+  showTeamNav = false,
 }: NewsroomSidebarProps) {
   const pathname =
     usePathname();
@@ -179,7 +187,7 @@ export function NewsroomSidebar({
             px-2
           "
         >
-          {NAV.map(
+          {NAV.filter(item => item.key !== 'team' || showTeamNav).map(
             (item) => {
               const Icon =
                 item.icon;

@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation';
 import { getCurrentUser, RequireAuthError, RequireRoleError } from '@/lib/auth/session';
 import { mayEnterNewsroom } from '@/lib/permissions/staff-route-gates';
+import { resolveStaffPermissionOnServer } from '@/lib/permissions/server';
 import { getDictionary } from '@/lib/i18n/dictionaries';
 import { defaultLocale } from '@/lib/i18n/config';
 import { NewsroomShell } from '@/components/editorial/newsroom-shell';
@@ -34,12 +35,15 @@ export default async function NewsroomLayout({
 
   const locale = user.profile?.preferredLocale ?? defaultLocale;
   const dict = getDictionary(locale);
+  const showTeamNav = process.env.CT_STAFF_ACCESS_V2_ENABLED === 'true'
+    && (await resolveStaffPermissionOnServer('team.view')).allowed;
 
   return (
     <NewsroomShell
   dict={dict}
   locale={locale}
   user={user}
+  showTeamNav={showTeamNav}
 >
   {children}
 </NewsroomShell>
