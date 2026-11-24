@@ -20,3 +20,7 @@ Read-only preflight: 23 stories, 4 active unpublished revisions, 43 versions, 22
 
 ## NEXT CT-04a.3
 Implement actual server-only feature-gated issue/replace/cancel/list/redeem API using existing token contract, same-origin bounded JSON streamed body, auth.getUser(), no supplied actor IDs, current owner/team.invite gating, safe error handling/no-store/referrer policy. One-time raw code returned only to authorized owner on explicit successful issue; no external email until sender approved. Build EN/ES Newsroom invite manager (redacted status list/pagination, selected configured preset revision, expiry, reason + confirmation, copy code only once, replace/cancel) and verified-user redemption page with code POST, safe unauthenticated login/return, no token in URL, browser persistence or logs. Test unauthorized flags/identities, owner and reader separation, rate limits, unknown/expired/reused/changed email, no auto byline/link. CT-04b first login and CT-05 scoped newsroom follow.
+
+
+## Verification correction
+CT-04a.2 final `b2b5e6a9bf7cfa9023f776df7f352f334d526617` failed expanded PG17 test because JavaScript string replacement collapsed four SQL dollar-quote delimiters. Corrected fixture only in `03e4478560d3c9e2816e3d72859ed186627583e9`; all 13 workflows then SUCCESS, including [PG17 #45426936455](https://github.com/0445968/02022/actions/runs/45426936455) and [quality #45426935776](https://github.com/0445968/02022/actions/runs/45426935776). No assertion removed or live DB changed.

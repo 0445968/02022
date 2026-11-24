@@ -7,6 +7,7 @@ import {STAFF_ROLE_KEYS,type StaffRoleKey,type StaffRoleOperation} from '@/lib/p
 import {proposedRoleGrants} from '@/lib/permissions/role-presets';
 import type {TeamDirectory,TeamMember,TeamStatus} from '@/lib/permissions/staff-team-types';
 import {StaffPermissionInspector} from '@/components/editorial/team/StaffPermissionInspector';
+import {StaffInvitationManager} from '@/components/editorial/team/StaffInvitationManager';
 import {RolePresetMatrixEditor} from '@/components/editorial/team/RolePresetMatrixEditor';
 
 const copy={
@@ -73,7 +74,7 @@ function isRoleOperation(op:StaffRoleOperation):boolean{
   return op==='grant_role'||op==='revoke_role';
 }
 
-export function StaffTeamManager({locale}:{locale:Locale}){
+export function StaffTeamManager({locale,showInvitations=false}:{locale:Locale;showInvitations?:boolean}){
   const t=copy[locale==='es'?'es':'en'];
   const [data,setData]=useState<TeamDirectory|null>(null);
   const [loading,setLoading]=useState(true);
@@ -173,6 +174,7 @@ export function StaffTeamManager({locale}:{locale:Locale}){
       <CheckCircle2 className="h-4 w-4"/>{success}</p>}
     {loading&&!data&&<p className="text-sm text-muted-foreground">{t.loading}</p>}
     {data&&<>
+      {showInvitations&&<StaffInvitationManager locale={locale} presets={data.presets}/>}
       <div className="grid gap-3 sm:grid-cols-3">
         <div className={row+' p-4'}><p className="text-xs text-muted-foreground">{t.directory}</p>
           <p className="mt-1 text-2xl font-bold text-deep">{data.totalMembers}</p></div>
