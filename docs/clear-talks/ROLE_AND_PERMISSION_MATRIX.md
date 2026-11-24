@@ -169,3 +169,7 @@ These are recommended starter presets and architecture, NOT yet an instruction t
 
 ### CT-05b.3 staged writer creation
 [Draft PR #27](https://github.com/0445968/02022/pull/27): actual newsroom.access/story.create plus prospective self-assigned view/edit and current verified identity; atomic private narrowly privileged draft and own internal assignment creation with audit and exact post-assignment recheck. Public author unset; no direct role/assignment grant or publish privilege. Idempotent request retry, strict input, public invoker wrappers, default-off app flag and no live migration. Generated search index guard correction. Review private definer and full legacy parity before release. CT05b.4 media and CT06 editorial workflow next.
+
+
+### CT-05b.4 staged approved contributor inline media
+[Draft PR #28](https://github.com/0445968/02022/pull/28): exact current assigned view/edit and global media.upload, plus revision.view/edit_assigned for published source, allow safe approved image picker. No media.view_all grant or unrestricted base-table access. Only canonical cleared public asset nodes, no private URL, exact credit/caption/alt/asset ID/source and tagged revalidation on save/submit. Existing untagged legacy images preserved; new clones/forgery denied. Narrow draft/revision CAS invoker RPCs, direct assigned-only guards. No featured-image mutation or approval/promotion privilege; existing private upload/review workflow separate. Aggregate quota next and CT06 actual approval/publish gate; no live changes.
