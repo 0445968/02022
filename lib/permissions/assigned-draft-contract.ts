@@ -38,7 +38,7 @@ export function validateDraftBody(raw:unknown):Record<string,unknown>{
     }else if(n.text!==undefined)throw Error('Invalid text node');
     if(n.type==='image'){
       // Existing inline media is compared to stored nodes separately. No new image URL.
-      attributes(n.attrs,{src:nullableText,alt:nullableText,title:nullableText,mediaAssetId:nullableText,description:nullableText,credit:nullableText});
+      attributes(n.attrs,{src:nullableText,alt:nullableText,title:nullableText,mediaAssetId:nullableText,description:nullableText,credit:nullableText,approvedAttachment:v=>v===null||v===true});
       if(n.content!==undefined||n.marks!==undefined)throw Error('Invalid image');
     }else if(n.type==='heading')attributes(n.attrs,{level:v=>v===2||v===3,textAlign:align});
     else if(n.type==='paragraph')attributes(n.attrs,{textAlign:align});

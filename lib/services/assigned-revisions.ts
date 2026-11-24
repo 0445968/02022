@@ -1,9 +1,10 @@
 import 'server-only';
+import {assignedApprovedMediaEnabled} from '@/lib/services/assigned-media';
 import type {SupabaseClient} from '@supabase/supabase-js';
 import {createClient} from '@/lib/db/supabase-server';
 import {assignedDraftEnabled} from '@/lib/services/assigned-drafts';
 import {resolveStoryStaffPermissionsOnServer} from '@/lib/permissions/server';
-import {DRAFT_UUID,isDraftTimestamp} from '@/lib/permissions/assigned-draft-contract';
+import {DRAFT_UUID,isDraftTimestamp,existingImagesOnly} from '@/lib/permissions/assigned-draft-contract';
 import {DraftHttpError} from '@/lib/permissions/assigned-draft-http';
 import type {RevisionCommand,RevisionState} from '@/lib/permissions/assigned-revision-contract';
 export function assignedRevisionEnabled(){return assignedDraftEnabled()&&process.env.CT_ASSIGNED_REVISION_EDITOR_ENABLED==='true';}
@@ -39,6 +40,11 @@ export async function readAssignedRevision(id:string){
 }
 export async function saveAssignedRevision(id:string,command:RevisionCommand){
  const db=await client(id);
+ if(!assignedApprovedMediaEnabled(true)){
+   const old=await readAssignedRevision(id);
+   if(old.updatedAt!==command.expectedUpdatedAt||old.liveUpdatedAt!==command.liveUpdatedAt||old.revisionId!==command.revisionId)throw new DraftHttpError(409);
+   if(!existingImagesOnly(old.body,command.copy.body))throw new DraftHttpError(422);
+ }
  const {data,error}=await db.rpc('staff_save_assigned_revision',{p_story:id,p_live_updated_at:command.liveUpdatedAt,
    p_revision:command.revisionId,p_updated_at:command.expectedUpdatedAt,p_action:command.action,
    p_headline:command.copy.headline,p_subheadline:command.copy.subheadline,p_summary:command.copy.summary,p_body:command.copy.body});

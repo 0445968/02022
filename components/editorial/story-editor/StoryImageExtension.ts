@@ -8,6 +8,11 @@ export const StoryImageExtension =
       return {
         ...this.parent?.(),
 
+        approvedAttachment: {
+          default: null,
+          parseHTML: element=>element.getAttribute('data-approved-attachment')==='true'?true:null,
+          renderHTML: attributes=>attributes.approvedAttachment===true?{'data-approved-attachment':'true'}:{},
+        },
         mediaAssetId: {
           default: null,
 

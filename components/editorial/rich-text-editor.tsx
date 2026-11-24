@@ -31,6 +31,9 @@ import type {
   Dictionary,
 } from '@/lib/i18n/dictionaries';
 
+import {AssignedApprovedMediaPicker,type AssignedMediaPickerContext} from '@/components/editorial/story-editor/AssignedApprovedMediaPicker';
+import type {ApprovedImageNode} from '@/lib/permissions/assigned-media-contract';
+
 import type {
   MediaAsset,
 } from '@/types/editorial';
@@ -74,6 +77,7 @@ interface RichTextEditorProps {
 
   userId: string;
   allowMedia?:boolean;
+  assignedMedia?:AssignedMediaPickerContext;
   editable?:boolean;
 }
 
@@ -86,7 +90,7 @@ export function RichTextEditor({
   onChange,
   placeholder,
   dict,
-  userId,allowMedia=true,editable=true,
+  userId,allowMedia=true,editable=true,assignedMedia,
 }: RichTextEditorProps) {
   const [
     mediaPickerOpen,
@@ -361,6 +365,15 @@ export function RichTextEditor({
   /* ======================================================= */
   /* SELECT MEDIA ASSET */
   /* ======================================================= */
+
+  function insertApprovedImage(node:ApprovedImageNode){
+    if(!editable||!assignedMedia)return;
+    const position=imageInsertPositionRef.current;
+    let chain=ed.chain().focus();
+    if(position!==null)chain=chain.setTextSelection(Math.min(position,ed.state.doc.content.size));
+    chain.insertContent(node).run();
+    imageInsertPositionRef.current=null;setMediaPickerOpen(false);
+  }
 
   function handleImageSelected(
     media: MediaAsset
@@ -794,7 +807,8 @@ export function RichTextEditor({
 
       {/* Media Library */}
 
-      {allowMedia&&editable&&mediaPickerOpen && (
+      {allowMedia&&editable&&mediaPickerOpen&&assignedMedia&&<AssignedApprovedMediaPicker context={assignedMedia} onSelect={insertApprovedImage} onClose={()=>{imageInsertPositionRef.current=null;setMediaPickerOpen(false);ed.chain().focus().run();}}/>}
+      {allowMedia&&editable&&mediaPickerOpen&&!assignedMedia && (
         <MediaPicker
           dict={dict}
           userId={userId}
@@ -819,7 +833,7 @@ export function RichTextEditor({
 
       {/* Image metadata modal */}
 
-      {allowMedia&&editable&&selectedImage && (
+      {allowMedia&&editable&&!assignedMedia&&selectedImage && (
         <div
           className="
             fixed
