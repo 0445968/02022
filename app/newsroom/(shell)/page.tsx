@@ -1,5 +1,7 @@
 import { FileText, FileEdit, Send, Eye } from 'lucide-react';
 import Link from 'next/link';
+import {redirect} from 'next/navigation';
+import {staffOnboardingEnabled,readStaffOnboarding} from '@/lib/services/staff-onboarding';
 import { getCurrentUser } from '@/lib/auth/session';
 import { getDictionary } from '@/lib/i18n/dictionaries';
 import { defaultLocale } from '@/lib/i18n/config';
@@ -9,6 +11,11 @@ import { getStoryCounts } from '@/lib/services/stories';
 export default async function NewsroomDashboard() {
   const user = await getCurrentUser();
   const locale = user?.profile?.preferredLocale ?? defaultLocale;
+  if(staffOnboardingEnabled()){
+    let profile;
+    try{profile=(await readStaffOnboarding()).profile;}catch{redirect('/newsroom/onboarding');}
+    if(!profile)redirect('/newsroom/onboarding');
+  }
   const dict = getDictionary(locale);
   const roleLabel = resolveRoleLabel(user);
   const counts = await getStoryCounts();
@@ -59,6 +66,7 @@ export default async function NewsroomDashboard() {
         })}
       </div>
 
+      {staffOnboardingEnabled()&&<Link href="/newsroom/onboarding" className="mt-4 inline-flex text-sm font-medium text-primary underline">{locale==='es'?'Perfil privado del equipo':'Private staff profile'}</Link>}
       {/* Profile summary */}
       <div className="mt-8 rounded-xl border border-border bg-white p-6">
         <h2 className="font-headline text-lg font-semibold text-deep">

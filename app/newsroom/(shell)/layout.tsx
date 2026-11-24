@@ -4,6 +4,7 @@ import { mayEnterNewsroom } from '@/lib/permissions/staff-route-gates';
 import { resolveStaffPermissionOnServer } from '@/lib/permissions/server';
 import { getDictionary } from '@/lib/i18n/dictionaries';
 import { defaultLocale } from '@/lib/i18n/config';
+import {staffOnboardingEnabled,readStaffOnboarding} from '@/lib/services/staff-onboarding';
 import { NewsroomShell } from '@/components/editorial/newsroom-shell';
 
 /**
@@ -33,7 +34,10 @@ export default async function NewsroomLayout({
     redirect('/newsroom/denied');
   }
 
-  const locale = user.profile?.preferredLocale ?? defaultLocale;
+  let locale = user.profile?.preferredLocale ?? defaultLocale;
+  if(staffOnboardingEnabled()){
+    try{locale=(await readStaffOnboarding()).profile?.locale??locale;}catch{/* No fallback authorization: entrance was already verified. */}
+  }
   const dict = getDictionary(locale);
   const showTeamNav = process.env.CT_STAFF_ACCESS_V2_ENABLED === 'true'
     && (await resolveStaffPermissionOnServer('team.view')).allowed;
