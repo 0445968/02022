@@ -127,8 +127,17 @@ begin
  begin
   update public.stories set body=jsonb_set(doc,'{content,0,attrs,credit}','"Forged credit"'),updated_by=auth.uid() where id=draft;
   raise exception 'Forged credit saved';exception when invalid_parameter_value then null;end;
- update public.stories set body=doc,updated_by=auth.uid() where id=draft;
- get diagnostics n=row_count;if n<>1 then raise exception 'Approved draft image failed';end if;
+ select jsonb_build_object('updated_at',updated_at) into v from public.stories where id=draft;
+ response:=public.staff_save_assigned_draft_with_media(draft,(v->>'updated_at')::timestamptz,'save','Approved draft',null,null,doc);
+ if response->'body' is distinct from doc then raise exception 'Approved draft image failed';end if;
+ begin
+   perform public.staff_save_assigned_draft_with_media(draft,(v->>'updated_at')::timestamptz-interval '1 second','save','Stale draft',null,null,doc);
+   raise exception 'Stale draft RPC succeeded';
+ exception when serialization_failure then null;end;
+ begin
+   perform public.staff_save_assigned_draft_with_media(draft,(response->>'updated_at')::timestamptz,'save','Forged URL',null,null,jsonb_set(doc,'{content,0,attrs,src}','"https://example.invalid/forged.jpg"'));
+   raise exception 'Forged image via draft RPC';
+ exception when invalid_parameter_value then null;end;
  response:=public.staff_list_assigned_approved_media(live,true,0);
  if jsonb_array_length(response->'items')<>1 then raise exception 'Revision picker missing';end if;
  v:=public.staff_read_assigned_revision(live);
@@ -136,6 +145,24 @@ begin
  if response->'body' is distinct from doc then raise exception 'Approved revision image not saved';end if;
 end $$;
 commit;
+-- No new image insertion without the media permission, even for an
+-- otherwise assigned user. Existing canonical images remain readable.
+begin;
+delete from public.staff_role_capabilities where role_preset_id=(select id from public.staff_role_presets where role_key='freelancer') and capability_key='media.upload';
+set local role authenticated;
+set local request.jwt.claim.sub='00000000-0000-0000-0000-000000000003';
+do $
+declare sid uuid:='20000000-0000-0000-0000-000000000002'; b jsonb; stamp timestamptz;
+begin
+ select body,updated_at into b,stamp from public.stories where id=sid;
+ begin perform public.staff_list_assigned_approved_media(sid,false,0);
+ raise exception 'Picker available without media upload grant';exception when insufficient_privilege then null;end;
+ begin
+   perform public.staff_save_assigned_draft_with_media(sid,stamp,'save','Duplicate media',null,null,jsonb_build_object('type','doc','content',jsonb_build_array(b->'content'->0,b->'content'->0)));
+   raise exception 'New attachment without media grant';
+ exception when invalid_parameter_value then null;end;
+end $;
+rollback;
 -- Rights change after attachment: cannot silently submit tagged invalid image.
 update public.media_assets set rights_status='restricted' where id='60000000-0000-0000-0000-000000000001';
 begin;

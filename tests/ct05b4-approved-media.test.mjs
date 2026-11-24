@@ -16,7 +16,10 @@ test('CT05b4 safe canonical picker projection',()=>{
 test('CT05b4 assigned picker and database canonical image guards',()=>{
  const s=file('supabase/migrations/20261124170144_ct05b_approved_media_attachments.sql');
  for(const x of ['rights_status','license_expires_at','storage.objects','approvedAttachment','n.n>coalesce(o.n,0)','m.node=n.node',"has_staff_permission('media.upload')",'assigned_inline_media_allowed(old.id,old.body,new.body)','assigned_inline_media_allowed(new.story_id,v_body,new.body)','assigned_inline_media_allowed(p_story,coalesce(r.body,s.body),p_body)'])assert.ok(s.includes(x),x);
- assert.doesNotMatch(s,/update public\.stories|security definer/i);
+ assert.doesNotMatch(s,/security definer/i);
+ assert.equal((s.match(/update public\.stories/g)||[]).length,1);
+ assert.match(s,/where id=p_story and status='draft' and updated_at=p_updated_at returning \* into s/);
+ assert.match(file('lib/services/assigned-drafts.ts'),/rpc\('staff_save_assigned_draft_with_media'/);
  assert.match(file('lib/services/assigned-media.ts'),/auth\.getUser\(\)/);
  assert.match(file('.env.example'),/CT_ASSIGNED_APPROVED_MEDIA_ENABLED=false/);
  assert.match(file('components/editorial/rich-text-editor.tsx'),/mediaPickerOpen&&!assignedMedia/);

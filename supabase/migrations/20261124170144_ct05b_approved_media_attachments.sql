@@ -222,4 +222,42 @@ begin
  return public.staff_read_assigned_revision(p_story);
 end;
 $fn$;
+
+-- Same narrow copy contract even when the caller also has edit_all. The
+-- legacy full editor retains its separate authority; the assigned editor
+-- always uses an exact draft, verified actor, CAS and canonical media guard.
+create function public.staff_save_assigned_draft_with_media(p_story uuid,p_updated_at timestamptz,
+ p_action text,p_headline text,p_subheadline text,p_summary text,p_body jsonb)
+returns jsonb language plpgsql security invoker set search_path=''
+as $fn$
+declare s public.stories%rowtype;
+begin
+ if not newsroom_private.has_staff_permission('newsroom.access')
+ or not newsroom_private.has_staff_permission('story.view_assigned',p_story)
+ or not newsroom_private.has_staff_permission('story.edit_assigned',p_story) then
+   raise exception 'Assigned draft unavailable' using errcode='42501';end if;
+ if p_action is null or p_action not in ('save','submit') or p_updated_at is null
+ or p_headline is null or length(btrim(p_headline)) not between 1 and 300
+ or length(coalesce(p_subheadline,''))>600 or length(coalesce(p_summary,''))>3000
+ or not newsroom_private.valid_assigned_body(p_body) then
+   raise exception 'Invalid copy' using errcode='22023';end if;
+ if p_action='submit' and not newsroom_private.has_staff_permission('story.submit_review',p_story) then
+   raise exception 'Review submission denied' using errcode='42501';end if;
+ select * into s from public.stories where id=p_story and status='draft' for update;
+ if not found or s.updated_at is distinct from p_updated_at then
+   raise exception 'Draft changed' using errcode='40001';end if;
+ if not newsroom_private.assigned_inline_media_allowed(p_story,s.body,p_body) then
+   raise exception 'Inline media not eligible; remove or reselect it' using errcode='22023';end if;
+ update public.stories set headline=btrim(p_headline),subheadline=p_subheadline,summary=p_summary,
+   body=p_body,updated_by=(select auth.uid()),
+   status=case when p_action='submit' then 'in_review'::public.story_status else 'draft'::public.story_status end
+ where id=p_story and status='draft' and updated_at=p_updated_at returning * into s;
+ if not found then raise exception 'Draft changed' using errcode='40001';end if;
+ return jsonb_build_object('id',s.id,'headline',s.headline,'subheadline',s.subheadline,'summary',s.summary,
+   'body',s.body,'language',s.language,'status',s.status,'updated_at',s.updated_at);
+end;
+$fn$;
+revoke all on function public.staff_save_assigned_draft_with_media(uuid,timestamptz,text,text,text,text,jsonb) from public,anon,authenticated;
+grant execute on function public.staff_save_assigned_draft_with_media(uuid,timestamptz,text,text,text,text,jsonb) to authenticated;
+
 commit;

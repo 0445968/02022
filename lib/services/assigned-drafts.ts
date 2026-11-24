@@ -44,6 +44,14 @@ export async function writeAssignedDraft(storyId:string,command:DraftCommand):Pr
  if(readError)throw new DraftHttpError(503);
  if(!old||old.updated_at!==command.expectedUpdatedAt)throw new DraftHttpError(409);
  if(!existingImagesOnly(old.body,command.copy.body)&&!assignedApprovedMediaEnabled())throw new DraftHttpError(422);
+ if(assignedApprovedMediaEnabled()){
+   const {data,error}=await db.rpc('staff_save_assigned_draft_with_media',{p_story:storyId,
+     p_updated_at:command.expectedUpdatedAt,p_action:command.action,p_headline:command.copy.headline,
+     p_subheadline:command.copy.subheadline,p_summary:command.copy.summary,p_body:command.copy.body});
+   if(error)throw new DraftHttpError(error.code==='42501'?403:error.code==='22023'?422:error.code==='40001'||error.code==='40P01'?409:503);
+   if(!data)throw new DraftHttpError(409);
+   return map(data,canSubmit);
+ }
  // One user-session RLS update, exact original timestamp and draft status.
  // The DB trigger independently rejects assigned-only protected-field changes.
  const {data,error}=await db.from('stories').update({
