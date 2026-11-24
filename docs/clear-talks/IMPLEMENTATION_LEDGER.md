@@ -18,7 +18,7 @@ Every code batch must update the row AND append an entry under Session log in th
 | CT-01 | Stories thumbnails + active unpublished revision indicator | P0 | CT-00 baseline | IMPLEMENTED | [Draft PR #4](https://github.com/0445968/02022/pull/4); 13 tests and CI green, browser QA pending |
 | CT-02 | Permissions schema, server API and RLS foundation | P0 | CT-00 | IN PROGRESS | CT-02a–j [#5–#14](https://github.com/0445968/02022/pull/14), CT-02k [#15](https://github.com/0445968/02022/pull/15): staged reader/comment/report/bookmark RLS and manual real-JWT/Storage test harness; first owner, migration reconciliation, production cutover still pending |
 | CT-03 | Newsroom team/admin permission manager | P0 | CT-02 | IN PROGRESS | CT-03a [#16](https://github.com/0445968/02022/pull/16), CT-03b [#17](https://github.com/0445968/02022/pull/17), CT-03c [#18](https://github.com/0445968/02022/pull/18): scoped grants and audit, bilingual team and role preset editor, revision conflicts; real Auth QA, safe production installation and invitations still pending |
-| CT-04 | Invited staff/freelancer onboarding and preset assignment | P0 | CT-02/03 | IN PROGRESS | CT-04a.1 token/input contract; persistence, redemption RPC, UI and delivery pending |
+| CT-04 | Invited staff/freelancer onboarding and preset assignment | P0 | CT-02/03 | IN PROGRESS | CT-04a.1 [draft PR #19](https://github.com/0445968/02022/pull/19) token/input contract; persistence, redemption RPC, UI and delivery pending |
 | CT-05 | Freelancer/contributor and staff-scoped newsroom | P0 | CT-02/04 | PLANNED | Roles contract |
 | CT-06 | Story assignments and editorial review workflow | P1 | CT-02/05 | PLANNED | Blueprint §6 |
 | CT-07 | Newsroom Comments moderation | P1 | CT-02 | PLANNED | Missing route |
@@ -264,3 +264,7 @@ Notes: CT-00 and CT-01 are the intended opening work in the next chat. CT-02 pre
 - State: PLANNED -> IN PROGRESS. Stacked on CT-03c final `a9dc0d743180c26bdfc64789f49711cf66f00e73` (PR #18); verified its final head quality and all 11 PG17 workflows successful. Main still `f5c0140fb2db165e43303a064f7bc15b765d4505`.
 - New branch `feature/ct04a-invitation-foundation-2026-11-23`: finite nonowner role/member validation, explicit audited-intent fields, configured preset revision binding, canonical expiry, random 256-bit token/digest and fail-closed identity/lifecycle preflight. Added executable Node tests. No SQL, runtime routes, email, actual membership or permission grants; CI pending. See CT04A1_REVIEW.md.
 - Existing styling/fonts, data and release gates unchanged. Next CT-04a.2 persistence + atomic audited verified-email redemption and management endpoints/UI; no production changes without explicit approval.
+
+### Verification update — CT-04a.1
+- Draft PR [#19](https://github.com/0445968/02022/pull/19), exact code SHA `201e193ec38eee0325297a32943f9d2fbfb15adb`. On source SHA: 11 of 11 inherited PG17 security workflows successful; [quality run #45329196599](https://github.com/0445968/02022/actions/runs/45329196599) not yet verified complete; do not claim a green quality/build result.
+- No new SQL/PG suite in this slice, no live activation. Next CT-04a.2 only after source-quality check, including actual RLS schema and atomic audited redemption tests. Final documentation head may trigger fresh CI.

@@ -121,6 +121,10 @@ Onboarding:
 Admin chooses predetermined role, invitee real email, expiry and optionally initial assignment -> system sends single-use invitation -> invitee confirms/authenticates on Supabase -> verified identity redeems invite -> membership role and scope recorded atomically -> newsroom routes reflect role.
 Protect against email mismatch, reused tokens, bulk invitation abuse, unauthorized signups and accidentally granting editor to readers. Plan a safe backfill for existing users and a reversible process for assigning byline to account. Email sender must be verified and working before live invitation emails.
 
+### CT-04a.1 staged invitation contract
+
+[Draft PR #19](https://github.com/0445968/02022/pull/19): strict finite nonowner role/member type and approved preset revision, explicit reason/confirmation, invite expiry at most 7 days, contractor/freelancer membership expiry at most 365 days and after invite expiry. No caller-supplied scopes, actor/byline IDs or grants. 256-bit random URL-safe token with domain-separated hash and constant-time comparison; raw token never persisted/logged. Verified current Auth email, confirmation, identity and invite state must be checked again by an atomic DB transaction. A preflight true result is NOT permission. Role grants remain disabled and unseeded; actual persistence, owner approval, one-time redemption, resend/revoke, UI, sender approval and real Auth tests remain next. No invitations sent or members created.
+
 ## 8. Required negative-test matrix
 
 For EACH protected route/API/RPC/storage action test: anonymous; authenticated reader; freelancer with assignment; freelancer without assignment; staff writer; specialized staff; editor; managing editor; owner/admin; revoked member; user with expired invite; user whose profile includes forged user_metadata role.

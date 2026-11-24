@@ -18,3 +18,7 @@ No production merges, SQL, flag changes, mail, account creation, role grants or 
 
 ## Release boundary
 Keep all staff flags OFF. Existing live project and main remain untouched. Prior CT-02 release gates persist (independent database AND Storage backup/restore, hosted migration registry reconciliation, approved Owner/grants, real disposable Auth/JWT/Storage and EN/ES browser QA, media rights and advisor review). Do not claim this slice is a functioning invite workflow. No migration or endpoint is shipped by CT-04a.1; rollback is revert/close draft PR.
+
+### Verification update — CT-04a.1
+- Draft PR [#19](https://github.com/0445968/02022/pull/19), exact code SHA `201e193ec38eee0325297a32943f9d2fbfb15adb`. On source SHA: 11 of 11 inherited PG17 security workflows successful; [quality run #45329196599](https://github.com/0445968/02022/actions/runs/45329196599) not yet verified complete; do not claim a green quality/build result.
+- No new SQL/PG suite in this slice, no live activation. Next CT-04a.2 only after source-quality check, including actual RLS schema and atomic audited redemption tests. Final documentation head may trigger fresh CI.
