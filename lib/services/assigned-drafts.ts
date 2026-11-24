@@ -1,4 +1,5 @@
 import 'server-only';
+import {assignedApprovedMediaEnabled} from '@/lib/services/assigned-media';
 import type {SupabaseClient} from '@supabase/supabase-js';
 import {createClient} from '@/lib/db/supabase-server';
 import {isDevAuthBypass} from '@/lib/db/supabase-data';
@@ -42,7 +43,7 @@ export async function writeAssignedDraft(storyId:string,command:DraftCommand):Pr
  const {data:old,error:readError}=await db.from('stories').select('body,updated_at,status').eq('id',storyId).eq('status','draft').maybeSingle();
  if(readError)throw new DraftHttpError(503);
  if(!old||old.updated_at!==command.expectedUpdatedAt)throw new DraftHttpError(409);
- if(!existingImagesOnly(old.body,command.copy.body))throw new DraftHttpError(422);
+ if(!existingImagesOnly(old.body,command.copy.body)&&!assignedApprovedMediaEnabled())throw new DraftHttpError(422);
  // One user-session RLS update, exact original timestamp and draft status.
  // The DB trigger independently rejects assigned-only protected-field changes.
  const {data,error}=await db.from('stories').update({
