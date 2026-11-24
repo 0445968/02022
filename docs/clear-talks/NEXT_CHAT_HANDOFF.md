@@ -1,3 +1,11 @@
+# CURRENT HANDOFF — CT-08 consolidated completion
+**NEXT CT-09 Newsroom Polls after exact final #48 CI; CT08 live activation and hosted integration gates remain explicitly pending.**
+- Draft PR #48, branch `feature/ct08c-completion-2026-11-24`. Parent #47 final a8d29adb8974298b9680d6e0394062d282ccbb57 all 34 workflows green; retry #45507690193 and app #45507689983.
+- Consolidated CT08: explicit Bogota/UTC/Chicago civil scheduling, UTC choice for duplicated DST times and gap/invalid date rejection; original approval/queue/cancel contracts unchanged. Private scheduler defaults paused; postgres-only audited state changes serialize with existing advisory lock. Committed-run ledger with aggregate results, scoped minimal heartbeat (paused, awaiting, stale >5m, recent, unavailable) in Schedule and Dashboard/Contributor, no global queue counts or job-installed promise. Integrated isolated DB tests for default pause, re-enable, no-op controls, whole-run rollback, bounded replay, current/stale health, reader denial, real concurrent advisory lock and preceding calendar/queue/retry tests. No provider installed or activated.
+- CLI-generated `supabase/migrations/20261124231511_ct08c_scheduler_controls.sql` unapplied. Verify exact final HEAD CI, correct failures. See CT08_SCHEDULER_RUNBOOK.md, CT08_COMPLETION_REVIEW.md. No production SQL/flags/grants/accounts/email/deploy/main merge. Keep CT08 hosted/provider activation, legacy reconciliation, monitoring delivery and release verification in ledger. Use larger coherent batches per user request; CT09 complete poll workflow, authorization, privacy/abuse and public voting design, tests, and staging; no external activation without approval.
+
+---
+## Historical handoffs
 # CURRENT HANDOFF — CT-08c.1
 **NEXT CT-08c.2 explicit timezone/DST scheduling safeguards, then monitoring/operational pause and approval-gated provider activation.**
 - Draft PR #47, branch `feature/ct08c1-scheduler-reliability-2026-11-24`. Parent #46 final 7ae5c91203bb6836c9f0f9671ae6755a971287c3 all 33 workflows green; conflicts #45506808547 and app #45506808167.

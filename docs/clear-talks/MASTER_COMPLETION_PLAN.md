@@ -143,6 +143,8 @@ Every batch starts only after reading the current repo HEAD and ledger. Marked P
 - If offering auto-publication, implement a verified idempotent authorized scheduler with replay handling, reliable provider and observability. Vercel legacy Cron precision/cadence differs by plan; verify current account capability before choosing a minute-level scheduling promise. Never claim a schedule is active until a real job is installed and tested.
 - Gate: schedule, modify, cancel, idempotent publish, incorrect timezones/DST, failed job and manual fallback all tested.
 
+**CT08 implementation staged in PR #48; live activation, provider/monitoring delivery, legacy reconciliation and actual hosted verification remain open.** See CT08_SCHEDULER_RUNBOOK.md. Continue CT09 after exact final CI; no automatic publication claim.
+
 ### CT-09 — Newsroom Polls [P1]
 - Implement missing /newsroom/polls: create/edit questions/options, draft/review, open/close windows, editorial publish/retire, response caps, visible results and moderation as appropriate.
 - Add public voting components/API only after privacy, abuse protections, duplicate vote rules and data retention policy are specified.
