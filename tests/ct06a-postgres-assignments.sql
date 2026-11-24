@@ -27,6 +27,10 @@ begin
   raise exception 'Ineligible reviewer accepted';
  exception when insufficient_privilege then null;end;
  begin
+  perform public.staff_change_story_assignment(sid,mid,'editor','create',0,null,'Assign editor without review capability',gen_random_uuid());
+  raise exception 'Ineligible editor accepted';
+ exception when insufficient_privilege then null;end;
+ begin
   perform public.staff_change_story_assignment(sid,'10000000-0000-0000-0000-000000000002','author','create',0,null,'Self assignment attempt',gen_random_uuid());
   raise exception 'Self assignment allowed';
  exception when insufficient_privilege then null;end;
@@ -103,3 +107,43 @@ end;
 $fn$;
 rollback;
 select 'CT-06a assignment lifecycle, scope, CAS, audit and story preservation passed' as result;
+
+-- Target expiration and explicit denies are independently enforced at mutation.
+begin;
+update public.staff_memberships set expires_at=now()+interval '1 day' where id='10000000-0000-0000-0000-000000000003';
+set local role authenticated;
+set local request.jwt.claim.sub='00000000-0000-0000-0000-000000000002';
+do $fn$
+begin
+ begin
+  perform public.staff_change_story_assignment('20000000-0000-0000-0000-000000000003','10000000-0000-0000-0000-000000000003','author','reopen',5,now()+interval '2 days','Deadline beyond staff contract expiry',gen_random_uuid());
+  raise exception 'Deadline beyond expiry allowed';exception when invalid_parameter_value then null;end;
+end;
+$fn$;
+rollback;
+begin;
+insert into public.staff_capability_overrides(membership_id,capability_key,effect,scope,reason,granted_by)
+values('10000000-0000-0000-0000-000000000003','story.edit_assigned','deny','assigned','Deny writer assignment eligibility','00000000-0000-0000-0000-000000000001');
+set local role authenticated;
+set local request.jwt.claim.sub='00000000-0000-0000-0000-000000000002';
+do $fn$
+begin
+ begin
+  perform public.staff_change_story_assignment('20000000-0000-0000-0000-000000000003','10000000-0000-0000-0000-000000000003','author','reopen',5,null,'Attempt to assign denied writer',gen_random_uuid());
+  raise exception 'Denied target assignment reopened';exception when insufficient_privilege then null;end;
+end;
+$fn$;
+rollback;
+begin;
+update public.stories set status='archived' where id='20000000-0000-0000-0000-000000000003';
+set local role authenticated;
+set local request.jwt.claim.sub='00000000-0000-0000-0000-000000000002';
+do $fn$
+begin
+ begin
+  perform public.staff_change_story_assignment('20000000-0000-0000-0000-000000000003','10000000-0000-0000-0000-000000000003','author','reopen',5,null,'Attempt to reopen archived story assignment',gen_random_uuid());
+  raise exception 'Archived assignment reopened';exception when insufficient_privilege then null;end;
+end;
+$fn$;
+rollback;
+select 'CT-06a target deny, editor eligibility, contract expiry and archive checks passed' as result;

@@ -5,6 +5,9 @@
 -- public RPCs are invoker wrappers, no authenticated table write grant.
 begin;
 alter table public.staff_story_assignments add column revision integer not null default 1 check(revision>0);
+create index ct06a_assignment_audit_story_time on public.staff_access_audit
+ ((coalesce(after_state->>'story_id',before_state->>'story_id')),created_at desc,id desc)
+ where action_key in ('staff_story_assignments.insert','staff_story_assignments.update','staff_story_assignments.delete');
 create function newsroom_private.bump_assignment_revision()
 returns trigger language plpgsql security invoker set search_path=''
 as $fn$
@@ -52,8 +55,9 @@ as $fn$
  then array_remove(array[
   case when newsroom_private.assignment_target_capability(p_member,'story.edit_all',true)
     or newsroom_private.assignment_target_capability(p_member,'story.edit_assigned',true) then 'author' end,
-  case when newsroom_private.assignment_target_capability(p_member,'story.edit_all',true)
-    or newsroom_private.assignment_target_capability(p_member,'story.edit_assigned',true) then 'editor' end,
+  case when newsroom_private.assignment_target_capability(p_member,'story.review',true)
+    and (newsroom_private.assignment_target_capability(p_member,'story.edit_all',true)
+    or newsroom_private.assignment_target_capability(p_member,'story.edit_assigned',true)) then 'editor' end,
   case when newsroom_private.assignment_target_capability(p_member,'story.review',true) then 'reviewer' end,
   case when newsroom_private.assignment_target_capability(p_member,'story.edit_all',true)
     or newsroom_private.assignment_target_capability(p_member,'story.edit_assigned',true) then 'copy' end,
