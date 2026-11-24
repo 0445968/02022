@@ -452,3 +452,9 @@ Notes: CT-00 and CT-01 are the intended opening work in the next chat. CT-02 pre
 - STAGED, draft PR #45, branch `feature/ct08b2b-effective-schedule-2026-11-24`. Parent #44 final 960bd8a3331998b03a677a3b38e5d1f80a68551a all 31 workflows green; application #45505555618.
 - One bounded RPC (1–50 unique requested story IDs), exact verified calendar/story scope plus revision permission, minimal queue source/state/due/snapshot projection, no raw grants. Stories keeps stored status/filter/count and unpublished changes independent; EN/ES Publication queue column shows queued draft or revision, due, blocked, stale, and legacy unverified, with no false 'none' claims. Dashboard retains prior scoped alerts. No filter for effective queue status yet; queue column is page-local, stored status filters still apply. No scheduler activation or production mutation.
 - CLI-generated unapplied `supabase/migrations/20261124225839_ct08b2b_effective_schedule.sql`; see CT08B2B_REVIEW.md. Exact HEAD CI pending.
+
+
+### CT-08b.2c — cross-page calendar conflicts
+- STAGED draft PR #46, branch `feature/ct08b2c-cross-page-conflicts-2026-11-24`. Parent #45 final e871768567be85050ffbcfb32715b95952c72433: all 32 workflows green, including projection #45506023232 and app #45506023068.
+- Server-computed potentialConflict flag checks a current pending reviewed queue and active same-story assignment due at/after publication, across calendar dates, filters and pages, with exact independent permission checks on both rows. Assigned-only viewers cannot infer hidden colleague deadlines; blocked/stale/legacy excluded. Future conflicts appear in attention and dashboard alerts. Advisory only, not an exhaustive dependency or execution guarantee. No new grant, mutation, scheduler activation or hosted changes.
+- CLI-generated unapplied `supabase/migrations/20261124230401_ct08b2c_calendar_conflicts.sql`. CI pending, see CT08B2C_REVIEW.md.

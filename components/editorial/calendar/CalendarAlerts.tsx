@@ -14,7 +14,7 @@ export async function CalendarAlerts({locale}:{locale:Locale}){
   readEditorialCalendar({start,end,mode:'range',filter:'all',page:0})
  ]);
  const fmt=new Intl.DateTimeFormat(locale,{timeZone:ZONE,dateStyle:'medium',timeStyle:'short'});
- const names={overdue:es?'Vence / vencido':'Due / overdue',soon:es?'Próximo':'Upcoming',blocked:es?'Bloqueado':'Blocked',stale:es?'Contenido desactualizado':'Content out of date',legacy:es?'Programación anterior sin verificar':'Unverified legacy schedule'};
+ const names={conflict:es?'Posible conflicto de entrega':'Potential deadline conflict',overdue:es?'Vence / vencido':'Due / overdue',soon:es?'Próximo':'Upcoming',blocked:es?'Bloqueado':'Blocked',stale:es?'Contenido desactualizado':'Content out of date',legacy:es?'Programación anterior sin verificar':'Unverified legacy schedule'};
  const itemLabel=(item:CalendarItem)=>item.kind==='assignment'?(es?'Entrega':'Assignment deadline'):item.kind==='legacy'?names.legacy:item.source==='revision'?(es?'Publicación de cambios':'Revision publication'):(es?'Publicación en cola':'Queued publication');
  const group=(title:string,page:CalendarPage|null,href:string)=>{
   const preview=page?calendarAlertPreview(page):null;

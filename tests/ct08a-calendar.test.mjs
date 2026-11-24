@@ -11,9 +11,11 @@ const id='20000000-0000-0000-0000-000000000002',start='2026-11-01T00:00:00Z',end
 test('CT08a strict bounded calendar query and safe row discriminators',()=>{
  const q={start,end,mode:'range',filter:'all',page:0};assert.deepEqual(parseCalendarQuery(q),q);
  for(const x of [{end:start},{end:'2027-11-01T00:00:00Z'},{page:101},{mode:'unknown'},{actor:id}])assert.throws(()=>parseCalendarQuery({...q,...x}));
- const item={id,storyId:id,headline:'Story',dueAt:end,kind:'legacy',state:'unverified',assignmentType:null,mine:false,assignee:null,source:'draft',snapshotCurrent:null,canCancel:false};
+ const item={id,storyId:id,headline:'Story',dueAt:end,kind:'legacy',state:'unverified',assignmentType:null,mine:false,assignee:null,source:'draft',snapshotCurrent:null,canCancel:false,potentialConflict:false};
  assert.deepEqual(parseCalendarPage({asOf:start,items:[item],hasMore:false}).items,[item]);
  assert.throws(()=>parseCalendarPage({asOf:start,items:[{...item,canCancel:true}],hasMore:false}));
+ assert.throws(()=>parseCalendarPage({asOf:start,items:[{...item,potentialConflict:true}],hasMore:false}));
+ assert.throws(()=>parseCalendarPage({asOf:start,items:[{...item,potentialConflict:undefined}],hasMore:false}));
  assert.throws(()=>parseCalendarPage({asOf:start,items:[{...item,authorizedBy:id}],hasMore:false}));
 });
 test('CT08a read-only calendar uses exact grants and private safe projection',()=>{
