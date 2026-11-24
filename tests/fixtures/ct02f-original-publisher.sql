@@ -216,5 +216,4 @@ BEGIN
   DELETE FROM public.story_revisions
   WHERE id = v_revision.id;
 END;
-$function$
-
+$function$;

@@ -231,8 +231,7 @@ BEGIN
   DELETE FROM public.story_revisions
   WHERE id = v_revision.id;
 END;
-$function$
-
+$function$;
 
 -- Prevent anonymous/PUBLIC callers from executing the privileged publisher.
 -- Keep authenticated EXECUTE for compatibility, with authorization INSIDE
