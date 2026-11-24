@@ -37,7 +37,9 @@ test('preset save is versioned, atomic and audited by current verified owner',()
   assert.match(sql,/set_config\('app\.staff_request_id'/);
   assert.match(sql,/set_config\('app\.staff_reason'/);
   assert.match(sql,/set grant_revision=grant_revision\+1/);
-  assert.match(sql,/on conflict/i);
+  assert.match(sql,/delete from public.staff_role_capabilities/);
+  assert.match(sql,/update public.staff_role_capabilities r set scope/);
+  assert.match(sql,/insert into public.staff_role_capabilities/);
   assert.match(sql,/No permission change to save/);
 });
 test('no arbitrary direct RPC from reader or anon can edit role grants',()=>{
