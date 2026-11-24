@@ -221,3 +221,7 @@ These are recommended starter presets and architecture, NOT yet an instruction t
 
 ### CT-07c.2b staged reader reporting
 [Draft PR #40](https://github.com/0445968/02022/pull/40): current verified reader only, exact published third-party comment and displayed timestamp, one report per comment with duplicate receipt recovery. Own report status projection only, no reviewer IDs/internal notes or raw report table grants. Existing staff scope and resolution preserved, no auto moderation. Flag OFF, no live changes.
+
+
+### CT-07d staged bulk moderation
+[Draft PR #41](https://github.com/0445968/02022/pull/41): authenticated invoker uses existing exact current verified comment.moderate per selected comment, same self-action prohibition and revision CAS, 1–20 all-or-nothing, individual audit events and reason, no raw table grants. Report resolution remains separately authorized/individual. Public comments use anonymous scoped read only with published parent + comment, no shared cache. Default off; no live changes.
