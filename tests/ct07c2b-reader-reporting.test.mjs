@@ -26,3 +26,9 @@ test('CT07c2b reader controls send displayed timestamp and require confirmation'
  assert.match(file('app/[locale]/article/[slug]/page.tsx'),/reportingEnabled=\{readerReportingEnabled\(\)\}/);
  assert.match(file('.env.example'),/CT_READER_REPORTING_ENABLED=false/);
 });
+
+test('CT07c2b SQL verifies actual reader and displayed target; raw report access revoked',()=>{
+ const s=file('supabase/migrations/20261124211055_ct07c_reader_reports.sql');
+ for(const token of ['staff_invite_verified_identity(actor)','c.updated_at is distinct from p_updated_at','c.user_id is not distinct from actor','for update','on conflict(comment_id,reporter_id) do nothing','r.reporter_id=(select auth.uid())','revoke all on public.comment_reports from public,anon,authenticated'])assert.ok(s.includes(token),token);
+ assert.match(s,/create function public\.reader_submit_comment_report[\s\S]*?security invoker/);
+});
