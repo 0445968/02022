@@ -119,8 +119,8 @@ export interface MediaLibraryFilters {
 
 interface MediaLibraryProps {
   dict: Dictionary;
-
   userId: string;
+  privateDraftsEnabled?: boolean;
 }
 
 type BulkAction =
@@ -209,6 +209,7 @@ function getBulkMode(
 export function MediaLibrary({
   dict,
   userId,
+  privateDraftsEnabled = false,
 }: MediaLibraryProps) {
   /* ======================================================= */
   /* DATA */
@@ -1579,11 +1580,11 @@ export function MediaLibrary({
           onViewModeChange={
             handleViewModeChange
           }
-          onUpload={() =>
-            setUploadOpen(
-              true
-            )
-          }
+          onUpload={() => {
+            if (privateDraftsEnabled) {
+              document.getElementById('ct-private-draft-panel')?.scrollIntoView({ behavior: 'smooth' });
+            } else { setUploadOpen(true); }
+          }}
         />
 
         {/* ================================================= */}
@@ -1654,11 +1655,11 @@ export function MediaLibrary({
             onClearFilters={
               resetFilters
             }
-            onUpload={() =>
-              setUploadOpen(
-                true
-              )
-            }
+            onUpload={() => {
+              if (privateDraftsEnabled) {
+                document.getElementById('ct-private-draft-panel')?.scrollIntoView({ behavior: 'smooth' });
+              } else { setUploadOpen(true); }
+            }}
           />
         ) : (
           <>
@@ -1774,7 +1775,7 @@ export function MediaLibrary({
 
         <MediaUploadDrawer
           open={
-            uploadOpen
+            uploadOpen && !privateDraftsEnabled
           }
           onClose={() =>
             setUploadOpen(
