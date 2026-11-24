@@ -20,10 +20,10 @@ async function client(){
 /** Navigation is only discovery. Every queue row and action is checked again in SQL.
  * Global rights allow empty queues; assigned grants require a current published assignment.
  * No service-role client or unrestricted story/comment lookup. */
-export const canEnterCommentModeration=cache(async():Promise<boolean>=>{
+const canEnterCommentCapability=cache(async(mode:'moderation'|'reports'):Promise<boolean>=>{
  if(!commentModerationEnabled())return false;
  try{
-  const keys=['comment.view_queue','comment.moderate'];
+  const keys=mode==='reports'?['comment.manage_reports']:['comment.view_queue','comment.moderate'];
   const g=await resolveGlobalStaffPermissionsOnServer(['newsroom.access',...keys]);
   if(!g.has('newsroom.access'))return false;
   if(keys.some(k=>g.has(k)))return true;
@@ -51,6 +51,8 @@ export const canEnterCommentModeration=cache(async():Promise<boolean>=>{
   return false;
  }catch{return false;}
 });
+export const canEnterCommentModeration=()=>canEnterCommentCapability('moderation');
+export const canDiscoverReportManagement=()=>canEnterCommentCapability('reports');
 function fail(code:string|undefined):never{throw new DraftHttpError(code==='42501'?403:code==='40001'||code==='23505'||code==='40P01'?409:code==='22023'?422:503);}
 export async function readCommentQueue(status:ModerationFilter,storyId:string|null,search:string,page:number){
  if((storyId!==null&&!DRAFT_UUID.test(storyId))||search.length>120||!Number.isInteger(page)||page<0||page>100)throw new DraftHttpError(422);
