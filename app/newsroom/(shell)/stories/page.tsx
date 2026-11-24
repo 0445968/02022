@@ -1,4 +1,6 @@
 import Link from 'next/link';
+import {canEnterEditorialCalendar,readStoryPublicationQueue} from '@/lib/services/editorial-calendar';
+import type {StoryQueueDisplay} from '@/lib/permissions/story-publication-queue';
 import {getWorkspaceAccess,requireWorkspacePage,scopedNewsroomEnabled,newsroomLocale} from '@/lib/services/newsroom-workspace';
 import { Plus } from 'lucide-react';
 import { getCurrentUser } from '@/lib/auth/session';
@@ -64,6 +66,12 @@ export default async function StoriesPage({ searchParams }: PageProps) {
     getAuthors(),
   ]);
 
+  let publicationQueue:StoryQueueDisplay=null;
+  if(await canEnterEditorialCalendar()){
+    try{publicationQueue=storiesResult.items.length?await readStoryPublicationQueue(storiesResult.items.map(s=>s.id)):{asOf:new Date().toISOString(),items:[]};}
+    catch{publicationQueue='unavailable';}
+  }
+
   return (
     <div className="mx-auto max-w-7xl px-6 py-8">
       <div className="flex items-center justify-between border-b border-border pb-5">
@@ -84,6 +92,8 @@ export default async function StoriesPage({ searchParams }: PageProps) {
 
       <StoriesDashboard
         dict={dict}
+        locale={locale}
+        publicationQueue={publicationQueue}
         canEdit={!access||access.fullEditor}
         canCreate={!access||access.createStory}
         stories={storiesResult.items}

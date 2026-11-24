@@ -10,9 +10,12 @@ import type { StoryListItem, Category, StaffOption } from '@/types/editorial';
 import type { StoryStatus, StoryLanguage, IslandScope, AccessLevel } from '@/lib/db/database.types';
 import { statusLabel, accessLabel, islandLabel, categoryLabel } from '@/types/editorial';
 import type { Locale } from '@/types';
+import {queuePresentation,type StoryQueueDisplay} from '@/lib/permissions/story-publication-queue';
 
 interface StoriesDashboardProps {
   dict: Dictionary;
+  locale?:Locale;
+  publicationQueue?:StoryQueueDisplay;
   canEdit?:boolean;
   canCreate?:boolean;
   stories: StoryListItem[];
@@ -37,10 +40,15 @@ const LANGUAGES: (StoryLanguage | 'all')[] = ['all', 'en', 'es'];
 const ISLANDS: (IslandScope | 'all')[] = ['all', 'san_andres', 'old_providence', 'saint_catalina', 'archipelago', 'none'];
 const SORTS: StoriesDashboardProps['currentFilters']['sortBy'][] = ['updated_desc', 'updated_asc', 'published_desc', 'headline_asc'];
 
-export function StoriesDashboard({ dict, canEdit=true, canCreate=true, stories, page, totalPages, total, categories, authors, currentFilters }: StoriesDashboardProps) {
+export function StoriesDashboard({ dict, locale='en', publicationQueue=null, canEdit=true, canCreate=true, stories, page, totalPages, total, categories, authors, currentFilters }: StoriesDashboardProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [searchInput, setSearchInput] = useState(currentFilters.search);
+  const es=locale==='es';
+  const queuePage=publicationQueue&&publicationQueue!=='unavailable'?publicationQueue:null;
+  const queues=new Map(queuePage?.items.map(i=>[i.storyId.toLowerCase(),i] as const)??[]);
+  const queueLabels={legacy:es?'Programación anterior sin verificar':'Unverified legacy schedule',blocked:es?'Publicación bloqueada':'Publication blocked',stale:es?'Revisión desactualizada':'Review out of date',due:es?'Pendiente de ejecución':'Due / awaiting execution',queued:es?'Programado (en cola)':'Scheduled (queued)'};
+  const queueDate=new Intl.DateTimeFormat(locale,{timeZone:'America/Bogota',dateStyle:'medium',timeStyle:'short'});
 
   function updateFilter(key: string, value: string) {
     const params = new URLSearchParams(searchParams.toString());
@@ -126,6 +134,8 @@ export function StoriesDashboard({ dict, canEdit=true, canCreate=true, stories, 
         </div>
       </div>
 
+      {publicationQueue!==null&&<p className="mt-3 text-xs text-muted-foreground">{es?'El filtro de estado usa el estado guardado del artículo. La cola se muestra por separado según sus permisos; un guion no confirma que no haya una programación.':'The status filter uses the stored article status. Queue information is shown separately according to your permissions; a dash does not confirm that no schedule exists.'} {es?'La cola no garantiza la publicación automática.':'A queue does not guarantee automatic publication.'} · America/Bogota</p>}
+      {publicationQueue==='unavailable'&&<p role="alert" className="mt-2 text-xs text-muted-foreground">{es?'No se pudo verificar la cola. Actualice la página.':'Unable to verify the publication queue. Refresh the page.'}</p>}
       {/* Table */}
       <div className="mt-4 overflow-x-auto border border-border bg-white">
         <table className="w-full text-sm">
@@ -134,6 +144,7 @@ export function StoriesDashboard({ dict, canEdit=true, canCreate=true, stories, 
               <th className="px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">{dict.stories.columns.headline}</th>
               <th className="px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">{dict.stories.columns.status}</th>
               <th className="px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">{dict.stories.columns.unpublishedChanges}</th>
+              {publicationQueue!==null&&<th className="px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">{es?'Cola de publicación':'Publication queue'}</th>}
               <th className="hidden px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground md:table-cell">{dict.stories.columns.language}</th>
               <th className="hidden px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground lg:table-cell">{dict.stories.columns.author}</th>
               <th className="hidden px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground lg:table-cell">{dict.stories.columns.editor}</th>
@@ -144,7 +155,7 @@ export function StoriesDashboard({ dict, canEdit=true, canCreate=true, stories, 
           <tbody>
             {stories.length === 0 ? (
               <tr>
-                <td colSpan={8} className="px-4 py-12 text-center">
+                <td colSpan={publicationQueue===null?8:9} className="px-4 py-12 text-center">
                   <p className="font-headline text-lg font-semibold text-deep">{dict.stories.noStories}</p>
                   {canCreate&&<><p className="mt-1 text-sm text-muted-foreground">{dict.stories.noStoriesDesc}</p>
                   <Link
@@ -156,7 +167,10 @@ export function StoriesDashboard({ dict, canEdit=true, canCreate=true, stories, 
                 </td>
               </tr>
             ) : (
-              stories.map((story) => (
+              stories.map((story) => {
+                const queue=queues.get(story.id.toLowerCase());
+                const state=queue&&queuePage?queuePresentation(queue,queuePage.asOf):null;
+                return (
                 <tr key={story.id} className="border-b border-border/60 transition-colors hover:bg-surface-muted/50">
                   <td className="px-4 py-3">
                     <div className="flex min-w-[12rem] items-center gap-3">
@@ -199,6 +213,13 @@ export function StoriesDashboard({ dict, canEdit=true, canCreate=true, stories, 
                       <span className="text-xs text-muted-foreground">{dict.stories.noUnpublishedChanges}</span>
                     )}
                   </td>
+                  {publicationQueue!==null&&<td className="px-4 py-3">
+                    {queue&&state?<div className="space-y-1">
+                      <span className="inline-flex border border-border bg-surface-muted px-2 py-0.5 text-xs font-semibold text-deep">{queue.source==='revision'?(es?'Cambios: ':'Revision: '):''}{queueLabels[state]}</span>
+                      {queue.dueAt&&<p className="text-xs text-muted-foreground">{queueDate.format(new Date(queue.dueAt))}</p>}
+                      {queue.snapshotCurrent===false&&state==='blocked'&&<p className="text-xs text-muted-foreground">{queueLabels.stale}</p>}
+                    </div>:<span className="text-xs text-muted-foreground">{publicationQueue==='unavailable'?(es?'Sin verificar':'Unverified'):'—'}</span>}
+                  </td>}
                   <td className="hidden px-4 py-3 md:table-cell">
                     <span className="font-semibold uppercase tracking-wide text-muted-foreground">{story.language}</span>
                   </td>
@@ -211,7 +232,8 @@ export function StoriesDashboard({ dict, canEdit=true, canCreate=true, stories, 
                     {new Date(story.updatedAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
                   </td>
                 </tr>
-              ))
+                );
+              })
             )}
           </tbody>
         </table>

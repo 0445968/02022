@@ -237,3 +237,7 @@ CT-08b.1 — bilingual scoped calendar interface: /newsroom/schedule, exact perm
 
 ### CT-08b.2a staged dashboard alerts
 EN/ES permission-gated Dashboard and Contributor alerts reuse scoped calendar RPC, first five attention items and next-48-hour items, explicit partial results, no global count, errors shown separately, Bogota timestamps. Calendar marks upcoming and possible same-story assignment due at/after current pending queue when both rows visible on the same page; never infer unseen conflicts, no claim of complete dependency coverage. No new migration, new flags, mutations, notification delivery or production changes. Exact batched story schedule status and complete cross-page conflict detection remain CT08b.2b and later.
+
+
+### CT-08b.2b — story publication queue projection
+One bounded RPC (1–50 unique requested story IDs), exact verified calendar/story scope plus revision permission, minimal queue source/state/due/snapshot projection, no raw grants. Stories keeps stored status/filter/count and unpublished changes independent; EN/ES Publication queue column shows queued draft or revision, due, blocked, stale, and legacy unverified, with no false 'none' claims. Dashboard retains prior scoped alerts. No filter for effective queue status yet; queue column is page-local, stored status filters still apply. No scheduler activation or production mutation.

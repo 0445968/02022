@@ -1,3 +1,11 @@
+# CURRENT HANDOFF — CT-08b.2b
+**NEXT scope-safe cross-page conflict detection and scheduler reliability/DST safeguards.**
+- Draft PR #45, branch `feature/ct08b2b-effective-schedule-2026-11-24`. Parent #44 final 960bd8a3331998b03a677a3b38e5d1f80a68551a all 31 workflows green; application #45505555618.
+- One bounded RPC (1–50 unique requested story IDs), exact verified calendar/story scope plus revision permission, minimal queue source/state/due/snapshot projection, no raw grants. Stories keeps stored status/filter/count and unpublished changes independent; EN/ES Publication queue column shows queued draft or revision, due, blocked, stale, and legacy unverified, with no false 'none' claims. Dashboard retains prior scoped alerts. No filter for effective queue status yet; queue column is page-local, stored status filters still apply. No scheduler activation or production mutation.
+- CLI-generated `supabase/migrations/20261124225839_ct08b2b_effective_schedule.sql` unapplied. Verify exact final HEAD CI and fix any failures. Scope-safe full conflict detection and an explicit queue filter (if needed) remain; never treat queue as scheduler execution proof. No production SQL/flags/grants/accounts/email/deploy/main merge.
+
+---
+## Historical handoffs
 # CURRENT HANDOFF — CT-08b.2a
 **NEXT CT-08b.2b — exact batched effective scheduled projection in Stories; cross-page conflict detection and scheduler safeguards remain.**
 - Branch `feature/ct08b2a-calendar-alerts-2026-11-24`; Parent #43 corrective final 659657f97b3a48d385c9a32529f498c3d692f74e all 31 workflows SUCCESS, including application #45505164581 (unit, TypeScript, ESLint, build).
