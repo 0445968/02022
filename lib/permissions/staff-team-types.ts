@@ -20,7 +20,8 @@ export type TeamAuditEntry={
 };
 export type TeamDirectory={
   members:TeamMember[];presets:TeamPreset[];audit:TeamAuditEntry[];
-  totalMembers:number;hasMoreMembers:boolean;
-  canManageRoles:boolean;canViewAudit:boolean;
-  mutationsEnabled:boolean;
+  totalMembers:number;hasMoreMembers:boolean;page:number;pageSize:number;
+  auditPage:number;auditPageSize:number;totalAudit:number;hasMoreAudit:boolean;
+  canManageRoles:boolean;canViewAudit:boolean;canManageOverrides:boolean;
+  mutationsEnabled:boolean;overrideMutationsEnabled:boolean;
 };

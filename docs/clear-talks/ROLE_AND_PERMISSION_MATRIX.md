@@ -1,6 +1,6 @@
 # Clear Talks — Staff Roles, Permissions & Onboarding Contract
 Version: 1.0 proposal | 2026-11-23 | Companion to MASTER_COMPLETION_PLAN.md.
-Status: CT-03a draft PR #16 stages a bilingual Newsroom team roster and admin permissions manager, current database-grants versus non-activated proposed presets, and reasoned owner-only role/membership mutations via the already-audited CT-02c RPC. The team page and sidebar are feature-gated; no staff access granted by rendering UI. CT-02a–k remain unmerged/unapplied. **NO hosted SQL, role grants, owner bootstrap, production bucket, Vercel flags or deployment changes.** Real separate-project JWT/Storage tests, approved first owner, role/override policy review, backup/restore and empty migration-history reconciliation remain production blockers.
+Status: CT-03b draft PR #17 stages audited current-owner scoped capability overrides (expiring allow, deny-first, reserved team/security/reader/entry protected), a backend-calculated `allowed`/`denied`/`conditional` effective access preview, 25-member and 15-audit pagination and bilingual controls. `conditional` is NEVER equivalent to authorization without a real resource check. CT-02a–k and CT-03a are still draft/unmerged/unapplied. **NO hosted SQL, staff grants, owner bootstrap, bucket changes, Vercel flags or deployment.** Real disposable JWT+Storage, approved first owner/role baseline, backup/restore, zero migration-history reconciliation and browser negative tests remain production gates.
 
 ## 1. Principles
 

@@ -8,11 +8,17 @@ import {STAFF_ROLE_KEYS,type StaffRoleKey} from '@/lib/permissions/staff-admin-i
 import type {TeamAuditEntry,TeamDirectory,TeamMember,TeamPreset} from '@/lib/permissions/staff-team-types';
 
 const MAX_MEMBERS=100;
+const PAGE_SIZE=Math.min(MAX_MEMBERS,25);
 const MAX_AUDIT=30;
+const AUDIT_PAGE_SIZE=Math.min(MAX_AUDIT,15);
+export type TeamListOptions={page?:number;auditPage?:number;status?:string;auditMemberId?:string};
+const uuidPattern=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const statuses=new Set(['invited','active','suspended','revoked']);
 
 export type TeamAccess={
   allowed:boolean; userId:string|null;canManageRoles:boolean;
   canViewAudit:boolean;mutationsEnabled:boolean;
+  canManageOverrides:boolean;overrideMutationsEnabled:boolean;
 };
 
 /**
@@ -22,20 +28,26 @@ export type TeamAccess={
  */
 export async function getStaffTeamAccess():Promise<TeamAccess>{
   const denied:TeamAccess={allowed:false,userId:null,canManageRoles:false,
-    canViewAudit:false,mutationsEnabled:false};
+    canViewAudit:false,mutationsEnabled:false,
+    canManageOverrides:false,overrideMutationsEnabled:false};
   if(process.env.CT_STAFF_ACCESS_V2_ENABLED!=='true'||isDevAuthBypass())return denied;
   const session=createSessionClient();
   const {data:{user},error}=await session.auth.getUser();
   if(error||!user)return denied;
   const canView=(await resolveStaffPermissionOnServer('team.view')).allowed;
   if(!canView)return denied;
-  const [manage,audit]=await Promise.all([
+  const [manage,audit,overrides]=await Promise.all([
     resolveStaffPermissionOnServer('team.manage_roles'),
-    resolveStaffPermissionOnServer('team.view_audit')
+    resolveStaffPermissionOnServer('team.view_audit'),
+    resolveStaffPermissionOnServer('team.manage_overrides'),
   ]);
   return {allowed:true,userId:user.id,
     canManageRoles:manage.allowed,canViewAudit:audit.allowed,
-    mutationsEnabled:manage.allowed && process.env.CT_STAFF_ADMIN_MUTATIONS_ENABLED==='true'};
+    mutationsEnabled:manage.allowed && process.env.CT_STAFF_ADMIN_MUTATIONS_ENABLED==='true',
+    canManageOverrides:overrides.allowed,
+    overrideMutationsEnabled:overrides.allowed
+      && process.env.CT_STAFF_ADMIN_MUTATIONS_ENABLED==='true'
+      && process.env.CT_STAFF_OVERRIDE_MUTATIONS_ENABLED==='true'};
 }
 
 type RawRow=Record<string,any>;
@@ -57,7 +69,9 @@ function roleKey(value:unknown):value is StaffRoleKey{
  * projection. Never send the key, raw table rows, profile email, audit JSON,
  * sensitive overrides or auth.users records to the browser.
  */
-export async function readStaffTeamDirectory(access:TeamAccess):Promise<TeamDirectory>{
+export async function readStaffTeamDirectory(
+  access:TeamAccess, options:TeamListOptions={}
+):Promise<TeamDirectory>{
   // Treat an input access snapshot as untrusted, even from another server
   // module. Recheck the actual cookie-bound principal and current grants
   // immediately before any privileged service-role read.
@@ -69,11 +83,22 @@ export async function readStaffTeamDirectory(access:TeamAccess):Promise<TeamDire
   const key=process.env.SUPABASE_SERVICE_ROLE_KEY;
   if(!url||!key)throw new Error('Staff directory unavailable');
   const db=createServiceClient(url,key,{auth:{persistSession:false,autoRefreshToken:false}});
+  const page=Number.isInteger(options.page)&&options.page!>=0&&options.page!<=100
+    ?options.page!:0;
+  const auditPage=Number.isInteger(options.auditPage)&&options.auditPage!>=0&&options.auditPage!<=100
+    ?options.auditPage!:0;
+  const status=typeof options.status==='string'&&statuses.has(options.status)
+    ?options.status:null;
+  const auditMemberId=typeof options.auditMemberId==='string'
+    &&uuidPattern.test(options.auditMemberId)?options.auditMemberId:null;
 
+  let membersQuery=db.from('staff_memberships')
+    .select('id,auth_user_id,status,member_type,expires_at,created_at',{count:'exact'})
+    .order('created_at',{ascending:false}).order('id',{ascending:false})
+    .range(page*PAGE_SIZE,(page+1)*PAGE_SIZE-1);
+  if(status)membersQuery=membersQuery.eq('status',status);
   const [memberResult,presetResult]=await Promise.all([
-    db.from('staff_memberships')
-      .select('id,auth_user_id,status,member_type,expires_at,created_at',{count:'exact'})
-      .order('created_at',{ascending:false}).limit(MAX_MEMBERS),
+    membersQuery,
     db.from('staff_role_presets')
       .select('id,role_key,name_en,name_es,is_builtin').order('role_key').limit(30),
   ]);
@@ -92,10 +117,15 @@ export async function readStaffTeamDirectory(access:TeamAccess):Promise<TeamDire
       .in('role_preset_id',presetIds).limit(1000) : Promise.resolve({data:[],error:null}),
     userIds.length ? db.from('profiles').select('id,name')
       .in('id',userIds).limit(MAX_MEMBERS) : Promise.resolve({data:[],error:null}),
-    access.canViewAudit ? db.from('staff_access_audit')
-      .select('id,subject_membership_id,actor_auth_user_id,action_key,reason,created_at')
-      .order('created_at',{ascending:false}).limit(MAX_AUDIT)
-      : Promise.resolve({data:[],error:null}),
+    access.canViewAudit ? (() => {
+      let query=db.from('staff_access_audit')
+        .select('id,subject_membership_id,actor_auth_user_id,action_key,reason,created_at',
+          {count:'exact'})
+        .order('created_at',{ascending:false}).order('id',{ascending:false})
+        .range(auditPage*AUDIT_PAGE_SIZE,(auditPage+1)*AUDIT_PAGE_SIZE-1);
+      if(auditMemberId)query=query.eq('subject_membership_id',auditMemberId);
+      return query;
+    })() : Promise.resolve({data:[],error:null,count:0}),
   ]);
   const roles=requireSuccess(rolesResult,'roles') as RawRow[];
   const grants=requireSuccess(grantsResult,'grants') as RawRow[];
@@ -122,7 +152,6 @@ export async function readStaffTeamDirectory(access:TeamAccess):Promise<TeamDire
       .filter(g=>['all','assigned','own'].includes(g.scope))
       .map(g=>({capability:String(g.capability_key),scope:g.scope}))
   }));
-  const subjectNames=new Map(members.map(m=>[m.id,m.name]));
   const audit:TeamAuditEntry[]=audits.map(a=>({
     id:a.id,subjectMembershipId:a.subject_membership_id,
     action:safeName(a.action_key,'Access change'),
@@ -131,8 +160,14 @@ export async function readStaffTeamDirectory(access:TeamAccess):Promise<TeamDire
     actorName:names.get(a.actor_auth_user_id)??'Authorized administrator'
   }));
   // audit data does not leak any before_state/after_state JSON or credentials.
-  return {members,presets,audit,totalMembers:memberResult.count??members.length,
-    hasMoreMembers:(memberResult.count??members.length)>MAX_MEMBERS,
+  const totalMembers=memberResult.count??members.length;
+  const totalAudit=access.canViewAudit?(auditResult.count??audits.length):0;
+  return {members,presets,audit,totalMembers,page,pageSize:PAGE_SIZE,
+    hasMoreMembers:(page+1)*PAGE_SIZE<totalMembers,
+    auditPage,auditPageSize:AUDIT_PAGE_SIZE,totalAudit,
+    hasMoreAudit:access.canViewAudit&&(auditPage+1)*AUDIT_PAGE_SIZE<totalAudit,
     canManageRoles:access.canManageRoles,canViewAudit:access.canViewAudit,
-    mutationsEnabled:access.mutationsEnabled};
+    mutationsEnabled:access.mutationsEnabled,
+    canManageOverrides:access.canManageOverrides,
+    overrideMutationsEnabled:access.overrideMutationsEnabled};
 }

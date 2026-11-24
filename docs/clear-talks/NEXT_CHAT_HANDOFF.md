@@ -1,3 +1,28 @@
+# CURRENT HANDOFF — CT-03b (2026-11-23 America/Chicago)
+**CT-03 IN PROGRESS: CT-03b code + isolated security checks are tested in a new DRAFT PR, not merged/deployed. CT-02 production security gates still open.**
+
+## GitHub base
+- Repo `0445968/02022`. Production `main=f5c0140fb2db165e43303a064f7bc15b765d4505` unchanged.
+- Stack: planning #2 -> baseline #3 -> stories #4 -> CT-02a–k draft #5–#15 -> CT-03a draft #16 -> **CT-03b [DRAFT PR #17](https://github.com/0445968/02022/pull/17)**.
+- Branch `feature/ct03b-permission-overrides-2026-11-23`, based on CT-03a final `3dc894cbe400d2260f722b3a0e5c0219755927d7`.
+- **UNAPPLIED** CLI-generated `supabase/migrations/20261124031658_ct03b_staff_overrides.sql`, run `45318371778` pinned CLI 3.2.0. Depends on previous uninstalled CT-02b/c staff/owner audit schema. No role assignments seeded.
+
+## Implemented in CT-03b
+- Owner-only, transactionally audited SECURITY INVOKER override RPC `staff_apply_override_change` with service_role-only EXECUTE; double-protected table trigger and immutable membership/capability/scope, reserved/administrative cap blacklist, current owner verification even after server validation. Valid allow expirations 1 hour–90 days, deny can be perpetual or expires within 365 days. No self/owner target. Deny-first policy model preserved; legacy profile editor flags ignored.
+- `lib/permissions/staff-override-input.ts`, `lib/services/staff-override-admin.ts`, `app/api/newsroom/team/override-change/route.ts`: valid UUID/action/capability/scope/effect/expires/reason; cookie Auth + `team.manage_overrides`; same-origin JSON POST, 2048-byte bound. Three opt-in flags required (`CT_STAFF_ACCESS_V2_ENABLED`, `CT_STAFF_ADMIN_MUTATIONS_ENABLED`, **new `CT_STAFF_OVERRIDE_MUTATIONS_ENABLED`**, all default **false**). No client service key and no live SQL.
+- `lib/services/staff-effective-access.ts` and `GET /api/newsroom/team/[id]/effective`: rechecks current viewer session + team.manage_overrides before server-only service-role read of actual DB membership, role grants, overrides, expiry. Results `allowed`, `denied`, `conditional`; conditional does **not** mean access, because it does NOT know the real assigned/owned story or media. Resource-specific gates still take final decision.
+- `StaffPermissionInspector.tsx`: bilingual review of current effective grants and individual overrides, reason/confirm, set/remove and expiry. Visible only for `team.manage_overrides` viewer. Role/feature preset edit remains read-only. `StaffTeamManager.tsx` now has actual pagination (25 member records/page, 15 audit events/page), status filter and audit selected-member filter under `team.view_audit`; search within CURRENT page only. Real staged permission RLS cannot be browser QA'd until approved activation.
+- **Verified application quality** [#45319380204](https://github.com/0445968/02022/actions/runs/45319380204) **SUCCESS** on source SHA `4ad07860d6fb19909cbfbda3bd61505068153c8a`: **120/120 tests**, TypeScript, ESLint and Next.js build all pass. [CT-03b PG17 #45319380232](https://github.com/0445968/02022/actions/runs/45319380232) **SUCCESS**; all 9 inherited PG17 suites passed (10 total). Docs-only final HEAD reruns CI; verify PR checks.
+- No font/UI/CSS changes. Data remains 23 stories / 4 revisions / 43 historical versions / 22 media. Live Supabase `yqqzohrlhiitctwacdad` has **NO staff schema, NO private staging bucket, ZERO recorded migrations**, no newly deployed roles. `main` and production URL `https://clear-talks.vercel.app/` untouched.
+
+## NEXT — CT-03c and CT-04
+1. CT-03c: build a **real role preset capability editor**, not just proposal preview. Owner-only audited RPC for updating built-in role grant/scope with protection of high-risk administrative and entry privileges, explicit approval before seeded grants, database revision/collision handling and negative tests. Keep all mutations disabled before verified identity/first owner and CT-02 releases. Review `ROLE_AND_PERMISSION_MATRIX.md`.
+2. CT-04: invitation/onboarding with separated Auth identity vs editorial byline, role defaults for freelancers and different staff types, scoped project/story assignments and expiring contracts. Requiring owner approval and providing minimum accounts/UI is the objective. No auto-grants from `profiles.is_author`, `is_editor` or `user_metadata`.
+3. CT-02 security work remains **BLOCKED for live** pending independent restorable backup+Storage, reconciled empty Supabase hosted migration history, verified first owner account and approved grants, real disposable Supabase JWT/Storage test (manual harness prepared NOT RUN), EN/ES browser QA and archived published media rights decision (one published story references trashed media). Existing authenticated privileged publishing function and leaked-password protection advisor issues remain.
+4. Do not apply SQL to project `yqqzohrlhiitctwacdad`, merge main, deploy Vercel, enable CT flags, seed permissions, grant owner or perform live writes without explicit user approval. No `db push/reset` or historical DEV_AUTH_BYPASS migration replay. Preserve current fonts (Figtree, Source Serif 4, IBM Plex Sans, Inter) and current UI; CT-15a later.
+
+---
+## Historical handoffs
 # CURRENT HANDOFF — CT-03a (2026-11-23, America/Chicago)
 **CT-03 IN PROGRESS. PR #16 is unmerged/staged. CT-02 live cutover still BLOCKED and no hosted or production changes made.**
 
