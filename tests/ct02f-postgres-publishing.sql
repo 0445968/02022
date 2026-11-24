@@ -471,7 +471,7 @@ rollback;
 -- Mid-transaction failure must not publish a partial story update/version.
 insert into public.story_revisions(
   id,story_id,headline,slug,status,created_by,author_id,editor_id,
-  category_ids,tag_ids
+  primary_category_id,category_ids,tag_ids
 ) values (
   '30000000-0000-0000-0000-000000000003',
   '20000000-0000-0000-0000-000000000001',
@@ -479,6 +479,7 @@ insert into public.story_revisions(
   '00000000-0000-0000-0000-000000000002',
   '00000000-0000-0000-0000-000000000004',
   '00000000-0000-0000-0000-000000000002',
+  '40000000-0000-0000-0000-000000000001',
   array['40000000-0000-0000-0000-000000000001']::uuid[],
   array['50000000-0000-0000-0000-000000000009']::uuid[]
 );
@@ -499,7 +500,10 @@ begin
       '20000000-0000-0000-0000-000000000001',
       '00000000-0000-0000-0000-000000000002');
     raise exception 'Invalid tag unexpectedly published';
-  exception when check_violation then null;
+  exception when check_violation then
+    if SQLERRM not like '%ct02f_test_bad_tag%' then
+      raise exception 'Unexpected check failure rather than forced tag error: %', SQLERRM;
+    end if;
   end;
   if (select count(*) from public.story_versions) <> v_before_versions then
     raise exception 'Failed publish left an extra historical version';
@@ -515,5 +519,28 @@ begin
   end if;
 end $$;
 rollback;
+
+-- Failure did not partially replace the story's earlier category/tag links.
+do $
+begin
+  if (select count(*) from public.story_categories
+      where story_id='20000000-0000-0000-0000-000000000001') <> 1
+    or not exists(
+      select 1 from public.story_categories
+      where story_id='20000000-0000-0000-0000-000000000001'
+        and category_id='40000000-0000-0000-0000-000000000001'
+    ) then
+    raise exception 'Failed publication changed category relationships';
+  end if;
+  if (select count(*) from public.story_tags
+      where story_id='20000000-0000-0000-0000-000000000001') <> 1
+    or not exists(
+      select 1 from public.story_tags
+      where story_id='20000000-0000-0000-0000-000000000001'
+        and tag_id='50000000-0000-0000-0000-000000000001'
+    ) then
+    raise exception 'Failed publication changed tag relationships';
+  end if;
+end $;
 
 select 'CT-02f publisher and version RLS integration passed' as result;
