@@ -1,6 +1,9 @@
 import {notFound,redirect} from 'next/navigation';
 import {getCurrentUser} from '@/lib/auth/session';
 import {newsroomLocale,mayMountFullStoryEditor} from '@/lib/services/newsroom-workspace';
+import {assignedDraftEnabled} from '@/lib/services/assigned-drafts';
+import {assignedRevisionEnabled} from '@/lib/services/assigned-revisions';
+import {resolveStoryStaffPermissionsOnServer} from '@/lib/permissions/server';
 import {readStoryReview,storyReviewEnabled} from '@/lib/services/story-review';
 import {reviewKind} from '@/lib/permissions/story-review-contract';
 import {DraftHttpError} from '@/lib/permissions/assigned-draft-http';
@@ -19,6 +22,10 @@ export default async function StoryReviewPage({params,searchParams}:{params:{id:
   return <p role="alert" className="p-6 text-sm text-muted-foreground">{locale==='es'?'No se pudo cargar la revisión. Actualice la página.':'Unable to load the review. Refresh this page.'}</p>;
  }
  const full=await mayMountFullStoryEditor(params.id);
- const editHref=full?'/newsroom/stories/'+params.id+'/edit':'/newsroom/contributor/stories/'+params.id+(state.kind==='revision'?'/revision':'');
- return <StoryReviewPanel key={state.storyId+state.kind} initial={state} locale={locale} editHref={editHref}/>;
+ const keys=['story.view_assigned','story.edit_assigned',...(state.kind==='revision'?['revision.view','revision.edit_assigned']:[])];
+ const assignedEnabled=state.kind==='revision'?assignedRevisionEnabled():assignedDraftEnabled();
+ const grants=assignedEnabled?await resolveStoryStaffPermissionsOnServer(params.id,keys):new Set<string>();
+ const canEdit=full||assignedEnabled&&keys.every(k=>grants.has(k));
+ const backHref=full?'/newsroom/stories/'+params.id+'/edit':canEdit?'/newsroom/contributor/stories/'+params.id+(state.kind==='revision'?'/revision':''):'/newsroom/stories/'+params.id+'/preview'+(state.kind==='revision'?'?revision=1':'');
+ return <StoryReviewPanel key={state.storyId+state.kind} initial={state} locale={locale} backHref={backHref} canEdit={canEdit}/>;
 }

@@ -20,7 +20,7 @@ export default async function ContributorWorkspace({searchParams}:{searchParams:
   const raw=searchParams.page??'0',page=/^\d{1,3}$/.test(raw)?Math.min(Number(raw),100):0;
   const assigned=await readAssignedWorkspace(page);
   const canCreate=await canStartWriterDraft();
-  const reviewable=new Set((await Promise.all(assigned.items.map(async s=>({id:s.id,allowed:(s.status==='draft'||s.status==='in_review'||s.status==='published')&&await canAccessStoryReview(s.id,s.status==='published'?'revision':'draft')})))).filter(s=>s.allowed).map(s=>s.id));
+  const reviewable=new Set((await Promise.all(assigned.items.map(async s=>({id:s.id,allowed:(s.status==='draft'||s.status==='in_review')&&await canAccessStoryReview(s.id,'draft')})))).filter(s=>s.allowed).map(s=>s.id));
   const links=[
     {allowed:access.viewStories,href:'/newsroom/stories',label:dict.newsroom.stories,icon:FileText},
     {allowed:access.fullMedia||access.privateMedia,href:'/newsroom/media',label:dict.newsroom.media,icon:Image},
@@ -46,7 +46,7 @@ export default async function ContributorWorkspace({searchParams}:{searchParams:
         <ul className="space-y-2">{assigned.items.map(story=><li key={story.id} className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-border p-3">
           <div className="min-w-0"><p className="break-words text-sm font-semibold text-deep">{story.headline}</p><p className="mt-1 text-xs text-muted-foreground">{statuses[story.status]??story.status} · {story.assignmentTypes.map(t=>types[t]??t).join(', ')}{story.dueAt?' · '+(es?'Vence ':'Due ')+new Date(story.dueAt).toLocaleString(es?'es-ES':'en-US'):''}</p></div>
           <div className="flex flex-wrap gap-2">{story.canEditRevision&&<Link href={'/newsroom/contributor/stories/'+story.id+'/revision'} className="rounded-md bg-primary px-3 py-2 text-sm font-semibold text-white">{es?'Revisión no publicada':'Unpublished revision'}</Link>}{story.canEditDraft&&<Link href={'/newsroom/contributor/stories/'+story.id} className="rounded-md bg-primary px-3 py-2 text-sm font-semibold text-white">{es?'Editar borrador':'Edit draft'}</Link>}
-          {reviewable.has(story.id)&&(story.status!=='published'||story.canEditRevision)&&<Link href={'/newsroom/stories/'+story.id+'/review?kind='+(story.status==='published'?'revision':'draft')} className="rounded-md border border-border px-3 py-2 text-sm font-medium hover:bg-surface-muted">{es?'Revisión y comentarios':'Review & feedback'}</Link>}
+          {reviewable.has(story.id)&&<Link href={'/newsroom/stories/'+story.id+'/review?kind=draft'} className="rounded-md border border-border px-3 py-2 text-sm font-medium hover:bg-surface-muted">{es?'Revisión y comentarios':'Review & feedback'}</Link>}
           <Link href={'/newsroom/stories/'+story.id+'/preview'} className="rounded-md border border-border px-3 py-2 text-sm font-medium hover:bg-surface-muted">{es?'Vista previa':'Preview'}</Link></div>
         </li>)}</ul>
         <div className="flex items-center gap-3 text-sm">{page>0&&<Link className="underline" href={'/newsroom/contributor?page='+(page-1)}>{es?'Anterior':'Previous'}</Link>}<span className="text-muted-foreground">{es?'Página':'Page'} {page+1}</span>{assigned.hasMore&&<Link className="underline" href={'/newsroom/contributor?page='+(page+1)}>{es?'Siguiente':'Next'}</Link>}</div>

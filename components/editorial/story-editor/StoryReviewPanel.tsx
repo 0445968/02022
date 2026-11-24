@@ -4,7 +4,7 @@ import Link from 'next/link';
 import type {Locale} from '@/types';
 import {parseReviewState,type ReviewState,type ReviewAction} from '@/lib/permissions/story-review-contract';
 const btn='rounded-md border border-border bg-white px-3 py-2 text-sm font-medium hover:bg-surface-muted disabled:opacity-50';
-export function StoryReviewPanel({initial,locale,editHref}:{initial:ReviewState;locale:Locale;editHref:string}){
+export function StoryReviewPanel({initial,locale,backHref,canEdit}:{initial:ReviewState;locale:Locale;backHref:string;canEdit:boolean}){
  const es=locale==='es';
  const [state,setState]=useState(initial),[note,setNote]=useState(''),[action,setAction]=useState<ReviewAction>('approve');
  const [confirmed,setConfirmed]=useState(false),[opened,setOpened]=useState(false),[busy,setBusy]=useState(false),[blocked,setBlocked]=useState(false);
@@ -44,7 +44,7 @@ export function StoryReviewPanel({initial,locale,editHref}:{initial:ReviewState;
  const date=(v:string|null)=>v?new Date(v).toLocaleString(es?'es':'en'):'—';
  return <div className="mx-auto max-w-4xl space-y-5 px-6 py-8">
   <header className="flex flex-wrap justify-between gap-3 border-b border-border pb-4">
-   <div><Link href={editHref} className="text-sm text-primary underline">{es?'Volver al editor':'Back to editor'}</Link>
+   <div><a href={backHref} className="text-sm text-primary underline">{canEdit?(es?'Volver al editor':'Back to editor'):(es?'Volver a la vista previa':'Back to preview')}</a>
     <h1 className="mt-2 font-headline text-2xl font-bold text-deep">{es?'Revisión editorial':'Editorial review'}</h1>
     <p className="mt-1 break-words text-sm text-muted-foreground">{state.headline}</p></div>
    <button type="button" className={btn} disabled={busy} onClick={()=>void refresh()}>{es?'Actualizar':'Refresh'}</button>
