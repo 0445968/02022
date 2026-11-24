@@ -30,6 +30,9 @@ update auth.users set deleted_at=now() where email='deleted@example.test';
 -- Isolated bootstrap only: owner grant must predate immutable CT-03c ceiling.
 insert into public.staff_role_capabilities(role_preset_id,capability_key,scope)
 select id,'team.invite','all' from public.staff_role_presets where role_key='owner';
+-- Test-only owner permission for later private byline review suite.
+insert into public.staff_role_capabilities(role_preset_id,capability_key,scope)
+select id,'byline.manage','all' from public.staff_role_presets where role_key='owner';
 \i supabase/migrations/20261124034804_ct03c_role_grant_editor.sql
 \i supabase/migrations/20261124150021_ct04a_staff_invitations.sql
 
