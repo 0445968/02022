@@ -1,3 +1,25 @@
+# CURRENT HANDOFF — CT-02j (2026-11-23 America/Chicago)
+**CT-02 IN PROGRESS. CT-02j code is committed and CI-tested, but all SQL/Storage/role changes are STAGED ONLY. Nothing live deployed.**
+
+## Stack and current working branch
+- Plan #2 -> CT-00 #3 -> CT-01 #4 -> CT-02a #5 -> CT-02b #6 -> CT-02c #7 -> CT-02d #8 -> CT-02e #9 -> CT-02f #10 -> CT-02g #11 -> CT-02h #12 -> CT-02i #13 -> **CT-02j [DRAFT PR #14](https://github.com/0445968/02022/pull/14)**. Branch `feature/ct02j-private-media-approval-2026-11-23` based on CT-02i `08ab407d80e593f08f2c6893c8b961737cdb05ee`. `main` unchanged `f5c0140fb2db165e43303a064f7bc15b765d4505`.
+- Unapplied `supabase/migrations/20261124020117_ct02j_media_promotion.sql` generated with pinned CLI 3.2.0 in CI run `45309261926`; relies on staged CT-02b/c/e/f/g/h/i, reviewed grants, backup and migration-history reconciliation. Do not create live bucket or turn on flags.
+- Staged `media_private_drafts` review states/actor/rights/status/sha256/public path, immutable source trigger, RLS, Storage public `approved/<draft ID>` copy-only policy. Private reviewer requires current `media.approve`, `media.edit_all`, `media.upload`, `media.view_all`; no service role.
+- `app/api/media/drafts/[id]/approve/route.ts` verifies actual JWT + original/public SHA256, claims with compare-and-swap, no overwrite, creates/approves normal public `media_assets`, finalizes private `published`. Failed operation is `failed` and can retry the SAME immutable target; cross-bucket Storage/SQL is not one transaction. `.../reject` keeps private original and reviewer reason. `GET /api/media/drafts` RLS list without private URL. `app/api/media/drafts/route.ts` upload now hashes bytes.
+- `PrivateDraftMediaPanel.tsx` added to Newsroom media page when **BOTH `CT_STAFF_ACCESS_V2_ENABLED=true` and `CT_MEDIA_PRIVATE_DRAFTS_ENABLED=true`**, default false. When on, normal MediaLibrary Upload button scrolls to private flow and old public drawer is disabled. While OFF, all existing UI/behavior/styling/fonts remain unchanged.
+- [Quality CI `45310184651`](https://github.com/0445968/02022/actions/runs/45310184651) **SUCCESS** on code SHA `09b4894b5077d17bc848aa6a347b7b8364e7c77a`: **96 Node tests**, TypeScript, lint and Next.js build PASS. [CT-02j isolated PG17 `45310185178`](https://github.com/0445968/02022/actions/runs/45310185178) **SUCCESS**; CT-02b/c/e/f/g/h/i inherited suites also passed (8 in total). Final documentation head may rerun; see latest PR #14 checks.
+- Live read-only verified: project `yqqzohrlhiitctwacdad` has **23 stories, 4 unpublished revisions, 43 versions, 22 media**, 22 public Storage files, `staff_memberships` missing, `media_private_drafts` missing, `media-drafts` bucket absent, hosted migrations history empty. All existing owner_id for media objects NULL. NO live data edits, SQL, role changes, deployments or env flags. One published story points to a trashed asset.
+- Review `docs/clear-talks/CT02J_REVIEW.md`, `PRIVATE_DRAFT_MEDIA_ROLLOUT.md`, `ROLE_AND_PERMISSION_MATRIX.md` and this ledger. Preserve current fonts (Figtree, Source Serif 4, IBM Plex Sans, Inter), UI/EN-ES and CT-15a final refinement.
+
+## NEXT CT-02k
+1. **Real disposable Supabase Auth + Storage**: verify roles with JWT, Storage.copy cross bucket, private upload/preview/download/TTL, public copy SHA, idempotent partial failure, signed URLs, source owner, direct API spoofing, revoked editor/freelancer/reader/anon negative tests. PG17 alone cannot prove Storage HTTP behavior.
+2. Finish direct SQL/RLS and server action audit for comments, reader profiles/favorites, polls/notifications and any remaining old author/editor flag checks. Preserve public article relations. Record real browser EN/ES Media Library QA.
+3. First owner real Auth ID and reviewed exact preset permissions, independently restorable backup, empty hosted migration-history reconciliation and explicit user approval required before any hosted application, initial role grant, new private bucket, Vercel flag, main merge or deployment.
+4. Resolve published article with trashed featured-media reference via deliberate editorial decision; preserve all 22 public URLs and existing image data. Advisor privileged publisher warning and leaked-password-protection also still open.
+5. No unreviewed historical DEV_AUTH_BYPASS migration, no `db push/reset`, no UI/font restyling. Keep CT-02 OFF until full site-wide security cutover.
+
+---
+## Previous handoffs
 # CURRENT HANDOFF — CT-02i (2026-11-23 America/Chicago)
 **CT-02 IN PROGRESS. PR #13 is CODE TESTED AND STAGED ONLY; NOTHING DEPLOYED.**
 
