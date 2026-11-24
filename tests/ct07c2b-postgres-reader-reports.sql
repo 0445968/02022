@@ -15,16 +15,16 @@ insert into public.comments(id,story_id,user_id,body,status) values
 begin;
 set local role authenticated;
 set local request.jwt.claim.sub='00000000-0000-0000-0000-000000000005';
-do $fn$ declare r jsonb; v jsonb; t timestamptz; id uuid:='41000000-0000-0000-0000-000000000020'; sid uuid:='20000000-0000-0000-0000-000000000001';
+do $fn$ declare r jsonb; v jsonb; t timestamptz; target_id uuid:='41000000-0000-0000-0000-000000000020'; sid uuid:='20000000-0000-0000-0000-000000000001';
 begin
- select updated_at into t from public.comments where comments.id=id;
- begin perform public.reader_submit_comment_report(sid,id,t-interval '1 second','Stale displayed comment');raise exception 'Stale comment accepted';exception when serialization_failure then null;end;
- begin perform public.reader_submit_comment_report('20000000-0000-0000-0000-000000000002',id,t,'Wrong story target');raise exception 'Cross story report accepted';exception when insufficient_privilege then null;end;
+ select updated_at into t from public.comments where comments.id=target_id;
+ begin perform public.reader_submit_comment_report(sid,target_id,t-interval '1 second','Stale displayed comment');raise exception 'Stale comment accepted';exception when serialization_failure then null;end;
+ begin perform public.reader_submit_comment_report('20000000-0000-0000-0000-000000000002',target_id,t,'Wrong story target');raise exception 'Cross story report accepted';exception when insufficient_privilege then null;end;
  begin perform public.reader_submit_comment_report(sid,'41000000-0000-0000-0000-000000000021',t,'Own comment report');raise exception 'Own comment accepted';exception when insufficient_privilege then null;end;
  begin perform public.reader_submit_comment_report(sid,'41000000-0000-0000-0000-000000000022',t,'Hidden target report');raise exception 'Hidden comment accepted';exception when insufficient_privilege then null;end;
- r:=public.reader_submit_comment_report(sid,id,t,'Community guideline concern');
+ r:=public.reader_submit_comment_report(sid,target_id,t,'Community guideline concern');
  if (r->>'alreadyReported')::boolean or r->'report'->>'status'<>'open' or r->'report'?'reviewedBy' or r->'report'?'reporterId' then raise exception 'Receipt invalid: %',r;end if;
- v:=public.reader_submit_comment_report(sid,id,t,'Different reason ignored on retry');
+ v:=public.reader_submit_comment_report(sid,target_id,t,'Different reason ignored on retry');
  if not (v->>'alreadyReported')::boolean or v->'report' is distinct from r->'report' then raise exception 'Duplicate not recovered';end if;
  v:=public.reader_list_own_reports(0);
  if not exists(select 1 from jsonb_array_elements(v->'items') x where x->>'id'=r->'report'->>'id') or exists(select 1 from jsonb_array_elements(v->'items') x where x->>'id'='42000000-0000-0000-0000-000000000011') then raise exception 'Own history invalid: %',v;end if;
