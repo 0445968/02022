@@ -7,6 +7,10 @@ import {
   } from '@/lib/auth/session';
   
   import {
+    isDevAuthBypass,
+  } from '@/lib/db/supabase-data';
+
+  import {
     getDataClient,
   } from '@/lib/db/supabase-data-access';
   
@@ -57,6 +61,15 @@ import {
       params,
     }: RouteContext
   ) {
+    // A development/editor identity shortcut is not a verified reader
+    // session and must never create or expose personal bookmarks.
+    if (isDevAuthBypass()) {
+      return NextResponse.json(
+        { error: 'Reader authentication is required' },
+        { status: 401 }
+      );
+    }
+
     const user =
       await getCurrentUser();
   
@@ -122,6 +135,15 @@ import {
       params,
     }: RouteContext
   ) {
+    // A development/editor identity shortcut is not a verified reader
+    // session and must never create or expose personal bookmarks.
+    if (isDevAuthBypass()) {
+      return NextResponse.json(
+        { error: 'Reader authentication is required' },
+        { status: 401 }
+      );
+    }
+
     const user =
       await getCurrentUser();
   
@@ -200,6 +222,15 @@ import {
       params,
     }: RouteContext
   ) {
+    // A development/editor identity shortcut is not a verified reader
+    // session and must never create or expose personal bookmarks.
+    if (isDevAuthBypass()) {
+      return NextResponse.json(
+        { error: 'Reader authentication is required' },
+        { status: 401 }
+      );
+    }
+
     const user =
       await getCurrentUser();
   
