@@ -150,6 +150,8 @@ Every batch starts only after reading the current repo HEAD and ledger. Marked P
 - Add public voting components/API only after privacy, abuse protections, duplicate vote rules and data retention policy are specified.
 - Gate: voting and results cannot be manipulated by unprivileged users, closed polls remain closed, bilingual UI.
 
+**CT09 implementation staged in PR #49; policy approval, public gate activation, privacy/retention and real hosted verification remain open.** See CT09_POLLS_REVIEW.md.
+
 ### CT-10 — Newsroom Profile and editorial dashboard completion [P1]
 - Implement missing /newsroom/profile: user info, preferences, password/security handoff, byline linkage, optional headshot; do not permit self-editing role flags.
 - Dashboard: real assignments, recent review events, summary metrics scoped by effective permissions; hide unauthorized actions; replace stage notice only when genuinely complete.
