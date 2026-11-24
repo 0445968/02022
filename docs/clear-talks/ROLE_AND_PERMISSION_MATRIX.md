@@ -229,3 +229,7 @@ These are recommended starter presets and architecture, NOT yet an instruction t
 
 ### CT-08a staged calendar read foundation
 [Draft PR #42](https://github.com/0445968/02022/pull/42): verified current newsroom access and exact story view plus calendar.view_team or calendar.view_assigned. Team sees scoped deadlines and minimal names, assigned-only own deadlines; revision queue requires revision.view, assigned queue existing review/scheduler access. Safe active queue metadata, snapshot consistency and independent cancel eligibility, legacy unverified team only. Read-only, flag OFF, no job installation or production changes.
+
+
+### CT-08b.1 staged calendar interface
+CT-08b.1 — bilingual scoped calendar interface: /newsroom/schedule, exact permission sidebar/page, month and agenda, all-date attention, filters and bounded pagination, explicit America/Bogota/UTC/America/Chicago civil-month boundaries and DST tests, story preview links, overdue/blocked/stale/legacy distinction, existing exact reviewed cancel action with confirm and uncertain-result lock. No migration, new flags, global styles or live changes. Calendar is page-scoped, not a complete unpaginated month; queue is not proof of real scheduler. CT08b.2 effective schedule projection in Stories/dashboard, deadline conflicts/alerts, and further link/access/browser QA remain; actual scheduler activation/reconciliation requires approval.
