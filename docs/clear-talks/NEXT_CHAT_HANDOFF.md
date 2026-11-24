@@ -1,3 +1,24 @@
+# CURRENT HANDOFF — CT-03a (2026-11-23, America/Chicago)
+**CT-03 IN PROGRESS. PR #16 is unmerged/staged. CT-02 live cutover still BLOCKED and no hosted or production changes made.**
+
+## Latest feature branch
+- GitHub repo `0445968/02022`, `main=f5c0140fb2db165e43303a064f7bc15b765d4505`. Stack: Plan #2 -> CT-00 #3 -> CT-01 #4 -> CT-02a-k #5–#15 -> **CT-03a draft PR #16** https://github.com/0445968/02022/pull/16.
+- Branch `feature/ct03a-team-permissions-2026-11-23`, stacked on CT-02k SHA `b54a6a36d0d67c43ecc7efd4c9c1c9cbcde5568e`.
+- Feature-gated Newsroom `/newsroom/team` page and sidebar link, EN/ES `newsroom.team` labels, React `StaffTeamManager` with roster, status, current roles, configured-vs-proposed grants, role/membership mutations (grant/revoke/suspend/reactivate/revoke membership), reason+confirmation and current audit history.
+- `lib/services/staff-team-directory.ts`: cookie Auth and current team.view, **rechecks Auth/grants directly before server-only service role** to project member status, name but no email, roles and grants. `GET /api/newsroom/team` sanitized/no-store; `POST /api/newsroom/team/role-change` same-origin+input validation, calls existing CT-02c audited `applyStaffRoleChange` and protected SECURITY INVOKER owner-check RPC. No client-side service key.
+- Both `CT_STAFF_ACCESS_V2_ENABLED=false` and `CT_STAFF_ADMIN_MUTATIONS_ENABLED=false` remain in all deployed environments; NONE of these routes grants legacy editor access while off. All CT-02b–k SQL remains UNAPPLIED, no first owner grants, no preset seeding, no new buckets. No font/color/global CSS changes.
+- `tests/ct03a-team-manager.test.mjs` seven new source-level UI/auth checks; inherited nine PG17 suites. Last tested code SHA `ed2de2d67b503c298c3698fae8c38bff1eb84eec`, quality Actions [45317507264](https://github.com/0445968/02022/actions/runs/45317507264). Check final PR HEAD statuses; do not confuse simulated tests with real JWT/browser verification.
+- Live Supabase project `yqqzohrlhiitctwacdad`: 23 stories/4 revisions/43 versions/22 media; staff tables/private bucket absent, hosted migration table empty. Do not run SQL or role grants until approved. No merge or Vercel deployment.
+
+## NEXT — CT-03b + CT-04
+1. Build an explicit, audited per-member capability override UI backed by secure database/RPC APIs, with deny-first handling, expiration, scoping, positive/negative tests and preview of actual effective permissions (not simply nominal roles). Test owner and self-edit guards. Do not allow editable team grants without reviewed SQL/role constraints.
+2. Implement pagination for >100 member records, audit filtering and accurate count; add member-specific details and status/expiration warnings. Do not expose account email unless permission contract and privacy review explicitly allow.
+3. CT-04 staff and freelancer invitations/onboarding, preset assignment and early capability guard; no auto-promotion from legacy is_editor/is_author or Auth user_metadata.
+4. Independent CT-02 gates remain: real **separate disposable** Supabase Auth+Storage probe prepared but NOT RUN, verified restorable backup (DB+Storage), baseline/migration reconciliation (hosted has zero migration entries), approved first owner/grant presets, real EN/ES browser and revoked-staff negative tests, published story with trashed featured media, publisher/leaked-password advisor issues. No bulk db push/reset or DEV_AUTH_BYPASS replay. Explicit user approval required before cutover.
+5. Preserve current fonts (Figtree, Source Serif 4, IBM Plex Sans, Inter), UI/style and all content; CT-15a dedicated final UI refinement later.
+
+---
+## Historical handoffs
 # CURRENT HANDOFF — CT-02k (2026-11-23 America/Chicago)
 **CT-02 is STAGED / IN PROGRESS. Draft PR #15 implements reader authorization parity and a REAL Supabase test harness, but the external test is NOT run. No live migration or deployment.**
 

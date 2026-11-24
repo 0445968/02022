@@ -1,6 +1,6 @@
 # Clear Talks — Staff Roles, Permissions & Onboarding Contract
 Version: 1.0 proposal | 2026-11-23 | Companion to MASTER_COMPLETION_PLAN.md.
-Status: CT-02k draft PR #15 stages current-capability comment/report moderation, reader ownership protections and published-only bookmarks, plus a manual real Supabase Auth/JWT/Storage test harness restricted to a separate disposable project. CT-02a–j remain unmerged/unapplied. **NO hosted SQL, role grants, owner bootstrap, production bucket, flags or deployment changes.** Real external e2e has NOT run; exact first owner/role matrix, restorable backup, empty migration-history reconciliation, legacy public media and one published trashed-image reference remain release blockers.
+Status: CT-03a draft PR #16 stages a bilingual Newsroom team roster and admin permissions manager, current database-grants versus non-activated proposed presets, and reasoned owner-only role/membership mutations via the already-audited CT-02c RPC. The team page and sidebar are feature-gated; no staff access granted by rendering UI. CT-02a–k remain unmerged/unapplied. **NO hosted SQL, role grants, owner bootstrap, production bucket, Vercel flags or deployment changes.** Real separate-project JWT/Storage tests, approved first owner, role/override policy review, backup/restore and empty migration-history reconciliation remain production blockers.
 
 ## 1. Principles
 

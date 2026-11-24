@@ -1,6 +1,27 @@
-# CT-03a — Team permissions manager
-This branch stages the admin-facing team/role UI and its permission-gated, audited APIs.
-- All new routes are disabled unless CT_STAFF_ACCESS_V2_ENABLED=true.
-- Role writes separately require CT_STAFF_ADMIN_MUTATIONS_ENABLED=true.
-- No Supabase migration or production changes; do not bootstrap owners or seed roles.
-- Existing UI fonts/colors/layout remain unchanged.
+# CT-03a — Newsroom Team & Access permissions manager
+Date: 2026-11-23 (America/Chicago). **DRAFT, FEATURE-FLAGGED, NO LIVE DEPLOYMENT.**
+GitHub: https://github.com/0445968/02022/pull/16
+Branch: `feature/ct03a-team-permissions-2026-11-23`, stacked on CT-02k PR #15.
+Production `main` is still `f5c0140fb2db165e43303a064f7bc15b765d4505`.
+
+## Implemented
+- New `/newsroom/team` server page, hidden sidebar item, and EN/ES `newsroom.team` translations; page access requires **verified session + fresh `team.view`**. Sidebar link only appears under `CT_STAFF_ACCESS_V2_ENABLED=true` and a positive fresh `team.view` decision. No fallback to `profiles.is_editor` and no `DEV_AUTH_BYPASS`.
+- Bilingual `StaffTeamManager.tsx`: real staff membership directory, user search and status filters, current role assignments including expiration, selected-person detail, configured database permissions versus separately labeled **proposed (NOT activated)** role presets, recent access audit for `team.view_audit` only. Uses existing Tailwind theme tokens, layout, typefaces and icons; no font/CSS changes.
+- `GET /api/newsroom/team`: no-store, requires live cookie-bound Supabase Auth and `team.view`; same permission is rechecked in `readStaffTeamDirectory` immediately before **server-only** service-role reads. Returns a bounded 100-member roster with honest overflow indicator, only profiles `id,name` (no emails), role keys and current grant scopes; no Auth user secrets, role key, raw audit before/after JSON or `user_metadata` used for authorization.
+- Role manager uses finite CT-02c `validateStaffRoleChange` and existing `applyStaffRoleChange` RPC, not direct client database writes. **Both** `CT_STAFF_ACCESS_V2_ENABLED=true` and `CT_STAFF_ADMIN_MUTATIONS_ENABLED=true` required; actual user's cookie-derived JWT, `team.manage_roles`, and **independent owner check inside database SECURITY INVOKER `staff_apply_role_change`**. No forged actor or self-role-change. Owner-protection and audit transaction remain CT-02c responsibilities and have their own passing PG17 suite.
+- `POST /api/newsroom/team/role-change`: reject absent/cross-origin `Origin`, require JSON and 2048-byte declared max, validate bounded role/action/reason, return only request ID on success; no raw errors or service key exposed. UI requires a 12–500-character audit reason, explicit confirmation, and disables self-management. Supports assign/revoke role, suspend/reactivate/revoke membership as CT-03a; restricted to approved built-in role keys.
+- Neither roster nor client displays editable capability overrides or ability to mutate built-in grant matrices: those need separately reviewed owner-only APIs/RLS plus role-decision previews. **No role granting, owner bootstrap, table insertion or invitation is performed by these code changes.**
+
+## Verification and security
+- Source commit `ed2de2d67b503c298c3698fae8c38bff1eb84eec` contains UI + seven targeted Node authorization contracts (`tests/ct03a-team-manager.test.mjs`), verified-gating roster service and bilingual navigation. The initial contract assertion required adjustment after strengthening second in-service live revalidation. Check **final GitHub Actions PR #16**, including TypeScript, lint, Next build and all inherited nine PostgreSQL suites, before reporting final status. No newly applied SQL exists in CT-03a.
+- The UI has not been browser-tested with real staffed accounts because the live project has no installed CT-02b staff tables and both rollout flags are OFF. CI and static contract tests do **not** establish genuine Supabase JWT, team permissions, mutation and visual/browser acceptance.
+- Service-role is confined to server-only projection AFTER authorization and a second session/grant recheck; no service-role key shipped to browser, profile email excluded, audit before_state/after_state excluded. Existing CT-02c owner RPC prevents last-owner removal and self-modification; direct Data API staff table writes remain denied via CT-02b RLS.
+
+## Explicit blockers and next batches
+1. CT-02 security gates still open: separate real disposable Supabase Auth+Storage QA, independent restorable database **and Storage** backup, schema drift and **empty hosted migration history** reconciliation, real owner Auth identity and reviewed role grants, full browser EN/ES negative tests, privileged publisher security warning and leaked-password protection.
+2. Unapplied CT-02b–k migrations, no owner seeding, no Vercel env changes, no production deployment/merge. Do **not** enable `CT_STAFF_ACCESS_V2_ENABLED` or `CT_STAFF_ADMIN_MUTATIONS_ENABLED` now.
+3. CT-03b: audit-safe individual capability overrides, member-permission preview and role preset administration **only after** new server/RPC policies and explicit approval. CT-04: staff/freelancer invitations and onboarding with scoped defaults. Both require status-sensitive and no-last-owner tests.
+4. CT-03a roster currently caps output at 100 records; paging/server filtering and complete active-member totals must be implemented before managing a larger team. No direct editing of membership Auth UUID, email or invitation from this page.
+5. One published story still references a trashed media asset. Existing 22 public Storage objects ownerless. No media data was touched here; editorial/rights review remains separate.
+
+Rollback before production: close/revert PR #16. No hosted schema, permission, data, role or UI deployment occurred. After any future approved release, preserve revocation and audit rather than restoring legacy editor boolean policies.
