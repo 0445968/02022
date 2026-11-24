@@ -245,3 +245,7 @@ One bounded RPC (1–50 unique requested story IDs), exact verified calendar/sto
 
 ### CT-08b.2c — cross-page conflict advisory
 Server-computed potentialConflict flag checks a current pending reviewed queue and active same-story assignment due at/after publication, across calendar dates, filters and pages, with exact independent permission checks on both rows. Assigned-only viewers cannot infer hidden colleague deadlines; blocked/stale/legacy excluded. Future conflicts appear in attention and dashboard alerts. Advisory only, not an exhaustive dependency or execution guarantee. No new grant, mutation, scheduler activation or hosted changes.
+
+
+### CT-08c.1 — owner-only scheduler retry
+Owner-only private executor now retries only deadlock (40P01) and lock-not-available/lock timeout (55P03), at 1/2/4-minute minimum intervals; fourth transient failure blocks. Original dueAt/approved fingerprint/actor remain unchanged, each retry revalidates exact current approval and permissions/media. Stale business 40001, revoked authority and other caught errors block immediately. Per-item rollback and skip-locked/advisory-lock safeguards preserved; 3-second function lock timeout and private retry metadata, aggregate retried count; query cancellation/transaction abort rolls back whole run. No job installed, no new grants, no UI scheduling promise or live changes.
