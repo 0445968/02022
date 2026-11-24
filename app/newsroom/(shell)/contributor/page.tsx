@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import {canStartWriterDraft} from '@/lib/services/writer-drafts';
 import {notFound,redirect} from 'next/navigation';
 import {getCurrentUser} from '@/lib/auth/session';
 import {getWorkspaceAccess,scopedNewsroomEnabled,readAssignedWorkspace,readWorkspaceOnboarding,newsroomLocale} from '@/lib/services/newsroom-workspace';
@@ -17,6 +18,7 @@ export default async function ContributorWorkspace({searchParams}:{searchParams:
   const locale=await newsroomLocale(user),es=locale==='es',dict=getDictionary(locale);
   const raw=searchParams.page??'0',page=/^\d{1,3}$/.test(raw)?Math.min(Number(raw),100):0;
   const assigned=await readAssignedWorkspace(page);
+  const canCreate=await canStartWriterDraft();
   const links=[
     {allowed:access.viewStories,href:'/newsroom/stories',label:dict.newsroom.stories,icon:FileText},
     {allowed:access.fullMedia||access.privateMedia,href:'/newsroom/media',label:dict.newsroom.media,icon:Image},
@@ -34,6 +36,7 @@ export default async function ContributorWorkspace({searchParams}:{searchParams:
     {links.length>0&&<section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3" aria-label={es?'Herramientas':'Workspace tools'}>
       {links.map(({href,label,icon:Icon})=><Link key={href} href={href} className="flex items-center gap-3 rounded-lg border border-border bg-white p-4 text-sm font-medium text-deep hover:bg-surface-muted"><Icon className="h-4 w-4 text-primary"/>{label}</Link>)}
     </section>}
+    {canCreate&&<Link href="/newsroom/contributor/new" className="inline-flex rounded-md bg-primary px-4 py-2 text-sm font-semibold text-white">{es?'Nuevo borrador':'New draft'}</Link>}
     <section className="space-y-3 rounded-lg border border-border bg-white p-5">
       <h2 className="font-headline text-lg font-semibold text-deep">{es?'Mis asignaciones activas':'My active assignments'}</h2>
       {assigned.unavailable?<p role="alert" className="text-sm text-muted-foreground">{es?'No se pudieron cargar sus asignaciones. Actualice esta página.':'Unable to load assignments. Refresh this page.'}</p>:<>
