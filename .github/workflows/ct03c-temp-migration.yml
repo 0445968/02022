@@ -1,0 +1,15 @@
+name: CT-03c temporary CLI migration filename
+on: [pull_request, workflow_dispatch]
+permissions:
+  contents: read
+jobs:
+  generated-filename:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - name: Generate migration filename with pinned Supabase CLI
+        run: |
+          npx --yes supabase@3.2.0 migration --help
+          npx --yes supabase@3.2.0 migration new ct03c_role_grant_editor
+          find supabase/migrations -maxdepth 1 -name '*_ct03c_role_grant_editor.sql' -print
