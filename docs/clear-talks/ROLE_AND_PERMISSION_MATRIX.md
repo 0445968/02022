@@ -213,3 +213,7 @@ These are recommended starter presets and architecture, NOT yet an instruction t
 
 ### CT-07c.1 staged audited reports
 [Draft PR #38](https://github.com/0445968/02022/pull/38): verified current newsroom + exact published-story comment.manage_reports for redacted queue and detail/decision; no raw other reporter IDs, no self-report or own-comment resolution. Dual report/comment revision CAS, recorded actual actor/reason, terminal dismiss/actioned, actioned requires exact matching audited hide/remove event. Reader own create/read preserved; report-only navigation and reader form CT07c.2. Flag OFF, no live changes.
+
+
+### CT-07c.2a staged staff Reports UI
+[Draft PR #39](https://github.com/0445968/02022/pull/39): report-only current comment.manage_reports can discover Reports and resolve independent reports without comment.moderate. Current scope enforced per row/action in existing CT07c1 SQL; separate exact comment queue/moderation rights for comment link, actual report rights and same story/comment for return link. No raw other reporter IDs; no automatic comment mutation. Flag OFF, no live changes.
