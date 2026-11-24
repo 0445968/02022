@@ -38,7 +38,7 @@ export async function mayViewWorkspaceStory(storyId:string):Promise<boolean>{
   const grants=await resolveStoryStaffPermissionsOnServer(storyId,['story.view_all','story.view_assigned']);
   return grants.has('story.view_all')||grants.has('story.view_assigned');
 }
-export type AssignedWorkspaceStory={id:string;headline:string;status:string;language:string;dueAt:string|null;assignmentTypes:string[];canPreview:boolean;canEditDraft:boolean};
+export type AssignedWorkspaceStory={id:string;headline:string;status:string;language:string;dueAt:string|null;assignmentTypes:string[];canPreview:boolean;canEditDraft:boolean;canEditRevision:boolean};
 /** Only own active assignments, verified principal and per-story capability.
  * Never use the public stories list or unscoped counts as contributor work.
  * Fetch bounded rows, then individually verify story access before reading title.
@@ -74,8 +74,11 @@ export async function readAssignedWorkspace(page:number):Promise<{items:Assigned
       if(storyError||!story)return null;
       const canEditDraft=process.env.CT_ASSIGNED_DRAFT_EDITOR_ENABLED==='true'&&story.status==='draft'&&
         (await resolveStaffPermissionOnServer('story.edit_assigned',{kind:'story',storyId:id})).allowed;
+      const revisionKeys=['story.edit_assigned','revision.view','revision.edit_assigned'];
+      const revisionGrants=story.status==='published'&&process.env.CT_ASSIGNED_DRAFT_EDITOR_ENABLED==='true'&&process.env.CT_ASSIGNED_REVISION_EDITOR_ENABLED==='true'?await resolveStoryStaffPermissionsOnServer(id,revisionKeys):new Set<string>();
+      const canEditRevision=revisionKeys.every(k=>revisionGrants.has(k));
       return {id:story.id,headline:story.headline,status:story.status,language:story.language,
-        dueAt:a.dueAt,assignmentTypes:a.types,canPreview:true,canEditDraft} as AssignedWorkspaceStory;
+        dueAt:a.dueAt,assignmentTypes:a.types,canPreview:true,canEditDraft,canEditRevision} as AssignedWorkspaceStory;
     }));
     return {items:visible.filter((r):r is AssignedWorkspaceStory=>r!==null),hasMore:assignments.length>25&&page<100,unavailable:false};
   }catch{return unavailable;}

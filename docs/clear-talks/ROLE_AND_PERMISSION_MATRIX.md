@@ -161,3 +161,7 @@ At minimum prove:
 ## 9. Current approval boundary
 
 These are recommended starter presets and architecture, NOT yet an instruction to change live permissions or send invitations. In CT-02 the implementer must verify existing data/requirements, present any consequential privilege or deployment decisions and apply only reviewed safe migrations. Every finalized role/capability change updates this file plus IMPLEMENTATION_LEDGER.md in the same PR.
+
+
+### CT-05b.1–2 staged contributor copy editing
+[Draft PR #25](https://github.com/0445968/02022/pull/25) and [#26](https://github.com/0445968/02022/pull/26): exact assigned copy edit/view and newsroom access, submit_review for transition to in_review; assigned-only cannot reopen or edit submitted drafts. Published revisions additionally require exact revision.view/revision.edit_assigned, live + revision CAS, metadata preserved; no public publishing, author changes, scheduling, new media or permission grants. Direct DB guards, narrow authenticated invoker RPCs. CT-05b.3 safe creation, CT-05b.4 media, CT-06 actual review decisions; prior production gates remain.
