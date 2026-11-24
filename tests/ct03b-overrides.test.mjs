@@ -105,7 +105,7 @@ test('server-side directory paginates both roster and audit with restricted filt
  assert.match(s,/\.range\(auditPage\*AUDIT_PAGE_SIZE,\(auditPage\+1\)\*AUDIT_PAGE_SIZE-1\)/);
  assert.match(s,/if\(auditMemberId\)query=query\.eq\('subject_membership_id',auditMemberId\)/);
  assert.match(api,/URLSearchParams|url\.searchParams/);
- assert.match(api,/return \^\[0-9\]/);
+ assert.ok(api.includes('return /^[0-9]{1,3}$/.test(raw)'));
 });
 test('bilingual UI only exposes override editor to permitted staff',()=>{
  const ui=read('components/editorial/team/StaffTeamManager.tsx');
