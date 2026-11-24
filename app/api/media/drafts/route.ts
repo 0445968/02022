@@ -1,9 +1,10 @@
 import { NextResponse } from 'next/server';
+import { createHash } from 'node:crypto';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { getCurrentUser } from '@/lib/auth/session';
 import { isDevAuthBypass } from '@/lib/db/supabase-data';
 import { getDataClient } from '@/lib/db/supabase-data-access';
-import { mayUploadMedia } from '@/lib/permissions/media-route-gates';
+import { mayUploadMedia, mayListMedia } from '@/lib/permissions/media-route-gates';
 import { privateDraftMediaEnabled } from '@/lib/permissions/private-draft-media';
 import { ALLOWED_MIME_TYPES, MAX_FILE_SIZE } from '@/lib/services/media-config';
 import { hasExpectedImageSignature, PRIVATE_DRAFT_EXTENSIONS } from '@/lib/services/private-media';
@@ -31,6 +32,11 @@ export async function POST(request: Request) {
     return NextResponse.json({error:'Invalid file type or size'},{status:400});
   }
   const prefix=new Uint8Array(await file.slice(0,64).arrayBuffer());
+  // Digest the actual accepted bytes; promotion verifies both the private
+  // source and copied public destination before publishing metadata.
+  const sha256=createHash('sha256')
+    .update(new Uint8Array(await file.arrayBuffer()))
+    .digest('hex');
   if (!hasExpectedImageSignature(file.type,prefix)) {
     return NextResponse.json({error:'File contents do not match its type'},{status:400});
   }
@@ -59,7 +65,8 @@ export async function POST(request: Request) {
       storage_path:path,
       file_name:name,
       mime_type:file.type,
-      file_size_bytes:file.size
+      file_size_bytes:file.size,
+      source_sha256:sha256
     })
     .select('id,created_at')
     .single();
@@ -78,4 +85,35 @@ export async function POST(request: Request) {
       createdAt:record.created_at
     }
   },{status:201,headers:{'Cache-Control':'no-store'}});
+}
+
+/**
+ * Private staging review list. RLS automatically filters to the uploader's
+ * own drafts or those a current media reviewer is allowed to see.
+ * No private object keys or signed URLs are returned by listing.
+ */
+export async function GET() {
+  if (!privateDraftMediaEnabled() || isDevAuthBypass()) {
+    return NextResponse.json({error:'Not found'},{status:404});
+  }
+  const user=await getCurrentUser();
+  if (!user || !(await mayUploadMedia(user) || await mayListMedia(user))) {
+    return NextResponse.json({error:'Forbidden'},{status:403});
+  }
+  const client=await getDataClient() as unknown as SupabaseClient;
+  const {data,error}=await client.from('media_private_drafts')
+    .select('id,file_name,mime_type,file_size_bytes,created_at,state,reviewed_at,rights_status,review_reason,published_media_id')
+    .order('created_at',{ascending:false}).limit(50);
+  if (error) {
+    console.error('Private media queue unavailable:',error.message);
+    return NextResponse.json({error:'Unable to list drafts'},{status:500});
+  }
+  return NextResponse.json({
+    drafts:(data??[]).map(item=>({
+      id:item.id,fileName:item.file_name,mimeType:item.mime_type,
+      fileSizeBytes:item.file_size_bytes,createdAt:item.created_at,
+      state:item.state,reviewedAt:item.reviewed_at,rightsStatus:item.rights_status,
+      reviewReason:item.review_reason,publishedMediaId:item.published_media_id
+    }))
+  },{headers:{'Cache-Control':'private, no-store, max-age=0'}});
 }
