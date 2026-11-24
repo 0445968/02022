@@ -29,7 +29,8 @@ test('service-role lookups occur after live authorized viewer check and sanitize
   assert.match(directory,/SUPABASE_SERVICE_ROLE_KEY/);
   assert.match(directory,/select\('id,auth_user_id,status,member_type,expires_at,created_at'/);
   assert.match(directory,/select\('id,name'\)/);
-  assert.match(directory,/canViewAudit \? db\.from\('staff_access_audit'\)/);
+  assert.match(directory,/access\.canViewAudit \? \(\(\) =>/);
+  assert.match(directory,/db\.from\('staff_access_audit'\)/);
   assert.doesNotMatch(directory,/raw_user_meta_data|\.from\('auth\.users'\)|\.select\('\*'\)/);
   assert.doesNotMatch(getRoute,/SUPABASE_SERVICE_ROLE_KEY|service_role/);
   assert.match(getRoute,/Cache-Control':'private, no-store/);

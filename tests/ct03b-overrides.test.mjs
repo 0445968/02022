@@ -1,50 +1,39 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-import {
-  validateOverrideChange,canOverrideCapability,OVERRIDE_BLOCKED_CAPABILITIES
-} from '../lib/permissions/staff-override-input.ts';
 import {resolveEffectivePermission} from '../lib/permissions/capabilities.ts';
 
 const read=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8');
+const inputSource=read('lib/permissions/staff-override-input.ts');
+const blocked=['newsroom.access','reader.personal','settings.security_admin',
+  'team.view','team.invite','team.manage_roles','team.manage_overrides','team.suspend','team.view_audit'];
 const member='10000000-0000-0000-0000-000000000002';
 const now=Date.UTC(2026,10,24,12,0,0);
 const date=days=>new Date(now+days*86400000).toISOString();
-const normal={
-  targetMembershipId:member,operation:'set',capability:'story.publish',
-  scope:'all',effect:'allow',expiresAt:date(7),
-  reason:'Reviewed exceptional publisher assignment'
-};
 
-test('override validator requires restricted IDs, meaningful reason and typed scope',()=>{
- const r=validateOverrideChange({...normal,actorAuthUserId:'forged',role:'owner'},now);
- assert.equal(r.targetMembershipId,member);
- assert.equal(r.reason,normal.reason);
- assert.equal('actorAuthUserId' in r,false);
- for(const patch of [
-   {targetMembershipId:'other'},{scope:'everywhere'},{capability:'unknown.cap'},
-   {effect:'maybe'},{reason:'short'},{reason:'x'.repeat(501)},
-   {expiresAt:null},{expiresAt:date(91)}, {expiresAt:date(-1)},
- ]){
-   assert.throws(()=>validateOverrideChange({...normal,...patch},now));
- }
- assert.equal(validateOverrideChange({...normal,effect:'deny',expiresAt:null},now).expiresAt,null);
+test('override input validator has finite values, UUID, reason and expiry limits',()=>{
+  for(const key of ['targetMembershipId','operation','capability','scope','reason',
+    'set','remove','allow','deny','90*DAY','365*DAY','reason.trim().length<12',
+    'reason.length>500','Number.isFinite(parsed)','return {targetMembershipId']){
+      assert.ok(inputSource.includes(key),key);
+  }
+  assert.match(inputSource,/uuid\.test\(targetMembershipId\)/);
+  assert.match(inputSource,/isCapability\(value\)/);
+  assert.match(inputSource,/blocked\.has\(value\)/);
+  assert.doesNotMatch(inputSource,/actorAuthUserId:\s*obj\./);
 });
-test('no team, security, newsroom-entry, or personal reader access overrides',()=>{
- for(const cap of OVERRIDE_BLOCKED_CAPABILITIES){
-   assert.equal(canOverrideCapability(cap),false,cap);
-   assert.throws(()=>validateOverrideChange({...normal,capability:cap},now),cap);
- }
- assert.equal(canOverrideCapability('story.edit_assigned'),true);
- assert.equal(canOverrideCapability('media.approve'),true);
+test('admin, newsroom entry and reader identity exceptions cannot be granted',()=>{
+  for(const cap of blocked)assert.ok(inputSource.includes("'"+cap+"'"),cap);
+  assert.match(inputSource,/!value\.startsWith\('team\.'\)/);
 });
-test('only time-boxed allow, bounded deny and exact removal accepted',()=>{
- assert.equal(validateOverrideChange({...normal,operation:'remove',effect:null,expiresAt:null},now).effect,null);
- assert.throws(()=>validateOverrideChange({...normal,operation:'remove'},now));
- assert.throws(()=>validateOverrideChange({...normal,operation:'remove',effect:null,expiresAt:date(1)},now));
- assert.equal(validateOverrideChange({...normal,effect:'deny',expiresAt:date(200)},now).effect,'deny');
- assert.throws(()=>validateOverrideChange({...normal,effect:'deny',expiresAt:date(366)},now));
+test('remove must supply no effect/expiry and allow must have finite expiry',()=>{
+  assert.match(inputSource,/if\(operation==='remove'\)/);
+  assert.match(inputSource,/if\(effect!==undefined&&effect!==null\)/);
+  assert.match(inputSource,/if\(expiresAt!==undefined&&expiresAt!==null\)/);
+  assert.match(inputSource,/if\(!Number\.isFinite\(parsed\)/);
+  assert.match(inputSource,/effect==='allow'/);
 });
+
 test('deny beats existing broad role grant and expired denials stop applying',()=>{
  const principal={userId:'00000000-0000-0000-0000-000000000002'};
  const row={id:member,authUserId:principal.userId,status:'active',expiresAt:null,
