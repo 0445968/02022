@@ -57,7 +57,10 @@ test('new server resolver fails closed before enablement and uses a verified acc
   assert.match(server, /client\.auth\.getUser\(\)/);
   assert.match(server, /\.eq\('auth_user_id', user\.id\)/);
   assert.match(server, /return denied;/);
-  assert.doesNotMatch(server, /user_metadata|DEV_AUTH_BYPASS|createDataClient\(|SUPABASE_SERVICE_ROLE_KEY/);
+  assert.doesNotMatch(server, /user_metadata|createDataClient\(|SUPABASE_SERVICE_ROLE_KEY/);
+  // The new workspace batch resolver explicitly DENIES the old dev bypass.
+  assert.match(server,/if\(process\.env\.CT_STAFF_ACCESS_V2_ENABLED!=='true'\|\|process\.env\.DEV_AUTH_BYPASS==='true'\)return allowed/);
+  assert.equal((server.match(/DEV_AUTH_BYPASS/g)||[]).length,1);
 });
 
 test('staff story resource scope is loaded by the server, not accepted from client snapshots', () => {
