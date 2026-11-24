@@ -6,6 +6,7 @@ import { usePathname } from 'next/navigation';
 import {
   LayoutDashboard,
   ClipboardCheck,
+  Flag,
   FileText,
   PlusCircle,
   Image as ImageIcon,
@@ -115,7 +116,7 @@ export function NewsroomSidebar({
     usePathname();
 
   const items=scopedNav?scopedNav.map(key=>key==='contributor'?{key,icon:LayoutDashboard,href:'/newsroom/contributor'}:
-    key==='profile'?{key,icon:User,href:'/newsroom/onboarding'}:key==='reviewInbox'?{key,icon:ClipboardCheck,href:'/newsroom/reviews'}:NAV.find(item=>item.key===key)!).filter(Boolean):NAV.filter(item=>(item.key!=='team'||showTeamNav)&&item.key!=='comments');
+    key==='profile'?{key,icon:User,href:'/newsroom/onboarding'}:key==='reviewInbox'?{key,icon:ClipboardCheck,href:'/newsroom/reviews'}:key==='reports'?{key,icon:Flag,href:'/newsroom/reports'}:NAV.find(item=>item.key===key)!).filter(Boolean):NAV.filter(item=>(item.key!=='team'||showTeamNav)&&item.key!=='comments');
   return (
     <aside
       className="
@@ -212,7 +213,7 @@ export function NewsroomSidebar({
                * dictionary values next.
                */
               const label =
-  item.key==='contributor'?(locale==='es'?'Mi espacio de trabajo':'My workspace'):item.key==='reviewInbox'?(locale==='es'?'Bandeja editorial':'Review inbox'):dict.newsroom[item.key as keyof typeof dict.newsroom];
+  item.key==='contributor'?(locale==='es'?'Mi espacio de trabajo':'My workspace'):item.key==='reviewInbox'?(locale==='es'?'Bandeja editorial':'Review inbox'):item.key==='reports'?(locale==='es'?'Denuncias':'Reports'):dict.newsroom[item.key as keyof typeof dict.newsroom];
 
               return (
                 <li

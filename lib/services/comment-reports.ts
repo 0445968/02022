@@ -2,11 +2,12 @@ import 'server-only';
 import type {SupabaseClient} from '@supabase/supabase-js';
 import {createClient} from '@/lib/db/supabase-server';
 import {resolveGlobalStaffPermissionsOnServer} from '@/lib/permissions/server';
-import {commentModerationEnabled} from '@/lib/services/comment-moderation';
+import {commentModerationEnabled,canDiscoverReportManagement} from '@/lib/services/comment-moderation';
 import {DRAFT_UUID} from '@/lib/permissions/assigned-draft-contract';
 import {DraftHttpError} from '@/lib/permissions/assigned-draft-http';
 import {parseReportDetail,parseReportPage,type ReportFilter,type ReportCommand} from '@/lib/permissions/comment-report-contract';
 export function reportManagementEnabled(){return commentModerationEnabled()&&process.env.CT_COMMENT_REPORTS_ENABLED==='true';}
+export async function canEnterReportManagement(){return reportManagementEnabled()&&await canDiscoverReportManagement();}
 async function client(){
  if(!reportManagementEnabled())throw new DraftHttpError(404);
  const db=createClient() as unknown as SupabaseClient;
