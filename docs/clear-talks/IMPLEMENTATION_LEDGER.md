@@ -446,3 +446,9 @@ Notes: CT-00 and CT-01 are the intended opening work in the next chat. CT-02 pre
 - STAGED branch `feature/ct08b2a-calendar-alerts-2026-11-24`. Parent #43 corrective final 659657f97b3a48d385c9a32529f498c3d692f74e all 31 workflows SUCCESS, including application #45505164581 (unit, TypeScript, ESLint, build).
 - EN/ES permission-gated Dashboard and Contributor alerts reuse scoped calendar RPC, first five attention items and next-48-hour items, explicit partial results, no global count, errors shown separately, Bogota timestamps. Calendar marks upcoming and possible same-story assignment due at/after current pending queue when both rows visible on the same page; never infer unseen conflicts, no claim of complete dependency coverage. No new migration, new flags, mutations, notification delivery or production changes. Exact batched story schedule status and complete cross-page conflict detection remain CT08b.2b and later.
 - See CT08B2A_REVIEW.md. Exact HEAD CI pending.
+
+
+### CT-08b.2b — effective story publication queue
+- STAGED, draft PR #45, branch `feature/ct08b2b-effective-schedule-2026-11-24`. Parent #44 final 960bd8a3331998b03a677a3b38e5d1f80a68551a all 31 workflows green; application #45505555618.
+- One bounded RPC (1–50 unique requested story IDs), exact verified calendar/story scope plus revision permission, minimal queue source/state/due/snapshot projection, no raw grants. Stories keeps stored status/filter/count and unpublished changes independent; EN/ES Publication queue column shows queued draft or revision, due, blocked, stale, and legacy unverified, with no false 'none' claims. Dashboard retains prior scoped alerts. No filter for effective queue status yet; queue column is page-local, stored status filters still apply. No scheduler activation or production mutation.
+- CLI-generated unapplied `supabase/migrations/20261124225839_ct08b2b_effective_schedule.sql`; see CT08B2B_REVIEW.md. Exact HEAD CI pending.

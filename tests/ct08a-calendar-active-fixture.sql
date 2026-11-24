@@ -67,3 +67,7 @@ do $fn$ begin
  begin perform public.staff_read_editorial_calendar(now(),now()+interval '1 day','range','all',0);raise exception 'Reader calendar read';exception when insufficient_privilege then null;end;
 end; $fn$;
 rollback;
+
+\if :{?ct08b2b_projection}
+\i tests/ct08b2b-projection-active-fixture.sql
+\endif
