@@ -62,6 +62,7 @@ interface StoryEditorToolbarProps {
   onSetLink: () => void;
 
   onOpenImagePicker: () => void;
+  allowMedia?:boolean;
 }
 
 type ToolbarMode =
@@ -77,7 +78,7 @@ export function StoryEditorToolbar({
   editor,
   dict,
   onSetLink,
-  onOpenImagePicker,
+  onOpenImagePicker,allowMedia=true,
 }: StoryEditorToolbarProps) {
   const toolbarRef =
     useRef<HTMLDivElement>(
@@ -1008,7 +1009,7 @@ export function StoryEditorToolbar({
               }
             />
 
-            <MenuAction
+            {allowMedia&&<MenuAction
               label={
                 dict.story
                   .selectFromMedia
@@ -1019,7 +1020,7 @@ export function StoryEditorToolbar({
               onSelect={
                 onOpenImagePicker
               }
-            />
+            />}
           </ToolbarMenu>
         ) : (
           <>
@@ -1036,7 +1037,7 @@ export function StoryEditorToolbar({
               icon={LinkIcon}
             />
 
-            <ToolbarButton
+            {allowMedia&&<ToolbarButton
               onClick={
                 onOpenImagePicker
               }
@@ -1048,7 +1049,7 @@ export function StoryEditorToolbar({
               icon={
                 ImageIcon
               }
-            />
+            />}
           </>
         )}
 
