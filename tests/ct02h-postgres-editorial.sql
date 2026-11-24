@@ -196,10 +196,134 @@ begin
    raise exception 'Revoked user lost normal public homepage read'; end if;
  if (select count(*) from public.editorial_profiles)<>2 then
    raise exception 'Own byline reading should remain account-scoped'; end if;
- insert into public.homepage_layout_drafts(id,selections,updated_by)
- values ('current','[]'::jsonb,'00000000-0000-0000-0000-000000000004')
- on conflict do nothing;
- get diagnostics n=row_count;
- if n<>0 then raise exception 'Legacy revoked editor wrote draft'; end if;
+ begin
+   insert into public.homepage_layout_drafts(id,selections,updated_by)
+   values ('current','[]'::jsonb,'00000000-0000-0000-0000-000000000004');
+   raise exception 'Legacy revoked editor wrote draft';
+ exception when insufficient_privilege then null;
+ end;
 end $$;
 rollback;
+
+-- A current editor can save an unpublished homepage draft, but cannot use
+-- its draft-editing permission to publish a live slot or breaking headline.
+begin;
+set local role authenticated;
+set local request.jwt.claim.sub='00000000-0000-0000-0000-000000000002';
+do $$
+declare v_count integer;
+begin
+ insert into public.homepage_layout_drafts(id,selections,updated_by)
+ values('current','[]'::jsonb,'00000000-0000-0000-0000-000000000002');
+ if (select count(*) from public.homepage_layout_drafts)<>1 then
+   raise exception 'Current editor cannot save homepage draft'; end if;
+ begin
+   insert into public.homepage_slots(slot,story_id,position,active,created_by,updated_by)
+   values ('secondary','20000000-0000-0000-0000-000000000001',1,true,
+    '00000000-0000-0000-0000-000000000002',
+    '00000000-0000-0000-0000-000000000002');
+   raise exception 'Homepage draft editor wrote a live placement';
+ exception when insufficient_privilege then null;
+ end;
+ begin
+   insert into public.breaking_news(headline,active,created_by,updated_by)
+   values('Unapproved alert',true,
+    '00000000-0000-0000-0000-000000000002',
+    '00000000-0000-0000-0000-000000000002');
+   raise exception 'Draft editor published breaking-news alert';
+ exception when insufficient_privilege then null;
+ end;
+ begin
+   perform public.publish_homepage_layout(
+    '[{"slot":"lead","storyId":"20000000-0000-0000-0000-000000000001","position":0}]'::jsonb,
+    '00000000-0000-0000-0000-000000000002');
+   raise exception 'Editor without homepage.publish published live layout';
+ exception when insufficient_privilege then null;
+ end;
+end $$;
+rollback;
+
+-- Old editor-flagged, revoked user cannot modify taxonomy or bylines.
+begin;
+set local role authenticated;
+set local request.jwt.claim.sub='00000000-0000-0000-0000-000000000004';
+do $$
+begin
+ begin
+  insert into public.story_tags(story_id,tag_id)
+  values ('20000000-0000-0000-0000-000000000001',
+    '40000000-0000-0000-0000-000000000001');
+  raise exception 'Revoked editor attached a public tag';
+ exception when insufficient_privilege then null;
+ end;
+ update public.editorial_profiles set byline_name='Forged editor byline'
+ where id='50000000-0000-0000-0000-000000000002';
+ if found then raise exception 'Revoked legacy editor updated hidden byline'; end if;
+end $$;
+rollback;
+
+-- Assigned freelancer can update a draft's taxonomy but cannot affect
+-- unrelated published or private stories, nor edit a global tag.
+begin;
+set local role authenticated;
+set local request.jwt.claim.sub='00000000-0000-0000-0000-000000000003';
+do $$
+declare n int;
+begin
+ insert into public.story_tags(story_id,tag_id)
+ values('20000000-0000-0000-0000-000000000002',
+  '40000000-0000-0000-0000-000000000001');
+ insert into public.story_categories(story_id,category_id)
+ values('20000000-0000-0000-0000-000000000002',
+  '40000000-0000-0000-0000-000000000002');
+ begin
+   insert into public.story_tags(story_id,tag_id)
+   values('20000000-0000-0000-0000-000000000001',
+    '40000000-0000-0000-0000-000000000001');
+   raise exception 'Freelancer altered unrelated published story taxonomy';
+ exception when insufficient_privilege then null;
+ end;
+ update public.tags set name='Forged global tag'
+ where id='40000000-0000-0000-0000-000000000001';
+ get diagnostics n=row_count;
+ if n<>0 then raise exception 'Freelancer renamed a global taxonomy tag'; end if;
+end $$;
+rollback;
+
+-- Verified first owner has explicit rights in the TEST fixture only.
+-- The live owner identity and grants have NOT been selected or installed.
+begin;
+set local role authenticated;
+set local request.jwt.claim.sub='00000000-0000-0000-0000-000000000001';
+do $$
+begin
+ begin
+  perform public.publish_homepage_layout(
+    '[{"slot":"lead","storyId":"20000000-0000-0000-0000-000000000001","position":0}]'::jsonb,
+    '00000000-0000-0000-0000-000000000002');
+  raise exception 'Publisher forged the homepage audit actor';
+ exception when insufficient_privilege then null;
+ end;
+ perform public.publish_homepage_layout(
+  '[{"slot":"secondary","storyId":"20000000-0000-0000-0000-000000000001","position":0}]'::jsonb,
+  '00000000-0000-0000-0000-000000000001');
+ if (select count(*) from public.homepage_slots)<>1
+    or (select slot::text from public.homepage_slots limit 1)<>'secondary' then
+   raise exception 'Valid publisher could not atomically replace live homepage';
+ end if;
+ if not exists (select 1 from public.homepage_layout_drafts
+    where id='current' and updated_by='00000000-0000-0000-0000-000000000001') then
+    raise exception 'Homepage published layout failed to sync editor draft'; end if;
+ begin
+   update public.homepage_slots
+   set updated_by='00000000-0000-0000-0000-000000000002';
+   raise exception 'Authorized publisher spoofed row update actor';
+ exception when insufficient_privilege then null;
+ end;
+ update public.editorial_profiles set byline_name='Verified public byline'
+ where id='50000000-0000-0000-0000-000000000001';
+ if not found then raise exception 'Byline manager could not edit author identity'; end if;
+end $$;
+rollback;
+
+select 'CT-02h direct RLS and homepage publish identity checks passed' as result;
