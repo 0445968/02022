@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import {reviewedPublicationEnabled} from '@/lib/services/reviewed-publication';
 
 import {
   getCurrentUser,
@@ -199,6 +200,10 @@ export async function PUT(
         status: 400,
       }
     );
+  }
+
+  if(reviewedPublicationEnabled()&&(body.status==='published'||body.status==='scheduled'||(story.status==='published'&&!(body.workflowOnly===true&&body.status==='archived')))){
+    return NextResponse.json({error:'Use the reviewed publication workflow.'},{status:409});
   }
 
   // CT-02d: a contributor who may edit assigned copy may NOT reassign a
