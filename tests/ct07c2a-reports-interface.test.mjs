@@ -34,3 +34,11 @@ test('CT07c2a report actions carry dual revision, confirmation and exact event',
  assert.match(s,/The displayed text is not a historical copy|The comment changed/);
  assert.doesNotMatch(s,/dangerouslySetInnerHTML|reporterId|reviewedBy/);
 });
+
+test('CT07c2a return to report rechecks exact accessible comment and story',()=>{
+ const p=file('app/newsroom/(shell)/comments/page.tsx');
+ assert.match(p,/await readReportDetail\(reportId\).catch/);
+ assert.match(p,/report\?\.report.commentId===detail.comment.id&&report.report.storyId===detail.comment.storyId/);
+ assert.match(file('app/newsroom/(shell)/reports/page.tsx'),/commentId:detail.report.commentId,reportId:detail.report.id/);
+ assert.match(file('components/editorial/comments/CommentsWorkspace.tsx'),/Back to report/);
+});

@@ -9,7 +9,7 @@ import {availableCommentActions,commentQueueHref} from '@/lib/permissions/commen
 const btn='inline-flex items-center justify-center gap-2 rounded-md border border-border bg-white px-3 py-2 text-sm font-medium hover:bg-surface-muted disabled:opacity-50';
 const filters:ModerationFilter[]=['pending','reported','published','hidden','deleted','all'];
 const icons={approve:Check,hide:EyeOff,restore:RotateCcw,remove:Trash2};
-export function CommentsWorkspace({initial,status,storyId,query,page,locale,initialDetail=null,canOpenReports=false}:{initial:ModerationPage;initialDetail?:ModerationDetail|null;canOpenReports?:boolean;status:ModerationFilter;storyId:string|null;query:string;page:number;locale:Locale}){
+export function CommentsWorkspace({initial,status,storyId,query,page,locale,initialDetail=null,canOpenReports=false,returnReportHref=null}:{initial:ModerationPage;initialDetail?:ModerationDetail|null;canOpenReports?:boolean;returnReportHref?:string|null;status:ModerationFilter;storyId:string|null;query:string;page:number;locale:Locale}){
  const es=locale==='es',router=useRouter();
  const [search,setSearch]=useState(query),[detail,setDetail]=useState<ModerationDetail|null>(initialDetail);
  const [selected,setSelected]=useState<string|null>(initialDetail?.comment.id??null),[action,setAction]=useState<ModerationAction|null>(null);
@@ -60,7 +60,7 @@ export function CommentsWorkspace({initial,status,storyId,query,page,locale,init
   <header className="flex flex-wrap items-start justify-between gap-3 border-b border-border pb-4">
    <div><h1 className="font-headline text-2xl font-bold text-deep">{es?'Comentarios':'Comments'}</h1>
    <p className="mt-1 text-sm text-muted-foreground">{es?'Modere comentarios de lectores según sus permisos vigentes.':'Manage reader comments within your current permissions.'}</p></div>
-   <div className="flex flex-wrap gap-2">{canOpenReports&&<Link onClick={guardNavigation} prefetch={false} className={btn} href={'/newsroom/reports'+(storyId?'?storyId='+encodeURIComponent(storyId):'')}>{es?'Denuncias':'Reports'}</Link>}
+   <div className="flex flex-wrap gap-2">{canOpenReports&&<Link onClick={guardNavigation} prefetch={false} className={btn} href={returnReportHref??('/newsroom/reports'+(storyId?'?storyId='+encodeURIComponent(storyId):''))}>{returnReportHref?(es?'Volver a la denuncia':'Back to report'):(es?'Denuncias':'Reports')}</Link>}
    <button type="button" disabled={busy} className={btn} onClick={refresh}><RefreshCw className="h-4 w-4" aria-hidden/>{es?'Actualizar':'Refresh'}</button></div>
   </header>
   <nav className="flex flex-wrap gap-2" aria-label={es?'Estados de comentarios':'Comment statuses'}>

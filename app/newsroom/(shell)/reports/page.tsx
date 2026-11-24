@@ -26,6 +26,6 @@ export default async function ReportsPage({searchParams}:{searchParams:{status?:
  if(detail&&storyId&&detail.report.storyId!==storyId)notFound();
  const canOpenComments=await canEnterCommentModeration();
  const grants=detail&&canOpenComments?await resolveStoryStaffPermissionsOnServer(detail.report.storyId,['comment.view_queue','comment.moderate']):new Set<string>();
- const commentHref=detail&&(grants.has('comment.view_queue')||grants.has('comment.moderate'))?'/newsroom/comments?'+new URLSearchParams({status:'all',storyId:detail.report.storyId,commentId:detail.report.commentId}).toString():null;
+ const commentHref=detail&&(grants.has('comment.view_queue')||grants.has('comment.moderate'))?'/newsroom/comments?'+new URLSearchParams({status:'all',storyId:detail.report.storyId,commentId:detail.report.commentId,reportId:detail.report.id}).toString():null;
  return <ReportsWorkspace key={JSON.stringify([status,storyId,page,id])} data={data} detail={detail} status={status} storyId={storyId} page={page} locale={locale} commentHref={commentHref} canOpenComments={canOpenComments}/>;
 }
