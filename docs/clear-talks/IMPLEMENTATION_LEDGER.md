@@ -1,5 +1,5 @@
 # Clear Talks — Implementation Ledger and Session Log
-Last updated: 2026-11-23 | Plan version: 1.0
+Last updated: 2026-11-24 | Plan version: 1.0
 Project: https://github.com/0445968/02022 | Planning branch: planning/clear-talks-completion-2026-11-23
 Planning draft PR: https://github.com/0445968/02022/pull/2 (documentation only; not merged)
 Master: MASTER_COMPLETION_PLAN.md | Roles: ROLE_AND_PERMISSION_MATRIX.md | Handoff: NEXT_CHAT_HANDOFF.md
@@ -18,7 +18,7 @@ Every code batch must update the row AND append an entry under Session log in th
 | CT-01 | Stories thumbnails + active unpublished revision indicator | P0 | CT-00 baseline | IMPLEMENTED | [Draft PR #4](https://github.com/0445968/02022/pull/4); 13 tests and CI green, browser QA pending |
 | CT-02 | Permissions schema, server API and RLS foundation | P0 | CT-00 | IN PROGRESS | CT-02a–j [#5–#14](https://github.com/0445968/02022/pull/14), CT-02k [#15](https://github.com/0445968/02022/pull/15): staged reader/comment/report/bookmark RLS and manual real-JWT/Storage test harness; first owner, migration reconciliation, production cutover still pending |
 | CT-03 | Newsroom team/admin permission manager | P0 | CT-02 | IN PROGRESS | CT-03a [#16](https://github.com/0445968/02022/pull/16), CT-03b [#17](https://github.com/0445968/02022/pull/17), CT-03c [#18](https://github.com/0445968/02022/pull/18): scoped grants and audit, bilingual team and role preset editor, revision conflicts; real Auth QA, safe production installation and invitations still pending |
-| CT-04 | Invited staff/freelancer onboarding and preset assignment | P0 | CT-02/03 | IN PROGRESS | CT-04a.1 [draft PR #19](https://github.com/0445968/02022/pull/19) token/input contract; persistence, redemption RPC, UI and delivery pending |
+| CT-04 | Invited staff/freelancer onboarding and preset assignment | P0 | CT-02/03 | IN PROGRESS | CT-04a.1 [#19](https://github.com/0445968/02022/pull/19) verified token/input contract; CT-04a.2 [#20](https://github.com/0445968/02022/pull/20) staged database lifecycle + atomic redemption; server APIs/UI and real Auth/delivery QA pending |
 | CT-05 | Freelancer/contributor and staff-scoped newsroom | P0 | CT-02/04 | PLANNED | Roles contract |
 | CT-06 | Story assignments and editorial review workflow | P1 | CT-02/05 | PLANNED | Blueprint §6 |
 | CT-07 | Newsroom Comments moderation | P1 | CT-02 | PLANNED | Missing route |
@@ -268,3 +268,10 @@ Notes: CT-00 and CT-01 are the intended opening work in the next chat. CT-02 pre
 ### Verification update — CT-04a.1
 - Draft PR [#19](https://github.com/0445968/02022/pull/19), exact code SHA `201e193ec38eee0325297a32943f9d2fbfb15adb`. On source SHA: 11 of 11 inherited PG17 security workflows successful; [quality run #45329196599](https://github.com/0445968/02022/actions/runs/45329196599) not yet verified complete; do not claim a green quality/build result.
 - No new SQL/PG suite in this slice, no live activation. Next CT-04a.2 only after source-quality check, including actual RLS schema and atomic audited redemption tests. Final documentation head may trigger fresh CI.
+
+
+### 2026-11-24 — CT-04a.2 staged audited invitation persistence and activation
+- State: IN PROGRESS. Draft [PR #20](https://github.com/0445968/02022/pull/20), branch `feature/ct04a-invitation-lifecycle-2026-11-24`, parent CT-04a.1 final `5349a460c2f06b10205a0d5038d7c9cd74b53a61` all 12 workflows green.
+- Unapplied CLI-generated migration `20261124150021_ct04a_staff_invitations.sql` (run #45420381550), RLS and server-only issuance/replacement/cancellation/redacted pagination and single-use membership+role+audit transaction; real Auth column checks, configured role ceiling + revision/fingerprint, shared lock and unique email. Added isolated PG17 and concurrency tests, four Node contracts. No schema/data/permissions applied, no email or deploy, no UI/font changes. New narrow service-role Auth column SELECT privilege requires review; no table-wide or browser access. See `CT04A2_REVIEW.md`.
+- Initial code SHA `dfc5181c97e3e7e547ec21d479d50b2d29b5b643`: [quality #45420980183](https://github.com/0445968/02022/actions/runs/45420980183) SUCCESS, **142/142 tests**, TypeScript, ESLint and Next.js build PASS. [CT-04a PG17 #45420980172](https://github.com/0445968/02022/actions/runs/45420980172) SUCCESS including actual competing redemption transactions and injected post-membership failure rollback; all eleven inherited PG17 suites SUCCESS (12 total). Boundary-case follow-up SHA `5c7683ced8233c9afff68950e94c94326470e949`: new PG17 check not yet reported; new quality check not yet reported. Verify follow-up/final HEAD before claiming all latest checks green.
+- Hosted read-only preflight preserved 23 stories/4 revisions/43 versions/22 media, staff schema and migration register relation absent. Main unchanged. All old production gates persist. Next CT-04a.3 server-only gated APIs and bilingual invitation management/redeem UI (no email sending), then CT-04b first login.
