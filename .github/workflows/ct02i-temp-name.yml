@@ -1,0 +1,14 @@
+name: CT-02i migration filename (temporary)
+on: [pull_request, workflow_dispatch]
+permissions:
+  contents: read
+jobs:
+  cli-name:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - run: |
+          npx --yes supabase@3.2.0 migration --help
+          npx --yes supabase@3.2.0 migration new ct02i_private_media_drafts
+          find supabase/migrations -maxdepth 1 -name '*_ct02i_private_media_drafts.sql' -print
