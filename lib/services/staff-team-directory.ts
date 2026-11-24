@@ -100,7 +100,7 @@ export async function readStaffTeamDirectory(
   const [memberResult,presetResult]=await Promise.all([
     membersQuery,
     db.from('staff_role_presets')
-      .select('id,role_key,name_en,name_es,is_builtin').order('role_key').limit(30),
+      .select('id,role_key,name_en,name_es,is_builtin,grant_revision').order('role_key').limit(30),
   ]);
   const membersRaw=requireSuccess(memberResult,'members') as RawRow[];
   const presetsRaw=requireSuccess(presetResult,'presets') as RawRow[];
@@ -148,6 +148,7 @@ export async function readStaffTeamDirectory(
   }));
   const presets:TeamPreset[]=presetsRaw.filter(p=>roleKey(p.role_key)).map(p=>({
     key:p.role_key,nameEn:p.name_en,nameEs:p.name_es,isBuiltin:!!p.is_builtin,
+    grantRevision:Number.isSafeInteger(p.grant_revision)?p.grant_revision:0,
     configuredGrants:grants.filter(g=>g.role_preset_id===p.id)
       .filter(g=>['all','assigned','own'].includes(g.scope))
       .map(g=>({capability:String(g.capability_key),scope:g.scope}))
@@ -169,5 +170,7 @@ export async function readStaffTeamDirectory(
     canManageRoles:access.canManageRoles,canViewAudit:access.canViewAudit,
     mutationsEnabled:access.mutationsEnabled,
     canManageOverrides:access.canManageOverrides,
-    overrideMutationsEnabled:access.overrideMutationsEnabled};
+    overrideMutationsEnabled:access.overrideMutationsEnabled,
+    presetMutationsEnabled:access.canManageRoles&&access.mutationsEnabled
+      &&process.env.CT_STAFF_PRESET_MUTATIONS_ENABLED==='true'};
 }

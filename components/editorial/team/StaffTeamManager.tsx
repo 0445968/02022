@@ -7,6 +7,7 @@ import {STAFF_ROLE_KEYS,type StaffRoleKey,type StaffRoleOperation} from '@/lib/p
 import {proposedRoleGrants} from '@/lib/permissions/role-presets';
 import type {TeamDirectory,TeamMember,TeamStatus} from '@/lib/permissions/staff-team-types';
 import {StaffPermissionInspector} from '@/components/editorial/team/StaffPermissionInspector';
+import {RolePresetMatrixEditor} from '@/components/editorial/team/RolePresetMatrixEditor';
 
 const copy={
   en:{
@@ -306,7 +307,7 @@ export function StaffTeamManager({locale}:{locale:Locale}){
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div><h2 className="text-base font-semibold text-deep">{t.roles}</h2>
             <p className="mt-1 text-sm text-muted-foreground">{t.review}</p></div>
-          <span className="text-xs text-muted-foreground">{t.readOnly}</span>
+          <span className="text-xs text-muted-foreground">{data.presetMutationsEnabled?t.manage:t.readOnly}</span>
         </div>
         <div className="mt-4 grid gap-4 md:grid-cols-[minmax(0,220px)_minmax(0,1fr)]">
           <label className="block text-sm font-medium">{t.roleKey}
@@ -335,6 +336,10 @@ export function StaffTeamManager({locale}:{locale:Locale}){
             </div>
           </div>
         </div>
+        {selectedRole&&<RolePresetMatrixEditor
+          key={selectedRole.key} preset={selectedRole} locale={locale}
+          canEdit={data.presetMutationsEnabled && selectedRole.key!=='owner'}
+          onSaved={refresh}/>}
       </section>
       {data.canViewAudit&&<section className={row+' p-4'} aria-label={t.audit}>
         <div className="flex flex-wrap items-center justify-between gap-3">
