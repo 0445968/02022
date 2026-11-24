@@ -187,7 +187,7 @@ export async function GET(
   const user =
     await getCurrentUser();
 
-  if (!(await mayListMedia(user))) {
+  if (!user || !(await mayListMedia(user))) {
     return NextResponse.json(
       {
         error:

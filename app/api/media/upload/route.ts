@@ -339,7 +339,7 @@ export async function POST(
   const user =
     await getCurrentUser();
 
-  if (!(await mayUploadMedia(user))) {
+  if (!user || !(await mayUploadMedia(user))) {
     return NextResponse.json(
       {
         error:

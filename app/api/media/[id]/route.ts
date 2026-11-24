@@ -651,7 +651,7 @@ export async function GET(
   const user =
     await getCurrentUser();
 
-  if (!(await mayListMedia(user))) {
+  if (!user || !(await mayListMedia(user))) {
     return NextResponse.json(
       {
         error:
@@ -702,7 +702,7 @@ export async function PATCH(
   const user =
     await getCurrentUser();
 
-  if (!(await mayListMedia(user))) {
+  if (!user || !(await mayListMedia(user))) {
     return NextResponse.json(
       {
         error:
@@ -964,7 +964,7 @@ export async function DELETE(
   const user =
     await getCurrentUser();
 
-  if (!(await mayDeleteMedia(user))) {
+  if (!user || !(await mayDeleteMedia(user))) {
     return NextResponse.json(
       {
         error:
