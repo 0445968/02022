@@ -1,3 +1,24 @@
+# CURRENT HANDOFF — CT-02f (2026-11-23, America/Chicago)
+**CT-02 still IN PROGRESS. New publishing/version security is in DRAFT PR #10, not applied or deployed.**
+
+## Verified GitHub stack
+- Plan [#2](https://github.com/0445968/02022/pull/2) -> CT-00 #3 -> CT-01 #4 -> CT-02a #5 -> CT-02b #6 -> CT-02c #7 -> CT-02d #8 -> CT-02e #9 -> **CT-02f draft [#10](https://github.com/0445968/02022/pull/10)**.
+- Branch `feature/ct02f-publisher-versions-2026-11-23`, base CT-02e head `381ba2309c15c03109b2d2489fe870328febd558`. Do not merge/deploy any of these into `main` without approval.
+- Staged-only Supabase migration `supabase/migrations/20261124001339_ct02f_publisher_versions.sql` generated with CLI v3.2.0 in CI. It requires prior CT-02b/c/e and approved first-owner/role grants. NO hosted SQL applied.
+- Original live publishing RPC saved in `tests/fixtures/ct02f-original-publisher.sql` with exact transaction body retained in new migration. Security checks now require signed-in `auth.uid() = p_user_id`, fresh story edit permission and **story.publish + revision.publish**. Direct legacy editor-flag route is removed by the proposed migration. SECURITY DEFINER remains for atomic compatibility and still requires warning review.
+- Historical `story_versions` policies reworked for scoped reads, verified creator and exact snapshots. `restoreStoryVersion` now snapshots the confirmed post-restore record with short title, author/editor IDs and full fields; no design/UI changes.
+- [CT-02f isolated PG17 publisher workflow 45296916363](https://github.com/0445968/02022/actions/runs/45296916363) **SUCCESS**, including blocked revoked editor, reader, freelancer, spoofed user ID, role expiration, explicit denies; successful publication preserving old version/timestamp/categories/tags/revision deletion; injected error rolls back all. [Quality CI 45296916270](https://github.com/0445968/02022/actions/runs/45296916270) **SUCCESS**, **67 tests**, typecheck, lint, Next.js build. Earlier CT-02b/c/e PG17 suites also green. Refer to PR #10 latest commit checks for doc rerun status.
+- Live Supabase project `yqqzohrlhiitctwacdad`: 23 stories, 4 active revisions, **43 story_versions**, 22 media, `staff_memberships` ABSENT and hosted migration history EMPTY. No new staff identity/role/preset seeded; no Vercel deploy, main merge or production feature toggle.
+- CT-15a dedicated final UI refinement remains scheduled after feature build; preserve current fonts/style.
+
+## NEXT CT-02g — media metadata, Storage and remaining auth guard inventory
+1. Verify fresh repo/main/PR, live Supabase state and exact RLS/Storage bucket permissions. Review `CT02F_REVIEW.md`, role matrix, master plan and ledger.
+2. Design scoped `media_assets` writes, **public-safe media reads** that never leak `internal_notes` and rights/embargo-sensitive fields. Existing `media_assets` public SELECT is `true` and must be replaced carefully to preserve existing approved image/article delivery. Review whether public Storage media bucket itself exposes files independently of RLS; use approved minimal changes and disposable PG/Supabase tests.
+3. Migrate `storage.objects` media-bucket INSERT/SELECT/UPDATE/DELETE and upsert policies to new capabilities with ownership checks and public delivery compatibility; avoid untested bucket conversion and breaking URLs.
+4. Audit remaining Newsroom endpoints, taxonomy, other RPCs, direct writes, permissions, reader and freelancer access. Run real disposable Supabase JWT/Storage tests. Keep `CT_STAFF_ACCESS_V2_ENABLED=false` and never claim fully secure live rollout until all routes and direct RLS are migrated.
+5. Reconcile empty restored migration register; verify independent backup and restore. Explicit human approval for selecting real first owner, backfill, role grants, hosted migrations, env flags and production deployment. Never replay historical DEV_AUTH_BYPASS SQL.
+---
+## Historical handoffs
 # CURRENT HANDOFF — CT-02e (2026-11-23)
 **CT-02 IN PROGRESS. Draft PR #9 complete as staged code, NO live changes or production merge.**
 
