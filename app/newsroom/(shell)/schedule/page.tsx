@@ -5,7 +5,7 @@ import {newsroomLocale} from '@/lib/services/newsroom-workspace';
 import {canEnterEditorialCalendar,readEditorialCalendar} from '@/lib/services/editorial-calendar';
 import {reviewedSchedulingEnabled} from '@/lib/services/reviewed-schedule';
 import {DraftHttpError} from '@/lib/permissions/assigned-draft-http';
-import type {CalendarItem,CalendarFilter,CalendarMode} from '@/lib/permissions/editorial-calendar-contract';
+import type {CalendarItem,CalendarFilter,CalendarMode,CalendarPage} from '@/lib/permissions/editorial-calendar-contract';
 import {CALENDAR_ZONES,calendarZone,calendarMonth,localDay,monthCells,monthRange,shiftMonth} from '@/lib/permissions/calendar-view';
 import {CancelCalendarSchedule} from '@/components/editorial/calendar/CancelCalendarSchedule';
 export const dynamic='force-dynamic';
@@ -20,7 +20,7 @@ export default async function SchedulePage({searchParams}:{searchParams:{month?:
  const mode=searchParams.mode??'range',filter=searchParams.filter??'all',view=searchParams.view??'month',raw=searchParams.page??'0';
  if(!calendarMonth(month)||(mode!=='range'&&mode!=='attention')||(filter!=='all'&&filter!=='assignments'&&filter!=='publications')||(view!=='month'&&view!=='agenda')||typeof raw!=='string'||!/^\d{1,3}$/.test(raw)||Number(raw)>100)notFound();
  const page=Number(raw);
- let data;
+ let data:CalendarPage;
  try{data=await readEditorialCalendar({...monthRange(month,zone),mode:mode as CalendarMode,filter:filter as CalendarFilter,page});}
  catch(e){if(e instanceof DraftHttpError&&[403,404].includes(e.status))notFound();return <p role="alert" className="p-6 text-sm text-muted-foreground">{es?'No se pudo cargar el calendario. Actualice la página.':'Unable to load the calendar. Refresh the page.'}</p>;}
  const href=(changes:Record<string,string>={})=>'/newsroom/schedule?'+new URLSearchParams({month,zone,mode,filter,view,page:'0',...changes}).toString();
