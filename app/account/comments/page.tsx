@@ -1,3 +1,4 @@
+import {readerReportingEnabled} from '@/lib/services/reader-reports';
 import Link from 'next/link';
 
 import {
@@ -198,6 +199,7 @@ export default async function CommentsPage({
             </span>
           ) : null}
         </div>
+        {readerReportingEnabled()&&<Link href="/account/reports" className="mt-4 inline-block text-sm font-semibold text-primary underline">{locale==='es'?'Mis denuncias':'My reports'}</Link>}
       </header>
 
       {commentsPage.items.length ===
