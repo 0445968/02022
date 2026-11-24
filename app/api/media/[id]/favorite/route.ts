@@ -5,6 +5,7 @@ import {
   import {
     getCurrentUser,
   } from '@/lib/auth/session';
+  import { mayViewMedia } from '@/lib/permissions/media-route-gates';
   
   import {
     favoriteMediaAsset,
@@ -17,19 +18,11 @@ import {
   /* AUTH HELPER */
   /* ========================================================= */
   
-  async function getAuthorizedUser() {
+  async function getAuthorizedUser(mediaId: string) {
     const user =
       await getCurrentUser();
   
-    if (
-      !user ||
-      !(
-        user.profile
-          ?.isAuthor ||
-        user.profile
-          ?.isEditor
-      )
-    ) {
+    if (!user || !(await mayViewMedia(user, mediaId))) {
       return null;
     }
   
@@ -51,7 +44,7 @@ import {
     }
   ) {
     const user =
-      await getAuthorizedUser();
+      await getAuthorizedUser(params.id);
   
     if (
       !user
@@ -97,7 +90,7 @@ import {
     }
   ) {
     const user =
-      await getAuthorizedUser();
+      await getAuthorizedUser(params.id);
   
     if (
       !user
@@ -159,7 +152,7 @@ import {
     }
   ) {
     const user =
-      await getAuthorizedUser();
+      await getAuthorizedUser(params.id);
   
     if (
       !user
@@ -221,7 +214,7 @@ import {
     }
   ) {
     const user =
-      await getAuthorizedUser();
+      await getAuthorizedUser(params.id);
   
     if (
       !user

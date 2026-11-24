@@ -71,3 +71,12 @@ test('new story, restore, homepage, breaking news, byline and tags all use curre
   assert.ok(read(path).includes('await '+method+'('),path);
  }
 });
+
+test('media favorites cannot rely on a general upload role without visibility of a real media ID',()=>{
+ const gates=read('lib/permissions/media-route-gates.ts');
+ const favorite=read('app/api/media/[id]/favorite/route.ts');
+ assert.match(gates,/export async function mayViewMedia/);
+ assert.match(gates,/media\.edit_own', mediaId/);
+ assert.match(favorite,/await mayViewMedia\(user, mediaId\)/);
+ assert.equal((favorite.match(/await getAuthorizedUser\(params\.id\)/g) ?? []).length,4);
+});
