@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 
 import { getCurrentUser } from '@/lib/auth/session';
+import { mayCreateStory, mayAssignStoryAuthor, mayRestoreStoryVersion, mayEditHomepage, mayPublishHomepage, mayManageBreakingNews, mayManageByline, mayCreateTag } from '@/lib/permissions/editorial-route-gates';
 import {
   getHomepageSlots,
   normalizeHomepageLayoutSelections,
@@ -10,7 +11,7 @@ import {
 export async function POST(request: Request) {
   const user = await getCurrentUser();
 
-  if (!user?.profile?.isEditor) {
+  if (!user || !(await mayPublishHomepage(user))) {
     return NextResponse.json(
       { error: 'Editor access required.' },
       { status: 403 }

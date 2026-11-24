@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 
 import { getCurrentUser } from '@/lib/auth/session';
+import { mayCreateStory, mayAssignStoryAuthor, mayRestoreStoryVersion, mayEditHomepage, mayPublishHomepage, mayManageBreakingNews, mayManageByline, mayCreateTag } from '@/lib/permissions/editorial-route-gates';
 
 import {
   replaceHomepageSlot,
@@ -59,7 +60,7 @@ export async function POST(
    */
   if (
     !user ||
-    !user.profile?.isEditor
+    !(await mayPublishHomepage(user))
   ) {
     return NextResponse.json(
       {

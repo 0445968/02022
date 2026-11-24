@@ -5,6 +5,7 @@ import {
   import {
     getCurrentUser,
   } from '@/lib/auth/session';
+import { mayCreateStory, mayAssignStoryAuthor, mayRestoreStoryVersion, mayEditHomepage, mayPublishHomepage, mayManageBreakingNews, mayManageByline, mayCreateTag } from '@/lib/permissions/editorial-route-gates';
   
   import {
     getDataClient,
@@ -62,8 +63,7 @@ import {
      * editorial profiles.
      */
     if (
-      !user.profile
-        ?.isEditor
+      !(await mayManageByline(user))
     ) {
       return NextResponse.json(
         {
