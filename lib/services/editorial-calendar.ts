@@ -5,6 +5,7 @@ import {createClient} from '@/lib/db/supabase-server';
 import {isDevAuthBypass} from '@/lib/db/supabase-data';
 import {resolveGlobalStaffPermissionsOnServer} from '@/lib/permissions/server';
 import {DraftHttpError} from '@/lib/permissions/assigned-draft-http';
+import {parseSchedulerHealth,type SchedulerHealth} from '@/lib/permissions/scheduler-health-contract';
 import {parseStoryQueuePage,validQueueIds,type StoryQueuePage} from '@/lib/permissions/story-publication-queue';
 import {parseCalendarPage,parseCalendarQuery,type CalendarQuery} from '@/lib/permissions/editorial-calendar-contract';
 export function editorialCalendarEnabled(){return !isDevAuthBypass()&&process.env.CT_STAFF_ACCESS_V2_ENABLED==='true'&&process.env.CT_EDITORIAL_CALENDAR_ENABLED==='true';}
@@ -35,4 +36,11 @@ export async function readStoryPublicationQueue(ids:string[]):Promise<StoryQueue
  const {data,error}=await db.rpc('staff_read_story_publication_queue',{p_story_ids:ids});
  if(error)throw new DraftHttpError(error.code==='42501'?403:error.code==='22023'?422:503);
  try{return parseStoryQueuePage(data,ids);}catch{throw new DraftHttpError(503);}
+}
+
+export async function readSchedulerHealth():Promise<SchedulerHealth>{
+ const db=await client();
+ const {data,error}=await db.rpc('staff_read_scheduler_health');
+ if(error)throw new DraftHttpError(error.code==='42501'?403:503);
+ try{return parseSchedulerHealth(data);}catch{throw new DraftHttpError(503);}
 }

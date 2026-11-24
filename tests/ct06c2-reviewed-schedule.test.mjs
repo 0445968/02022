@@ -11,7 +11,9 @@ test('CT06c2 exact approved queue, no caller clock or service-role executor',()=
 test('CT06c2 UI queues only current approved fingerprint, confirms UTC and blocks legacy direct publish',()=>{
  const s=file('components/editorial/story-editor/ReviewedSchedulePanel.tsx');
  assert.match(s,/fingerprint:state.fingerprint,dueAt:time.toISOString\(\)/);
- assert.match(s,/roundTrip!==due/);
+ assert.match(s,/schedulingInstants\(due,zone\)/);
+ assert.match(s,/instants.length>1/);
+ assert.match(s,/!selected\|\|busy\|\|blocked/);
  assert.match(s,/Confirm UTC publication time/);
  assert.match(file('components/editorial/story-editor/StoryReviewPanel.tsx'),/state.decision==='approved'&&!schedule/);
  assert.match(file('.env.example'),/CT_REVIEWED_SCHEDULING_ENABLED=false/);

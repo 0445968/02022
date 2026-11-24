@@ -1,0 +1,52 @@
+name: CT-08 completion PostgreSQL integration and contention
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  rls-story:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_PASSWORD: ct02e-disposable-only
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      PGHOST: 127.0.0.1
+      PGPORT: 5432
+      PGUSER: postgres
+      PGPASSWORD: ct02e-disposable-only
+      PGDATABASE: postgres
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - name: Apply isolated publisher and assigned revision guard fixtures
+        run: |
+          if ! command -v psql >/dev/null; then
+            sudo apt-get update -qq
+            sudo apt-get install -y -qq postgresql-client
+          fi
+          psql -X -v ON_ERROR_STOP=1 -f tests/ct08c-postgres-completion.sql
+      - name: Verify executor rejects competing advisory lock without waiting
+        run: |
+          PGAPPNAME=ct08c-lock-holder psql -X -v ON_ERROR_STOP=1 -c 'select pg_advisory_lock(202611,2302); select pg_sleep(15);' &
+          holder=$!
+          trap 'kill "$holder" 2>/dev/null || true; wait "$holder" 2>/dev/null || true' EXIT
+          found=false
+          for attempt in $(seq 1 40); do
+            if [ "$(psql -XAt -c "select exists(select 1 from pg_locks l join pg_stat_activity a on a.pid=l.pid where a.application_name='ct08c-lock-holder' and l.locktype='advisory' and l.granted and l.classid=202611 and l.objid=2302)")" = t ]; then found=true; break; fi
+            sleep 0.1
+          done
+          test "$found" = true
+          test "$(timeout 5s psql -XAt -v ON_ERROR_STOP=1 -c "select newsroom_private.run_due_reviewed_publications(5)->>'busy'")" = true

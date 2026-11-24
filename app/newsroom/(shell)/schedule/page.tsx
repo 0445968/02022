@@ -8,6 +8,7 @@ import {DraftHttpError} from '@/lib/permissions/assigned-draft-http';
 import type {CalendarItem,CalendarFilter,CalendarMode,CalendarPage} from '@/lib/permissions/editorial-calendar-contract';
 import {CALENDAR_ZONES,calendarZone,calendarMonth,localDay,monthCells,monthRange,shiftMonth} from '@/lib/permissions/calendar-view';
 import {visibleCalendarConflicts,calendarItemReasons} from '@/lib/permissions/calendar-alerts';
+import {SchedulerHealthNotice} from '@/components/editorial/calendar/SchedulerHealthNotice';
 import {CancelCalendarSchedule} from '@/components/editorial/calendar/CancelCalendarSchedule';
 export const dynamic='force-dynamic';
 export const metadata={robots:{index:false,follow:false},referrer:'no-referrer'};
@@ -54,6 +55,7 @@ export default async function SchedulePage({searchParams}:{searchParams:{month?:
  const control="rounded-[6px] border border-border bg-white px-3 py-2 text-sm hover:bg-surface-muted";
  return <section className="space-y-4 p-4 md:p-6">
   <header><h1 className="text-2xl font-bold text-deep">{es?'Calendario editorial':'Editorial calendar'}</h1><p className="mt-1 text-sm text-muted-foreground">{es?'Entregas y publicaciones dentro de su acceso. Estar en cola no garantiza la ejecución automática.':'Deadlines and publication queues within your access. A queued item does not guarantee automatic execution.'}</p></header>
+  <SchedulerHealthNotice locale={locale}/>
   <form method="get" action="/newsroom/schedule" className="flex flex-wrap items-end gap-3 rounded-[6px] border border-border bg-white p-3">
    <label className="text-sm">{es?'Mes':'Month'}<input className={'mt-1 block '+control} type="month" name="month" min="2000-01" max="2100-12" defaultValue={month} required/></label>
    <label className="text-sm">{es?'Zona horaria':'Time zone'}<select className={'mt-1 block '+control} name="zone" defaultValue={zone}>{CALENDAR_ZONES.map(z=><option key={z} value={z}>{z}</option>)}</select></label>
