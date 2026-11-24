@@ -1,0 +1,32 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+import ts from 'typescript';
+const file=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8');
+const compile=s=>ts.transpileModule(s,{compilerOptions:{module:ts.ModuleKind.ESNext,target:ts.ScriptTarget.ES2022}}).outputText;
+const url=s=>'data:text/javascript;base64,'+Buffer.from(s).toString('base64');
+const base=url(compile(file('lib/permissions/assigned-draft-contract.ts')));
+const moderation=url(compile(file('lib/permissions/comment-moderation-contract.ts')).replace("'./assigned-draft-contract'","'"+base+"'"));
+const ui=url(compile(file('lib/permissions/comment-moderation-ui.ts')));
+const {parseBulkModerationCommand,bulkActions,parseBulkResult}=await import(url(compile(file('lib/permissions/comment-bulk-contract.ts')).replace("'./comment-moderation-contract'","'"+moderation+"'").replace("'./comment-moderation-ui'","'"+ui+"'")));
+const id='41000000-0000-0000-0000-000000000030',cmd='86000000-0000-0000-0000-000000000001';
+test('CT07d strict bounded batch and common actions',()=>{
+ const item={commentId:id,revision:1,commandId:cmd},c={action:'hide',reason:'Temporarily hide comments',items:[item]};
+ assert.deepEqual(parseBulkModerationCommand(c),c);
+ for(const items of [[],[item,item],Array(21).fill(item),[{...item,actorId:id}],[{...item,revision:0}],[item,{...item,commentId:cmd}]])assert.throws(()=>parseBulkModerationCommand({...c,items}));
+ assert.deepEqual(bulkActions([{status:'pending',canModerate:true},{status:'published',canModerate:true}]),['hide','remove']);
+ assert.deepEqual(bulkActions([{status:'pending',canModerate:true},{status:'pending',canModerate:false}]),[]);
+ assert.deepEqual(parseBulkResult({changed:1},1),{changed:1});assert.throws(()=>parseBulkResult({changed:0},1));
+});
+test('CT07d atomic invoker reuses audited single decision and public reads are uncached',()=>{
+ const s=file('supabase/migrations/20261124214830_ct07d_bulk_moderation.sql');
+ assert.match(s,/security invoker/);assert.match(s,/perform public.staff_change_comment_moderation\(cid,rev,p_action,p_reason,cmd\)/);
+ assert.match(s,/jsonb_array_length\(p_items\) not between 1 and 20/);
+ assert.match(file('components/editorial/comments/CommentsWorkspace.tsx'),/bulkItems=initial.items.filter\(i=>bulk\[i.id\]===i.revision&&i.canModerate\)/);
+ assert.match(file('components/editorial/comments/CommentsWorkspace.tsx'),/I confirm irreversible removal/);
+ assert.match(file('app/api/stories/[id]/comments/route.ts'),/private, no-store, max-age=0/);
+ assert.doesNotMatch(file('app/api/stories/[id]/comments/route.ts'),/stale-while-revalidate/);
+ assert.match(file('app/[locale]/article/[slug]/page.tsx'),/export const dynamic='force-dynamic'/);
+ assert.match(file('lib/services/comments.ts'),/createPublicCommentsClient\(\)/);
+ assert.match(file('lib/services/comments.ts'),/\.eq\('stories.status','published'\)/);
+});
