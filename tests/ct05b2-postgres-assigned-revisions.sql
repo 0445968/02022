@@ -28,6 +28,13 @@ declare sid uuid:='20000000-0000-0000-0000-000000000001';
  v jsonb; a jsonb; b jsonb; rid uuid; body jsonb:='{"type":"doc","content":[{"type":"paragraph","content":[{"type":"text","text":"Proposed copy"}]}]}';
 begin
  v:=public.staff_read_assigned_revision(sid);
+ if newsroom_private.valid_assigned_body('{"type":"doc","content":[{"type":"paragraph","content":{}}]}') then
+   raise exception 'Malformed direct rich text accepted';end if;
+ begin
+  perform public.staff_save_assigned_revision(sid,(v->>'liveUpdatedAt')::timestamptz,null,(v->>'updatedAt')::timestamptz,
+   'save','Unsafe link',null,null,'{"type":"doc","content":[{"type":"paragraph","content":[{"type":"text","text":"click","marks":[{"type":"link","attrs":{"href":"javascript:alert(1)"}}]}]}]}');
+  raise exception 'Unsafe direct RPC link accepted';
+ exception when invalid_parameter_value then null;end;
  if v->>'revisionId' is not null then raise exception 'Unexpected revision';end if;
  begin
    insert into public.story_revisions(story_id,headline,slug,created_by,updated_by,body)
@@ -50,6 +57,10 @@ begin
   update public.story_revisions set slug='changed',updated_by=auth.uid() where id=rid;
   raise exception 'Protected metadata changed';
  exception when insufficient_privilege then null;end;
+ begin
+  update public.story_revisions set body='{"type":"doc","content":[{"type":"paragraph","content":{}}]}',updated_by=auth.uid() where id=rid;
+  raise exception 'Malformed direct revision update accepted';
+ exception when invalid_parameter_value then null;end;
  b:=public.staff_save_assigned_revision(sid,(a->>'liveUpdatedAt')::timestamptz,rid,(a->>'updatedAt')::timestamptz,'submit','Submitted revision',null,null,body);
  if b->>'status'<>'in_review' or (b->>'canSubmit')::boolean then raise exception 'Submission failed';end if;
  begin

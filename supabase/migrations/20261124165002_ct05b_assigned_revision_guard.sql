@@ -1,5 +1,79 @@
 -- CT-05b.2 STAGED ONLY. CLI filename #45441637332.
 begin;
+
+-- Defense in depth for direct authenticated REST/RPC calls: the application
+-- parser is stricter about attributes, but malformed node arrays and executable
+-- link URLs must also be denied at the database boundary.
+create function newsroom_private.valid_assigned_body(p_body jsonb)
+returns boolean language plpgsql immutable security invoker set search_path=''
+as $fn$
+declare n jsonb; m jsonb; v_depth integer; v_count integer:=0; v_type text; v_href text;
+begin
+ if p_body is null or jsonb_typeof(p_body)<>'object' or p_body->>'type' is distinct from 'doc'
+   or octet_length(p_body::text)>524288 then return false;end if;
+ for n,v_depth in
+   with recursive walk(node,depth) as (
+     select p_body,0
+     union all
+     select child,walk.depth+1 from walk
+     cross join lateral jsonb_array_elements(case when jsonb_typeof(walk.node->'content')='array'
+       then walk.node->'content' else '[]'::jsonb end) child
+     where walk.depth<=40
+   ) select node,depth from walk
+ loop
+   v_count:=v_count+1;
+   v_type:=n->>'type';
+   if v_count>12000 or v_depth>40 or jsonb_typeof(n)<>'object'
+     or jsonb_typeof(n->'type') is distinct from 'string'
+     or v_type not in ('doc','paragraph','heading','text','bulletList','orderedList','listItem','blockquote','codeBlock','horizontalRule','hardBreak','image')
+     or (v_depth>0 and v_type='doc')
+     or (n?'content' and jsonb_typeof(n->'content')<>'array')
+     or (n?'attrs' and jsonb_typeof(n->'attrs')<>'object')
+     or exists(select 1 from jsonb_object_keys(n) k where k not in ('type','attrs','content','marks','text'))
+     or (v_type='text' and (jsonb_typeof(n->'text') is distinct from 'string' or n?'content'))
+     or (v_type<>'text' and n?'text')
+     or (v_type='image' and (n?'content' or n?'marks')) then return false;end if;
+   if n?'marks' then
+     if v_type<>'text' or jsonb_typeof(n->'marks')<>'array' then return false;end if;
+     if jsonb_array_length(n->'marks')>12 then return false;end if;
+     for m in select value from jsonb_array_elements(n->'marks') loop
+       if jsonb_typeof(m)<>'object' or jsonb_typeof(m->'type') is distinct from 'string'
+         or m->>'type' not in ('bold','italic','strike','underline','code','link','textStyle','highlight','subscript','superscript')
+         or (m?'attrs' and jsonb_typeof(m->'attrs')<>'object')
+         or exists(select 1 from jsonb_object_keys(m) k where k not in ('type','attrs')) then return false;end if;
+       if m->>'type'='link' then
+         v_href:=m->'attrs'->>'href';
+         if jsonb_typeof(m->'attrs'->'href') is distinct from 'string' or length(v_href)>2048
+           or v_href~'[[:cntrl:][:space:]]' or position(chr(92) in v_href)>0
+           or v_href!~*'^(https?://|mailto:|tel:|/([^/]|$)|#)' then return false;end if;
+       end if;
+     end loop;
+   end if;
+ end loop;
+ return true;
+end;
+$fn$;
+revoke all on function newsroom_private.valid_assigned_body(jsonb) from public,anon,authenticated;
+grant execute on function newsroom_private.valid_assigned_body(jsonb) to authenticated;
+create function newsroom_private.guard_assigned_body_shape()
+returns trigger language plpgsql security invoker set search_path=''
+as $fn$
+declare sid uuid;
+begin
+ if current_user<>'authenticated' then return new;end if;
+ if tg_table_name='stories' then sid:=new.id;else sid:=new.story_id;end if;
+ if not newsroom_private.has_staff_permission('story.edit_all',sid)
+   and not newsroom_private.valid_assigned_body(new.body) then
+   raise exception 'Invalid assigned rich text' using errcode='22023';end if;
+ return new;
+end;
+$fn$;
+revoke all on function newsroom_private.guard_assigned_body_shape() from public,anon,authenticated;
+create trigger ct05b_assigned_body_shape_guard before update on public.stories
+for each row execute function newsroom_private.guard_assigned_body_shape();
+create trigger ct05b_assigned_revision_body_shape_guard before insert or update on public.story_revisions
+for each row execute function newsroom_private.guard_assigned_body_shape();
+
 create function newsroom_private.can_edit_assigned_revision(p_story uuid)
 returns boolean language sql stable security invoker set search_path=''
 as $fn$
@@ -106,7 +180,7 @@ begin
    or p_headline is null or length(btrim(p_headline)) not between 1 and 300
    or length(coalesce(p_subheadline,''))>600 or length(coalesce(p_summary,''))>3000
    or p_body is null or jsonb_typeof(p_body)<>'object' or p_body->>'type' is distinct from 'doc'
-   or octet_length(p_body::text)>524288 then raise exception 'Invalid copy' using errcode='22023';end if;
+   or octet_length(p_body::text)>524288 or not newsroom_private.valid_assigned_body(p_body) then raise exception 'Invalid copy' using errcode='22023';end if;
  if p_action='submit' and not newsroom_private.has_staff_permission('story.submit_review',p_story) then
    raise exception 'Revision submission denied' using errcode='42501'; end if;
  v_status:=case when p_action='submit' then 'in_review'::public.story_status else 'draft'::public.story_status end;
