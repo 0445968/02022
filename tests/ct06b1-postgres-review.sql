@@ -19,6 +19,8 @@ where role_key in ('owner','editor') on conflict do nothing;
 -- Deliberate reviewer grant on writer for self-review denial fixture.
 insert into public.staff_role_capabilities(role_preset_id,capability_key,scope)
 select id,'story.review','assigned' from public.staff_role_presets where role_key='freelancer' on conflict do nothing;
+-- Earlier publisher fixture uses an empty legacy JSON object. Use a real editor document.
+update public.stories set body='{"type":"doc","content":[{"type":"paragraph"}]}' where id='20000000-0000-0000-0000-000000000002';
 \i supabase/migrations/20261124182027_ct06b_review_lifecycle.sql
 do $fn$
 begin
