@@ -46,6 +46,16 @@ do $fn$ begin
  if (select count(*) from public.comments where id in ('41000000-0000-0000-0000-000000000030','41000000-0000-0000-0000-000000000031'))<>2 then raise exception 'Approved batch not public';end if;
 end; $fn$;
 rollback;
+-- Reader reports the exact approved revision before the bulk hide.
+begin;
+set local role authenticated;
+set local request.jwt.claim.sub='00000000-0000-0000-0000-000000000005';
+do $fn$ declare t timestamptz; v jsonb;begin
+ select updated_at into t from public.comments where id='41000000-0000-0000-0000-000000000030';
+ v:=public.reader_submit_comment_report('20000000-0000-0000-0000-000000000001','41000000-0000-0000-0000-000000000030',t,'Report exact published comment version');
+ if v->'report'->>'status'<>'open' then raise exception 'Reader report failed';end if;
+end; $fn$;
+commit;
 begin;
 set local role authenticated;
 set local request.jwt.claim.sub='00000000-0000-0000-0000-000000000002';
@@ -64,3 +74,33 @@ do $fn$ begin
  if (select body from public.comments where id='41000000-0000-0000-0000-000000000030')<>'Bulk comment A' then raise exception 'Hide redacted text';end if;
 end; $fn$;
 select 'CT-07d atomic moderation, per-item audit, stale/self/replay denial and public visibility passed' as result;
+
+-- A bulk moderation event is valid evidence for independent report resolution.
+begin;
+set local role authenticated;
+set local request.jwt.claim.sub='00000000-0000-0000-0000-000000000002';
+do $fn$ declare r jsonb; rid uuid; eid uuid; items jsonb;begin
+ select (x->>'id')::uuid into rid from jsonb_array_elements(public.staff_read_report_queue('open',null,0)->'items') x
+ where x->>'commentId'='41000000-0000-0000-0000-000000000030';
+ r:=public.staff_read_report_detail(rid);
+ eid:=(r->'report'->>'actionEventId')::uuid;
+ if eid is null or r->'report'->>'reportedRevision'<>'2' or r->'report'->>'commentRevision'<>'3' then raise exception 'Bulk hide evidence missing';end if;
+ r:=public.staff_resolve_comment_report(rid,1,3,'actioned','Report resolved by audited bulk hide',eid,gen_random_uuid());
+ if r->'report'->>'status'<>'actioned' then raise exception 'Report resolution failed';end if;
+ select jsonb_agg(jsonb_build_object('commentId',id,'revision',3,'commandId',gen_random_uuid())) into items from public.comments where id in ('41000000-0000-0000-0000-000000000030','41000000-0000-0000-0000-000000000031');
+ perform public.staff_bulk_comment_moderation('restore','Return both comments for fresh review',items);
+ if (select count(*) from public.comments where id in ('41000000-0000-0000-0000-000000000030','41000000-0000-0000-0000-000000000031') and status='pending' and moderation_revision=4)<>2 then raise exception 'Restore did not require review';end if;
+ select jsonb_agg(jsonb_build_object('commentId',id,'revision',4,'commandId',gen_random_uuid())) into items from public.comments where id in ('41000000-0000-0000-0000-000000000030','41000000-0000-0000-0000-000000000031');
+ perform public.staff_bulk_comment_moderation('remove','Permanently redact both selected comments',items);
+ if (select count(*) from public.comments where id in ('41000000-0000-0000-0000-000000000030','41000000-0000-0000-0000-000000000031') and status='deleted' and body='[deleted]' and moderation_revision=5)<>2 then raise exception 'Bulk redaction failed';end if;
+end; $fn$;
+commit;
+begin;
+set local role authenticated;
+set local request.jwt.claim.sub='00000000-0000-0000-0000-000000000005';
+do $fn$ begin
+ if not exists(select 1 from jsonb_array_elements(public.reader_list_own_reports(0)->'items') x where x->>'commentId'='41000000-0000-0000-0000-000000000030' and x->>'status'='actioned') then raise exception 'Reader did not retain report resolution';end if;
+ if not exists(select 1 from public.comments where id='41000000-0000-0000-0000-000000000031' and status='deleted' and body='[deleted]') then raise exception 'Reader lost own removal record';end if;
+end; $fn$;
+rollback;
+select 'CT-07d linked report action, fresh review restoration, irreversible redaction and reader history passed' as result;
