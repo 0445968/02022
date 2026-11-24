@@ -1,4 +1,5 @@
 import { getDataClient } from '@/lib/db/supabase-data-access';
+import type { SupabaseClient } from '@supabase/supabase-js';
 import { enrichStoryListItems } from '@/lib/services/story-list-metadata';
 
 import {
@@ -280,7 +281,8 @@ export async function getPublishedStoryBySlug(
   }
 
   return resolveStoryRelations(
-    story as StoryRow
+    story as StoryRow,
+    true
   );
 }
 
@@ -354,7 +356,8 @@ export async function getStoryForEditing(
  * Resolves all relationships for one story.
  */
 async function resolveStoryRelations(
-  story: StoryRow
+  story: StoryRow,
+  publicPage = false
 ): Promise<StoryWithRelations> {
   const supabase =
     await getDataClient();
@@ -694,34 +697,29 @@ const editorialProfiles =
           tag !== null
       );
 
-  // Featured image
-  let featuredImage:
-    | MediaAsset
-    | null =
-    null;
-
-  if (
-    story.featured_image_id
-  ) {
-    const {
-      data:
-        imageRow,
-    } = await supabase
-      .from(
-        'media_assets'
-      )
+  // When v2 is enabled, the public article uses the allowlisted media view.
+  // Preview/edit routes still load the full row under staff RLS.
+  let featuredImage: MediaAsset | null = null;
+  if (story.featured_image_id) {
+    const publicProjection = publicPage &&
+      process.env.CT_STAFF_ACCESS_V2_ENABLED === 'true';
+    const mediaTable = publicProjection ? 'media_public_assets' : 'media_assets';
+    const mediaClient = supabase as unknown as SupabaseClient;
+    const { data: imageRow } = await mediaClient
+      .from(mediaTable)
       .select('*')
-      .eq(
-        'id',
-        story.featured_image_id
-      )
+      .eq('id', story.featured_image_id)
       .maybeSingle();
-
     if (imageRow) {
-      featuredImage =
-        mapMediaRow(
-          imageRow
-        );
+      featuredImage = mapMediaRow(publicProjection ? {
+        ...imageRow,
+        file_name: '',
+        storage_path: '',
+        mime_type: '',
+        uploaded_by: '',
+        created_at: '',
+        updated_at: '',
+      } : imageRow);
     }
   }
 
