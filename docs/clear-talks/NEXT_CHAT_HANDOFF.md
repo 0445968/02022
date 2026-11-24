@@ -1,3 +1,11 @@
+# CURRENT HANDOFF — CT-08b.2a
+**NEXT CT-08b.2b — exact batched effective scheduled projection in Stories; cross-page conflict detection and scheduler safeguards remain.**
+- Branch `feature/ct08b2a-calendar-alerts-2026-11-24`; Parent #43 corrective final 659657f97b3a48d385c9a32529f498c3d692f74e all 31 workflows SUCCESS, including application #45505164581 (unit, TypeScript, ESLint, build).
+- EN/ES permission-gated Dashboard and Contributor alerts reuse scoped calendar RPC, first five attention items and next-48-hour items, explicit partial results, no global count, errors shown separately, Bogota timestamps. Calendar marks upcoming and possible same-story assignment due at/after current pending queue when both rows visible on the same page; never infer unseen conflicts, no claim of complete dependency coverage. No new migration, new flags, mutations, notification delivery or production changes. Exact batched story schedule status and complete cross-page conflict detection remain CT08b.2b and later.
+- Verify exact final HEAD CI. Keep stored status/filter/count separate from effective draft queue; published revision queue never changes live Published status or Active unpublished changes. New migration if required must be staged, scope/identity enforced and PostgreSQL tested; no N+1 lookups. No production SQL/flags/grants/accounts/email/deploy/main merge.
+
+---
+## Historical handoffs
 # CURRENT HANDOFF — CT-08b.1
 **NEXT CT-08b.2 effective schedule projection and deadline/conflict alerts.**
 - Branch `feature/ct08b-calendar-interface-2026-11-24`; parent #42 final `ea709c4a1640a35781b92cc0d4c7913e2b96f1d4` all 31 green. Main unchanged `f5c0140fb2db165e43303a064f7bc15b765d4505`.

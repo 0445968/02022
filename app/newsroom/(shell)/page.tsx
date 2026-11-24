@@ -1,3 +1,4 @@
+import {CalendarAlerts} from '@/components/editorial/calendar/CalendarAlerts';
 import { FileText, FileEdit, Send, Eye } from 'lucide-react';
 import Link from 'next/link';
 import {redirect} from 'next/navigation';
@@ -72,6 +73,7 @@ export default async function NewsroomDashboard() {
       </div>
 
       {staffOnboardingEnabled()&&<Link href="/newsroom/onboarding" className="mt-4 inline-flex text-sm font-medium text-primary underline">{locale==='es'?'Perfil privado del equipo':'Private staff profile'}</Link>}
+      <CalendarAlerts locale={locale}/>
       {/* Profile summary */}
       <div className="mt-8 rounded-xl border border-border bg-white p-6">
         <h2 className="font-headline text-lg font-semibold text-deep">

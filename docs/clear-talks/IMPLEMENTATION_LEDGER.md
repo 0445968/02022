@@ -440,3 +440,9 @@ Notes: CT-00 and CT-01 are the intended opening work in the next chat. CT-02 pre
 - CI pending exact HEAD. See CT08B1_REVIEW.md.
 
 - Initial interface commit dc7bcd9c4ae0583df4a3b4fd3d022a0b2eaee897: 30/30 PostgreSQL workflows green, 207/207 unit tests passed; [application #45504785675](https://github.com/0445968/02022/actions/runs/45504785675) failed TypeScript TS7034/TS7005 because the inferred calendar data type was lost in a nested render callback. Explicit CalendarPage annotation fixes the reported errors; rerun exact HEAD before next feature. ESLint/build were skipped by the failed job.
+
+
+### CT-08b.2a — dashboard editorial alerts and visible conflicts
+- STAGED branch `feature/ct08b2a-calendar-alerts-2026-11-24`. Parent #43 corrective final 659657f97b3a48d385c9a32529f498c3d692f74e all 31 workflows SUCCESS, including application #45505164581 (unit, TypeScript, ESLint, build).
+- EN/ES permission-gated Dashboard and Contributor alerts reuse scoped calendar RPC, first five attention items and next-48-hour items, explicit partial results, no global count, errors shown separately, Bogota timestamps. Calendar marks upcoming and possible same-story assignment due at/after current pending queue when both rows visible on the same page; never infer unseen conflicts, no claim of complete dependency coverage. No new migration, new flags, mutations, notification delivery or production changes. Exact batched story schedule status and complete cross-page conflict detection remain CT08b.2b and later.
+- See CT08B2A_REVIEW.md. Exact HEAD CI pending.

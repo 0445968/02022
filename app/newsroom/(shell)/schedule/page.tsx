@@ -7,6 +7,7 @@ import {reviewedSchedulingEnabled} from '@/lib/services/reviewed-schedule';
 import {DraftHttpError} from '@/lib/permissions/assigned-draft-http';
 import type {CalendarItem,CalendarFilter,CalendarMode,CalendarPage} from '@/lib/permissions/editorial-calendar-contract';
 import {CALENDAR_ZONES,calendarZone,calendarMonth,localDay,monthCells,monthRange,shiftMonth} from '@/lib/permissions/calendar-view';
+import {visibleCalendarConflicts,calendarItemReasons} from '@/lib/permissions/calendar-alerts';
 import {CancelCalendarSchedule} from '@/components/editorial/calendar/CancelCalendarSchedule';
 export const dynamic='force-dynamic';
 export const metadata={robots:{index:false,follow:false},referrer:'no-referrer'};
@@ -38,13 +39,16 @@ export default async function SchedulePage({searchParams}:{searchParams:{month?:
   return i.state==='blocked'?(es?'Publicación bloqueada':'Publication blocked'):i.snapshotCurrent===false?(es?'Revisión desactualizada':'Review out of date'):(es?'En cola de publicación':'Queued for publication');
  };
  const time=(i:CalendarItem)=>i.dueAt?fmt.format(new Date(i.dueAt)):(es?'Sin fecha':'No date');
- const overdue=(i:CalendarItem)=>i.dueAt!==null&&Date.parse(i.dueAt)<=Date.parse(data.asOf);
+ const conflicts=visibleCalendarConflicts(data.items);
+ const overdue=(i:CalendarItem)=>calendarItemReasons(i,data.asOf).includes('overdue');
  const card=(i:CalendarItem,compact=false)=><article key={i.kind+':'+i.id} className={'space-y-1 rounded-[6px] border border-border bg-white '+(compact?'p-2':'p-3')}>
   <p className="text-xs font-semibold text-muted-foreground">{label(i)}{overdue(i)?' · '+(es?'Vencido':'Due / overdue'):''}</p>
   <Link prefetch={false} className="block break-words text-sm font-semibold text-deep hover:underline" href={'/newsroom/stories/'+i.storyId+'/preview'}>{i.headline}</Link>
   <p className="text-xs text-muted-foreground">{time(i)}</p>
   {i.kind==='assignment'&&(i.mine||i.assignee)&&<p className="break-words text-xs">{i.mine?(es?'Mi asignación':'My assignment'):i.assignee}</p>}
   {i.kind==='publication'&&<p className="text-xs">{i.source==='revision'?(es?'Cambios de artículo publicado':'Published story changes'):(es?'Borrador':'Draft')}{i.snapshotCurrent===false?' · '+(es?'Contenido ya no coincide':'Content no longer matches'):''}</p>}
+  {calendarItemReasons(i,data.asOf).includes('soon')&&<p className="text-xs font-medium text-deep">{es?'En las próximas 48 horas':'Within 48 hours'}</p>}
+  {conflicts.has(i.id)&&<p className="text-xs font-semibold text-deep">{es?'Posible conflicto: entrega al momento de publicación o después.':'Potential conflict: assignment due at or after queued publication.'}</p>}
   {i.kind==='publication'&&i.canCancel&&scheduling&&<CancelCalendarSchedule item={i} locale={locale}/>}
  </article>;
  const control="rounded-[6px] border border-border bg-white px-3 py-2 text-sm hover:bg-surface-muted";
@@ -65,6 +69,7 @@ export default async function SchedulePage({searchParams}:{searchParams:{month?:
    <Link prefetch={false} className={control} href={href({page:String(page)})}>{es?'Actualizar':'Refresh'}</Link>
   </div>
   <p className="text-xs text-muted-foreground">{zone} · {es?'Datos al':'As of'} {fmt.format(new Date(data.asOf))}. {es?'Página':'Page'} {page+1}{data.hasMore?(es?' · Hay más resultados':' · More results available'):''}. {es?'Solo se muestran los elementos de esta página.':'Only items on this page are displayed.'}</p>
+  {conflicts.size>0&&<p role="status" className="rounded-[6px] border border-border bg-white p-3 text-xs text-deep">{es?'Posibles conflictos entre elementos visibles en esta página. No es una comprobación completa de todas las asignaciones o dependencias.':'Potential conflicts between visible entries on this page. This is not a complete check of all assignments or dependencies.'}</p>}
   {data.items.length===0&&<p className="rounded-[6px] border border-border p-4 text-sm text-muted-foreground">{es?'No hay elementos en esta página.':'No items on this page.'}</p>}
   {mode==='range'&&view==='month'&&<div className="overflow-x-auto"><div className="grid min-w-[900px] grid-cols-7 gap-px rounded-[6px] border border-border bg-border">
     {Array.from({length:7},(_,d)=>new Intl.DateTimeFormat(locale,{weekday:'short',timeZone:'UTC'}).format(new Date(Date.UTC(2026,0,5+d)))).map(d=><div key={d} className="bg-surface-muted p-2 text-xs font-semibold">{d}</div>)}
