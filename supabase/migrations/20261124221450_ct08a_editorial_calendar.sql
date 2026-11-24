@@ -65,13 +65,17 @@ begin
   union all
   select q.id,q.story_id,s.headline,q.due_at,'publication',null,false,q.state,q.kind,q.fingerprint,null
   from newsroom_private.reviewed_publication_schedules q join public.stories s on s.id=q.story_id
+  join newsroom_private.story_review_requests rq on rq.id=q.request_id
+  left join newsroom_private.story_review_epochs ep on ep.story_id=q.story_id
+  left join public.story_revisions rv on rv.story_id=q.story_id and q.kind='revision'
   where p_filter in ('all','publications') and q.state in ('pending','blocked')
    and newsroom_private.calendar_story_scope(s.id)
    and (q.kind='draft' or newsroom_private.has_staff_permission('revision.view',s.id))
    and (newsroom_private.has_staff_permission('calendar.view_team',s.id)
     or newsroom_private.review_access(s.id,q.kind,'submit') or newsroom_private.review_access(s.id,q.kind,'decide')
     or newsroom_private.schedule_manager_allowed(s.id,q.kind))
-   and (case when p_mode='attention' then q.state='blocked' or q.due_at<=now() else q.due_at>=p_start and q.due_at<p_end end)
+   and (case when p_mode='attention' then q.state='blocked' or q.due_at<=now() or rq.generation is distinct from coalesce(ep.generation,0)
+     or (q.kind='draft' and s.status<>'in_review') or (q.kind='revision' and (s.status<>'published' or rv.status is distinct from 'in_review')) else q.due_at>=p_start and q.due_at<p_end end)
   union all
   select s.id,s.id,s.headline,s.scheduled_at,'legacy',null,false,'unverified','draft',null,null
   from public.stories s
