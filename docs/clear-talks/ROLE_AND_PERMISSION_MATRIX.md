@@ -137,6 +137,10 @@ Protect against email mismatch, reused tokens, bulk invitation abuse, unauthoriz
 
 [Draft PR #22](https://github.com/0445968/02022/pull/22): private membership-keyed staff profile, RLS and service-only self read/save, fresh verified Auth identity, active nonexpired membership and deny-first current newsroom.access, revision conflict and scrubbed audit. Separate disabled onboarding flag, EN/ES first-dashboard-login profile, read-only assigned roles/expiry, private display name/language and acknowledgement, optional byline request preference. No public byline or reader profile write, no authority from onboarding, no automatic grant, no backfill. Actual byline approval/link/reject/unlink separate CT-04b.2 and must preserve published attribution. Dashboard onboarding is UX not a new authorization boundary; deeper pages/APIs remain capability-gated. Real Auth and browser checks pending; no live migration or release.
 
+### CT-04b.2 staged private byline association
+
+[Draft PR #23](https://github.com/0445968/02022/pull/23): current verified nonexpiring active employee Owner with actual all-scope byline.manage and no deny; independently reviewed private request approval/reject/unlink, revision conflicts, audited transitions, unique eligible association to unlinked or same-account author only. All existing 18 published stories resolve account-linked authors; never overwrite legacy editorial_profiles.account_id or article author_id. Narrow five-column SELECT grant for service role requires release review; no legacy UPDATE or automatic public publication. New disabled flag; EN/ES owner admin directory, no staff-facing review status yet (CT-10). Public attribution model and existing Authors workflow compatibility CT-11, FK restrict deletion until unlink. No privilege grant or live changes.
+
 ## 8. Required negative-test matrix
 
 For EACH protected route/API/RPC/storage action test: anonymous; authenticated reader; freelancer with assignment; freelancer without assignment; staff writer; specialized staff; editor; managing editor; owner/admin; revoked member; user with expired invite; user whose profile includes forged user_metadata role.

@@ -20,3 +20,7 @@ Read-only hosted preflight confirms 23 stories, 4 revisions, 43 versions, 22 med
 
 ## NEXT CT-04b.2
 Verify exact final PR #22 CI first. Implement explicit byline review/approval/rejection/link/unlink with safe separation from staff identity and reader account; inspect actual existing editorial_profiles/account_id uniqueness/FKs and editorial RLS/author APIs. Owner with actual byline.manage and fresh verified identity, explicit reason/confirmation, review target and stale state, no account assignment based on name/email, preserve published story authorship and existing byline history, no existing linkage overwrite, scrub audit and prove no privilege grants. Admin sees pending private request and chooses existing unlinked profile or reviewed new byline only if supported by safe existing data model; do not publish automatically, do not reassign old published story identities, require separately approved backfill. If schema cannot safely support link without impact, stage explicit association/request status and leave public integration for CT-11. Then CT-05 contributor workspace and scoped navigation. CT-15a remains final visual refinement.
+
+
+## Final verification update
+PR #22 final `229edf354735a2f8c341f1ce99cb4f239aee0356`: all 14 workflows SUCCESS, 150/150 Node tests, TypeScript, ESLint and build green in [quality #45429424877](https://github.com/0445968/02022/actions/runs/45429424877). No live changes.
