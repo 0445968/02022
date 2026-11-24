@@ -6,6 +6,7 @@ import {createClient} from '@/lib/db/supabase-server';
 import {isDevAuthBypass} from '@/lib/db/supabase-data';
 import {resolveStaffPermissionOnServer,resolveGlobalStaffPermissionsOnServer,resolveStoryStaffPermissionsOnServer} from '@/lib/permissions/server';
 import {buildWorkspaceAccess,WORKSPACE_CAPABILITIES,type WorkspaceAccess} from '@/lib/permissions/workspace-policy';
+import {canEnterCommentModeration} from '@/lib/services/comment-moderation';
 import {canStartWriterDraft} from '@/lib/services/writer-drafts';
 import {privateDraftMediaEnabled} from '@/lib/permissions/private-draft-media';
 import {staffOnboardingEnabled,readStaffOnboarding} from '@/lib/services/staff-onboarding';
@@ -20,6 +21,7 @@ export const getWorkspaceAccess=cache(async():Promise<WorkspaceAccess>=>{
   const grants=await resolveGlobalStaffPermissionsOnServer(WORKSPACE_CAPABILITIES);
   const access=buildWorkspaceAccess(grants,options);
   if(access.allowed&&!access.createStory&&await canStartWriterDraft())access.nav.push('newStory');
+  if(access.allowed&&await canEnterCommentModeration())access.nav.push('comments');
   return access;
 });
 export async function requireWorkspacePage(key: keyof Pick<WorkspaceAccess,'viewStories'|'fullEditor'|'createStory'|'fullMedia'|'manageBylines'|'fullHomepage'|'viewTeam'>){
