@@ -4,6 +4,7 @@ import {newsroomLocale,mayMountFullStoryEditor} from '@/lib/services/newsroom-wo
 import {assignedDraftEnabled} from '@/lib/services/assigned-drafts';
 import {assignedRevisionEnabled} from '@/lib/services/assigned-revisions';
 import {resolveStoryStaffPermissionsOnServer} from '@/lib/permissions/server';
+import {reviewedSchedulingEnabled,readReviewedSchedule,canManageReviewedSchedule} from '@/lib/services/reviewed-schedule';
 import {canPublishReviewed} from '@/lib/services/reviewed-publication';
 import {readStoryReview,storyReviewEnabled} from '@/lib/services/story-review';
 import {reviewKind} from '@/lib/permissions/story-review-contract';
@@ -28,5 +29,11 @@ export default async function StoryReviewPage({params,searchParams}:{params:{id:
  const grants=assignedEnabled?await resolveStoryStaffPermissionsOnServer(params.id,keys):new Set<string>();
  const canEdit=full||assignedEnabled&&keys.every(k=>grants.has(k));
  const backHref=full?'/newsroom/stories/'+params.id+'/edit':canEdit?'/newsroom/contributor/stories/'+params.id+(state.kind==='revision'?'/revision':''):'/newsroom/stories/'+params.id+'/preview'+(state.kind==='revision'?'?revision=1':'');
- return <StoryReviewPanel key={state.storyId+state.kind} initial={state} locale={locale} backHref={backHref} canEdit={canEdit} canPublish={await canPublishReviewed(params.id,state.kind)}/>;
+ const scheduling=reviewedSchedulingEnabled();
+ let schedule=null;
+ if(scheduling){
+  try{schedule=await readReviewedSchedule(params.id,state.kind);}
+  catch{return <p role="alert" className="p-6 text-sm text-muted-foreground">{locale==='es'?'No se pudo verificar la programación. Actualice la página.':'Unable to verify scheduling. Refresh the page.'}</p>;}
+ }
+ return <StoryReviewPanel key={state.storyId+state.kind} initial={state} locale={locale} backHref={backHref} canEdit={canEdit} canPublish={await canPublishReviewed(params.id,state.kind)} scheduling={scheduling} schedule={schedule} canSchedule={scheduling&&await canManageReviewedSchedule(params.id,state.kind)}/>;
 }
