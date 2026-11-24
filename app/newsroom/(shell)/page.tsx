@@ -1,14 +1,22 @@
 import { FileText, FileEdit, Send, Eye } from 'lucide-react';
 import Link from 'next/link';
+import {redirect} from 'next/navigation';
+import type {StaffOnboardingState} from '@/lib/permissions/staff-onboarding-types';
+import {staffOnboardingEnabled,readStaffOnboarding} from '@/lib/services/staff-onboarding';
 import { getCurrentUser } from '@/lib/auth/session';
 import { getDictionary } from '@/lib/i18n/dictionaries';
 import { defaultLocale } from '@/lib/i18n/config';
-import { resolveRoleLabel, isEditor } from '@/lib/permissions';
+import { resolveRoleLabel } from '@/lib/permissions';
 import { getStoryCounts } from '@/lib/services/stories';
 
 export default async function NewsroomDashboard() {
   const user = await getCurrentUser();
-  const locale = user?.profile?.preferredLocale ?? defaultLocale;
+  let onboarding:StaffOnboardingState|null=null;
+  if(staffOnboardingEnabled()){
+    try{onboarding=await readStaffOnboarding();}catch{redirect('/newsroom/onboarding');}
+    if(!onboarding.profile)redirect('/newsroom/onboarding');
+  }
+  const locale = onboarding?.profile?.locale??user?.profile?.preferredLocale??defaultLocale;
   const dict = getDictionary(locale);
   const roleLabel = resolveRoleLabel(user);
   const counts = await getStoryCounts();
@@ -59,6 +67,7 @@ export default async function NewsroomDashboard() {
         })}
       </div>
 
+      {staffOnboardingEnabled()&&<Link href="/newsroom/onboarding" className="mt-4 inline-flex text-sm font-medium text-primary underline">{locale==='es'?'Perfil privado del equipo':'Private staff profile'}</Link>}
       {/* Profile summary */}
       <div className="mt-8 rounded-xl border border-border bg-white p-6">
         <h2 className="font-headline text-lg font-semibold text-deep">
@@ -70,7 +79,7 @@ export default async function NewsroomDashboard() {
               {dict.auth.name}
             </dt>
             <dd className="mt-1 text-sm font-medium text-foreground">
-              {user?.profile?.name ?? '—'}
+              {onboarding?.profile?.displayName ?? user?.profile?.name ?? '—'}
             </dd>
           </div>
           <div>
@@ -78,7 +87,7 @@ export default async function NewsroomDashboard() {
               {dict.account.role}
             </dt>
             <dd className="mt-1 text-sm font-medium text-foreground">
-              {dict.account[
+              {onboarding?onboarding.roles.map(role=>locale==='es'?role.nameEs:role.nameEn).join(' · ')||'—':dict.account[
                 roleLabel === 'author-editor'
                   ? 'roleAuthorEditor'
                   : roleLabel === 'author'
@@ -94,7 +103,7 @@ export default async function NewsroomDashboard() {
               {dict.account.editorialTitle}
             </dt>
             <dd className="mt-1 text-sm font-medium text-foreground">
-              {user?.profile?.editorialTitle ?? '—'}
+              {onboarding?'—':user?.profile?.editorialTitle ?? '—'}
             </dd>
           </div>
         </dl>

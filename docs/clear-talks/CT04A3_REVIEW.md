@@ -18,3 +18,7 @@ No hosted SQL, role seed, first Owner, invitation delivery, account creation, ma
 
 ## Next CT-04b
 Build first-login/identity profile and staff/freelancer onboarding completion experience using fresh membership/role gates, no legacy metadata, independent optional byline linkage only via reviewed authorization; keep reader account isolated. Include verified account/wrong-account recovery, EN/ES UX and safe sign-in redirect. Then CT-05 role-specific Newsroom. Review actual root Newsroom routes and existing legacy gates before activation. SMTP/email sending is still separately gated; use manual code workflow until approved sender/delivery and real Auth test. CT-15a final UI refinement remains later.
+
+
+## Final verification update
+PR #21 final `581e94fb96abab4e7753bad74e1bd1d32a42dc22`: all 13 workflows SUCCESS, 147/147 Node tests, TypeScript, ESLint and build green in [quality #45427576161](https://github.com/0445968/02022/actions/runs/45427576161). No live changes.
