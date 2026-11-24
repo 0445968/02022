@@ -189,3 +189,7 @@ These are recommended starter presets and architecture, NOT yet an instruction t
 
 ### CT-06b.2a staged review interface and atomic submission
 [Draft PR #32](https://github.com/0445968/02022/pull/32): existing current submit_review + exact edit/view (revision.view/edit where applicable), saved draft fingerprint, restricted copy and tagged media recheck, atomically transition working copy and create exact final snapshot request; recover existing in_review. Independent current reviewer decides with notes; review page shows current/previous history and pinned preview, no publication. Scoped editor/preview links, flag OFF. Inbox and internal notifications CT06b.2b, mandatory publication gate CT06c. No live changes.
+
+
+### CT-06b.2b staged review inbox / feedback
+[Draft PR #33](https://github.com/0445968/02022/pull/33): current verified newsroom access; pending exact independent story.review and view, revision.view as appropriate, latest current undecided request only. Feedback original requester only and current submit/edit/view + existing working copy; private self-only idempotent read acknowledgement, no raw table grants or other-recipient data. Flag OFF, no push/email/global count. CT06c mandatory approval/media gate next.
