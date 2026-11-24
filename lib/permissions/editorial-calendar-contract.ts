@@ -2,7 +2,7 @@ import {DRAFT_UUID,isDraftTimestamp} from './assigned-draft-contract';
 export type CalendarMode='range'|'attention';
 export type CalendarFilter='all'|'assignments'|'publications';
 export type CalendarQuery={start:string;end:string;mode:CalendarMode;filter:CalendarFilter;page:number};
-export type CalendarItem={id:string;storyId:string;headline:string;dueAt:string|null;kind:'assignment'|'publication'|'legacy';state:'active'|'pending'|'blocked'|'unverified';assignmentType:'author'|'editor'|'reviewer'|'copy'|'visual'|null;mine:boolean;assignee:string|null;source:'draft'|'revision'|null;snapshotCurrent:boolean|null;canCancel:boolean};
+export type CalendarItem={id:string;storyId:string;headline:string;dueAt:string|null;kind:'assignment'|'publication'|'legacy';state:'active'|'pending'|'blocked'|'unverified';assignmentType:'author'|'editor'|'reviewer'|'copy'|'visual'|null;mine:boolean;assignee:string|null;source:'draft'|'revision'|null;snapshotCurrent:boolean|null;canCancel:boolean;potentialConflict:boolean};
 export type CalendarPage={asOf:string;items:CalendarItem[];hasMore:boolean};
 const uuid=(v:unknown):v is string=>typeof v==='string'&&DRAFT_UUID.test(v);
 const obj=(v:unknown):Record<string,unknown>=>{if(!v||typeof v!=='object'||Array.isArray(v))throw Error('Invalid calendar');return v as Record<string,unknown>;};
@@ -15,7 +15,7 @@ export function parseCalendarQuery(raw:unknown):CalendarQuery{
 }
 function item(raw:unknown):CalendarItem{
  const r=obj(raw);
- if(Object.keys(r).length!==12||!uuid(r.id)||!uuid(r.storyId)||typeof r.headline!=='string'||typeof r.mine!=='boolean'||typeof r.canCancel!=='boolean'||(r.assignee!==null&&typeof r.assignee!=='string')||(r.dueAt!==null&&!isDraftTimestamp(r.dueAt)))throw Error('Invalid calendar row');
+ if(Object.keys(r).length!==13||!uuid(r.id)||!uuid(r.storyId)||typeof r.headline!=='string'||typeof r.mine!=='boolean'||typeof r.canCancel!=='boolean'||typeof r.potentialConflict!=='boolean'||(r.assignee!==null&&typeof r.assignee!=='string')||(r.dueAt!==null&&!isDraftTimestamp(r.dueAt)))throw Error('Invalid calendar row');
  if(r.kind==='assignment'){
   if(r.state!=='active'||r.dueAt===null||!['author','editor','reviewer','copy','visual'].includes(String(r.assignmentType))||r.source!==null||r.snapshotCurrent!==null||r.canCancel)throw Error('Invalid assignment');
  }else if(r.kind==='publication'){
@@ -23,6 +23,7 @@ function item(raw:unknown):CalendarItem{
  }else if(r.kind==='legacy'){
   if(r.state!=='unverified'||r.assignmentType!==null||r.mine||r.assignee!==null||r.source!=='draft'||r.snapshotCurrent!==null||r.canCancel||r.id!==r.storyId)throw Error('Invalid legacy');
  }else throw Error('Invalid calendar kind');
+ if(r.potentialConflict&&(r.kind==='legacy'||r.kind==='publication'&&(r.state!=='pending'||r.snapshotCurrent!==true)))throw Error('Invalid calendar conflict');
  return r as CalendarItem;
 }
 export function parseCalendarPage(raw:unknown):CalendarPage{

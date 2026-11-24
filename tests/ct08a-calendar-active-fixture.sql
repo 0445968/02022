@@ -71,3 +71,7 @@ rollback;
 \if :{?ct08b2b_projection}
 \i tests/ct08b2b-projection-active-fixture.sql
 \endif
+
+\if :{?ct08b2c_conflicts}
+\i tests/ct08b2c-conflicts-active-fixture.sql
+\endif

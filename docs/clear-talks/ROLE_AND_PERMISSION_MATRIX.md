@@ -241,3 +241,7 @@ EN/ES permission-gated Dashboard and Contributor alerts reuse scoped calendar RP
 
 ### CT-08b.2b — story publication queue projection
 One bounded RPC (1–50 unique requested story IDs), exact verified calendar/story scope plus revision permission, minimal queue source/state/due/snapshot projection, no raw grants. Stories keeps stored status/filter/count and unpublished changes independent; EN/ES Publication queue column shows queued draft or revision, due, blocked, stale, and legacy unverified, with no false 'none' claims. Dashboard retains prior scoped alerts. No filter for effective queue status yet; queue column is page-local, stored status filters still apply. No scheduler activation or production mutation.
+
+
+### CT-08b.2c — cross-page conflict advisory
+Server-computed potentialConflict flag checks a current pending reviewed queue and active same-story assignment due at/after publication, across calendar dates, filters and pages, with exact independent permission checks on both rows. Assigned-only viewers cannot infer hidden colleague deadlines; blocked/stale/legacy excluded. Future conflicts appear in attention and dashboard alerts. Advisory only, not an exhaustive dependency or execution guarantee. No new grant, mutation, scheduler activation or hosted changes.

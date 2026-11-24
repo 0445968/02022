@@ -8,12 +8,11 @@ const {visibleCalendarConflicts,calendarItemReasons,calendarAlertPreview}=await 
 const t='2026-11-24T12:00:00Z',future='2026-11-25T12:00:00Z';
 const assignment={id:'a',storyId:'s',kind:'assignment',state:'active',dueAt:future};
 const queue={id:'q',storyId:'s',kind:'publication',state:'pending',snapshotCurrent:true,dueAt:future};
-test('potential conflicts require two visible same-story items and a current pending queue',()=>{
- assert.deepEqual([...visibleCalendarConflicts([assignment,queue])],['a','q']);
- for(const q of [{...queue,storyId:'different'},{...queue,state:'blocked'},{...queue,snapshotCurrent:false},{...queue,kind:'legacy'},{...queue,dueAt:'2026-11-26T12:00:00Z'}]){
-  assert.equal(visibleCalendarConflicts([assignment,q]).size,0);
- }
- assert.equal(visibleCalendarConflicts([queue]).size,0);
+test('server conflict flags work even with no visible counterpart on the page',()=>{
+ assert.deepEqual([...visibleCalendarConflicts([{...assignment,potentialConflict:true}])],['assignment:a']);
+ assert.deepEqual([...visibleCalendarConflicts([{...queue,potentialConflict:true}])],['publication:q']);
+ assert.equal(visibleCalendarConflicts([assignment,queue]).size,0);
+ assert.deepEqual(calendarItemReasons({...assignment,potentialConflict:true},t),['conflict','soon']);
 });
 test('alerts distinguish stale, blocked, legacy, overdue and 48-hour upcoming',()=>{
  assert.deepEqual(calendarItemReasons(assignment,t),['soon']);

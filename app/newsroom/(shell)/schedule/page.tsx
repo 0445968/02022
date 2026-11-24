@@ -48,7 +48,7 @@ export default async function SchedulePage({searchParams}:{searchParams:{month?:
   {i.kind==='assignment'&&(i.mine||i.assignee)&&<p className="break-words text-xs">{i.mine?(es?'Mi asignación':'My assignment'):i.assignee}</p>}
   {i.kind==='publication'&&<p className="text-xs">{i.source==='revision'?(es?'Cambios de artículo publicado':'Published story changes'):(es?'Borrador':'Draft')}{i.snapshotCurrent===false?' · '+(es?'Contenido ya no coincide':'Content no longer matches'):''}</p>}
   {calendarItemReasons(i,data.asOf).includes('soon')&&<p className="text-xs font-medium text-deep">{es?'En las próximas 48 horas':'Within 48 hours'}</p>}
-  {conflicts.has(i.id)&&<p className="text-xs font-semibold text-deep">{es?'Posible conflicto: entrega al momento de publicación o después.':'Potential conflict: assignment due at or after queued publication.'}</p>}
+  {conflicts.has(i.kind+':'+i.id)&&<p className="text-xs font-semibold text-deep">{es?'Posible conflicto: entrega al momento de publicación o después.':'Potential conflict: assignment due at or after queued publication.'}</p>}
   {i.kind==='publication'&&i.canCancel&&scheduling&&<CancelCalendarSchedule item={i} locale={locale}/>}
  </article>;
  const control="rounded-[6px] border border-border bg-white px-3 py-2 text-sm hover:bg-surface-muted";
@@ -69,7 +69,7 @@ export default async function SchedulePage({searchParams}:{searchParams:{month?:
    <Link prefetch={false} className={control} href={href({page:String(page)})}>{es?'Actualizar':'Refresh'}</Link>
   </div>
   <p className="text-xs text-muted-foreground">{zone} · {es?'Datos al':'As of'} {fmt.format(new Date(data.asOf))}. {es?'Página':'Page'} {page+1}{data.hasMore?(es?' · Hay más resultados':' · More results available'):''}. {es?'Solo se muestran los elementos de esta página.':'Only items on this page are displayed.'}</p>
-  {conflicts.size>0&&<p role="status" className="rounded-[6px] border border-border bg-white p-3 text-xs text-deep">{es?'Posibles conflictos entre elementos visibles en esta página. No es una comprobación completa de todas las asignaciones o dependencias.':'Potential conflicts between visible entries on this page. This is not a complete check of all assignments or dependencies.'}</p>}
+  {conflicts.size>0&&<p role="status" className="rounded-[6px] border border-border bg-white p-3 text-xs text-deep">{es?'Se comprobaron las entregas y publicaciones accesibles del mismo artículo, incluso fuera de esta página o intervalo. Es un aviso, no una comprobación de todas las dependencias.':'Accessible same-story deadlines and publication queues were checked, including outside this page or date range. This is advisory, not a check of all dependencies.'}</p>}
   {data.items.length===0&&<p className="rounded-[6px] border border-border p-4 text-sm text-muted-foreground">{es?'No hay elementos en esta página.':'No items on this page.'}</p>}
   {mode==='range'&&view==='month'&&<div className="overflow-x-auto"><div className="grid min-w-[900px] grid-cols-7 gap-px rounded-[6px] border border-border bg-border">
     {Array.from({length:7},(_,d)=>new Intl.DateTimeFormat(locale,{weekday:'short',timeZone:'UTC'}).format(new Date(Date.UTC(2026,0,5+d)))).map(d=><div key={d} className="bg-surface-muted p-2 text-xs font-semibold">{d}</div>)}
