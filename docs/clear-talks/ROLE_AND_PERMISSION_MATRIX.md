@@ -165,3 +165,7 @@ These are recommended starter presets and architecture, NOT yet an instruction t
 
 ### CT-05b.1–2 staged contributor copy editing
 [Draft PR #25](https://github.com/0445968/02022/pull/25) and [#26](https://github.com/0445968/02022/pull/26): exact assigned copy edit/view and newsroom access, submit_review for transition to in_review; assigned-only cannot reopen or edit submitted drafts. Published revisions additionally require exact revision.view/revision.edit_assigned, live + revision CAS, metadata preserved; no public publishing, author changes, scheduling, new media or permission grants. Direct DB guards, narrow authenticated invoker RPCs. CT-05b.3 safe creation, CT-05b.4 media, CT-06 actual review decisions; prior production gates remain.
+
+
+### CT-05b.3 staged writer creation
+[Draft PR #27](https://github.com/0445968/02022/pull/27): actual newsroom.access/story.create plus prospective self-assigned view/edit and current verified identity; atomic private narrowly privileged draft and own internal assignment creation with audit and exact post-assignment recheck. Public author unset; no direct role/assignment grant or publish privilege. Idempotent request retry, strict input, public invoker wrappers, default-off app flag and no live migration. Generated search index guard correction. Review private definer and full legacy parity before release. CT05b.4 media and CT06 editorial workflow next.

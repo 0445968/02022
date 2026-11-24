@@ -6,6 +6,7 @@ import {createClient} from '@/lib/db/supabase-server';
 import {isDevAuthBypass} from '@/lib/db/supabase-data';
 import {resolveStaffPermissionOnServer,resolveGlobalStaffPermissionsOnServer,resolveStoryStaffPermissionsOnServer} from '@/lib/permissions/server';
 import {buildWorkspaceAccess,WORKSPACE_CAPABILITIES,type WorkspaceAccess} from '@/lib/permissions/workspace-policy';
+import {canStartWriterDraft} from '@/lib/services/writer-drafts';
 import {privateDraftMediaEnabled} from '@/lib/permissions/private-draft-media';
 import {staffOnboardingEnabled,readStaffOnboarding} from '@/lib/services/staff-onboarding';
 import type {CurrentUser,Locale} from '@/types';
@@ -17,7 +18,9 @@ export const getWorkspaceAccess=cache(async():Promise<WorkspaceAccess>=>{
   const options={privateMedia:privateDraftMediaEnabled(),onboarding:staffOnboardingEnabled()};
   if(!scopedNewsroomEnabled()||isDevAuthBypass())return buildWorkspaceAccess(new Set(),options);
   const grants=await resolveGlobalStaffPermissionsOnServer(WORKSPACE_CAPABILITIES);
-  return buildWorkspaceAccess(grants,options);
+  const access=buildWorkspaceAccess(grants,options);
+  if(access.allowed&&!access.createStory&&await canStartWriterDraft())access.nav.push('newStory');
+  return access;
 });
 export async function requireWorkspacePage(key: keyof Pick<WorkspaceAccess,'viewStories'|'fullEditor'|'createStory'|'fullMedia'|'manageBylines'|'fullHomepage'|'viewTeam'>){
   if(!scopedNewsroomEnabled())return;

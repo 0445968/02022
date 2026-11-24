@@ -15,3 +15,6 @@ Isolated PG17 fixture reuses CT-02f actual legacy publisher tests, verifies no a
 
 ## Next CT-05b.3
 Verify exact latest HEAD CI and address failures, then safe writer creation: inspect actual story create service/API/constraints; atomic draft and own active assignment creation for verified current staff writer with story.create, no author impersonation, no public attribution changes, no arbitrary membership/role changes. Ensure existing restricted editor can open created story immediately; no orphan draft or accidental publication. Use narrowly reviewed invoker/privileged transaction as needed and isolated PG tests. CT-05b.4 restricted media selection/attachments; CT-06 assignments/review workflow and actual submitted revision review decisions. CT-10 staff-facing byline status, CT-11 public attribution and legacy editorial compatibility. CT-15a final style. Prior independent DB+Storage backup, migration registry reconciliation, Owner bootstrap/grants, actual Auth/Storage/browser QA, publisher/advisor/media gates outstanding. No live SQL, accounts/grants, flag activation, deployment, merge, email.
+
+## Final CI verification
+PR #26 final `dcfd5b78385976c5a007425652a9ff7a7a97032b`: all 17 workflows SUCCESS, 165/165 tests, TypeScript, ESLint and build [#45442412629](https://github.com/0445968/02022/actions/runs/45442412629). No hosted changes.
