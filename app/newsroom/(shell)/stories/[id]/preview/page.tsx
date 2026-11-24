@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import {canAccessStoryReview,readStoryReview} from '@/lib/services/story-review';
 import {canManageStoryAssignments} from '@/lib/services/story-assignments';
 import {getWorkspaceAccess,scopedNewsroomEnabled,mayViewWorkspaceStory,newsroomLocale,mayMountFullStoryEditor} from '@/lib/services/newsroom-workspace';
 import {resolveStaffPermissionOnServer} from '@/lib/permissions/server';
@@ -61,6 +62,7 @@ interface PageProps {
   };
 
   searchParams?: {
+    reviewFingerprint?:string|string[];
     revision?:
       | string
       | string[];
@@ -102,6 +104,13 @@ export default async function PreviewPage({
   // Published / current story
   // ==================================================
 
+  const reviewFingerprint=searchParams?.reviewFingerprint;
+  const reviewKind=(Array.isArray(searchParams?.revision)?searchParams?.revision[0]:searchParams?.revision)==='1'?'revision':'draft';
+  if(reviewFingerprint!==undefined){
+    if(typeof reviewFingerprint!=='string'||!/^[a-f0-9]{64}$/.test(reviewFingerprint)||searchParams?.version)notFound();
+    const review=await readStoryReview(params.id,reviewKind).catch(()=>null);
+    if(!review||review.fingerprint!==reviewFingerprint)notFound();
+  }
   const liveStory =
     await getStoryForEditing(
       params.id
@@ -149,6 +158,7 @@ export default async function PreviewPage({
           ?.view;
 
   const wantsRevision = revisionParam==='1';
+
   if(scoped&&(wantsRevision||Boolean(versionParam))&&!(await resolveStaffPermissionOnServer('revision.view',{kind:'story',storyId:params.id})).allowed)notFound();
 
   const wantsChanges =
@@ -234,6 +244,11 @@ export default async function PreviewPage({
       );
   }
 
+  if(reviewFingerprint!==undefined){
+    if(wantsRevision&&!revisionStory)notFound();
+    const review=await readStoryReview(params.id,reviewKind).catch(()=>null);
+    if(!review||review.fingerprint!==reviewFingerprint)notFound();
+  }
   const isRevisionPreview =
     Boolean(
       revisionStory
@@ -287,6 +302,7 @@ export default async function PreviewPage({
   // Toolbar labels
   // ==================================================
 
+  const reviewLink=!isHistoricalComparison&&(isRevisionPreview||liveStory.status==='draft'||liveStory.status==='in_review')&&await canAccessStoryReview(params.id,isRevisionPreview?'revision':'draft');
   const toolbarModeLabel =
     isHistoricalComparison
       ? locale ===
@@ -411,6 +427,7 @@ export default async function PreviewPage({
               gap-2
             "
           >
+            {reviewLink&&<Link href={'/newsroom/stories/'+params.id+'/review?kind='+(isRevisionPreview?'revision':'draft')} className="rounded-md border border-white/30 px-2 py-1 text-xs font-semibold text-white">{locale==='es'?'Revisión editorial':'Editorial review'}</Link>}
             {canManageAssignments&&<Link href={'/newsroom/stories/'+params.id+'/assignments'} className="rounded-md border border-white/30 px-2 py-1 text-xs font-semibold text-white">{locale==='es'?'Asignaciones':'Assignments'}</Link>}
             {/* ==========================================
                 Revision Preview / Changes switch

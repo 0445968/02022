@@ -185,3 +185,7 @@ These are recommended starter presets and architecture, NOT yet an instruction t
 
 ### CT-06b.1 staged editorial review lifecycle
 [Draft PR #31](https://github.com/0445968/02022/pull/31): current verified newsroom actor with exact story view, revision.view for revisions; submit_review plus edit for request, story.review for independent decision; no requester/creator/updater/latest actual editor/active author assignment self-approval. Private immutable request/decision records and exact version fingerprint+epoch, requested changes or rejection returns working copy to draft, approval does not publish. Current approval helper is not yet enforced by publisher. No direct table grants or new roles. Strict session API flag OFF; submission/UI inbox integration CT06b.2, mandatory publishing gate CT06c. No live changes.
+
+
+### CT-06b.2a staged review interface and atomic submission
+[Draft PR #32](https://github.com/0445968/02022/pull/32): existing current submit_review + exact edit/view (revision.view/edit where applicable), saved draft fingerprint, restricted copy and tagged media recheck, atomically transition working copy and create exact final snapshot request; recover existing in_review. Independent current reviewer decides with notes; review page shows current/previous history and pinned preview, no publication. Scoped editor/preview links, flag OFF. Inbox and internal notifications CT06b.2b, mandatory publication gate CT06c. No live changes.

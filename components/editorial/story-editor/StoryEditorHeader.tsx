@@ -38,6 +38,8 @@ import {
 interface StoryEditorHeaderProps {
   dict: Dictionary;
   assignmentHref?:string;
+  reviewEnabled?:boolean;
+  onOpenReview?:()=>void;
 
   locale:
     | 'en'
@@ -103,6 +105,8 @@ interface StoryEditorHeaderProps {
 export function StoryEditorHeader({
   dict,
   assignmentHref,
+  reviewEnabled=false,
+  onOpenReview,
   locale,
   status,
   saveState,
@@ -319,6 +323,7 @@ export function StoryEditorHeader({
           </span>
 
           {assignmentHref&&<Link href={assignmentHref} target="_blank" rel="noopener noreferrer" className="inline-flex h-8 items-center rounded-lg border border-border bg-white px-2 text-xs font-semibold hover:bg-surface-muted">{locale==='es'?'Asignaciones':'Assignments'}</Link>}
+          {reviewEnabled&&onOpenReview&&(!isPublishedStory||hasPendingRevision||saveState==='unsaved')&&<button type="button" onClick={onOpenReview} disabled={isSaving} className="inline-flex h-8 items-center rounded-lg border border-border bg-white px-2 text-xs font-semibold hover:bg-surface-muted disabled:opacity-50">{locale==='es'?'Revisión y comentarios':'Review & feedback'}</button>}
           {/* Preview */}
           <button
             type="button"
@@ -403,7 +408,7 @@ export function StoryEditorHeader({
           </button>
 
           {/* Author submit */}
-          {userIsAuthor &&
+          {!reviewEnabled && userIsAuthor &&
             !userIsEditor &&
             !isPublishedStory &&
             status ===

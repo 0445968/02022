@@ -47,6 +47,7 @@ export interface StoryEditorUser {
 export interface StoryEditorProps {
   dict: Dictionary;
   assignmentHref?:string;
+  reviewHref?:string;
 
   locale: Locale;
 
