@@ -11,6 +11,7 @@ export type TeamMember={
 };
 export type TeamPreset={
   key:StaffRoleKey; nameEn:string; nameEs:string; isBuiltin:boolean;
+  grantRevision:number;
   configuredGrants:{capability:string;scope:'all'|'assigned'|'own'}[];
 };
 export type TeamAuditEntry={
@@ -24,4 +25,5 @@ export type TeamDirectory={
   auditPage:number;auditPageSize:number;totalAudit:number;hasMoreAudit:boolean;
   canManageRoles:boolean;canViewAudit:boolean;canManageOverrides:boolean;
   mutationsEnabled:boolean;overrideMutationsEnabled:boolean;
+  presetMutationsEnabled:boolean;
 };
