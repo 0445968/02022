@@ -2952,85 +2952,57 @@ export async function restoreStoryVersion(
       restoredBy,
   };
 
+  // Reload the complete, confirmed post-restore row so history records a
+  // faithful snapshot rather than omitting short_title, author and editor.
+  // With CT-02f RLS a direct history insert must match the current story.
   const {
-    error:
-      restoreError,
+    data: restoredRow,
+    error: restoreError,
   } = await supabase
     .from('stories')
-    .update(
-      restoredContent
-    )
-    .eq(
-      'id',
-      storyId
-    );
+    .update(restoredContent)
+    .eq('id', storyId)
+    .select('headline, short_title, subheadline, summary, body, language, author_id, editor_id, primary_category_id')
+    .maybeSingle();
 
-  if (
-    restoreError
-  ) {
+  if (restoreError || !restoredRow) {
     console.error(
       'Unable to restore story version:',
       {
         versionId,
         storyId,
-
-        code:
-          restoreError.code,
-
-        message:
-          restoreError.message,
-
-        details:
-          restoreError.details,
-
-        hint:
-          restoreError.hint,
+        code: restoreError?.code,
+        message: restoreError?.message ?? 'No editable story was updated',
+        details: restoreError?.details,
+        hint: restoreError?.hint,
       }
     );
-
     return false;
   }
 
   /**
-   * Save a snapshot of the restored state so the
-   * restoration itself becomes part of history.
+   * Record the actual restored row as history. This supplies every snapshot
+   * field the direct authenticated version guard compares to the story.
    */
   const {
-    error:
-      snapshotError,
+    error: snapshotError,
   } = await supabase
-    .from(
-      'story_versions'
-    )
+    .from('story_versions')
     .insert({
-      story_id:
-        storyId,
-
-      headline:
-        restoredContent.headline,
-
-      subheadline:
-        restoredContent.subheadline,
-
-      summary:
-        restoredContent.summary,
-
-      body:
-        restoredContent.body,
-
-      language:
-        restoredContent.language,
-
-      primary_category_id:
-        restoredContent.primary_category_id,
-
-      created_by:
-        restoredBy,
+      story_id: storyId,
+      headline: restoredRow.headline,
+      short_title: restoredRow.short_title,
+      subheadline: restoredRow.subheadline,
+      summary: restoredRow.summary,
+      body: restoredRow.body,
+      language: restoredRow.language,
+      author_id: restoredRow.author_id,
+      editor_id: restoredRow.editor_id,
+      primary_category_id: restoredRow.primary_category_id,
+      created_by: restoredBy,
     });
 
-  if (
-    snapshotError
-  ) {
+  if (snapshotError) {
     console.error(
       'Story restored but restoration snapshot failed:',
       snapshotError
