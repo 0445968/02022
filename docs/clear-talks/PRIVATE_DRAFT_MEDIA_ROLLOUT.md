@@ -1,6 +1,6 @@
 # Clear Talks — Private Draft Media / Public Publication Runbook (PROPOSAL ONLY)
-Date: 2026-11-23 | CT-02h companion | **No bucket, policy, file or URL created/changed**
-Required human approval before implementing in CT-02i or future work.
+Date: 2026-11-23 | CT-02i staged foundation | **NO live bucket, policy, file or URL created/changed**
+CT-02i draft PR #13 **proposes and tests** a private staging bucket, catalog, upload and signed preview behind disabled flags. Production implementation and private-to-public approval/promotion remain unapproved and NOT implemented. Explicit human approval required before any hosted SQL, bucket creation, UI activation, grants or deployment.
 
 ## Problem and immutable compatibility boundaries
 The existing Supabase Storage `media` bucket is `public=true`. All 22 restored Storage objects have `owner_id=NULL` and matching `media_assets.storage_path` records. Public CDN/getPublicUrl downloads bypass object SELECT RLS. Even if `media_assets` is restricted by staff RLS and an approved-only view, an unpublished or embargoed file uploaded to the public bucket remains retrievable by anyone knowing its URL. Keeping that bucket public is necessary to avoid breaking existing published articles during a staged cutover.
