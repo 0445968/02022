@@ -1,0 +1,20 @@
+# CT-02k — Production Cutover / Rollback Gate (PLANNED, not executed)
+Last checked 2026-11-23 (America/Chicago). **Do not treat CI green as authorization to deploy.**
+
+## Baseline and immutability
+- GitHub `0445968/02022`: `main` remains `f5c0140fb2db165e43303a064f7bc15b765d4505`. Draft PR stack #2 through #15 unmerged.
+- Hosted Supabase `yqqzohrlhiitctwacdad`: `staff_memberships` and `media_private_drafts` absent; no hosted migrations recorded, despite restored schema/data. Latest read-only counts: 23 stories, 4 unpublished revisions, 22 public Storage objects/media rows. Do NOT infer owner identity from profile booleans or fabricate owner IDs for all 22 restored objects.
+- Production site `https://clear-talks.vercel.app/` has not received CT-02a–k changes. Preserve current fonts/UI. Existing migrations with `DEV_AUTH_BYPASS` must **NOT** be blindly replayed.
+
+## Required explicit, sequential release checkpoints
+1. Review master plan/role matrix and all staged SQL migrations against the **actual hosted** `pg_policy`, functions, Storage buckets/objects, Auth account identity, current schema and extension versions. Confirm every direct Data API, Storage, RPC and route path has a coherent current staff/reader policy. Reconcile outstanding comments, reader profile, poll, notification, editor-role and public-view-owner exceptions.
+2. Obtain an **independent restorable backup** of hosted database and existing Storage assets, with a successful restore rehearsal to a SEPARATE disposable environment. Verify counts, editor login, story-revision history and public-image links before any migration. Database-only export does not back up Storage object bytes.
+3. Resolve zero hosted migration-register entries vs historical `supabase/migrations`. Establish an explicitly reviewed baseline/schema drift record; record and rehearse which CT-02b–k migrations will apply. NEVER bulk `supabase db push` or `db reset` against hosted restored DB; DO NOT replay dev auth bypass.
+4. Approve first real owner Auth UUID, exact preset-to-capability mapping, reviewer roles, expiry/revocation paths and staff bootstrap. Preload/test grants first in disposable project. Never auto-promote by `profiles.is_author` or `profiles.is_editor`.
+5. Run **real disposable Supabase Auth/Storage** test harness and full browser QA, including private-vs-public URLs, cross-bucket copy, accepted/expired signed links, legacy ownerless files, revoked staff/reader/freelancer, comment/report direct SQL, homepage/story publisher RPC and EN/ES reader portal.
+6. Resolve one published story with a **trashed featured media** by an explicit editorial/rights decision, preserving article/version history; no automated approval/asset swap. Verify `media_public_assets` allowlisted view and associated public cache behavior. Investigate the intentional public view owner exception and existing privileged story publisher advisor warning, plus disabled leaked-password protection.
+7. Only after steps 1–6 and separate explicit user approval: schedule dependency-ordered migration install, controlled owner grants, Vercel flag changes and preview/full site/browser validation. Private draft bucket creation and feature flag activation must be coordinated to prevent the legacy uploader from breaking. Do not merge to `main` or deploy until expressly approved.
+8. Prepare dual rollback (DB policy/code **and** Storage files/URLs): preserve original public `media` bucket, private drafts and existing 22 public files; don't simply restore permissive editor-flag policies as a workaround. Keep a rollback operator log, per-step SQL evidence and active session revocation tests.
+
+## Batch sequencing
+CT-02 authorization remains **IN PROGRESS / not deployed** until release gates pass. Other features (CT-03 admin manager, CT-04 invites, CT-05 scoped Newsroom and CT-07 moderation UI) may be built on staged disabled capability APIs in draft stacked PRs **without** turning on live access. CT-15a keeps dedicated final UI refinement after functional completion.

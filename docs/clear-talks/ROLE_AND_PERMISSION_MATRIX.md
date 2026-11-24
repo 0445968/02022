@@ -1,6 +1,6 @@
 # Clear Talks — Staff Roles, Permissions & Onboarding Contract
 Version: 1.0 proposal | 2026-11-23 | Companion to MASTER_COMPLETION_PLAN.md.
-Status: CT-02j draft PR #14 stages controlled private media review, SHA-256-verified public-copy promotion, explicit rights decisions, approved-media linkage, and a dual-flag Newsroom review panel. CT-02a–i remain unmerged/unapplied. **NO hosted bucket, SQL, first owner/backfill, role grants, Vercel flags or production permission change.** Proposed media.approve remains an independent staff privilege; actual grants/owner require approval and real Supabase Storage/Auth tests before live activation. One published article still references trashed media.
+Status: CT-02k draft PR #15 stages current-capability comment/report moderation, reader ownership protections and published-only bookmarks, plus a manual real Supabase Auth/JWT/Storage test harness restricted to a separate disposable project. CT-02a–j remain unmerged/unapplied. **NO hosted SQL, role grants, owner bootstrap, production bucket, flags or deployment changes.** Real external e2e has NOT run; exact first owner/role matrix, restorable backup, empty migration-history reconciliation, legacy public media and one published trashed-image reference remain release blockers.
 
 ## 1. Principles
 
