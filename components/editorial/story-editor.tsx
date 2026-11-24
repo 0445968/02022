@@ -72,6 +72,7 @@ export function StoryEditor({
   authors,
   editors,
   versions,
+  assignmentHref,
 }: StoryEditorProps) {
   const router =
     useRouter();
@@ -665,6 +666,7 @@ export function StoryEditor({
       {/* =================================================== */}
 
       <StoryEditorHeader
+        assignmentHref={assignmentHref}
         dict={dict}
         locale={locale}
         status={

@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import {canManageStoryAssignments} from '@/lib/services/story-assignments';
 import {getWorkspaceAccess,scopedNewsroomEnabled,mayViewWorkspaceStory,newsroomLocale,mayMountFullStoryEditor} from '@/lib/services/newsroom-workspace';
 import {resolveStaffPermissionOnServer} from '@/lib/permissions/server';
 import {
@@ -89,6 +90,7 @@ export default async function PreviewPage({
   if(scoped&&!(await mayViewWorkspaceStory(params.id)))notFound();
   const access=scoped?await getWorkspaceAccess():null;
   const canMountEditor=!scoped||await mayMountFullStoryEditor(params.id);
+  const canManageAssignments=await canManageStoryAssignments(params.id);
   const locale=await newsroomLocale(user);
 
   const dict =
@@ -409,6 +411,7 @@ export default async function PreviewPage({
               gap-2
             "
           >
+            {canManageAssignments&&<Link href={'/newsroom/stories/'+params.id+'/assignments'} className="rounded-md border border-white/30 px-2 py-1 text-xs font-semibold text-white">{locale==='es'?'Asignaciones':'Assignments'}</Link>}
             {/* ==========================================
                 Revision Preview / Changes switch
             ========================================== */}
