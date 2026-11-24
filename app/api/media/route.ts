@@ -6,6 +6,7 @@ import {
 import {
   getCurrentUser,
 } from '@/lib/auth/session';
+import { mayListMedia } from '@/lib/permissions/media-route-gates';
 
 import {
   getMediaAssets,
@@ -186,15 +187,7 @@ export async function GET(
   const user =
     await getCurrentUser();
 
-  if (
-    !user ||
-    !(
-      user.profile
-        ?.isAuthor ||
-      user.profile
-        ?.isEditor
-    )
-  ) {
+  if (!(await mayListMedia(user))) {
     return NextResponse.json(
       {
         error:
