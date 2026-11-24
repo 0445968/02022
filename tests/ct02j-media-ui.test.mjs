@@ -13,7 +13,8 @@ test('private media panel stays invisible until explicitly enabled with live sta
 });
 test('Newsroom can upload privately, preview, review, approve and reject with explicit rights',()=>{
  const panel=read('components/editorial/media-library/PrivateDraftMediaPanel.tsx');
- for(const s of ['/api/media/drafts','/preview','/approve','/reject','confirmRights','rightsNotes'])assert.ok(panel.includes(s),s);
+ for(const s of ['/api/media/drafts','/preview','confirmRights','rightsNotes',"'approve'","'reject'"])assert.ok(panel.includes(s),s);
+ assert.match(panel,/kind:'approve'\|'reject'/);
  assert.match(panel,/role="alert"/);
  assert.doesNotMatch(panel,/getPublicUrl|SERVICE_ROLE|NEXT_PUBLIC_SUPABASE/);
 });
