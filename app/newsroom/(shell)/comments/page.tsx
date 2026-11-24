@@ -2,7 +2,7 @@ import {notFound,redirect} from 'next/navigation';
 import {getCurrentUser} from '@/lib/auth/session';
 import {newsroomLocale} from '@/lib/services/newsroom-workspace';
 import {canEnterReportManagement,readReportDetail} from '@/lib/services/comment-reports';
-import {canEnterCommentModeration,commentModerationEnabled,readCommentQueue,readCommentDetail} from '@/lib/services/comment-moderation';
+import {canEnterCommentModeration,commentModerationEnabled,readCommentQueue,readCommentDetail,bulkModerationEnabled} from '@/lib/services/comment-moderation';
 import {DRAFT_UUID} from '@/lib/permissions/assigned-draft-contract';
 import {moderationFilter} from '@/lib/permissions/comment-moderation-contract';
 import {DraftHttpError} from '@/lib/permissions/assigned-draft-http';
@@ -36,5 +36,5 @@ export default async function CommentsPage({searchParams}:{searchParams:{status?
   if(report?.report.commentId===detail.comment.id&&report.report.storyId===detail.comment.storyId)
    returnReportHref='/newsroom/reports?'+new URLSearchParams({status:'all',storyId:report.report.storyId,reportId}).toString();
  }
- return <CommentsWorkspace key={JSON.stringify([status,storyId,q,page,id,returnReportHref])} initial={data} initialDetail={detail} canOpenReports={canOpenReports} returnReportHref={returnReportHref} status={status} storyId={storyId} query={q} page={page} locale={locale}/>;
+ return <CommentsWorkspace key={JSON.stringify([status,storyId,q,page,id,returnReportHref])} bulkEnabled={bulkModerationEnabled()} initial={data} initialDetail={detail} canOpenReports={canOpenReports} returnReportHref={returnReportHref} status={status} storyId={storyId} query={q} page={page} locale={locale}/>;
 }
