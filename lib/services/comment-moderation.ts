@@ -33,16 +33,17 @@ export const canEnterCommentModeration=cache(async():Promise<boolean>=>{
   const {data:member,error:memberError}=await db.from('staff_memberships').select('id').eq('auth_user_id',user.id).maybeSingle();
   if(memberError||!member)return false;
   // Bounded batches; fail closed on error. Exact grants, not assignment alone.
-  for(let offset=0;offset<1000;offset+=50){
+  for(let offset=0;offset<100;offset+=50){
    const {data:rows,error}=await db.from('staff_story_assignments').select('story_id').eq('membership_id',member.id).eq('status','active').order('story_id').order('id').range(offset,offset+49);
    if(error||!rows)return false;
    const ids=[...new Set(rows.map(r=>String(r.story_id)))];
    if(ids.length){
     const {data:stories,error:storyError}=await db.from('stories').select('id').in('id',ids).eq('status','published').lte('published_at',new Date().toISOString());
     if(storyError)return false;
-    for(const story of stories??[]){
-     const scope=await resolveStoryStaffPermissionsOnServer(String(story.id),keys);
-     if(keys.some(k=>scope.has(k)))return true;
+    const visible=stories??[];
+    for(let i=0;i<visible.length;i+=5){
+     const scopes=await Promise.all(visible.slice(i,i+5).map(story=>resolveStoryStaffPermissionsOnServer(String(story.id),keys)));
+     if(scopes.some(scope=>keys.some(k=>scope.has(k))))return true;
     }
    }
    if(rows.length<50)break;

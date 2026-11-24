@@ -20,6 +20,7 @@ export function CommentsWorkspace({initial,status,storyId,query,page,locale}:{in
  const labels:Record<ModerationFilter,string>=es?{pending:'Pendientes',reported:'Denunciados',published:'Publicados',hidden:'Ocultos',deleted:'Eliminados',all:'Todos'}:{pending:'Pending',reported:'Reported',published:'Published',hidden:'Hidden',deleted:'Removed',all:'All'};
  const decisions:Record<ModerationAction,string>=es?{approve:'Aprobar',hide:'Ocultar',restore:'Restaurar',remove:'Eliminar'}:{approve:'Approve',hide:'Hide',restore:'Restore',remove:'Remove'};
  const explanations:Record<ModerationAction,string>=es?{approve:'El comentario será visible públicamente.',hide:'Se ocultará el comentario sin borrar su texto.',restore:'Volverá a pendientes y necesitará otra aprobación.',remove:'El texto se borrará permanentemente. Se conservarán el registro y las respuestas.'}:{approve:'The comment will become publicly visible.',hide:'Hide the comment while keeping its text.',restore:'Return to pending for fresh approval.',remove:'Permanently redact the text. Its record and replies remain.'};
+ function guardNavigation(e:React.MouseEvent<HTMLAnchorElement>){if(inFlight.current)e.preventDefault();}
  function clearAction(){setAction(null);setReason('');setConfirm(false);}
  async function open(id:string){
   if(inFlight.current)return;
@@ -62,15 +63,15 @@ export function CommentsWorkspace({initial,status,storyId,query,page,locale}:{in
    <button type="button" disabled={busy} className={btn} onClick={refresh}><RefreshCw className="h-4 w-4" aria-hidden/>{es?'Actualizar':'Refresh'}</button>
   </header>
   <nav className="flex flex-wrap gap-2" aria-label={es?'Estados de comentarios':'Comment statuses'}>
-   {filters.map(f=><Link prefetch={false} key={f} href={commentQueueHref(f,storyId,query)} aria-current={status===f?'page':undefined} className={status===f?'rounded-md bg-deep px-3 py-2 text-sm font-semibold text-white':btn}>{labels[f]}</Link>)}
+   {filters.map(f=><Link onClick={guardNavigation} prefetch={false} key={f} href={commentQueueHref(f,storyId,query)} aria-current={status===f?'page':undefined} className={status===f?'rounded-md bg-deep px-3 py-2 text-sm font-semibold text-white':btn}>{labels[f]}</Link>)}
   </nav>
-  <form className="flex flex-wrap items-center gap-2" onSubmit={e=>{e.preventDefault();router.push(commentQueueHref(status,storyId,search.trim()));}}>
+  <form className="flex flex-wrap items-center gap-2" onSubmit={e=>{e.preventDefault();if(!inFlight.current)router.push(commentQueueHref(status,storyId,search.trim()));}}>
    <label className="flex min-w-0 flex-1 items-center gap-2 rounded-md border border-border bg-white px-3 py-2"><Search className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden/>
-    <input aria-label={es?'Buscar comentarios':'Search comments'} placeholder={es?'Buscar texto, lector o artículo':'Search text, reader or story'} value={search} maxLength={120} onChange={e=>setSearch(e.target.value)} className="min-w-0 flex-1 bg-transparent text-sm outline-none"/></label>
-   <button type="submit" className={btn}>{es?'Buscar':'Search'}</button>
-   {(query||storyId)&&<Link prefetch={false} className={btn} href={commentQueueHref(status,null,'')}>{es?'Borrar filtros':'Clear filters'}</Link>}
+    <input aria-label={es?'Buscar comentarios':'Search comments'} placeholder={es?'Buscar texto, lector o artículo':'Search text, reader or story'} value={search} disabled={busy} maxLength={120} onChange={e=>setSearch(e.target.value)} className="min-w-0 flex-1 bg-transparent text-sm outline-none"/></label>
+   <button type="submit" disabled={busy} className={btn}>{es?'Buscar':'Search'}</button>
+   {(query||storyId)&&<Link onClick={guardNavigation} prefetch={false} className={btn} href={commentQueueHref(status,null,'')}>{es?'Borrar filtros':'Clear filters'}</Link>}
   </form>
-  {storyId&&<p className="text-sm text-muted-foreground">{es?'Filtro de artículo activo':'Story filter active'} · <Link className="underline" href={commentQueueHref(status,null,query)} prefetch={false}>{es?'Todos los artículos':'All stories'}</Link></p>}
+  {storyId&&<p className="text-sm text-muted-foreground">{es?'Filtro de artículo activo':'Story filter active'} · <Link onClick={guardNavigation} className="underline" href={commentQueueHref(status,null,query)} prefetch={false}>{es?'Todos los artículos':'All stories'}</Link></p>}
   {error&&<p role="alert" className="text-sm text-breaking">{error}</p>}{notice&&<p role="status" className="text-sm">{notice}</p>}
   <div className={selected?'grid gap-4 lg:grid-cols-2':'grid gap-4'}>
    <section className="min-w-0 rounded-lg border border-border bg-white p-4">
@@ -81,15 +82,15 @@ export function CommentsWorkspace({initial,status,storyId,query,page,locale}:{in
      return <article key={item.id} className="space-y-2 border-t border-border py-4">
       <div className="flex flex-wrap justify-between gap-2"><strong className="break-words text-sm">{current.author}</strong><span className="rounded bg-surface-muted px-2 py-1 text-xs font-semibold">{labels[current.status]}</span></div>
       <p className="text-xs text-muted-foreground">{date(current.createdAt)}{current.parentId&&(es?' · Respuesta':' · Reply')}{current.openReports!==null&&current.openReports>0&&(es?' · Denuncias abiertas: ':' · Open reports: ')+current.openReports}</p>
-      <Link prefetch={false} className="break-words text-xs font-medium text-primary underline" href={commentQueueHref(status,current.storyId,query)}>{current.headline}</Link>
+      <Link onClick={guardNavigation} prefetch={false} className="break-words text-xs font-medium text-primary underline" href={commentQueueHref(status,current.storyId,query)}>{current.headline}</Link>
       <p className="line-clamp-3 whitespace-pre-wrap break-words text-sm">{current.body}</p>
       <button type="button" className={btn} disabled={busy} aria-pressed={selected===item.id} onClick={()=>void open(item.id)}>{es?'Ver detalles':'View details'}</button>
      </article>;
     })}
     <div className="flex items-center justify-between gap-2 border-t border-border pt-3">
-     {page>0?<Link prefetch={false} className={btn} href={commentQueueHref(status,storyId,query,page-1)}>{es?'Anterior':'Previous'}</Link>:<span/>}
+     {page>0?<Link onClick={guardNavigation} prefetch={false} className={btn} href={commentQueueHref(status,storyId,query,page-1)}>{es?'Anterior':'Previous'}</Link>:<span/>}
      <span className="text-xs text-muted-foreground">{es?'Página':'Page'} {page+1}</span>
-     {initial.hasMore?<Link prefetch={false} className={btn} href={commentQueueHref(status,storyId,query,page+1)}>{es?'Siguiente':'Next'}</Link>:<span/>}
+     {initial.hasMore?<Link onClick={guardNavigation} prefetch={false} className={btn} href={commentQueueHref(status,storyId,query,page+1)}>{es?'Siguiente':'Next'}</Link>:<span/>}
     </div>
    </section>
    {selected&&<section className="min-w-0 space-y-4 self-start rounded-lg border border-border bg-white p-4">

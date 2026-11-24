@@ -33,3 +33,10 @@ test('CT07b navigation and page recheck access; decisions use current revision a
  assert.match(u,/I understand the text cannot be recovered/);
  assert.doesNotMatch(u,/dangerouslySetInnerHTML|SUPABASE_SERVICE_ROLE_KEY/);
 });
+
+test('CT07b legacy sidebar does not expose disabled comments page and navigation guards pending mutation',()=>{
+ assert.match(file('components/editorial/newsroom-sidebar.tsx'),/item.key!=='comments'/);
+ const u=file('components/editorial/comments/CommentsWorkspace.tsx');
+ assert.match(u,/if\(inFlight.current\)e.preventDefault\(\)/);
+ assert.match(u,/disabled=\{busy\} className=\{btn\}/);
+});
