@@ -2,9 +2,11 @@
 import {useRef,useState} from 'react';
 import Link from 'next/link';
 import type {Locale} from '@/types';
+import {ReviewedSchedulePanel} from './ReviewedSchedulePanel';
+import type {ReviewedSchedule} from '@/lib/permissions/reviewed-schedule-contract';
 import {parseReviewState,type ReviewState,type ReviewAction} from '@/lib/permissions/story-review-contract';
 const btn='rounded-md border border-border bg-white px-3 py-2 text-sm font-medium hover:bg-surface-muted disabled:opacity-50';
-export function StoryReviewPanel({initial,locale,backHref,canEdit,canPublish=false}:{initial:ReviewState;locale:Locale;backHref:string;canEdit:boolean;canPublish?:boolean}){
+export function StoryReviewPanel({initial,locale,backHref,canEdit,canPublish=false,scheduling=false,schedule=null,canSchedule=false}:{initial:ReviewState;locale:Locale;backHref:string;canEdit:boolean;canPublish?:boolean;scheduling?:boolean;schedule?:ReviewedSchedule|null;canSchedule?:boolean}){
  const es=locale==='es';
  const [state,setState]=useState(initial),[note,setNote]=useState(''),[action,setAction]=useState<ReviewAction>('approve');
  const [confirmed,setConfirmed]=useState(false),[opened,setOpened]=useState(false),[busy,setBusy]=useState(false),[blocked,setBlocked]=useState(false);
@@ -18,6 +20,7 @@ export function StoryReviewPanel({initial,locale,backHref,canEdit,canPublish=fal
  function reset(){setNote('');setConfirmed(false);setOpened(false);setAction('approve');}
  async function refresh(){
   if(inFlight.current)return;
+  if(scheduling){window.location.reload();return;}
   inFlight.current=true;setBusy(true);setError('');setNotice('');
   try{const r=await fetch(url+'?kind='+state.kind,{cache:'no-store'});if(!r.ok)throw Error();
    setState(parseReviewState(await r.json(),state.storyId,state.kind));setBlocked(false);reset();
@@ -42,7 +45,7 @@ export function StoryReviewPanel({initial,locale,backHref,canEdit,canPublish=fal
   finally{inFlight.current=false;setBusy(false);}
  }
  async function publish(){
-  if(inFlight.current||busy||blocked||!canPublish||!state.current||state.decision!=='approved'||!state.requestId)return;
+  if(inFlight.current||busy||blocked||!canPublish||schedule||!state.current||state.decision!=='approved'||!state.requestId)return;
   if(!window.confirm(es?'¿Publicar exactamente esta versión aprobada?':'Publish this exact approved version?'))return;
   inFlight.current=true;setBusy(true);setError('');setNotice('');
   try{
@@ -69,11 +72,12 @@ export function StoryReviewPanel({initial,locale,backHref,canEdit,canPublish=fal
    {!state.current&&state.requestId&&<p className="text-sm text-muted-foreground">{es?'La solicitud anterior ya no corresponde a la copia actual. Consulte el historial.':'The previous request no longer applies to the current copy. See history.'}</p>}
    <div className="flex flex-wrap items-center gap-3"><Link href={preview} target="_blank" rel="noopener noreferrer" className={btn} onClick={()=>setOpened(true)}>{es?'Vista previa de esta versión':'Preview this version'}</Link><span className="font-mono text-xs text-muted-foreground">{state.fingerprint.slice(0,12)}</span></div>
   </section>
-  {canPublish&&state.current&&state.decision==='approved'&&<section className="space-y-3 rounded-lg border border-border bg-white p-4">
+  {canPublish&&state.current&&state.decision==='approved'&&!schedule&&<section className="space-y-3 rounded-lg border border-border bg-white p-4">
    <h2 className="font-semibold">{es?'Publicar versión aprobada':'Publish approved version'}</h2>
    <p className="text-sm text-muted-foreground">{es?'Se comprobará la aprobación vigente y los derechos de las imágenes antes de publicar.':'Current approval and image rights will be checked before publication.'}</p>
    <button type="button" className="rounded-md bg-primary px-4 py-2 text-sm font-semibold text-white disabled:opacity-50" disabled={busy||blocked} onClick={()=>void publish()}>{es?'Publicar':'Publish'}</button>
   </section>}
+  {scheduling&&<ReviewedSchedulePanel state={state} schedule={schedule} canManage={canSchedule} locale={locale}/>}
   {(state.canRequest||state.canDecide)&&<section className="space-y-3 rounded-lg border border-border bg-white p-4">
    <h2 className="font-semibold">{state.canRequest?(es?'Solicitar revisión':'Request review'):(es?'Decisión editorial':'Editorial decision')}</h2>
    {state.canRequest?<p className="text-sm text-muted-foreground">{es?'Se solicitará la revisión de la copia guardada. Los cambios posteriores invalidarán la solicitud.':'Review will be requested for the saved copy. Later changes will invalidate the request.'}</p>:

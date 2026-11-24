@@ -197,3 +197,7 @@ These are recommended starter presets and architecture, NOT yet an instruction t
 
 ### CT-06c.1 staged immediate publication gate
 [Draft PR #34](https://github.com/0445968/02022/pull/34): verified publisher current newsroom/access, story view/edit/publish and revision.view/publish where needed, latest independent exact current approval and current actual reviewer grant recheck, eligible media. Narrow private publisher transaction permit, direct live writes/taxonomy and legacy RPC denied, immutable publication event, no direct grants. Status-only archive permitted with existing verified authority. Scheduling fail closed pending CT06c.2; do not activate independently. Flag OFF, no live changes.
+
+
+### CT-06c.2 staged reviewed scheduling
+[Draft PR #35](https://github.com/0445968/02022/pull/35): current verified exact story view/edit/publish and story.schedule (revision.view/publish if revision) authorize future exact approved queue, cancel with current authority; current independent reviewer/actor/media revalidated at DB due time. Owner-only private bounded executor, no API role or caller clock/actor; no duplicate, blocked failures, cancel before manual publish. Separate queue preserves in_review source; CT08 status projection/calendar and actual job installation required. No legacy auto publication, flag OFF, no live changes.

@@ -445,6 +445,7 @@ export function StoryEditor({
   /* ======================================================= */
 
   const settingsProps = {
+    reviewedPublication,
     dict,
 
     locale,
