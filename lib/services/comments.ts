@@ -1,4 +1,7 @@
 import 'server-only';
+import {createClient as createSupabaseClient} from '@supabase/supabase-js';
+// Public reads must never inherit staff or reader-only RLS permissions.
+function createPublicCommentsClient(){return createSupabaseClient<Database>(process.env.NEXT_PUBLIC_SUPABASE_URL!,process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,{auth:{persistSession:false,autoRefreshToken:false,detectSessionInUrl:false},global:{fetch:(input,init)=>fetch(input,{...init,cache:'no-store'})}});}
 
 import type {
   CommentStatus,
@@ -147,7 +150,7 @@ async function getPublicProfiles(
   }
 
   const supabase =
-    await getDataClient();
+    createPublicCommentsClient();
 
   const {
     data,
@@ -324,7 +327,7 @@ export async function getPublicCommentsForStory(
     );
 
   const supabase =
-    await getDataClient();
+    createPublicCommentsClient();
 
   const {
     data,
@@ -341,7 +344,8 @@ export async function getPublicCommentsForStory(
         body,
         status,
         created_at,
-        updated_at
+        updated_at,
+        stories!inner(status,published_at)
       `,
       {
         count:
@@ -356,6 +360,8 @@ export async function getPublicCommentsForStory(
       'status',
       'published'
     )
+    .eq('stories.status','published')
+    .lte('stories.published_at',new Date().toISOString())
     .order(
       'created_at',
       {

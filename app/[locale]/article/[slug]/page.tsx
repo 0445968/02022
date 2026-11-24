@@ -51,6 +51,8 @@ import type {
   Locale,
 } from '@/types';
 
+// Article includes reader-specific controls and live moderated comments.
+export const dynamic='force-dynamic';
 interface PageProps {
   params: {
     locale: string;

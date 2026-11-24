@@ -7,6 +7,8 @@ import {resolveGlobalStaffPermissionsOnServer,resolveStoryStaffPermissionsOnServ
 import {DRAFT_UUID} from '@/lib/permissions/assigned-draft-contract';
 import {DraftHttpError} from '@/lib/permissions/assigned-draft-http';
 import {parseModerationPage,parseModerationDetail,type ModerationFilter,type ModerationCommand} from '@/lib/permissions/comment-moderation-contract';
+import {parseBulkResult,type BulkModerationCommand} from '@/lib/permissions/comment-bulk-contract';
+export function bulkModerationEnabled(){return commentModerationEnabled()&&process.env.CT_COMMENT_BULK_ENABLED==='true';}
 export function commentModerationEnabled(){return process.env.CT_STAFF_ACCESS_V2_ENABLED==='true'&&process.env.CT_COMMENT_MODERATION_ENABLED==='true'&&!isDevAuthBypass();}
 async function client(){
  if(!commentModerationEnabled())throw new DraftHttpError(404);
@@ -73,4 +75,12 @@ export async function changeCommentModeration(c:ModerationCommand){
  const {data,error}=await db.rpc('staff_change_comment_moderation',{p_comment:c.commentId,p_revision:c.revision,p_action:c.action,p_reason:c.reason,p_command:c.commandId});
  if(error)fail(error.code);
  try{return parseModerationDetail(data,c.commentId);}catch{throw new DraftHttpError(503);}
+}
+
+export async function changeBulkModeration(c:BulkModerationCommand){
+ if(!bulkModerationEnabled())throw new DraftHttpError(404);
+ const db=await client();
+ const {data,error}=await db.rpc('staff_bulk_comment_moderation',{p_action:c.action,p_reason:c.reason,p_items:c.items});
+ if(error)fail(error.code);
+ try{return parseBulkResult(data,c.items.length);}catch{throw new DraftHttpError(503);}
 }

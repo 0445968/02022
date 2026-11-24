@@ -19,6 +19,7 @@ import {
     getPublicCommentsForStory,
   } from '@/lib/services/comments';
   
+  export const dynamic='force-dynamic';
   const MAX_REQUEST_SIZE =
     20_000;
   
@@ -114,7 +115,7 @@ import {
         {
           headers: {
             'Cache-Control':
-              'public, max-age=0, s-maxage=30, stale-while-revalidate=60',
+              'private, no-store, max-age=0',
           },
         }
       );
