@@ -18,9 +18,10 @@ test('publisher original transactional body is byte-for-byte preserved after aut
   );
 });
 
-test('privileged RPC verifies actual Supabase caller and two independent current permissions',()=>{
+test('privileged RPC verifies actual Supabase caller and current edit and dual publishing permissions',()=>{
   assert.match(executable,/SELECT auth\.uid\(\) INTO v_authenticated_user_id/);
   assert.match(executable,/v_authenticated_user_id IS DISTINCT FROM p_user_id/);
+  assert.match(executable,/newsroom_private\.has_staff_permission\(\s*'story\.edit_all'/);
   assert.match(executable,/newsroom_private\.has_staff_permission\(\s*'story\.publish'/);
   assert.match(executable,/newsroom_private\.has_staff_permission\(\s*'revision\.publish'/);
   assert.doesNotMatch(executable,/v_is_editor|from public\.profiles/i);

@@ -40,7 +40,15 @@ BEGIN
   -- override rows and checks explicit DENY precedence. Using the helper
   -- as the definer does NOT permit an actor mismatch: the identity check
   -- above is mandatory and is separately regression-tested.
-  IF NOT newsroom_private.has_staff_permission(
+  IF NOT (
+       newsroom_private.has_staff_permission(
+         'story.edit_all'::public.staff_capability_key, p_story_id
+       )
+       OR newsroom_private.has_staff_permission(
+         'story.edit_assigned'::public.staff_capability_key, p_story_id
+       )
+     )
+     OR NOT newsroom_private.has_staff_permission(
        'story.publish'::public.staff_capability_key, p_story_id
      )
      OR NOT newsroom_private.has_staff_permission(
