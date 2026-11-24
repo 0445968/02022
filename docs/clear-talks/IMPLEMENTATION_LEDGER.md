@@ -21,7 +21,7 @@ Every code batch must update the row AND append an entry under Session log in th
 | CT-04 | Invited staff/freelancer onboarding and preset assignment | P0 | CT-02/03 | IN PROGRESS | CT-04a.1 [#19](https://github.com/0445968/02022/pull/19) verified token/input contract; CT-04a.2 [#20](https://github.com/0445968/02022/pull/20) staged database lifecycle + atomic redemption; CT-04a.3 [#21](https://github.com/0445968/02022/pull/21) gated invitation manager/redemption API/UI (all 13 checks green); CT-04b.1 [#22](https://github.com/0445968/02022/pull/22) private first-login profile (all 14 checks green); CT-04b.2 [#23](https://github.com/0445968/02022/pull/23) private byline review/association staged; public attribution integration CT-11 and real Auth/delivery QA pending |
 | CT-05 | Freelancer/contributor and staff-scoped newsroom | P0 | CT-02/04 | STAGED / CI VERIFIED | #24–29 all green; requested changes CT06, quota retention CT11 and real release QA remain |
 | CT-06 | Story assignment, collaboration and review workflow | P1 | CT-05 | STAGED / CI VERIFIED | #30–35 verified; CT08 scheduler activation/calendar/legacy reconciliation and real release QA remain |
-| CT-07 | Newsroom comments and moderation | P1 | CT-02 | IN PROGRESS | CT-07a #36 all 27 green; CT-07b [#37](https://github.com/0445968/02022/pull/37) bilingual queue UI staged; reports and bulk next |
+| CT-07 | Newsroom comments and moderation | P1 | CT-02 | IN PROGRESS | CT-07a #36 and CT-07b #37 verified; CT-07c.1 [#38](https://github.com/0445968/02022/pull/38) report foundation staged; report UI/reader reporting and bulk next |
 | CT-08 | Newsroom Schedule/editorial calendar | P1 | CT-02/06 | PLANNED | Missing route |
 | CT-09 | Newsroom Polls | P1 | CT-02 | PLANNED | Missing route |
 | CT-10 | Newsroom Profile and dashboard completion | P1 | CT-02/05 | PLANNED | Missing route |
@@ -397,3 +397,10 @@ Notes: CT-00 and CT-01 are the intended opening work in the next chat. CT-02 pre
 - EN/ES scoped sidebar/page, status/reported/story/search filters, pagination, current detail/history and reason/confirmation actions, revision CAS, conflict refresh and in-flight guard. Existing CT07a API only, no new migration, flag OFF. Assigned-only discovery bounded 100 assignments; report-only access CT07c. See CT07B_REVIEW.md.
 - Initial code `a85ed6188aa5f069ff6aae3ed7473d947d8e3325`: 26/26 existing PG workflows green, quality [#45478361969](https://github.com/0445968/02022/actions/runs/45478361969) in_progress at inspection. Follow-up `28f7c32ad96d542cee57af6425f2616d8714a5db` legacy nav gate, assignment discovery bound and in-flight navigation regression: 19/27 checks green, 0 failed, remaining pending. Recheck exact final HEAD CI.
 - Next CT07c audited report management; CT07d bulk/QA. No production changes.
+
+
+### CT-07c.1 — audited report foundation
+- IN PROGRESS, [draft PR #38](https://github.com/0445968/02022/pull/38), feature/ct07c1-report-foundation-2026-11-24. Parent #37 all 27 green, 192/192 tests.
+- CLI migration `20261124201656_ct07c_audited_reports.sql` unapplied; actual reported revision capture, legacy unknown, raw staff report policy removed, scoped private projection and immutable resolution audit, dual revision CAS, own-report/comment conflict denial, exact audited hide/remove event required for actioned. Report actions never mutate comment. Typed session API flag OFF. No mounted UI. See CT07C1_REVIEW.md.
+- Code `84f6fb0da3c8f6145fe46bd123e24ae94a66807a`: new PostgreSQL report suite [#45479393601](https://github.com/0445968/02022/actions/runs/45479393601) SUCCESS, actual CT02e/CT02k/CT07a fixtures inherited. At inspection 27/28 workflows green, 0 failed, remaining pending. Application [#45479393227](https://github.com/0445968/02022/actions/runs/45479393227) pending. Recheck exact final HEAD.
+- Next CT07c.2 report UI and reader reporting; CT07d bulk and QA. No production changes.
