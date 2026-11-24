@@ -1,3 +1,11 @@
+# CURRENT HANDOFF — CT-08c.1
+**NEXT CT-08c.2 explicit timezone/DST scheduling safeguards, then monitoring/operational pause and approval-gated provider activation.**
+- Draft PR #47, branch `feature/ct08c1-scheduler-reliability-2026-11-24`. Parent #46 final 7ae5c91203bb6836c9f0f9671ae6755a971287c3 all 33 workflows green; conflicts #45506808547 and app #45506808167.
+- Owner-only private executor now retries only deadlock (40P01) and lock-not-available/lock timeout (55P03), at 1/2/4-minute minimum intervals; fourth transient failure blocks. Original dueAt/approved fingerprint/actor remain unchanged, each retry revalidates exact current approval and permissions/media. Stale business 40001, revoked authority and other caught errors block immediately. Per-item rollback and skip-locked/advisory-lock safeguards preserved; 3-second function lock timeout and private retry metadata, aggregate retried count; query cancellation/transaction abort rolls back whole run. No job installed, no new grants, no UI scheduling promise or live changes.
+- CLI-generated `supabase/migrations/20261124230953_ct08c1_scheduler_reliability.sql` unapplied. Verify exact final HEAD CI and fix failures. Real concurrent locks, whole-transaction failure, provider/heartbeat, manual fallback/browser, combined migrations and advisors gates remain. Do not claim live automatic publication. No production SQL/flags/grants/accounts/email/deploy/main merge.
+
+---
+## Historical handoffs
 # CURRENT HANDOFF — CT-08b.2c
 **NEXT scheduler reliability, explicit timezone/DST safeguards and monitoring; no activation without approval.**
 - Draft PR #46, branch `feature/ct08b2c-cross-page-conflicts-2026-11-24`. Parent #45 final e871768567be85050ffbcfb32715b95952c72433: all 32 workflows green, including projection #45506023232 and app #45506023068.

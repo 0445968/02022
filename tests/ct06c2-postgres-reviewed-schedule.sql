@@ -126,6 +126,9 @@ commit;
 \if :{?ct08a_calendar}
 \i tests/ct08a-calendar-active-fixture.sql
 \endif
+\if :{?ct08c1_retry}
+\i tests/ct08c1-retry-active-fixture.sql
+\endif
 -- Explicit cancellation permits a current approved immediate publication
 -- after refactoring the common publisher; rollback retains the scheduled rows.
 begin;
