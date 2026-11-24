@@ -26,7 +26,7 @@ export default async function MediaPage() {
   );
   return (
     <>
-      {privateDraftsEnabled && (!access||access.privateMedia) && <PrivateDraftMediaPanel canReview={canReview}/>}
+      {privateDraftsEnabled && (!access||access.privateMedia) && <PrivateDraftMediaPanel canReview={canReview} locale={locale}/>}
       {(!access||access.fullMedia)&&<MediaLibrary dict={dict} userId={user.id} privateDraftsEnabled={privateDraftsEnabled}/>}
     </>
   );

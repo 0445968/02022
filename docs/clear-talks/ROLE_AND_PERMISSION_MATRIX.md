@@ -173,3 +173,7 @@ These are recommended starter presets and architecture, NOT yet an instruction t
 
 ### CT-05b.4 staged approved contributor inline media
 [Draft PR #28](https://github.com/0445968/02022/pull/28): exact current assigned view/edit and global media.upload, plus revision.view/edit_assigned for published source, allow safe approved image picker. No media.view_all grant or unrestricted base-table access. Only canonical cleared public asset nodes, no private URL, exact credit/caption/alt/asset ID/source and tagged revalidation on save/submit. Existing untagged legacy images preserved; new clones/forgery denied. Narrow draft/revision CAS invoker RPCs, direct assigned-only guards. No featured-image mutation or approval/promotion privilege; existing private upload/review workflow separate. Aggregate quota next and CT06 actual approval/publish gate; no live changes.
+
+
+### CT-05b.4b staged private media quota
+[Draft PR #29](https://github.com/0445968/02022/pull/29): actual newsroom.access and media.upload required, 25 immutable reserved paths per authenticated account, 10MiB file max (250MiB upper bound, not actual measured bytes). Standard JWT Storage upload only to reserved path, no private overwrite or signed upload URL creation; no new public media insert/update by limited staff, independent approval/edit_all needed. Existing reviewer promotion path remains. No automatic slot reclamation or reset; owner-configurable quota/retention CT11 release gate. No broad permission grants or live migration. CT06 review decisions and assignments next.

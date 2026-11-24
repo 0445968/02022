@@ -18,3 +18,7 @@ The inline attachment milestone is staged; original master CT05 also requires up
 
 ## Test fixture correction
 Follow-up verification: code `4c919f561c8d0d421d9ce0ac467a1183b874ae99` application quality [#45444585206](https://github.com/0445968/02022/actions/runs/45444585206) SUCCESS, 169/169 Node tests, TypeScript, ESLint and build. 17/18 PG workflows passed; new media fixture #45444584827 failed solely at the new denial fixture's dollar-quote delimiter (single dollar instead of double). Test-only commit `432681580962d1b5e4c98fb599ca00836d3ca315` restores the exact delimiters, retains all assertions, and changes no production code. At inspection 0/19 workflows confirmed green on corrected test commit, 0 failed; remaining checks pending. Recheck final PR HEAD before proceeding; no claim of full verification until green.
+
+
+## Final CI verification
+PR #28 final `6f87bd426e70003e1d592a7d29ed2520a19c3589`: all 19 workflows SUCCESS, 169/169 tests, TypeScript, ESLint and build [#45444988313](https://github.com/0445968/02022/actions/runs/45444988313), final approved media suite [#45444988489](https://github.com/0445968/02022/actions/runs/45444988489). No hosted changes.

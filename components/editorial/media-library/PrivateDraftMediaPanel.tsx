@@ -1,5 +1,7 @@
 'use client';
 import { useCallback, useEffect, useState } from 'react';
+import type {PrivateUploadQuota} from '@/lib/permissions/private-upload-quota';
+import type {Locale} from '@/types';
 import { CheckCircle2, Eye, RefreshCw, UploadCloud, XCircle } from 'lucide-react';
 
 type Review={reviewedBy:string|null;rightsNotes:string|null;licenseName:string|null;credit:string|null;licenseExpiresAt:string|null};
@@ -13,7 +15,9 @@ const choices=[['owned','Owned'],['staff_created','Staff-created'],['licensed','
 const field='w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground';
 const button='inline-flex items-center gap-2 rounded-lg border border-border px-3 py-2 text-sm text-foreground disabled:opacity-50';
 
-export function PrivateDraftMediaPanel({canReview}:{canReview:boolean}){
+export function PrivateDraftMediaPanel({canReview,locale='en'}:{canReview:boolean;locale?:Locale}){
+  const es=locale==='es';
+  const [quota,setQuota]=useState<PrivateUploadQuota|null>(null);
   const [drafts,setDrafts]=useState<Draft[]>([]);
   const [file,setFile]=useState<File|null>(null);
   const [selected,setSelected]=useState<string|null>(null);
@@ -31,9 +35,9 @@ export function PrivateDraftMediaPanel({canReview}:{canReview:boolean}){
 
   const refresh=useCallback(async()=>{
     const response=await fetch('/api/media/drafts',{cache:'no-store'});
-    const data=await response.json() as {drafts?:Draft[];error?:string};
+    const data=await response.json() as {drafts?:Draft[];quota?:PrivateUploadQuota|null;error?:string};
     if(!response.ok)throw new Error(data.error??'Unable to list drafts');
-    setDrafts(data.drafts??[]);
+    setDrafts(data.drafts??[]);setQuota(data.quota??null);
   },[]);
   useEffect(()=>{
     let active=true;
@@ -42,7 +46,7 @@ export function PrivateDraftMediaPanel({canReview}:{canReview:boolean}){
   },[refresh]);
 
   async function upload(){
-    if(!file)return;
+    if(!file||!quota||quota.remainingSlots===0||file.size>quota.maxFileBytes)return;
     setBusy(true);setError(null);setNotice(null);
     try{
       const form=new FormData();form.append('file',file);
@@ -50,7 +54,7 @@ export function PrivateDraftMediaPanel({canReview}:{canReview:boolean}){
       const data=await response.json() as {error?:string};
       if(!response.ok)throw new Error(data.error??'Upload failed');
       await refresh();setFile(null);setNotice('Media uploaded privately for review.');
-    }catch(e){setError(e instanceof Error?e.message:'Upload failed');}
+    }catch(e){setError(e instanceof Error?e.message:'Upload failed');await refresh().catch(()=>setQuota(null));}
     finally{setBusy(false);}
   }
   async function preview(id:string){
@@ -100,11 +104,17 @@ export function PrivateDraftMediaPanel({canReview}:{canReview:boolean}){
         <RefreshCw size={16}/> Refresh
       </button>
     </div>
+    {quota&&<div className="mb-4 rounded-lg border border-border p-3 text-sm">
+      <div className="flex flex-wrap justify-between gap-2"><strong>{es?'Cupo de cargas privadas':'Private upload allowance'}</strong><span>{quota.usedSlots} / {quota.maxSlots}</span></div>
+      <div className="mt-2 h-2 overflow-hidden rounded-full bg-surface-muted"><div className="h-full bg-primary" style={{width:(quota.usedSlots/quota.maxSlots*100)+'%'}}/></div>
+      <p className="mt-2 text-xs text-muted-foreground">{es?`${quota.remainingSlots} cargas disponibles. Máximo 10 MiB por archivo. Las reservas y los originales retenidos cuentan para el cupo.`:`${quota.remainingSlots} uploads remaining. Maximum 10 MiB per file. Reserved paths and retained originals count toward the allowance.`}</p>
+      {quota.remainingSlots===0&&<p role="status" className="mt-2 text-xs">{es?'Cupo agotado. Solicite una revisión del almacenamiento.':'Allowance exhausted. Request a storage review.'}</p>}
+    </div>}
     <div className="mb-4 flex flex-wrap items-center gap-3">
       <label htmlFor="ct-private-upload" className="text-sm">Private image</label>
       <input id="ct-private-upload" type="file" accept="image/jpeg,image/png,image/webp,image/gif,image/avif"
         className="max-w-full text-sm" onChange={e=>setFile(e.target.files?.[0]??null)}/>
-      <button type="button" className={button} disabled={!file||busy} onClick={()=>void upload()}>
+      <button type="button" className={button} disabled={!file||busy||!quota||quota.remainingSlots===0||file.size>quota.maxFileBytes} onClick={()=>void upload()}>
         <UploadCloud size={16}/> Upload privately
       </button>
     </div>
