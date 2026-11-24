@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 
 import { getCurrentUser } from '@/lib/auth/session';
 import { mayUploadMedia } from '@/lib/permissions/media-route-gates';
+import { privateDraftMediaEnabled } from '@/lib/permissions/private-draft-media';
 import { getDataClient } from '@/lib/db/supabase-data-access';
 
 import {
@@ -336,6 +337,15 @@ function buildStoragePath(
 export async function POST(
   request: Request
 ) {
+  // Fail closed once private drafts are enabled: never silently upload
+  // unpublished files to the existing PUBLIC bucket by using this endpoint.
+  if (privateDraftMediaEnabled()) {
+    return NextResponse.json(
+      {error:'Use private draft upload flow; public upload is disabled'},
+      {status:409}
+    );
+  }
+
   const user =
     await getCurrentUser();
 
