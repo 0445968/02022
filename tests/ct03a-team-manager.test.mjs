@@ -60,7 +60,9 @@ test('team navigation disappears when staff v2 flag is off or viewer lacks team.
   assert.match(policy,/if\(viewTeam\)nav\.push\('team'\)/);
   assert.match(layout,/scopedNewsroomEnabled\(\)\?await getWorkspaceAccess\(\):null/);
   assert.match(layout,/const showTeamNav = scoped\?\.viewTeam\?\?false/);
-  assert.match(layout,/showTeamNav=\{showTeamNav\} scopedNav=\{scoped\?\.nav\}/);
+  assert.match(layout,/showTeamNav=\{showTeamNav\}/);
+  assert.match(layout,/scopedNav=\{scoped&&reviewInboxEnabled\(\)\?\[\.\.\.scoped\.nav,'reviewInbox'\]:scoped\?\.nav\}/);
+  assert.doesNotMatch(layout,/scoped\.nav,'team'/);
   assert.match(sidebar,/item\.key!=='team'\|\|showTeamNav/);
   assert.match(sidebar,/href: '\/newsroom\/team'/);
 });

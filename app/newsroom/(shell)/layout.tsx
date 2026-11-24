@@ -1,3 +1,4 @@
+import {reviewInboxEnabled} from '@/lib/services/review-inbox';
 import { redirect } from 'next/navigation';
 import { getCurrentUser } from '@/lib/auth/session';
 import { mayEnterNewsroom } from '@/lib/permissions/staff-route-gates';
@@ -45,7 +46,7 @@ export default async function NewsroomLayout({
   dict={dict}
   locale={locale}
   user={user}
-  showTeamNav={showTeamNav} scopedNav={scoped?.nav}
+  showTeamNav={showTeamNav} scopedNav={scoped&&reviewInboxEnabled()?[...scoped.nav,'reviewInbox']:scoped?.nav}
   staffName={onboarding?.profile?.displayName} staffRoles={onboarding?.roles.map(r=>locale==='es'?r.nameEs:r.nameEn).join(' · ')}
 >
   {children}
