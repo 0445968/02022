@@ -19,7 +19,7 @@ export default async function NewsroomDashboard() {
   }
   const locale = onboarding?.profile?.locale??user?.profile?.preferredLocale??defaultLocale;
   const dict = getDictionary(locale);
-  const roleLabel = resolveRoleLabel(user);
+  const roleLabel = scopedNewsroomEnabled()?null:resolveRoleLabel(user);
   const access=scopedNewsroomEnabled()?await getWorkspaceAccess():null;
   if(access&&!access.allowed)redirect('/newsroom/denied');
   if(access&&!access.viewStories)redirect('/newsroom/contributor');
@@ -83,7 +83,7 @@ export default async function NewsroomDashboard() {
               {dict.auth.name}
             </dt>
             <dd className="mt-1 text-sm font-medium text-foreground">
-              {onboarding?.profile?.displayName ?? user?.profile?.name ?? '—'}
+              {access?(onboarding?.profile?.displayName??'—'):(user?.profile?.name??'—')}
             </dd>
           </div>
           <div>
@@ -91,7 +91,7 @@ export default async function NewsroomDashboard() {
               {dict.account.role}
             </dt>
             <dd className="mt-1 text-sm font-medium text-foreground">
-              {onboarding?onboarding.roles.map(role=>locale==='es'?role.nameEs:role.nameEn).join(' · ')||'—':dict.account[
+              {access?onboarding?.roles.map(role=>locale==='es'?role.nameEs:role.nameEn).join(' · ')||'—':dict.account[
                 roleLabel === 'author-editor'
                   ? 'roleAuthorEditor'
                   : roleLabel === 'author'
@@ -107,7 +107,7 @@ export default async function NewsroomDashboard() {
               {dict.account.editorialTitle}
             </dt>
             <dd className="mt-1 text-sm font-medium text-foreground">
-              {onboarding?'—':user?.profile?.editorialTitle ?? '—'}
+              {access?'—':user?.profile?.editorialTitle ?? '—'}
             </dd>
           </div>
         </dl>

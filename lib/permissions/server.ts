@@ -184,7 +184,7 @@ export async function resolveStaffPermissionOnServer(
 /** Batch global capability decisions from one fresh, user-session RLS snapshot.
  * Resource-scoped capabilities are deliberately not satisfied by this reader.
  * No service key, role-name defaults or client-supplied grants. */
-export async function resolveGlobalStaffPermissionsOnServer(keys:readonly string[]):Promise<Set<string>>{
+async function resolveWorkspacePermissions(keys:readonly string[],storyId?:string):Promise<Set<string>>{
   const allowed=new Set<string>();
   if(process.env.CT_STAFF_ACCESS_V2_ENABLED!=='true'||process.env.DEV_AUTH_BYPASS==='true')return allowed;
   try{
@@ -219,8 +219,24 @@ export async function resolveGlobalStaffPermissionsOnServer(keys:readonly string
     }
     const snapshot:MembershipSnapshot={id:member.id,authUserId:member.auth_user_id,status:member.status,
       expiresAt:member.expires_at,roleGrants,overrides};
+    let resource:ResourceContext|undefined;
+    if(storyId!==undefined){
+      const {data,error}=await client.from('staff_story_assignments').select('id')
+        .eq('membership_id',member.id).eq('story_id',storyId).eq('status','active').limit(1);
+      if(error)return allowed;
+      resource={kind:'story',assignedMembershipIds:data?.length?[member.id]:[]};
+    }
     const now=new Date();
-    for(const key of keys)if(key!=='reader.personal'&&resolveEffectivePermission({userId:user.id},snapshot,key,undefined,now).allowed)allowed.add(key);
+    for(const key of keys)if(key!=='reader.personal'&&resolveEffectivePermission({userId:user.id},snapshot,key,resource,now).allowed)allowed.add(key);
     return allowed;
   }catch{return new Set();}
+}
+
+/** Global navigation never manufactures a resource to satisfy assigned/own scope. */
+export function resolveGlobalStaffPermissionsOnServer(keys:readonly string[]):Promise<Set<string>>{
+  return resolveWorkspacePermissions(keys);
+}
+/** Exact story permission checks; assignment state comes only from the database. */
+export function resolveStoryStaffPermissionsOnServer(storyId:string,keys:readonly string[]):Promise<Set<string>>{
+  return resolveWorkspacePermissions(keys,storyId);
 }

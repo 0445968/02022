@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import {getWorkspaceAccess,scopedNewsroomEnabled,mayViewWorkspaceStory,newsroomLocale} from '@/lib/services/newsroom-workspace';
+import {getWorkspaceAccess,scopedNewsroomEnabled,mayViewWorkspaceStory,newsroomLocale,mayMountFullStoryEditor} from '@/lib/services/newsroom-workspace';
 import {resolveStaffPermissionOnServer} from '@/lib/permissions/server';
 import {
   notFound,
@@ -88,6 +88,7 @@ export default async function PreviewPage({
   const scoped=scopedNewsroomEnabled();
   if(scoped&&!(await mayViewWorkspaceStory(params.id)))notFound();
   const access=scoped?await getWorkspaceAccess():null;
+  const canMountEditor=!scoped||await mayMountFullStoryEditor(params.id);
   const locale=await newsroomLocale(user);
 
   const dict =
@@ -259,7 +260,7 @@ export default async function PreviewPage({
   // Links
   // ==================================================
 
-  const editorHref = access&&!access.fullEditor?access.landing:`/newsroom/stories/${liveStory.id}/edit`;
+  const editorHref = access&&!canMountEditor?access.landing:`/newsroom/stories/${liveStory.id}/edit`;
 
   const storiesHref = access&&!access.viewStories?'/newsroom/contributor':'/newsroom/stories';
 
@@ -366,7 +367,7 @@ export default async function PreviewPage({
                 aria-hidden
               />
 
-              {access&&!access.fullEditor?(locale==='es'?'Volver al espacio de trabajo':'Back to workspace'):(locale==='es'?'Volver al editor':'Back to editor')}
+              {access&&!canMountEditor?(locale==='es'?'Volver al espacio de trabajo':'Back to workspace'):(locale==='es'?'Volver al editor':'Back to editor')}
             </Link>
 
             <div

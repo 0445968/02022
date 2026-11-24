@@ -1,7 +1,6 @@
 import { redirect } from 'next/navigation';
 import { getCurrentUser } from '@/lib/auth/session';
 import { mayEnterNewsroom } from '@/lib/permissions/staff-route-gates';
-import { resolveStaffPermissionOnServer } from '@/lib/permissions/server';
 import { getDictionary } from '@/lib/i18n/dictionaries';
 import { defaultLocale } from '@/lib/i18n/config';
 import {getWorkspaceAccess,scopedNewsroomEnabled,readWorkspaceOnboarding} from '@/lib/services/newsroom-workspace';
@@ -29,19 +28,17 @@ export default async function NewsroomLayout({
     redirect('/en/auth/sign-in?next=%2Fnewsroom');
   }
 
-  if (!(await mayEnterNewsroom(user))) {
+  const scoped=scopedNewsroomEnabled()?await getWorkspaceAccess():null;
+  if(scoped?!scoped.allowed:!(await mayEnterNewsroom(user))) {
     // Signed in but lacks staff role — send to access-denied page.
     redirect('/newsroom/denied');
   }
 
   let locale = user.profile?.preferredLocale ?? defaultLocale;
-  const scoped=scopedNewsroomEnabled()?await getWorkspaceAccess():null;
-  if(scoped&&!scoped.allowed)redirect('/newsroom/denied');
   const onboarding=scoped?await readWorkspaceOnboarding():null;
   locale=onboarding?.profile?.locale??locale;
   const dict = getDictionary(locale);
-  const showTeamNav = process.env.CT_STAFF_ACCESS_V2_ENABLED === 'true'
-    && (await resolveStaffPermissionOnServer('team.view')).allowed;
+  const showTeamNav = scoped?.viewTeam??false;
 
   return (
     <NewsroomShell

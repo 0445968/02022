@@ -85,6 +85,7 @@ export default async function StoriesPage({ searchParams }: PageProps) {
       <StoriesDashboard
         dict={dict}
         canEdit={!access||access.fullEditor}
+        canCreate={!access||access.createStory}
         stories={storiesResult.items}
         page={storiesResult.page}
         totalPages={storiesResult.totalPages}

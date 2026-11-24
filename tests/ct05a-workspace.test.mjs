@@ -45,3 +45,12 @@ test('CT05a page guards execute before privileged loaders; assignment list is ow
  assert.doesNotMatch(s,/SUPABASE_SERVICE_ROLE_KEY|user_metadata/);
  assert.match(file('app/newsroom/(shell)/page.tsx'),/if\(access&&!access.viewStories\)redirect\('\/newsroom\/contributor'\)/);
 });
+
+test('CT05a scoped per-story denies are checked before rich editor and preview',()=>{
+ const s=file('lib/services/newsroom-workspace.ts');
+ assert.match(s,/resolveStoryStaffPermissionsOnServer\(storyId,\['story.view_all','story.view_assigned'\]\)/);
+ assert.match(s,/keys.every\(key=>grants.has\(key\)\)/);
+ const e=file('app/newsroom/(shell)/stories/[id]/edit/page.tsx');
+ assert.ok(e.indexOf('await mayMountFullStoryEditor(params.id)')<e.indexOf('await getStoryForEditing('));
+ assert.match(file('components/editorial/stories-dashboard.tsx'),/\{canCreate&&<><p/);
+});

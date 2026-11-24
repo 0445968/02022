@@ -4,7 +4,7 @@ import {redirect} from 'next/navigation';
 import type {SupabaseClient} from '@supabase/supabase-js';
 import {createClient} from '@/lib/db/supabase-server';
 import {isDevAuthBypass} from '@/lib/db/supabase-data';
-import {resolveStaffPermissionOnServer,resolveGlobalStaffPermissionsOnServer} from '@/lib/permissions/server';
+import {resolveStaffPermissionOnServer,resolveGlobalStaffPermissionsOnServer,resolveStoryStaffPermissionsOnServer} from '@/lib/permissions/server';
 import {buildWorkspaceAccess,WORKSPACE_CAPABILITIES,type WorkspaceAccess} from '@/lib/permissions/workspace-policy';
 import {privateDraftMediaEnabled} from '@/lib/permissions/private-draft-media';
 import {staffOnboardingEnabled,readStaffOnboarding} from '@/lib/services/staff-onboarding';
@@ -35,8 +35,8 @@ export async function mayViewWorkspaceStory(storyId:string):Promise<boolean>{
   if(!scopedNewsroomEnabled()||isDevAuthBypass())return false;
   const access=await getWorkspaceAccess();
   if(!access.allowed)return false;
-  if(access.viewStories)return true;
-  return (await resolveStaffPermissionOnServer('story.view_assigned',{kind:'story',storyId})).allowed;
+  const grants=await resolveStoryStaffPermissionsOnServer(storyId,['story.view_all','story.view_assigned']);
+  return grants.has('story.view_all')||grants.has('story.view_assigned');
 }
 export type AssignedWorkspaceStory={id:string;headline:string;status:string;language:string;dueAt:string|null;assignmentTypes:string[];canPreview:boolean};
 /** Only own active assignments, verified principal and per-story capability.
@@ -77,4 +77,15 @@ export async function readAssignedWorkspace(page:number):Promise<{items:Assigned
     }));
     return {items:visible.filter((r):r is AssignedWorkspaceStory=>r!==null),hasMore:assignments.length>25&&page<100,unavailable:false};
   }catch{return unavailable;}
+}
+
+/** A scoped deny can invalidate a globally granted capability on this exact story.
+ * Do not mount the legacy editor unless every control it exposes is permitted. */
+export async function mayMountFullStoryEditor(storyId:string):Promise<boolean>{
+  const access=await getWorkspaceAccess();
+  if(!access.allowed||!access.fullEditor)return false;
+  const keys=['story.view_all','story.edit_all','story.assign','story.publish','story.schedule','story.archive_delete',
+    'story.submit_review','story.review','revision.view','revision.publish','revision.discard'];
+  const grants=await resolveStoryStaffPermissionsOnServer(storyId,keys);
+  return keys.every(key=>grants.has(key));
 }

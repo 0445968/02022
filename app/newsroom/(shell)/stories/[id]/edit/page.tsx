@@ -1,4 +1,4 @@
-import {requireWorkspacePage,scopedNewsroomEnabled,newsroomLocale} from '@/lib/services/newsroom-workspace';
+import {requireWorkspacePage,scopedNewsroomEnabled,newsroomLocale,mayMountFullStoryEditor} from '@/lib/services/newsroom-workspace';
 import { notFound, redirect } from 'next/navigation';
 import { getCurrentUser } from '@/lib/auth/session';
 import { getDictionary } from '@/lib/i18n/dictionaries';
@@ -16,6 +16,7 @@ interface PageProps {
 export default async function EditStoryPage({ params }: PageProps) {
   await requireWorkspacePage('fullEditor');
   const scoped=scopedNewsroomEnabled();
+  if(scoped&&!(await mayMountFullStoryEditor(params.id)))notFound();
   const user = await getCurrentUser();
   const locale = await newsroomLocale(user);
   const dict = getDictionary(locale);
