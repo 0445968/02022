@@ -4,7 +4,7 @@ import Link from 'next/link';
 import type {Locale} from '@/types';
 import {parseReviewState,type ReviewState,type ReviewAction} from '@/lib/permissions/story-review-contract';
 const btn='rounded-md border border-border bg-white px-3 py-2 text-sm font-medium hover:bg-surface-muted disabled:opacity-50';
-export function StoryReviewPanel({initial,locale,backHref,canEdit}:{initial:ReviewState;locale:Locale;backHref:string;canEdit:boolean}){
+export function StoryReviewPanel({initial,locale,backHref,canEdit,canPublish=false}:{initial:ReviewState;locale:Locale;backHref:string;canEdit:boolean;canPublish?:boolean}){
  const es=locale==='es';
  const [state,setState]=useState(initial),[note,setNote]=useState(''),[action,setAction]=useState<ReviewAction>('approve');
  const [confirmed,setConfirmed]=useState(false),[opened,setOpened]=useState(false),[busy,setBusy]=useState(false),[blocked,setBlocked]=useState(false);
@@ -41,6 +41,19 @@ export function StoryReviewPanel({initial,locale,backHref,canEdit}:{initial:Revi
   }catch{setBlocked(true);setError(es?'Resultado incierto. Actualice antes de reintentar.':'Uncertain result. Refresh before retrying.');}
   finally{inFlight.current=false;setBusy(false);}
  }
+ async function publish(){
+  if(inFlight.current||busy||blocked||!canPublish||!state.current||state.decision!=='approved'||!state.requestId)return;
+  if(!window.confirm(es?'¿Publicar exactamente esta versión aprobada?':'Publish this exact approved version?'))return;
+  inFlight.current=true;setBusy(true);setError('');setNotice('');
+  try{
+   const res=await fetch('/api/newsroom/stories/'+state.storyId+'/publish-reviewed',{method:'POST',cache:'no-store',headers:{'Content-Type':'application/json'},body:JSON.stringify({kind:state.kind,requestId:state.requestId,fingerprint:state.fingerprint})});
+   if(!res.ok){setBlocked(true);setError(res.status===422?(es?'Revise los derechos y créditos de las imágenes.':'Check image eligibility and credits.'):(es?'No se pudo publicar. Actualice y compruebe la aprobación vigente.':'Publication denied or uncertain. Refresh and check current approval.'));return;}
+   const result=await res.json();
+   if(result.storyId!==state.storyId||result.requestId!==state.requestId||result.status!=='published')throw Error();
+   window.location.assign('/newsroom/stories/'+state.storyId+'/preview');
+  }catch{setBlocked(true);setError(es?'Resultado incierto. Compruebe el artículo antes de reintentar.':'Uncertain result. Check the article before retrying.');}
+  finally{inFlight.current=false;setBusy(false);}
+ }
  const date=(v:string|null)=>v?new Date(v).toLocaleString(es?'es':'en'):'—';
  return <div className="mx-auto max-w-4xl space-y-5 px-6 py-8">
   <header className="flex flex-wrap justify-between gap-3 border-b border-border pb-4">
@@ -56,6 +69,11 @@ export function StoryReviewPanel({initial,locale,backHref,canEdit}:{initial:Revi
    {!state.current&&state.requestId&&<p className="text-sm text-muted-foreground">{es?'La solicitud anterior ya no corresponde a la copia actual. Consulte el historial.':'The previous request no longer applies to the current copy. See history.'}</p>}
    <div className="flex flex-wrap items-center gap-3"><Link href={preview} target="_blank" rel="noopener noreferrer" className={btn} onClick={()=>setOpened(true)}>{es?'Vista previa de esta versión':'Preview this version'}</Link><span className="font-mono text-xs text-muted-foreground">{state.fingerprint.slice(0,12)}</span></div>
   </section>
+  {canPublish&&state.current&&state.decision==='approved'&&<section className="space-y-3 rounded-lg border border-border bg-white p-4">
+   <h2 className="font-semibold">{es?'Publicar versión aprobada':'Publish approved version'}</h2>
+   <p className="text-sm text-muted-foreground">{es?'Se comprobará la aprobación vigente y los derechos de las imágenes antes de publicar.':'Current approval and image rights will be checked before publication.'}</p>
+   <button type="button" className="rounded-md bg-primary px-4 py-2 text-sm font-semibold text-white disabled:opacity-50" disabled={busy||blocked} onClick={()=>void publish()}>{es?'Publicar':'Publish'}</button>
+  </section>}
   {(state.canRequest||state.canDecide)&&<section className="space-y-3 rounded-lg border border-border bg-white p-4">
    <h2 className="font-semibold">{state.canRequest?(es?'Solicitar revisión':'Request review'):(es?'Decisión editorial':'Editorial decision')}</h2>
    {state.canRequest?<p className="text-sm text-muted-foreground">{es?'Se solicitará la revisión de la copia guardada. Los cambios posteriores invalidarán la solicitud.':'Review will be requested for the saved copy. Later changes will invalidate the request.'}</p>:

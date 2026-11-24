@@ -193,3 +193,7 @@ These are recommended starter presets and architecture, NOT yet an instruction t
 
 ### CT-06b.2b staged review inbox / feedback
 [Draft PR #33](https://github.com/0445968/02022/pull/33): current verified newsroom access; pending exact independent story.review and view, revision.view as appropriate, latest current undecided request only. Feedback original requester only and current submit/edit/view + existing working copy; private self-only idempotent read acknowledgement, no raw table grants or other-recipient data. Flag OFF, no push/email/global count. CT06c mandatory approval/media gate next.
+
+
+### CT-06c.1 staged immediate publication gate
+[Draft PR #34](https://github.com/0445968/02022/pull/34): verified publisher current newsroom/access, story view/edit/publish and revision.view/publish where needed, latest independent exact current approval and current actual reviewer grant recheck, eligible media. Narrow private publisher transaction permit, direct live writes/taxonomy and legacy RPC denied, immutable publication event, no direct grants. Status-only archive permitted with existing verified authority. Scheduling fail closed pending CT06c.2; do not activate independently. Flag OFF, no live changes.

@@ -19,6 +19,7 @@ import {
     publishStoryRevision,
   } from '@/lib/services/story-revisions';
   
+  import {reviewedPublicationEnabled} from '@/lib/services/reviewed-publication';
   interface RouteContext {
     params: {
       id: string;
@@ -128,6 +129,7 @@ import {
       );
     }
   
+    if(reviewedPublicationEnabled())return NextResponse.json({error:'Use the reviewed publication workflow.'},{status:409});
     try {
       await publishStoryRevision(
         params.id,
