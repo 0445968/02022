@@ -35,3 +35,10 @@ test('reports require independent current manager grant and audited actor',()=>{
   assert.match(sql,/s\.status='published'/);
   assert.match(sql,/old\.status in \('dismissed','actioned'\)/);
 });
+
+test('reader bookmark routes reject simulated DEV_AUTH_BYPASS identities for GET/POST/DELETE',()=>{
+  const source=read('app/api/bookmarks/stories/[storyId]/route.ts');
+  assert.match(source,/isDevAuthBypass/);
+  assert.equal((source.match(/if \(isDevAuthBypass\(\)\)/g) ?? []).length,3);
+  assert.match(source,/Reader authentication is required/);
+});
