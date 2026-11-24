@@ -73,6 +73,8 @@ interface RichTextEditorProps {
   dict: Dictionary;
 
   userId: string;
+  allowMedia?:boolean;
+  editable?:boolean;
 }
 
 /* ========================================================= */
@@ -84,7 +86,7 @@ export function RichTextEditor({
   onChange,
   placeholder,
   dict,
-  userId,
+  userId,allowMedia=true,editable=true,
 }: RichTextEditorProps) {
   const [
     mediaPickerOpen,
@@ -119,6 +121,7 @@ export function RichTextEditor({
 
   const editor =
     useEditor({
+      editable,
       extensions: [
         StarterKit.configure({
           heading: {
@@ -213,6 +216,8 @@ export function RichTextEditor({
   /* ======================================================= */
   /* EXTERNAL CONTENT SYNC */
   /* ======================================================= */
+
+  useEffect(()=>{editor?.setEditable(editable);},[editor,editable]);
 
   useEffect(() => {
     if (!editor) {
@@ -332,6 +337,7 @@ export function RichTextEditor({
   /* ======================================================= */
 
   function openImagePicker() {
+    if(!allowMedia||!editable)return;
     imageInsertPositionRef.current =
       ed.state.selection.from;
 
@@ -500,14 +506,15 @@ export function RichTextEditor({
       >
         {/* Formatting toolbar */}
 
-        <StoryEditorToolbar
+        {editable&&<StoryEditorToolbar
+          allowMedia={allowMedia}
           editor={ed}
           dict={dict}
           onSetLink={setLink}
           onOpenImagePicker={
             openImagePicker
           }
-        />
+        />}
 
         {/* Article body */}
 
@@ -787,7 +794,7 @@ export function RichTextEditor({
 
       {/* Media Library */}
 
-      {mediaPickerOpen && (
+      {allowMedia&&editable&&mediaPickerOpen && (
         <MediaPicker
           dict={dict}
           userId={userId}
@@ -812,7 +819,7 @@ export function RichTextEditor({
 
       {/* Image metadata modal */}
 
-      {selectedImage && (
+      {allowMedia&&editable&&selectedImage && (
         <div
           className="
             fixed

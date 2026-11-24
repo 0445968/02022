@@ -38,7 +38,7 @@ export async function mayViewWorkspaceStory(storyId:string):Promise<boolean>{
   const grants=await resolveStoryStaffPermissionsOnServer(storyId,['story.view_all','story.view_assigned']);
   return grants.has('story.view_all')||grants.has('story.view_assigned');
 }
-export type AssignedWorkspaceStory={id:string;headline:string;status:string;language:string;dueAt:string|null;assignmentTypes:string[];canPreview:boolean};
+export type AssignedWorkspaceStory={id:string;headline:string;status:string;language:string;dueAt:string|null;assignmentTypes:string[];canPreview:boolean;canEditDraft:boolean};
 /** Only own active assignments, verified principal and per-story capability.
  * Never use the public stories list or unscoped counts as contributor work.
  * Fetch bounded rows, then individually verify story access before reading title.
@@ -72,8 +72,10 @@ export async function readAssignedWorkspace(page:number):Promise<{items:Assigned
       if(!(await resolveStaffPermissionOnServer('story.view_assigned',{kind:'story',storyId:id})).allowed)return null;
       const {data:story,error:storyError}=await db.from('stories').select('id,headline,status,language').eq('id',id).maybeSingle();
       if(storyError||!story)return null;
+      const canEditDraft=process.env.CT_ASSIGNED_DRAFT_EDITOR_ENABLED==='true'&&story.status==='draft'&&
+        (await resolveStaffPermissionOnServer('story.edit_assigned',{kind:'story',storyId:id})).allowed;
       return {id:story.id,headline:story.headline,status:story.status,language:story.language,
-        dueAt:a.dueAt,assignmentTypes:a.types,canPreview:true} as AssignedWorkspaceStory;
+        dueAt:a.dueAt,assignmentTypes:a.types,canPreview:true,canEditDraft} as AssignedWorkspaceStory;
     }));
     return {items:visible.filter((r):r is AssignedWorkspaceStory=>r!==null),hasMore:assignments.length>25&&page<100,unavailable:false};
   }catch{return unavailable;}
