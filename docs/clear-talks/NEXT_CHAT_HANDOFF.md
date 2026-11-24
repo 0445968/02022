@@ -1,3 +1,26 @@
+# CURRENT HANDOFF — CT-03c (2026-11-23 America/Chicago)
+**CT-03c staged role preset capability matrix code/isolated security tests, draft PR #18; NOT MERGED OR DEPLOYED.** CT-02 live security cutover remains blocked.
+
+## Verified branch/PR inheritance
+- GitHub repo `0445968/02022`; protected live `main=f5c0140fb2db165e43303a064f7bc15b765d4505` unchanged. Stacked drafts: Plan #2 / CI #3 / story table #4 / CT-02a–k #5–#15 / CT-03a #16 / CT-03b #17 / **CT-03c [draft PR #18](https://github.com/0445968/02022/pull/18)**.
+- Current branch `feature/ct03c-role-preset-editor-2026-11-23`, parent CT-03b final SHA `bc03e669d14798f1b75f0351caa4a3239eb4c946`.
+- **UNAPPLIED migration** `supabase/migrations/20261124034804_ct03c_role_grant_editor.sql` filename from Supabase CLI v3.2.0 [run #45321966824](https://github.com/0445968/02022/actions/runs/45321966824); owner role preset read-only, no initial owner/grants seeded. Depends on unapplied CT-02b/c and audited tables.
+- SQL role-ceiling policy limits each newsroom staff preset to reviewed capability/scope pairs. No `team.*`, security, personal-reader or byline.manage privilege via preset editor; owner role immutable. Independent DB Owner check + advisory lock + optimistic revision/CAS + full atomic grant replacement + original CT-02c audit trigger. Service-only security invoker RPC; anon/authenticated cannot call.
+- `lib/permissions/staff-preset-input.ts`, `lib/services/staff-preset-admin.ts`, `app/api/newsroom/team/preset-change/route.ts`: cookie-bound verified real Auth, live `team.manage_roles`, same-origin JSON, strict confirmation, reason and approved capability ceiling, stale 409 conflict. **All three flags must be ON only after approval** (`CT_STAFF_ACCESS_V2_ENABLED`, `CT_STAFF_ADMIN_MUTATIONS_ENABLED`, new `CT_STAFF_PRESET_MUTATIONS_ENABLED`). Default **OFF** in code and `.env.example`. NO service key shipped to browser.
+- Bilingual `components/editorial/team/RolePresetMatrixEditor.tsx`, integrated into CT-03a Team page; toggles reviewed permission pairs, current grant revision and additions/removals, explicit audit reason+confirmation. It does NOT seed any default grants or modify owner preset. Existing UI fonts/colors/global CSS untouched. Users without edit grant get read-only view.
+- [CT-03c isolated PG17 security suite #45322183399](https://github.com/0445968/02022/actions/runs/45322183399) **SUCCESS**: anon/nonowner, owner immutable, freelancer cap/scope limits, duplicate/extra JSON rejection, grants create/revise/remove, no-op/stale CAS and attributed audit. Inherited 10 PostgreSQL suites expected; verify latest CI.
+- [Quality run #45322593737](https://github.com/0445968/02022/actions/runs/45322593737) on code commit `068a0bb117f836f41b5857a65bc33636aa8aed86`: expected **129 tests** plus TypeScript/lint/Next build; verify exact final result. Early contract fixture corrected to match implementation's DELETE/UPDATE/INSERT atomic replacement rather than a single ON CONFLICT. Verify PR #18 final docs-only head before claiming all checks green.
+- Read-only hosted Supabase `yqqzohrlhiitctwacdad`: 23 stories, 4 revisions, 43 versions, 22 public media/Storage objects; staff schema PRIVATE draft catalog/bucket ABSENT, hosted migration log EMPTY. No production SQL/write/bucket/role/env/deploy changes made.
+
+## NEXT — CT-04a staff and freelancer invitations
+1. Build **invitation + onboarding workflow** with scoped preset defaults, role guard and short-lived invite lifecycle; keep editorial byline separately managed from staff Auth user, and no inheritance from `profiles.is_editor/is_author`. Add audit/expiry, revocation, negative token tests, and paginated invited staff UI; no unapproved external emails.
+2. CT-04b complete first-login experience, separate staff vs freelance Newsroom with preset scope and assignment, then CT-05 scoped newsroom, CT-06 story assignments/review and remaining pages.
+3. **CT-02 release blocked**: independent restorable backup of hosted PostgreSQL AND Storage bytes, empty migration history reconciliation, approved first real Owner UUID and exact initial grants, real separate-disposable Supabase Auth/JWT/Storage tests (manual probe prepared, NOT RUN), EN/ES browser, published story with trashed featured-media editorial decision, privileged publisher and leaked-password advisor warnings, approved rollout/rollback.
+4. Never apply staged SQL to live project, turn on CT flags, seed owner, merge main, deploy Vercel or replay `DEV_AUTH_BYPASS` / bulk db push/reset without explicit user approval.
+5. Preserve current fonts Figtree, Source Serif 4, IBM Plex Sans, Inter, layout and styling. CT-15a dedicated final UI refinement later. Read `CT03C_REVIEW.md` and `ROLE_AND_PERMISSION_MATRIX.md` before next batch.
+
+---
+## Historical handoffs
 # CURRENT HANDOFF — CT-03b (2026-11-23 America/Chicago)
 **CT-03 IN PROGRESS: CT-03b code + isolated security checks are tested in a new DRAFT PR, not merged/deployed. CT-02 production security gates still open.**
 
