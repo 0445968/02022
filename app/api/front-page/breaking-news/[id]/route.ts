@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 
 import { getCurrentUser } from '@/lib/auth/session';
+import { mayCreateStory, mayAssignStoryAuthor, mayRestoreStoryVersion, mayEditHomepage, mayPublishHomepage, mayManageBreakingNews, mayManageByline, mayCreateTag } from '@/lib/permissions/editorial-route-gates';
 
 import {
   deleteBreakingNews,
@@ -35,7 +36,7 @@ export async function PATCH(
 
   if (
     !user ||
-    !user.profile?.isEditor
+    !(await mayManageBreakingNews(user))
   ) {
     return NextResponse.json(
       {
@@ -338,7 +339,7 @@ export async function DELETE(
 
   if (
     !user ||
-    !user.profile?.isEditor
+    !(await mayManageBreakingNews(user))
   ) {
     return NextResponse.json(
       {

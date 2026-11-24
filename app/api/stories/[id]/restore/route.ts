@@ -5,14 +5,12 @@ import {
 import {
   getCurrentUser,
 } from '@/lib/auth/session';
+import { mayCreateStory, mayAssignStoryAuthor, mayRestoreStoryVersion, mayEditHomepage, mayPublishHomepage, mayManageBreakingNews, mayManageByline, mayCreateTag } from '@/lib/permissions/editorial-route-gates';
 
 import {
   getDataClient,
 } from '@/lib/db/supabase-data-access';
 
-import {
-  canEditStory,
-} from '@/lib/permissions/stories';
 
 import {
   getStoryForEditing,
@@ -76,13 +74,7 @@ export async function POST(
    * story-level permission check.
    */
   if (
-    !user.profile
-      ?.isEditor ||
-    !canEditStory(
-      user,
-      story.author?.id ??
-        null
-    )
+    !(await mayRestoreStoryVersion(user, params.id, story.author?.id ?? null))
   ) {
     return NextResponse.json(
       {

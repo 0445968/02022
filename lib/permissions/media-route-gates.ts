@@ -27,6 +27,17 @@ export async function mayListMedia(user: CurrentUser | null): Promise<boolean> {
     (await check('media.edit_all')) ||
     (await check('media.upload'));
 }
+/**
+ * Favorite/read actions must be backed by the real media object's current
+ * per-account visibility, not just a general media.upload capability.
+ */
+export async function mayViewMedia(user: CurrentUser | null, mediaId: string): Promise<boolean> {
+  if (!v2Enabled()) return oldStaff(user);
+  if (!user) return false;
+  return (await check('media.view_all', mediaId)) ||
+    (await check('media.edit_all', mediaId)) ||
+    (await check('media.edit_own', mediaId));
+}
 export async function mayUploadMedia(user: CurrentUser | null): Promise<boolean> {
   if (!v2Enabled()) return oldStaff(user);
   return !!user && await check('media.upload');

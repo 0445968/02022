@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/auth/session';
+import { mayCreateStory, mayAssignStoryAuthor, mayRestoreStoryVersion, mayEditHomepage, mayPublishHomepage, mayManageBreakingNews, mayManageByline, mayCreateTag } from '@/lib/permissions/editorial-route-gates';
 import { getTags, findOrCreateTag } from '@/lib/services/taxonomy';
 
 export async function GET(request: Request) {
@@ -11,7 +12,7 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   const user = await getCurrentUser();
-  if (!user || !(user.profile?.isAuthor || user.profile?.isEditor)) {
+  if (!user || !(await mayCreateTag(user))) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
   }
 

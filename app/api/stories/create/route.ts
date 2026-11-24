@@ -1,12 +1,12 @@
 import { NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/auth/session';
-import { canCreateStory } from '@/lib/permissions/stories';
+import { mayCreateStory, mayAssignStoryAuthor, mayRestoreStoryVersion, mayEditHomepage, mayPublishHomepage, mayManageBreakingNews, mayManageByline, mayCreateTag } from '@/lib/permissions/editorial-route-gates';
 import { createStory } from '@/lib/services/stories';
 
 export async function POST(request: Request) {
   const user = await getCurrentUser();
 
-  if (!user || !canCreateStory(user)) {
+  if (!user || !(await mayCreateStory(user))) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
   }
 
@@ -15,6 +15,13 @@ export async function POST(request: Request) {
     body = await request.json();
   } catch {
     return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
+  }
+
+  // Prevent author re-assignment through the create endpoint without the
+  // independent story.assign capability. Server user ID is authoritative.
+  if (body.authorId && body.authorId !== user.id &&
+      !(await mayAssignStoryAuthor(user))) {
+    return NextResponse.json({ error: 'Assignment permission required' }, { status: 403 });
   }
 
   const result = await createStory({

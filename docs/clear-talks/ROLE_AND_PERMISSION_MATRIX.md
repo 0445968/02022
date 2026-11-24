@@ -1,6 +1,6 @@
 # Clear Talks — Staff Roles, Permissions & Onboarding Contract
 Version: 1.0 proposal | 2026-11-23 | Companion to MASTER_COMPLETION_PLAN.md.
-Status: CT-02g draft PR #11 stages scoped media and Storage RLS, public-safe media projection and initial feature-gated media/API/article-image paths, extending CT-02b–f. PostgreSQL 17 media security tests passed. **No hosted migrations, role grants, owner mapping or production permission changes.** One published article uses a trashed image; public bucket remains publicly accessible, so approved-only view activation, private drafts, remaining routes and owner/migration-history gate require deliberate review before deployment.
+Status: CT-02h draft PR #12 stages homepage, byline, taxonomy and story create/restore RLS/route parity, including a verified-JWT homepage publishing invoker guard. CT-02a–g remain draft/unapplied. **No hosted migrations, owner/backfill, role grants or production permission changes.** Proposed homepage.publish belongs to owner/managing_editor (not normal editor), and byline.manage to owner; approve explicitly. Public draft media bucket issue and trashed published featured image remain release gates.
 
 ## 1. Principles
 
