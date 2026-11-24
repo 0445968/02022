@@ -1,3 +1,24 @@
+# CURRENT HANDOFF — CT-02i (2026-11-23 America/Chicago)
+**CT-02 IN PROGRESS. PR #13 is CODE TESTED AND STAGED ONLY; NOTHING DEPLOYED.**
+
+## Stacked PR and state
+- Planning #2 -> CT-00 #3 -> CT-01 #4 -> CT-02a #5 -> CT-02b #6 -> CT-02c #7 -> CT-02d #8 -> CT-02e #9 -> CT-02f #10 -> CT-02g #11 -> CT-02h #12 -> **CT-02i [draft PR #13](https://github.com/0445968/02022/pull/13)**. Branch `feature/ct02i-private-draft-media-2026-11-23` base CT-02h `10204a57d72530bcdcdf91f15c5a5146a0b1866e`. Main remains `f5c0140fb2db165e43303a064f7bc15b765d4505`.
+- Unapplied migration `supabase/migrations/20261124013801_ct02i_private_media_drafts.sql`, filename from pinned Supabase CLI 3.2.0 CI run 45306452322. Requires prior staged CT-02b/c/e/f/g/h; DO NOT apply on hosted restored DB, which has zero recorded migrations, before approved owner+roles/verified restore backup/migration reconciliation.
+- Proposes a **NEW private `media-drafts` bucket** with 10MB/image MIME limits. **Existing `media` public bucket and all old data/URLs untouched.** New `media_private_drafts` private catalog uses owner/role RLS; Storage policies restrict uploaded file paths, object owners, selects and orphan cleanup. No UPDATE/overwrite and no publicly accessible URLs.
+- Routes `/api/media/drafts` POST and `/api/media/drafts/[id]/preview` GET: both require `CT_STAFF_ACCESS_V2_ENABLED=true` **AND** `CT_MEDIA_PRIVATE_DRAFTS_ENABLED=true`, genuine Supabase user, current role and private object RLS. Private upload validates MIME, magic bytes, 10MB cap and stores catalog; preview returns 60-second signed URL with no-store. Existing `/api/media/upload` blocks public fallback WHEN private mode active; legacy behavior unchanged with flags off.
+- [Quality CI `45306804142`](https://github.com/0445968/02022/actions/runs/45306804142) **SUCCESS** on source commit `e7955f03b8e5a9549d4ffe271c00fb2d9f16dede`: **88 tests**, TypeScript, lint, Next.js build PASS. [CT-02i PG17 `45306804137`](https://github.com/0445968/02022/actions/runs/45306804137) **SUCCESS**, all inherited CT-02b/c/e/f/g/h PG17 suites green. Final docs-only head may retrigger CI.
+- LIVE read-only: Supabase `yqqzohrlhiitctwacdad` still has **23 stories / 4 revisions / 43 versions / 22 media**. One public bucket `media`, 22 objects all owner_id NULL; no private bucket, no staff table, no hosted migrations or role grants. Production unchanged. All fonts/styling/EN-ES UI preserved.
+
+## NEXT CT-02j — media approval/promotion and remaining cutover
+1. Review `CT02I_REVIEW.md` and `PRIVATE_DRAFT_MEDIA_ROLLOUT.md`. Stage/test PRIVATE draft -> approved public media approval/promote/copy lifecycle with idempotency, rights, embargo, checksum, async Storage copy/DB mismatch cleanup, and authorized media approval. Never expose unpublished bytes, delete originals or auto-change 22 restored files.
+2. Integrate private upload and signed-preview routes into the existing media-library editor UI using current styling WITHOUT activating flags or sacrificing existing legacy upload flow until full parity. Keep existing editor workflows usable while v2 off.
+3. Audit remaining account/reader, bookmarks/favorites, comments, polls and pending direct Data API privilege paths. Run actual disposable Supabase Auth JWT + Storage HTTP API/URLs and browser negative matrix (owner, managing editor, assigned freelancer, legacy revoked editor, reader, anon).
+4. One published article points to media marked trashed; resolve explicitly by editorial rights decision before approved-only public media view activation. Existing 22 public Storage objects have no owner_id; do not fabricate ownership.
+5. Explicit real first-owner Auth identity and approved role grants/permission matrix, independent backup-and-restore rehearsal and empty migration history reconciliation required before hosted CT-02b–i SQL, any bucket creation, Vercel env flags or deploy. DO NOT replay historical DEV_AUTH_BYPASS or bulk db push/reset.
+6. CT-02 still in progress, no merge or deploy without explicit approval. Preserve Figtree/Source Serif 4/IBM Plex Sans/Inter and current UI. CT-15a UI polish still scheduled after functional completion.
+
+---
+## Historical handoffs
 # CURRENT HANDOFF — CT-02h (2026-11-23 America/Chicago)
 **CT-02 remains IN PROGRESS. PR #12 is a DRAFT with staged SQL and code only; no live application.**
 

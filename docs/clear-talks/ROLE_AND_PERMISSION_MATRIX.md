@@ -1,6 +1,6 @@
 # Clear Talks — Staff Roles, Permissions & Onboarding Contract
 Version: 1.0 proposal | 2026-11-23 | Companion to MASTER_COMPLETION_PLAN.md.
-Status: CT-02h draft PR #12 stages homepage, byline, taxonomy and story create/restore RLS/route parity, including a verified-JWT homepage publishing invoker guard. CT-02a–g remain draft/unapplied. **No hosted migrations, owner/backfill, role grants or production permission changes.** Proposed homepage.publish belongs to owner/managing_editor (not normal editor), and byline.manage to owner; approve explicitly. Public draft media bucket issue and trashed published featured image remain release gates.
+Status: CT-02i draft PR #13 stages a new **unapplied private media-drafts bucket**, a separate RLS draft catalog and opt-in authenticated upload/60-second preview routes. CT-02a–h remain draft/unapplied. **No hosted bucket, migration, owner/backfill, role grant or production permission change.** This is NOT an approved-media promotion pipeline; role presets (including homepage.publish and byline.manage), initial owner and private-to-public media rights still need approval, and one published article uses trashed media.
 
 ## 1. Principles
 
