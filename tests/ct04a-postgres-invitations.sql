@@ -207,7 +207,7 @@ commit;
 select pg_sleep(2.1);
 begin;
 set local role service_role;
-do $ begin
+do $$ begin
   begin
     perform public.test_redeem('40000000-0000-4000-8000-000000000010',repeat('3',64));
     raise exception 'Expired invite redeemed';
@@ -217,7 +217,7 @@ do $ begin
       where email_hint='e***@example.test' and status='expired') then
     raise exception 'Expired invitation status absent';
   end if;
-end $;
+end $$;
 rollback;
 
 -- Fresh DB Auth verification is essential even when a previously verified
@@ -226,12 +226,12 @@ begin;
 update auth.users set email='changed@example.test'
 where id='40000000-0000-4000-8000-000000000001';
 set local role service_role;
-do $ begin
+do $$ begin
   begin
     perform public.test_redeem('40000000-0000-4000-8000-000000000001',repeat('9',64));
     raise exception 'Invite redeemed after verified email changed';
   exception when insufficient_privilege then null; end;
-end $;
+end $$;
 rollback;
 
 -- Even an isolated DBA modifying an allowed grant without revision increment
@@ -240,18 +240,18 @@ begin;
 insert into public.staff_role_capabilities(role_preset_id,capability_key,scope)
 select id,'media.upload','all' from public.staff_role_presets where role_key='freelancer';
 set local role service_role;
-do $ begin
+do $$ begin
   begin
     perform public.test_redeem('40000000-0000-4000-8000-000000000001',repeat('9',64));
     raise exception 'Changed grant fingerprint redeemed';
   exception when insufficient_privilege then null; end;
-end $;
+end $$;
 rollback;
 
 -- Bound administrative issuance, including replacements, within rolling hour.
 begin;
 set local role service_role;
-do $
+do $$
 declare v_count integer; n integer;
 begin
   select count(*) into v_count from public.staff_invitations
@@ -264,7 +264,7 @@ begin
     perform public.test_invite('over-limit@example.test',lpad(to_hex(9999),64,'0'));
     raise exception 'Issuance rate limit failed';
   exception when program_limit_exceeded then null; end;
-end $;
+end $$;
 rollback;
 
 -- Force a failure after membership/role insert but before final invite update.
