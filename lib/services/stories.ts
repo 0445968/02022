@@ -1,4 +1,5 @@
 import { getDataClient } from '@/lib/db/supabase-data-access';
+import type { SupabaseClient } from '@supabase/supabase-js';
 import { enrichStoryListItems } from '@/lib/services/story-list-metadata';
 
 import {
@@ -280,7 +281,8 @@ export async function getPublishedStoryBySlug(
   }
 
   return resolveStoryRelations(
-    story as StoryRow
+    story as StoryRow,
+    true
   );
 }
 
@@ -354,7 +356,8 @@ export async function getStoryForEditing(
  * Resolves all relationships for one story.
  */
 async function resolveStoryRelations(
-  story: StoryRow
+  story: StoryRow,
+  publicPage = false
 ): Promise<StoryWithRelations> {
   const supabase =
     await getDataClient();
@@ -694,34 +697,29 @@ const editorialProfiles =
           tag !== null
       );
 
-  // Featured image
-  let featuredImage:
-    | MediaAsset
-    | null =
-    null;
-
-  if (
-    story.featured_image_id
-  ) {
-    const {
-      data:
-        imageRow,
-    } = await supabase
-      .from(
-        'media_assets'
-      )
+  // When v2 is enabled, the public article uses the allowlisted media view.
+  // Preview/edit routes still load the full row under staff RLS.
+  let featuredImage: MediaAsset | null = null;
+  if (story.featured_image_id) {
+    const publicProjection = publicPage &&
+      process.env.CT_STAFF_ACCESS_V2_ENABLED === 'true';
+    const mediaTable = publicProjection ? 'media_public_assets' : 'media_assets';
+    const mediaClient = supabase as unknown as SupabaseClient;
+    const { data: imageRow } = await mediaClient
+      .from(mediaTable)
       .select('*')
-      .eq(
-        'id',
-        story.featured_image_id
-      )
+      .eq('id', story.featured_image_id)
       .maybeSingle();
-
     if (imageRow) {
-      featuredImage =
-        mapMediaRow(
-          imageRow
-        );
+      featuredImage = mapMediaRow(publicProjection ? {
+        ...imageRow,
+        file_name: '',
+        storage_path: '',
+        mime_type: '',
+        uploaded_by: '',
+        created_at: '',
+        updated_at: '',
+      } : imageRow);
     }
   }
 
@@ -1246,6 +1244,41 @@ const PUBLIC_STORY_SELECT = `
   )
 ` as const;
 
+// The existing public feed can keep using its legacy join while v2 is OFF.
+// Once the reviewed v2 migration is active, do NOT join media_assets here:
+// the base table contains licensing and private Newsroom fields.
+const PUBLIC_STORY_SELECT_SAFE = PUBLIC_STORY_SELECT.replace(
+  /\s*featured_image:media_assets!stories_featured_image_id_fkey\(\s*id,\s*url,\s*alt_text\s*\),/,
+  '\n  featured_image_id,'
+);
+
+function securePublicMediaEnabled(): boolean {
+  return process.env.CT_STAFF_ACCESS_V2_ENABLED === 'true';
+}
+
+async function hydratePublicMedia(
+  rows: readonly Record<string, unknown>[]
+): Promise<Record<string, unknown>[]> {
+  if (!securePublicMediaEnabled()) return [...rows];
+  const ids = [...new Set(rows.map(row => row.featured_image_id)
+    .filter((id): id is string => typeof id === 'string' && id.length > 0))];
+  if (!ids.length) return rows.map(row => ({ ...row, featured_image: null }));
+
+  const client = await getDataClient() as unknown as SupabaseClient;
+  const { data, error } = await client.from('media_public_assets')
+    .select('id, url, alt_text')
+    .in('id', ids);
+  if (error) {
+    console.error('Unable to load public media metadata:', error);
+    return rows.map(row => ({ ...row, featured_image: null }));
+  }
+  const mediaById = new Map((data ?? []).map(item => [item.id, item]));
+  return rows.map(row => ({
+    ...row,
+    featured_image: mediaById.get(row.featured_image_id as string) ?? null,
+  }));
+}
+
 async function fetchPublicStories(
   filters: Record<
     string,
@@ -1265,7 +1298,7 @@ async function fetchPublicStories(
     supabase
       .from('stories')
       .select(
-        PUBLIC_STORY_SELECT,
+        securePublicMediaEnabled() ? PUBLIC_STORY_SELECT_SAFE : PUBLIC_STORY_SELECT,
         {
           count:
             'exact',
@@ -1331,9 +1364,12 @@ async function fetchPublicStories(
     };
   }
 
+  const visibleRows = await hydratePublicMedia(
+    (data ?? []) as unknown as Record<string, unknown>[]
+  );
   const items:
     PublicStoryListItem[] =
-    (data ?? []).map(
+    visibleRows.map(
       (row) => {
         const r =
           row as Record<
@@ -1699,7 +1735,7 @@ export async function getRelatedStories(
       } = await supabase
         .from('stories')
         .select(
-          PUBLIC_STORY_SELECT
+          securePublicMediaEnabled() ? PUBLIC_STORY_SELECT_SAFE : PUBLIC_STORY_SELECT
         )
         .eq(
           'status',
@@ -1741,11 +1777,11 @@ export async function getRelatedStories(
           categoryStoriesError
         );
       } else {
+        const categoryRows = await hydratePublicMedia(
+          (categoryStories ?? []) as unknown as Record<string, unknown>[]
+        );
         related.push(
-          ...(
-            categoryStories ??
-            []
-          ).map(
+          ...categoryRows.map(
             (row) =>
               mapPublicStory(
                 row as Record<
@@ -1780,7 +1816,7 @@ export async function getRelatedStories(
       supabase
         .from('stories')
         .select(
-          PUBLIC_STORY_SELECT
+          securePublicMediaEnabled() ? PUBLIC_STORY_SELECT_SAFE : PUBLIC_STORY_SELECT
         )
         .eq(
           'status',
@@ -1829,11 +1865,11 @@ export async function getRelatedStories(
         fallbackError
       );
     } else {
+      const fallbackRows = await hydratePublicMedia(
+        (fallbackStories ?? []) as unknown as Record<string, unknown>[]
+      );
       related.push(
-        ...(
-          fallbackStories ??
-          []
-        ).map(
+        ...fallbackRows.map(
           (row) =>
             mapPublicStory(
               row as Record<

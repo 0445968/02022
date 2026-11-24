@@ -1,6 +1,12 @@
 import { NextResponse } from 'next/server';
 
 import { getCurrentUser } from '@/lib/auth/session';
+import {
+  mayListMedia,
+  mayEditMedia,
+  mayApproveMedia,
+  mayDeleteMedia,
+} from '@/lib/permissions/media-route-gates';
 
 import {
   approveMediaAsset,
@@ -645,13 +651,7 @@ export async function GET(
   const user =
     await getCurrentUser();
 
-  if (
-    !user ||
-    !(
-      user.profile?.isAuthor ||
-      user.profile?.isEditor
-    )
-  ) {
+  if (!user || !(await mayListMedia(user))) {
     return NextResponse.json(
       {
         error:
@@ -702,13 +702,7 @@ export async function PATCH(
   const user =
     await getCurrentUser();
 
-  if (
-    !user ||
-    !(
-      user.profile?.isAuthor ||
-      user.profile?.isEditor
-    )
-  ) {
+  if (!user || !(await mayListMedia(user))) {
     return NextResponse.json(
       {
         error:
@@ -735,6 +729,10 @@ export async function PATCH(
         status: 404,
       }
     );
+  }
+
+  if (!(await mayEditMedia(user, params.id))) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
 
   let rawBody:
@@ -786,7 +784,7 @@ export async function PATCH(
      */
     if (
       action === 'approve' &&
-      !user.profile?.isEditor
+      !(await mayApproveMedia(user, params.id))
     ) {
       return NextResponse.json(
         {
@@ -811,7 +809,7 @@ export async function PATCH(
         action === 'trash' ||
         action === 'restore'
       ) &&
-      !user.profile?.isEditor
+      !(await mayDeleteMedia(user))
     ) {
       return NextResponse.json(
         {
@@ -894,14 +892,21 @@ export async function PATCH(
    * Do not allow authors to manually bypass workflow by
    * sending status fields directly.
    */
-  if (
-    !user.profile?.isEditor
-  ) {
-    delete rawBody.status;
+  const canApprove = await mayApproveMedia(user, params.id);
+  const canDelete = await mayDeleteMedia(user);
+  if (!canApprove) {
     delete rawBody.approvedBy;
     delete rawBody.approvedAt;
+  }
+  if (!canDelete) {
     delete rawBody.archivedAt;
     delete rawBody.trashedAt;
+  }
+  if (
+    (rawBody.status === 'approved' || rawBody.status === 'restricted') && !canApprove ||
+    (rawBody.status === 'archived' || rawBody.status === 'trashed') && !canDelete
+  ) {
+    delete rawBody.status;
   }
 
   const update =
@@ -959,10 +964,7 @@ export async function DELETE(
   const user =
     await getCurrentUser();
 
-  if (
-    !user ||
-    !user.profile?.isEditor
-  ) {
+  if (!user || !(await mayDeleteMedia(user))) {
     return NextResponse.json(
       {
         error:

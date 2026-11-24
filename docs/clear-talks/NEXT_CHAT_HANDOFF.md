@@ -1,3 +1,25 @@
+# CURRENT HANDOFF — CT-02g (2026-11-23 America/Chicago)
+**CT-02 IN PROGRESS; media/Storage security is STAGED in draft PR #11, not applied to hosted Supabase or deployed.**
+
+## Branches and completed batch
+- Plan #2 -> CT-00 #3 -> CT-01 #4 -> CT-02a #5 -> CT-02b #6 -> CT-02c #7 -> CT-02d #8 -> CT-02e #9 -> CT-02f #10 -> **CT-02g [draft PR #11](https://github.com/0445968/02022/pull/11)**. Branch `feature/ct02g-media-storage-security-2026-11-23` stacked on CT-02f `3b8812c92c49462d4053dac9cfa005eb6cfd51bb`; `main` unchanged.
+- Proposed, unapplied migration `supabase/migrations/20261124003447_ct02g_media_storage_security.sql`, CLI-generated in GitHub run 45298277039; all earlier CT-02b/c/e/f SQL still unapplied. Never replay historic dev-bypass SQL or bulk push the empty-migration-register restored database.
+- Public-safe `media_public_assets` view (fixed 10-field approved-only whitelist, intentional view-owner privilege exception subject to security review), no anon base media select; staff/RLS media insert/update/delete and Storage list/upload/upsert/delete use verified current memberships and uploader ID. No existing Storage object or owner_id backfill. Public bucket remains public.
+- `lib/permissions/media-route-gates.ts`, extended media owner resolver and media API routes; public `lib/services/stories.ts` detail/feed/related image code selects the whitelisted media view when v2 ON, preserving old paths while OFF. UI/styles/fonts unchanged.
+- [CT-02g code quality `45299897381`](https://github.com/0445968/02022/actions/runs/45299897381) **SUCCESS**: **77 tests**, TypeScript, lint and Next.js build PASS. [CT-02g PG17 media/Storage `45299897330`](https://github.com/0445968/02022/actions/runs/45299897330) **SUCCESS**; inherited CT-02b/c/e/f PG17 suites on the same code commit all passed. First TS user-null issue was corrected `afd82b4`. Docs-only head CI may rerun; consult PR #11.
+- LIVE READ-ONLY: project `yqqzohrlhiitctwacdad`, 23 stories, 4 unpublished revisions, 43 versions, 22 media + 22 public Storage objects; ALL objects `owner_id=NULL`; 21 approved, 1 trashed. No new staff table and zero hosted migration entries. **11 published story featured images: 10 approved, 1 trashed**. Current `internal_notes` all blank but base metadata RLS currently public true.
+- The new public view would hide the trashed asset referenced by a published story. Do **not** auto-reclassify or delete it; require explicit editorial/media resolution before cutover. Public Storage URLs still expose binaries even with database RLS.
+- No DB changes, new owner/role grants, Vercel env activation, production deployment or main merge. User wants to preserve Figtree, Source Serif 4, IBM Plex Sans, Inter and existing UI; CT-15a dedicated UI polish remains later.
+
+## NEXT CT-02h
+1. Verify PR #11 final CI and exact branch HEAD; review `CT02G_REVIEW.md`, ledger and role matrix.
+2. Audit all remaining newsroom routes and server actions still using `profiles.is_editor/is_author`, additional direct relationship tables and RPCs; feature-gate or migrate and test against revoked old editor/nonassigned freelancers.
+3. Design and get approval for private unpublished-media bucket/ingest/promote workflow without breaking 22 existing public files, URL caching or editor uploads; address the 1 published article linked to trashed media before turning on approved-only view.
+4. Prepare actual disposable Supabase Auth+Storage HTTP/API browser negative tests, verify owner Auth identity and a complete first-owner/staff role grant plan, reconcile empty hosted migration register with restorable backup. Require explicit approval before production SQL or Vercel env toggle.
+5. Keep `CT_STAFF_ACCESS_V2_ENABLED` FALSE and never deploy partially protected media/public reads to production; do not change established fonts/style.
+
+---
+## Previous handoffs
 # CURRENT HANDOFF — CT-02f (2026-11-23, America/Chicago)
 **CT-02 still IN PROGRESS. New publishing/version security is in DRAFT PR #10, not applied or deployed.**
 

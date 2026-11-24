@@ -1,6 +1,6 @@
 # Clear Talks — Staff Roles, Permissions & Onboarding Contract
 Version: 1.0 proposal | 2026-11-23 | Companion to MASTER_COMPLETION_PLAN.md.
-Status: CT-02f draft PR #10 extends staged CT-02e direct story/revision RLS with hardened publishing RPC and historical-version policies. Publisher requires live identity + edit + story.publish + revision.publish; the original atomic body is preserved and PostgreSQL 17 QA passed. **NO live migration, staff membership/role grant, owner backfill or production permission change.** Media metadata/Storage, remaining routes and owner/migration-history release gates await CT-02g+ and explicit approval.
+Status: CT-02g draft PR #11 stages scoped media and Storage RLS, public-safe media projection and initial feature-gated media/API/article-image paths, extending CT-02b–f. PostgreSQL 17 media security tests passed. **No hosted migrations, role grants, owner mapping or production permission changes.** One published article uses a trashed image; public bucket remains publicly accessible, so approved-only view activation, private drafts, remaining routes and owner/migration-history gate require deliberate review before deployment.
 
 ## 1. Principles
 

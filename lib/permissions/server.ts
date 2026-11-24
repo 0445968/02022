@@ -20,7 +20,8 @@ import {
 } from '@/lib/permissions/capabilities';
 
 type StoryRequest = { kind: 'story'; storyId: string };
-type StaffCapabilityRequest = StoryRequest | undefined;
+type MediaRequest = { kind: 'media'; mediaId: string };
+type StaffCapabilityRequest = StoryRequest | MediaRequest | undefined;
 
 type MemberRow = {
   id: string;
@@ -140,6 +141,21 @@ export async function resolveStaffPermissionOnServer(
       resource = {
         kind: 'story',
         assignedMembershipIds: assignmentRows?.length ? [m.id] : [],
+      };
+    }
+
+    if (resourceRequest?.kind === 'media') {
+      // Always resolve ownership from a live, RLS-filtered DB row. Never
+      // use caller-submitted uploadedBy or self-described role metadata.
+      const { data: media, error: mediaError } = await client
+        .from('media_assets')
+        .select('uploaded_by')
+        .eq('id', resourceRequest.mediaId)
+        .maybeSingle();
+      if (mediaError || !media) return denied;
+      resource = {
+        kind: 'media',
+        ownerMembershipId: media.uploaded_by === user.id ? m.id : null,
       };
     }
 

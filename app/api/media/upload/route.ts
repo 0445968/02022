@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 
 import { getCurrentUser } from '@/lib/auth/session';
+import { mayUploadMedia } from '@/lib/permissions/media-route-gates';
 import { getDataClient } from '@/lib/db/supabase-data-access';
 
 import {
@@ -338,13 +339,7 @@ export async function POST(
   const user =
     await getCurrentUser();
 
-  if (
-    !user ||
-    !(
-      user.profile?.isAuthor ||
-      user.profile?.isEditor
-    )
-  ) {
+  if (!user || !(await mayUploadMedia(user))) {
     return NextResponse.json(
       {
         error:
