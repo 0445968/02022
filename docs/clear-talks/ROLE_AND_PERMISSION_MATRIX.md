@@ -205,3 +205,7 @@ These are recommended starter presets and architecture, NOT yet an instruction t
 
 ### CT-07a staged audited comment moderation
 [Draft PR #36](https://github.com/0445968/02022/pull/36): verified newsroom access + exact published-story comment.view_queue or comment.moderate for queue/detail, current exact comment.moderate for audited actions, no own-comment moderation, explicit deny/assignment scope. Reader edit/erase preserved. Approve/hide/restore-to-pending/remove-redact, revision CAS and reason, private immutable events, no direct authenticated staff update/delete. Scoped comment.manage_reports required for report reads/counts, direct report disposition blocked until CT07c. API flag OFF, UI next CT07b. No live changes.
+
+
+### CT-07b staged moderation interface
+[Draft PR #37](https://github.com/0445968/02022/pull/37): existing CT07a exact DB permissions and verified session, scoped Comments navigation with global view_queue/moderate or current published assigned grant, bounded assignment discovery. Per-comment action availability from current projection and explicit reason/confirmation, no raw HTML or new grants. Report count/filter requires comment.manage_reports; report-only access and resolution CT07c. Flag OFF, no live changes.
