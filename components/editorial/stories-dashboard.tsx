@@ -13,6 +13,8 @@ import type { Locale } from '@/types';
 
 interface StoriesDashboardProps {
   dict: Dictionary;
+  canEdit?:boolean;
+  canCreate?:boolean;
   stories: StoryListItem[];
   page: number;
   totalPages: number;
@@ -35,7 +37,7 @@ const LANGUAGES: (StoryLanguage | 'all')[] = ['all', 'en', 'es'];
 const ISLANDS: (IslandScope | 'all')[] = ['all', 'san_andres', 'old_providence', 'saint_catalina', 'archipelago', 'none'];
 const SORTS: StoriesDashboardProps['currentFilters']['sortBy'][] = ['updated_desc', 'updated_asc', 'published_desc', 'headline_asc'];
 
-export function StoriesDashboard({ dict, stories, page, totalPages, total, categories, authors, currentFilters }: StoriesDashboardProps) {
+export function StoriesDashboard({ dict, canEdit=true, canCreate=true, stories, page, totalPages, total, categories, authors, currentFilters }: StoriesDashboardProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [searchInput, setSearchInput] = useState(currentFilters.search);
@@ -144,13 +146,13 @@ export function StoriesDashboard({ dict, stories, page, totalPages, total, categ
               <tr>
                 <td colSpan={8} className="px-4 py-12 text-center">
                   <p className="font-headline text-lg font-semibold text-deep">{dict.stories.noStories}</p>
-                  <p className="mt-1 text-sm text-muted-foreground">{dict.stories.noStoriesDesc}</p>
+                  {canCreate&&<><p className="mt-1 text-sm text-muted-foreground">{dict.stories.noStoriesDesc}</p>
                   <Link
                     href="/newsroom/stories/new"
                     className="mt-4 inline-flex h-9 items-center bg-primary px-4 text-sm font-semibold text-white transition-colors hover:bg-primary/90"
                   >
                     {dict.stories.createFirst}
-                  </Link>
+                  </Link></>}
                 </td>
               </tr>
             ) : (
@@ -175,7 +177,7 @@ export function StoriesDashboard({ dict, stories, page, totalPages, total, categ
                         </span>
                       )}
                       <Link
-                        href={`/newsroom/stories/${story.id}/edit`}
+                        href={canEdit?`/newsroom/stories/${story.id}/edit`:`/newsroom/stories/${story.id}/preview`}
                         className="font-medium text-deep hover:text-primary focus-visible:outline-none focus-visible:underline"
                       >
                         {story.headline || '(untitled)'}

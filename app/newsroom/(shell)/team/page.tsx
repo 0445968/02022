@@ -1,6 +1,6 @@
 import {redirect} from 'next/navigation';
 import {getCurrentUser} from '@/lib/auth/session';
-import {defaultLocale} from '@/lib/i18n/config';
+import {newsroomLocale} from '@/lib/services/newsroom-workspace';
 import {getStaffTeamAccess} from '@/lib/services/staff-team-directory';
 import {canReviewStaffBylines} from '@/lib/services/staff-byline-review';
 import {canManageStaffInvitations} from '@/lib/services/staff-invitations';
@@ -11,6 +11,6 @@ export default async function NewsroomTeamPage(){
   const access=await getStaffTeamAccess();
   if(!access.allowed)redirect('/newsroom/denied');
   const user=await getCurrentUser();
-  const locale=user?.profile?.preferredLocale??defaultLocale;
+  const locale=await newsroomLocale(user);
   return <StaffTeamManager locale={locale} showInvitations={await canManageStaffInvitations()} showBylines={await canReviewStaffBylines()}/>;
 }

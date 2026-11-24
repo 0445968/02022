@@ -1,3 +1,4 @@
+import {requireWorkspacePage,scopedNewsroomEnabled,newsroomLocale,mayMountFullStoryEditor} from '@/lib/services/newsroom-workspace';
 import { notFound, redirect } from 'next/navigation';
 import { getCurrentUser } from '@/lib/auth/session';
 import { getDictionary } from '@/lib/i18n/dictionaries';
@@ -13,8 +14,11 @@ interface PageProps {
 }
 
 export default async function EditStoryPage({ params }: PageProps) {
+  await requireWorkspacePage('fullEditor');
+  const scoped=scopedNewsroomEnabled();
+  if(scoped&&!(await mayMountFullStoryEditor(params.id)))notFound();
   const user = await getCurrentUser();
-  const locale = user?.profile?.preferredLocale ?? defaultLocale;
+  const locale = await newsroomLocale(user);
   const dict = getDictionary(locale);
 
   if (!user) {
@@ -26,7 +30,7 @@ export default async function EditStoryPage({ params }: PageProps) {
     notFound();
   }
 
-  if (!canEditStory(user, story!.author?.id ?? null)) {
+  if (!scoped&&!canEditStory(user, story!.author?.id ?? null)) {
     return (
       <div className="mx-auto max-w-2xl px-6 py-20 text-center">
         <h1 className="font-headline text-2xl font-bold text-deep">{dict.story.noPermission}</h1>
@@ -48,7 +52,7 @@ export default async function EditStoryPage({ params }: PageProps) {
       story={story!}
       user={{
         id: user.id,
-        profile: user.profile
+        profile: scoped?{isAuthor:true,isEditor:true}:user.profile
           ? { isAuthor: user.profile.isAuthor, isEditor: user.profile.isEditor }
           : null,
       }}

@@ -33,7 +33,13 @@ test('newsroom layout enforces authentication and authorization server-side', ()
   const layout = readFileSync(new URL('../app/newsroom/(shell)/layout.tsx', import.meta.url), 'utf8');
   assert.match(layout, /await getCurrentUser\(\)/);
   assert.match(layout, /if \(!user\)/);
-  assert.match(layout, /if \(!\(await mayEnterNewsroom\(user\)\)\)/);
+  assert.match(layout, /const scoped=scopedNewsroomEnabled\(\)\?await getWorkspaceAccess\(\):null/);
+  assert.match(layout, /if\(scoped\?!scoped\.allowed:!\(await mayEnterNewsroom\(user\)\)\)/);
+  assert.match(layout, /redirect\('\/newsroom\/denied'\)/);
+  const workspace=readFileSync(new URL('../lib/services/newsroom-workspace.ts',import.meta.url),'utf8');
+  const policy=readFileSync(new URL('../lib/permissions/workspace-policy.ts',import.meta.url),'utf8');
+  assert.match(workspace,/resolveGlobalStaffPermissionsOnServer\(WORKSPACE_CAPABILITIES\)/);
+  assert.match(policy,/const allowed=grants\.has\('newsroom\.access'\)/);
   const gates = readFileSync(new URL('../lib/permissions/staff-route-gates.ts', import.meta.url), 'utf8');
   // Existing author/editor access is preserved ONLY while the feature is off.
   // Once enabled, the new gate must query current server permissions.

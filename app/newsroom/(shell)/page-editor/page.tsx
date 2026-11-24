@@ -1,3 +1,4 @@
+import {requireWorkspacePage,newsroomLocale} from '@/lib/services/newsroom-workspace';
 import {
     PageEditorClient,
   } from '@/components/editorial/page-editor/PageEditorClient';
@@ -22,13 +23,10 @@ import {
   } from '@/lib/services/taxonomy';
   
   export default async function PageEditorPage() {
-    const user =
-      await getCurrentUser();
+    await requireWorkspacePage('fullHomepage');
+    const user = await getCurrentUser();
   
-    const locale =
-      user?.profile
-        ?.preferredLocale ??
-      defaultLocale;
+    const locale=await newsroomLocale(user);
   
     const [
       placements,

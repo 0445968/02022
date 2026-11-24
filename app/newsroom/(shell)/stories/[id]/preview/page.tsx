@@ -1,4 +1,6 @@
 import Link from 'next/link';
+import {getWorkspaceAccess,scopedNewsroomEnabled,mayViewWorkspaceStory,newsroomLocale,mayMountFullStoryEditor} from '@/lib/services/newsroom-workspace';
+import {resolveStaffPermissionOnServer} from '@/lib/permissions/server';
 import {
   notFound,
 } from 'next/navigation';
@@ -83,12 +85,11 @@ export default async function PreviewPage({
     notFound();
   }
 
-  const locale =
-    (
-      user.profile
-        ?.preferredLocale ??
-      defaultLocale
-    ) as Locale;
+  const scoped=scopedNewsroomEnabled();
+  if(scoped&&!(await mayViewWorkspaceStory(params.id)))notFound();
+  const access=scoped?await getWorkspaceAccess():null;
+  const canMountEditor=!scoped||await mayMountFullStoryEditor(params.id);
+  const locale=await newsroomLocale(user);
 
   const dict =
     getDictionary(
@@ -106,12 +107,7 @@ export default async function PreviewPage({
 
   if (
     !liveStory ||
-    !canViewStory(
-      user,
-      liveStory.author
-        ?.id ??
-        null
-    )
+    (!scoped&&!canViewStory(user,liveStory.author?.id??null))
   ) {
     notFound();
   }
@@ -150,9 +146,8 @@ export default async function PreviewPage({
       : searchParams
           ?.view;
 
-  const wantsRevision =
-    revisionParam ===
-    '1';
+  const wantsRevision = revisionParam==='1';
+  if(scoped&&(wantsRevision||Boolean(versionParam))&&!(await resolveStaffPermissionOnServer('revision.view',{kind:'story',storyId:params.id})).allowed)notFound();
 
   const wantsChanges =
     viewParam ===
@@ -265,11 +260,9 @@ export default async function PreviewPage({
   // Links
   // ==================================================
 
-  const editorHref =
-    `/newsroom/stories/${liveStory.id}/edit`;
+  const editorHref = access&&!canMountEditor?access.landing:`/newsroom/stories/${liveStory.id}/edit`;
 
-  const storiesHref =
-    '/newsroom/stories';
+  const storiesHref = access&&!access.viewStories?'/newsroom/contributor':'/newsroom/stories';
 
   /**
    * Always point at the currently published article.
@@ -374,10 +367,7 @@ export default async function PreviewPage({
                 aria-hidden
               />
 
-              {locale ===
-              'es'
-                ? 'Volver al editor'
-                : 'Back to editor'}
+              {access&&!canMountEditor?(locale==='es'?'Volver al espacio de trabajo':'Back to workspace'):(locale==='es'?'Volver al editor':'Back to editor')}
             </Link>
 
             <div

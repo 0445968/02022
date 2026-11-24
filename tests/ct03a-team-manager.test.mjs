@@ -52,10 +52,16 @@ test('role updates require separate mutation flag, same-origin browser request a
 });
 
 test('team navigation disappears when staff v2 flag is off or viewer lacks team.view',()=>{
-  assert.match(layout,/CT_STAFF_ACCESS_V2_ENABLED === 'true'/);
-  assert.match(layout,/resolveStaffPermissionOnServer\('team\.view'\)/);
-  assert.match(layout,/showTeamNav=\{showTeamNav\}/);
-  assert.match(sidebar,/item\.key !== 'team' \|\| showTeamNav/);
+  const workspace=read('lib/services/newsroom-workspace.ts');
+  const policy=read('lib/permissions/workspace-policy.ts');
+  assert.match(workspace,/CT_STAFF_ACCESS_V2_ENABLED==='true'/);
+  assert.match(workspace,/resolveGlobalStaffPermissionsOnServer\(WORKSPACE_CAPABILITIES\)/);
+  assert.match(policy,/const viewTeam=all\('team\.view'\)/);
+  assert.match(policy,/if\(viewTeam\)nav\.push\('team'\)/);
+  assert.match(layout,/scopedNewsroomEnabled\(\)\?await getWorkspaceAccess\(\):null/);
+  assert.match(layout,/const showTeamNav = scoped\?\.viewTeam\?\?false/);
+  assert.match(layout,/showTeamNav=\{showTeamNav\} scopedNav=\{scoped\?\.nav\}/);
+  assert.match(sidebar,/item\.key!=='team'\|\|showTeamNav/);
   assert.match(sidebar,/href: '\/newsroom\/team'/);
 });
 
