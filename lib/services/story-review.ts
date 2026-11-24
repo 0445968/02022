@@ -7,6 +7,14 @@ import {DRAFT_UUID} from '@/lib/permissions/assigned-draft-contract';
 import {DraftHttpError} from '@/lib/permissions/assigned-draft-http';
 import {parseReviewState,type ReviewKind,type ReviewCommand} from '@/lib/permissions/story-review-contract';
 export function storyReviewEnabled(){return process.env.CT_STAFF_ACCESS_V2_ENABLED==='true'&&process.env.CT_STORY_REVIEW_ENABLED==='true'&&!isDevAuthBypass();}
+export async function canAccessStoryReview(id:string,kind:ReviewKind):Promise<boolean>{
+ if(!storyReviewEnabled()||!DRAFT_UUID.test(id))return false;
+ try{
+  const g=await resolveStoryStaffPermissionsOnServer(id,['newsroom.access','story.view_all','story.view_assigned','story.edit_all','story.edit_assigned','story.submit_review','story.review','revision.view','revision.edit_assigned']);
+  const submit=g.has('story.submit_review')&&(g.has('story.edit_all')||(g.has('story.edit_assigned')&&(kind==='draft'||g.has('revision.edit_assigned'))));
+  return g.has('newsroom.access')&&(g.has('story.view_all')||g.has('story.view_assigned'))&&(kind==='draft'||g.has('revision.view'))&&(submit||g.has('story.review'));
+ }catch{return false;}
+}
 async function client(id:string,kind:ReviewKind,action?:ReviewCommand['action']){
  if(!storyReviewEnabled()||!DRAFT_UUID.test(id))throw new DraftHttpError(404);
  const db=createClient() as unknown as SupabaseClient;

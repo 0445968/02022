@@ -1,3 +1,4 @@
+import {canAccessStoryReview} from '@/lib/services/story-review';
 import {canPickAssignedMedia} from '@/lib/services/assigned-media';
 import {notFound,redirect} from 'next/navigation';
 import {getCurrentUser} from '@/lib/auth/session';
@@ -17,5 +18,5 @@ export default async function AssignedRevisionPage({params}:{params:{id:string}}
  try{state=await readAssignedRevision(params.id);}
  catch(e){if(e instanceof DraftHttpError&&[403,404,409].includes(e.status))notFound();
   return <p role="alert" className="p-6 text-sm text-muted-foreground">{locale==='es'?'No se pudo cargar la revisión. Actualice la página.':'Unable to load revision. Refresh this page.'}</p>;}
- return <AssignedDraftEditor key={state.id} initial={state} revisionMode approvedMedia={state.status==='draft'&&await canPickAssignedMedia(state.id,true)} dict={getDictionary(locale)} locale={locale} userId={user.id}/>;
+ return <AssignedDraftEditor key={state.id} initial={state} revisionMode reviewEnabled={await canAccessStoryReview(state.id,'revision')} approvedMedia={state.status==='draft'&&await canPickAssignedMedia(state.id,true)} dict={getDictionary(locale)} locale={locale} userId={user.id}/>;
 }

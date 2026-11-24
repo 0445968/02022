@@ -73,6 +73,7 @@ export function StoryEditor({
   editors,
   versions,
   assignmentHref,
+  reviewHref,
 }: StoryEditorProps) {
   const router =
     useRouter();
@@ -667,6 +668,8 @@ export function StoryEditor({
 
       <StoryEditorHeader
         assignmentHref={assignmentHref}
+        reviewEnabled={Boolean(reviewHref)}
+        onOpenReview={()=>{if(reviewHref)void (async()=>{if(await autosave.flushSave())router.push(reviewHref);})();}}
         dict={dict}
         locale={locale}
         status={
