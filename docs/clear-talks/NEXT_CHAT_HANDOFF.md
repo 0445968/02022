@@ -1,3 +1,11 @@
+# CURRENT HANDOFF — CT-04a.1 (2026-11-23 America/Chicago)
+**CT-04 IN PROGRESS: first invitation security contract slice only. NOT A WORKING INVITATION FLOW.**
+- Branch `feature/ct04a-invitation-foundation-2026-11-23`, stacked on CT-03c PR #18 final `a9dc0d743180c26bdfc64789f49711cf66f00e73`; latest main independently verified unchanged `f5c0140fb2db165e43303a064f7bc15b765d4505`. CT-03c final 12 checks all passed.
+- New `lib/permissions/staff-invitation-contract.ts` and `tests/ct04a-invitation-contract.test.mjs`: role/type/expiry/preset revision input checks, 256-bit random single-use token material and digest, verified identity/lifecycle preflight; no persistence/atomic consume or user activation yet. Check final CI. See `CT04A1_REVIEW.md`.
+- NEXT CT-04a.2: CLI-generated RLS migration, owner-only audit/issue/revoke/replace/list, verified-email transactional redeem, separate feature flag, strict API and bilingual management UI; implement and test true one-time use/concurrency, no self-elevation, no revived revoked accounts, no automatic byline linkage. CT-04b first-login and CT-05 scoped Newsroom follow. No external messages sent or delivery claimed. All prior release gates remain. No production merge, deploy, migration, role seed, flag, email, font or UI change.
+
+---
+## Historical handoffs
 # CURRENT HANDOFF — CT-03c (2026-11-23 America/Chicago)
 **CT-03c staged role preset capability matrix code/isolated security tests, draft PR #18; NOT MERGED OR DEPLOYED.** CT-02 live security cutover remains blocked.
 
