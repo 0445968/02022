@@ -1,4 +1,4 @@
-name: CT-06c.2 PostgreSQL reviewed schedule execution
+name: CT-08a PostgreSQL editorial calendar
 on:
   pull_request:
   workflow_dispatch:
