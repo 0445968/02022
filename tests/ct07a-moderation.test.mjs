@@ -21,3 +21,10 @@ test('CT07a scope and private audited moderation, no direct staff bypass',()=>{
  assert.match(file('lib/services/comment-moderation.ts'),/auth\.getUser\(\)/);
  assert.match(file('.env.example'),/CT_COMMENT_MODERATION_ENABLED=false/);
 });
+
+test('CT07a queue accepts exact redacted projection only',()=>{
+ const item={id,storyId:id,headline:'Public story',parentId:null,author:'Reader',body:'[deleted]',status:'deleted',revision:2,createdAt:'2026-11-24T00:00:00Z',updatedAt:'2026-11-24T00:01:00Z',canModerate:false,openReports:null};
+ assert.deepEqual(parseModerationPage({items:[item],hasMore:false}).items,[item]);
+ assert.throws(()=>parseModerationPage({items:[{...item,email:'private@example.invalid'}],hasMore:false}));
+ assert.throws(()=>parseModerationPage({items:Array(21).fill(item),hasMore:true}));
+});

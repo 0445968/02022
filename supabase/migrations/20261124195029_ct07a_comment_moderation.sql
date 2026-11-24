@@ -98,7 +98,7 @@ returns jsonb language sql stable security invoker set search_path=''
 as $fn$
  select jsonb_build_object('id',c.id,'storyId',c.story_id,'headline',s.headline,'parentId',c.parent_id,
   'author',coalesce(p.display_name,'Reader'),'body',c.body,'status',c.status,'revision',c.moderation_revision,
-  'createdAt',c.created_at,'updatedAt',c.updated_at,'canModerate',c.user_id is distinct from (select auth.uid()) and newsroom_private.comment_scope_allowed(c.story_id,'moderate'),
+  'createdAt',c.created_at,'updatedAt',c.updated_at,'canModerate',c.status<>'deleted' and c.user_id is distinct from (select auth.uid()) and newsroom_private.comment_scope_allowed(c.story_id,'moderate'),
   'openReports',case when newsroom_private.comment_scope_allowed(c.story_id,'reports') then
    (select count(*) from public.comment_reports r where r.comment_id=c.id and r.status='open') else null end)
  from public.comments c join public.stories s on s.id=c.story_id

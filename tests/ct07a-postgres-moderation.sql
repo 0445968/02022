@@ -119,3 +119,44 @@ do $fn$ begin
 end; $fn$;
 rollback;
 select 'CT-07a audited comment decisions, scoped visibility, reader edit CAS, redaction and deny precedence passed' as result;
+
+-- Assigned-only moderation cannot extend to unrelated public stories.
+begin;
+insert into public.staff_role_capabilities(role_preset_id,capability_key,scope)
+select p.id,k::public.staff_capability_key,scope from public.staff_role_presets p
+cross join (values('newsroom.access','all'),('comment.view_queue','assigned'),('comment.moderate','assigned')) x(k,scope)
+where p.role_key='freelancer' on conflict do nothing;
+set local role authenticated;
+set local request.jwt.claim.sub='00000000-0000-0000-0000-000000000003';
+do $fn$ begin
+ if jsonb_array_length(public.staff_read_comment_queue('all',null,'',0)->'items')<>0 then raise exception 'Assigned moderator got unrelated queue';end if;
+ begin perform public.staff_read_comment_detail('41000000-0000-0000-0000-000000000002');raise exception 'Assigned moderator got unrelated detail';exception when insufficient_privilege then null;end;
+end; $fn$;
+reset role;
+insert into public.staff_story_assignments(story_id,membership_id,assignment_type)
+values('20000000-0000-0000-0000-000000000001','10000000-0000-0000-0000-000000000003','reviewer');
+insert into public.comments(id,story_id,user_id,body,status)
+values('41000000-0000-0000-0000-000000000005','20000000-0000-0000-0000-000000000001','00000000-0000-0000-0000-000000000005','Reader comment for scoped approval','pending');
+set local role authenticated;
+do $fn$ declare v jsonb; n integer;
+begin
+ v:=public.staff_read_comment_queue('all',null,'',0);
+ if jsonb_array_length(v->'items')<>4 then raise exception 'Assigned moderator cannot see eligible story';end if;
+ if jsonb_array_length(public.staff_read_comment_queue('reported',null,'',0)->'items')<>0 then raise exception 'Report count leaked without report permission';end if;
+ v:=public.staff_read_comment_detail('41000000-0000-0000-0000-000000000001');
+ if (v->'comment'->>'canModerate')::boolean or v->'comment'->'openReports' is distinct from 'null'::jsonb then raise exception 'Self moderation or report metadata leaked';end if;
+ begin perform public.staff_change_comment_moderation('41000000-0000-0000-0000-000000000001',1,'hide','Staff tries own comment moderation',gen_random_uuid());raise exception 'Staff moderated own reader comment';exception when insufficient_privilege then null;end;
+ begin update public.comments set status='published' where id='41000000-0000-0000-0000-000000000003';raise exception 'Staff self-approved reader comment directly';exception when insufficient_privilege then null;end;
+ v:=public.staff_change_comment_moderation('41000000-0000-0000-0000-000000000005',1,'approve','Scoped third party comment approval',gen_random_uuid());
+ if v->'comment'->>'status'<>'published' then raise exception 'Scoped third party approve failed';end if;
+end; $fn$;
+rollback;
+begin;
+set local role authenticated;
+set local request.jwt.claim.sub='00000000-0000-0000-0000-000000000002';
+do $fn$ begin
+ begin update public.comment_reports set status='actioned',reviewed_by=auth.uid(),reviewed_at=now() where id='42000000-0000-0000-0000-000000000001';
+ raise exception 'Unaudited report disposition allowed';exception when insufficient_privilege then null;end;
+end; $fn$;
+rollback;
+select 'CT-07a assigned scope, staff self moderation, report isolation passed' as result;
