@@ -23,7 +23,8 @@ insert into auth.users(id,email,email_confirmed_at,is_anonymous) values
   ('40000000-0000-4000-8000-000000000006','canceled@example.test',now(),false),
   ('40000000-0000-4000-8000-000000000007','banned@example.test',now(),false),
   ('40000000-0000-4000-8000-000000000008','deleted@example.test',now(),false),
-  ('40000000-0000-4000-8000-000000000009','owner-lost@example.test',now(),false);
+  ('40000000-0000-4000-8000-000000000009','owner-lost@example.test',now(),false),
+  ('40000000-0000-4000-8000-000000000010','expired@example.test',now(),false);
 update auth.users set banned_until=now()+interval '1 day' where email='banned@example.test';
 update auth.users set deleted_at=now() where email='deleted@example.test';
 -- Isolated bootstrap only: owner grant must predate immutable CT-03c ceiling.
@@ -193,6 +194,77 @@ begin
     raise exception 'Failed redemption left side effects';
   end if;
 end $$;
+rollback;
+
+-- Expiry is real database time, not an app-supplied date or mock token check.
+begin;
+set local role service_role;
+select public.staff_issue_invitation(
+  '00000000-0000-0000-0000-000000000001','expired@example.test','freelancer',1,'freelancer',
+  clock_timestamp()+interval '2 seconds',clock_timestamp()+interval '90 days',
+  repeat('3',64),null,'Approved short lived isolated test invitation',gen_random_uuid());
+commit;
+select pg_sleep(2.1);
+begin;
+set local role service_role;
+do $ begin
+  begin
+    perform public.test_redeem('40000000-0000-4000-8000-000000000010',repeat('3',64));
+    raise exception 'Expired invite redeemed';
+  exception when insufficient_privilege then null; end;
+  if not exists(select 1 from public.staff_list_invitations(
+      '00000000-0000-0000-0000-000000000001',0)
+      where email_hint='e***@example.test' and status='expired') then
+    raise exception 'Expired invitation status absent';
+  end if;
+end $;
+rollback;
+
+-- Fresh DB Auth verification is essential even when a previously verified
+-- account had a matching email at issue.
+begin;
+update auth.users set email='changed@example.test'
+where id='40000000-0000-4000-8000-000000000001';
+set local role service_role;
+do $ begin
+  begin
+    perform public.test_redeem('40000000-0000-4000-8000-000000000001',repeat('9',64));
+    raise exception 'Invite redeemed after verified email changed';
+  exception when insufficient_privilege then null; end;
+end $;
+rollback;
+
+-- Even an isolated DBA modifying an allowed grant without revision increment
+-- invalidates an outstanding invitation through the actual grant fingerprint.
+begin;
+insert into public.staff_role_capabilities(role_preset_id,capability_key,scope)
+select id,'media.upload','all' from public.staff_role_presets where role_key='freelancer';
+set local role service_role;
+do $ begin
+  begin
+    perform public.test_redeem('40000000-0000-4000-8000-000000000001',repeat('9',64));
+    raise exception 'Changed grant fingerprint redeemed';
+  exception when insufficient_privilege then null; end;
+end $;
+rollback;
+
+-- Bound administrative issuance, including replacements, within rolling hour.
+begin;
+set local role service_role;
+do $
+declare v_count integer; n integer;
+begin
+  select count(*) into v_count from public.staff_invitations
+  where issued_by='00000000-0000-0000-0000-000000000001'
+    and issued_at>now()-interval '1 hour';
+  for n in 1..(30-v_count) loop
+    perform public.test_invite('rate-'||n||'@example.test',lpad(to_hex(1000+n),64,'0'));
+  end loop;
+  begin
+    perform public.test_invite('over-limit@example.test',lpad(to_hex(9999),64,'0'));
+    raise exception 'Issuance rate limit failed';
+  exception when program_limit_exceeded then null; end;
+end $;
 rollback;
 
 -- Force a failure after membership/role insert but before final invite update.

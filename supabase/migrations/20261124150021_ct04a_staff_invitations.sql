@@ -314,7 +314,10 @@ begin
     raise exception 'Invitation redemption denied' using errcode='42501';
   end if;
   select pg_catalog.lower(pg_catalog.btrim(u.email)) into v_email
-    from auth.users u where u.id=p_verified_auth_user_id;
+    from auth.users u where u.id=p_verified_auth_user_id
+      and u.email_confirmed_at is not null and u.email_confirmed_at<=v_now
+      and u.is_anonymous=false and u.deleted_at is null
+      and (u.banned_until is null or u.banned_until<=v_now);
   if v_email is distinct from v_inv.email_normalized
     or exists(select 1 from auth.users u where u.id<>p_verified_auth_user_id
       and u.deleted_at is null and pg_catalog.lower(pg_catalog.btrim(u.email))=v_email)
