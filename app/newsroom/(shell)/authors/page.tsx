@@ -1,3 +1,4 @@
+import {requireWorkspacePage,scopedNewsroomEnabled,newsroomLocale} from '@/lib/services/newsroom-workspace';
 import {
     redirect,
   } from 'next/navigation';
@@ -23,13 +24,10 @@ import {
   } from '@/components/editorial/authors/AuthorManager';
   
   export default async function AuthorsPage() {
-    const user =
-      await getCurrentUser();
+    await requireWorkspacePage('manageBylines');
+    const user = await getCurrentUser();
   
-    const locale =
-      user?.profile
-        ?.preferredLocale ??
-      defaultLocale;
+    const locale=await newsroomLocale(user);
   
     const dict =
       getDictionary(locale);
@@ -39,8 +37,7 @@ import {
     }
   
     if (
-      !user.profile
-        ?.isEditor
+      !scopedNewsroomEnabled()&&!user.profile?.isEditor
     ) {
       redirect(
         '/newsroom'

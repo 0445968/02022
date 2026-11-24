@@ -2,6 +2,7 @@ import { FileText, FileEdit, Send, Eye } from 'lucide-react';
 import Link from 'next/link';
 import {redirect} from 'next/navigation';
 import type {StaffOnboardingState} from '@/lib/permissions/staff-onboarding-types';
+import {getWorkspaceAccess,scopedNewsroomEnabled} from '@/lib/services/newsroom-workspace';
 import {staffOnboardingEnabled,readStaffOnboarding} from '@/lib/services/staff-onboarding';
 import { getCurrentUser } from '@/lib/auth/session';
 import { getDictionary } from '@/lib/i18n/dictionaries';
@@ -19,6 +20,9 @@ export default async function NewsroomDashboard() {
   const locale = onboarding?.profile?.locale??user?.profile?.preferredLocale??defaultLocale;
   const dict = getDictionary(locale);
   const roleLabel = resolveRoleLabel(user);
+  const access=scopedNewsroomEnabled()?await getWorkspaceAccess():null;
+  if(access&&!access.allowed)redirect('/newsroom/denied');
+  if(access&&!access.viewStories)redirect('/newsroom/contributor');
   const counts = await getStoryCounts();
 
   const stats = [
@@ -39,12 +43,12 @@ export default async function NewsroomDashboard() {
             {dict.newsroom.dashboardDesc}
           </p>
         </div>
-        <Link
+        {(!access||access.createStory)&&<Link
           href="/newsroom/stories/new"
           className="inline-flex h-9 items-center gap-1.5 rounded-[6px] bg-primary px-4 text-sm font-semibold text-white transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >
           + {dict.newsroom.newStory}
-        </Link>
+        </Link>}
       </div>
 
       {/* Stats grid */}

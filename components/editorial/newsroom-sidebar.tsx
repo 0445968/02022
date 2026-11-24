@@ -22,17 +22,23 @@ import type {
 } from '@/lib/i18n/dictionaries';
 
 import type {
-  CurrentUser,
+  CurrentUser, Locale,
 } from '@/types';
 
 import {
   cn,
 } from '@/lib/utils';
 
+import type {WorkspaceNavKey} from '@/lib/permissions/workspace-policy';
+
 interface NewsroomSidebarProps {
   dict: Dictionary;
   user: CurrentUser;
   showTeamNav?: boolean;
+  scopedNav?: WorkspaceNavKey[];
+  locale?: Locale;
+  staffName?: string;
+  staffRoles?: string;
 }
 
 const NAV = [
@@ -102,11 +108,13 @@ const NAV = [
 export function NewsroomSidebar({
   dict,
   user,
-  showTeamNav = false,
+  showTeamNav = false,scopedNav,locale='en',staffName,staffRoles,
 }: NewsroomSidebarProps) {
   const pathname =
     usePathname();
 
+  const items=scopedNav?scopedNav.map(key=>key==='contributor'?{key,icon:LayoutDashboard,href:'/newsroom/contributor'}:
+    key==='profile'?{key,icon:User,href:'/newsroom/onboarding'}:NAV.find(item=>item.key===key)!).filter(Boolean):NAV.filter(item=>item.key!=='team'||showTeamNav);
   return (
     <aside
       className="
@@ -152,13 +160,10 @@ export function NewsroomSidebar({
             text-deep
           "
         >
-          {user.profile
-            ?.name ??
-            user.email}
+          {scopedNav?(staffName|| (locale==='es'?'Integrante del equipo':'Staff member')):(user.profile?.name??user.email)}
         </p>
 
-        {user.profile
-          ?.editorialTitle && (
+        {(scopedNav?staffRoles:user.profile?.editorialTitle) && (
           <p
             className="
               text-xs
@@ -166,8 +171,7 @@ export function NewsroomSidebar({
             "
           >
             {
-              user.profile
-                .editorialTitle
+              scopedNav?staffRoles:user.profile?.editorialTitle
             }
           </p>
         )}
@@ -187,7 +191,7 @@ export function NewsroomSidebar({
             px-2
           "
         >
-          {NAV.filter(item => item.key !== 'team' || showTeamNav).map(
+          {items.map(
             (item) => {
               const Icon =
                 item.icon;
@@ -197,9 +201,7 @@ export function NewsroomSidebar({
                 '/newsroom'
                   ? pathname ===
                     '/newsroom'
-                  : pathname.startsWith(
-                      item.href
-                    );
+                  : (pathname===item.href||pathname.startsWith(item.href+'/'))&&!(item.key==='stories'&&pathname==='/newsroom/stories/new');
 
               /*
                * Temporary literal label
@@ -209,9 +211,7 @@ export function NewsroomSidebar({
                * dictionary values next.
                */
               const label =
-  dict.newsroom[
-    item.key as keyof typeof dict.newsroom
-  ];
+  item.key==='contributor'?(locale==='es'?'Mi espacio de trabajo':'My workspace'):dict.newsroom[item.key as keyof typeof dict.newsroom];
 
               return (
                 <li

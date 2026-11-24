@@ -1,10 +1,10 @@
 import { redirect } from 'next/navigation';
-import { getCurrentUser, RequireAuthError, RequireRoleError } from '@/lib/auth/session';
+import { getCurrentUser } from '@/lib/auth/session';
 import { mayEnterNewsroom } from '@/lib/permissions/staff-route-gates';
 import { resolveStaffPermissionOnServer } from '@/lib/permissions/server';
 import { getDictionary } from '@/lib/i18n/dictionaries';
 import { defaultLocale } from '@/lib/i18n/config';
-import {staffOnboardingEnabled,readStaffOnboarding} from '@/lib/services/staff-onboarding';
+import {getWorkspaceAccess,scopedNewsroomEnabled,readWorkspaceOnboarding} from '@/lib/services/newsroom-workspace';
 import { NewsroomShell } from '@/components/editorial/newsroom-shell';
 
 /**
@@ -22,11 +22,11 @@ export default async function NewsroomLayout({
   try {
     user = await getCurrentUser();
   } catch {
-    redirect('/en/auth/sign-in');
+    redirect('/en/auth/sign-in?next=%2Fnewsroom');
   }
 
   if (!user) {
-    redirect('/en/auth/sign-in');
+    redirect('/en/auth/sign-in?next=%2Fnewsroom');
   }
 
   if (!(await mayEnterNewsroom(user))) {
@@ -35,9 +35,10 @@ export default async function NewsroomLayout({
   }
 
   let locale = user.profile?.preferredLocale ?? defaultLocale;
-  if(staffOnboardingEnabled()){
-    try{locale=(await readStaffOnboarding()).profile?.locale??locale;}catch{/* No fallback authorization: entrance was already verified. */}
-  }
+  const scoped=scopedNewsroomEnabled()?await getWorkspaceAccess():null;
+  if(scoped&&!scoped.allowed)redirect('/newsroom/denied');
+  const onboarding=scoped?await readWorkspaceOnboarding():null;
+  locale=onboarding?.profile?.locale??locale;
   const dict = getDictionary(locale);
   const showTeamNav = process.env.CT_STAFF_ACCESS_V2_ENABLED === 'true'
     && (await resolveStaffPermissionOnServer('team.view')).allowed;
@@ -47,7 +48,8 @@ export default async function NewsroomLayout({
   dict={dict}
   locale={locale}
   user={user}
-  showTeamNav={showTeamNav}
+  showTeamNav={showTeamNav} scopedNav={scoped?.nav}
+  staffName={onboarding?.profile?.displayName} staffRoles={onboarding?.roles.map(r=>locale==='es'?r.nameEs:r.nameEn).join(' · ')}
 >
   {children}
 </NewsroomShell>

@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import {getWorkspaceAccess,requireWorkspacePage,scopedNewsroomEnabled,newsroomLocale} from '@/lib/services/newsroom-workspace';
 import { Plus } from 'lucide-react';
 import { getCurrentUser } from '@/lib/auth/session';
 import { getDictionary } from '@/lib/i18n/dictionaries';
@@ -27,8 +28,10 @@ const VALID_LANGUAGES: StoryLanguage[] = ['en', 'es'];
 const VALID_ISLANDS: IslandScope[] = ['san_andres', 'old_providence', 'saint_catalina', 'archipelago', 'none'];
 
 export default async function StoriesPage({ searchParams }: PageProps) {
+  await requireWorkspacePage('viewStories');
+  const access=scopedNewsroomEnabled()?await getWorkspaceAccess():null;
   const user = await getCurrentUser();
-  const locale = user?.profile?.preferredLocale ?? defaultLocale;
+  const locale = await newsroomLocale(user);
   const dict = getDictionary(locale);
 
   const page = parseInt(searchParams.page ?? '1', 10) || 1;
@@ -70,17 +73,18 @@ export default async function StoriesPage({ searchParams }: PageProps) {
             {storiesResult.total} {dict.common.results}
           </p>
         </div>
-        <Link
+        {(!access||access.createStory)&&<Link
           href="/newsroom/stories/new"
           className="inline-flex h-9 items-center gap-1.5 bg-primary px-4 text-sm font-semibold text-white transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >
           <Plus className="h-4 w-4" aria-hidden />
           {dict.stories.newStory}
-        </Link>
+        </Link>}
       </div>
 
       <StoriesDashboard
         dict={dict}
+        canEdit={!access||access.fullEditor}
         stories={storiesResult.items}
         page={storiesResult.page}
         totalPages={storiesResult.totalPages}

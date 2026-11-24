@@ -13,6 +13,7 @@ import type { Locale } from '@/types';
 
 interface StoriesDashboardProps {
   dict: Dictionary;
+  canEdit?:boolean;
   stories: StoryListItem[];
   page: number;
   totalPages: number;
@@ -35,7 +36,7 @@ const LANGUAGES: (StoryLanguage | 'all')[] = ['all', 'en', 'es'];
 const ISLANDS: (IslandScope | 'all')[] = ['all', 'san_andres', 'old_providence', 'saint_catalina', 'archipelago', 'none'];
 const SORTS: StoriesDashboardProps['currentFilters']['sortBy'][] = ['updated_desc', 'updated_asc', 'published_desc', 'headline_asc'];
 
-export function StoriesDashboard({ dict, stories, page, totalPages, total, categories, authors, currentFilters }: StoriesDashboardProps) {
+export function StoriesDashboard({ dict, canEdit=true, stories, page, totalPages, total, categories, authors, currentFilters }: StoriesDashboardProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [searchInput, setSearchInput] = useState(currentFilters.search);
@@ -175,7 +176,7 @@ export function StoriesDashboard({ dict, stories, page, totalPages, total, categ
                         </span>
                       )}
                       <Link
-                        href={`/newsroom/stories/${story.id}/edit`}
+                        href={canEdit?`/newsroom/stories/${story.id}/edit`:`/newsroom/stories/${story.id}/preview`}
                         className="font-medium text-deep hover:text-primary focus-visible:outline-none focus-visible:underline"
                       >
                         {story.headline || '(untitled)'}

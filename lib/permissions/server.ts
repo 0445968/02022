@@ -179,3 +179,48 @@ export async function resolveStaffPermissionOnServer(
     return denied;
   }
 }
+
+
+/** Batch global capability decisions from one fresh, user-session RLS snapshot.
+ * Resource-scoped capabilities are deliberately not satisfied by this reader.
+ * No service key, role-name defaults or client-supplied grants. */
+export async function resolveGlobalStaffPermissionsOnServer(keys:readonly string[]):Promise<Set<string>>{
+  const allowed=new Set<string>();
+  if(process.env.CT_STAFF_ACCESS_V2_ENABLED!=='true'||process.env.DEV_AUTH_BYPASS==='true')return allowed;
+  try{
+    const client=createClient() as unknown as SupabaseClient;
+    const {data:{user},error:userError}=await client.auth.getUser();
+    if(userError||!user)return allowed;
+    const {data:member,error:memberError}=await client.from('staff_memberships')
+      .select('id,auth_user_id,status,expires_at').eq('auth_user_id',user.id).maybeSingle();
+    if(memberError||!member||member.auth_user_id!==user.id||member.status!=='active'||!notExpired(member.expires_at))return allowed;
+    const [rolesResult,overridesResult]=await Promise.all([
+      client.from('staff_member_roles').select('role_preset_id,expires_at').eq('membership_id',member.id),
+      client.from('staff_capability_overrides').select('capability_key,effect,scope,expires_at').eq('membership_id',member.id)
+    ]);
+    if(rolesResult.error||overridesResult.error)return allowed;
+    const roles=(rolesResult.data??[] as MemberRoleRow[]).filter((r:MemberRoleRow)=>notExpired(r.expires_at));
+    const presetIds=[...new Set(roles.map((r:MemberRoleRow)=>r.role_preset_id))];
+    const roleGrants:CapabilityGrant[]=[];
+    if(presetIds.length){
+      const {data,error}=await client.from('staff_role_capabilities')
+        .select('role_preset_id,capability_key,scope').in('role_preset_id',presetIds);
+      if(error)return allowed;
+      for(const row of (data??[]) as RoleGrantRow[]){
+        const role=roles.find((r:MemberRoleRow)=>r.role_preset_id===row.role_preset_id);
+        if(role&&isCapability(row.capability_key)&&isScope(row.scope))
+          roleGrants.push({capability:row.capability_key,scope:row.scope,expiresAt:role.expires_at});
+      }
+    }
+    const overrides:CapabilityOverride[]=[];
+    for(const row of (overridesResult.data??[]) as OverrideRow[]){
+      if(isCapability(row.capability_key)&&isScope(row.scope)&&(row.effect==='allow'||row.effect==='deny'))
+        overrides.push({capability:row.capability_key,scope:row.scope,effect:row.effect,expiresAt:row.expires_at});
+    }
+    const snapshot:MembershipSnapshot={id:member.id,authUserId:member.auth_user_id,status:member.status,
+      expiresAt:member.expires_at,roleGrants,overrides};
+    const now=new Date();
+    for(const key of keys)if(key!=='reader.personal'&&resolveEffectivePermission({userId:user.id},snapshot,key,undefined,now).allowed)allowed.add(key);
+    return allowed;
+  }catch{return new Set();}
+}

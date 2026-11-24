@@ -15,12 +15,17 @@ import type {
   Locale,
 } from '@/types';
 
+import type {WorkspaceNavKey} from '@/lib/permissions/workspace-policy';
+
 interface NewsroomShellProps {
   dict: Dictionary;
   locale: Locale;
   user: CurrentUser;
   children: React.ReactNode;
   showTeamNav?: boolean;
+  scopedNav?:WorkspaceNavKey[];
+  staffName?:string;
+  staffRoles?:string;
 }
 
 export function NewsroomShell({
@@ -28,7 +33,7 @@ export function NewsroomShell({
   locale,
   user,
   children,
-  showTeamNav = false,
+  showTeamNav = false,scopedNav,staffName,staffRoles,
 }: NewsroomShellProps) {
   return (
     <div className="flex h-screen flex-col overflow-hidden bg-surface-subtle">
@@ -41,7 +46,7 @@ export function NewsroomShell({
         <NewsroomSidebar
           dict={dict}
           user={user}
-          showTeamNav={showTeamNav}
+          showTeamNav={showTeamNav} scopedNav={scopedNav} locale={locale} staffName={staffName} staffRoles={staffRoles}
         />
 
         <main
