@@ -217,3 +217,7 @@ These are recommended starter presets and architecture, NOT yet an instruction t
 
 ### CT-07c.2a staged staff Reports UI
 [Draft PR #39](https://github.com/0445968/02022/pull/39): report-only current comment.manage_reports can discover Reports and resolve independent reports without comment.moderate. Current scope enforced per row/action in existing CT07c1 SQL; separate exact comment queue/moderation rights for comment link, actual report rights and same story/comment for return link. No raw other reporter IDs; no automatic comment mutation. Flag OFF, no live changes.
+
+
+### CT-07c.2b staged reader reporting
+[Draft PR #40](https://github.com/0445968/02022/pull/40): current verified reader only, exact published third-party comment and displayed timestamp, one report per comment with duplicate receipt recovery. Own report status projection only, no reviewer IDs/internal notes or raw report table grants. Existing staff scope and resolution preserved, no auto moderation. Flag OFF, no live changes.
