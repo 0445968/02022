@@ -6,6 +6,7 @@ import {createClient} from '@/lib/db/supabase-server';
 import {isDevAuthBypass} from '@/lib/db/supabase-data';
 import {resolveStaffPermissionOnServer,resolveGlobalStaffPermissionsOnServer,resolveStoryStaffPermissionsOnServer} from '@/lib/permissions/server';
 import {buildWorkspaceAccess,WORKSPACE_CAPABILITIES,type WorkspaceAccess} from '@/lib/permissions/workspace-policy';
+import {canEnterPolls} from '@/lib/services/polls';
 import {canEnterEditorialCalendar} from '@/lib/services/editorial-calendar';
 import {canEnterReportManagement} from '@/lib/services/comment-reports';
 import {canEnterCommentModeration} from '@/lib/services/comment-moderation';
@@ -26,6 +27,7 @@ export const getWorkspaceAccess=cache(async():Promise<WorkspaceAccess>=>{
   if(access.allowed&&await canEnterCommentModeration())access.nav.push('comments');
   if(access.allowed&&await canEnterReportManagement())access.nav.push('reports');
   if(access.allowed&&await canEnterEditorialCalendar())access.nav.push('schedule');
+  if(access.allowed&&await canEnterPolls())access.nav.push('polls');
   return access;
 });
 export async function requireWorkspacePage(key: keyof Pick<WorkspaceAccess,'viewStories'|'fullEditor'|'createStory'|'fullMedia'|'manageBylines'|'fullHomepage'|'viewTeam'>){

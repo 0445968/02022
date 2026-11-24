@@ -1,3 +1,11 @@
+# CURRENT HANDOFF — CT-09 polls
+**NEXT CT-10 Newsroom Profile and Dashboard after exact final #49 CI.**
+- Draft PR #49, branch `feature/ct09-polls-2026-11-24`. Parent #48 final a6e81d3018788e27ab28315d6b227f485801f0b7 all 35 workflows green, including integrated calendar/contended lock #45508586391 and app #45508586095.
+- CT09 staged staff /newsroom/polls, bounded list/create/edit draft, submit/withdraw, independent publisher approval with current reviewer authority at publication, publish/close/retire, immutable published question/options/window, per-poll caps, aggregate results permission and explicit results release after close and minimum five responses. Global poll capabilities only (no assumed assigned scopes); version checks and editorial audit events. Public locale /en/polls and /es/polls, authenticated verified one-choice vote per account/poll, same-choice idempotent receipt, locked cap/close and per-account five votes/minute, no raw voter identities or small results exposed. DB public gate defaults false independently of app flags. Account deletion cascades individual votes and can suppress results but cannot reopen capped poll. No new role grants, no live SQL/public activation. Staff/public UI and API, strict contracts, isolated integrated tests and documentation.
+- Verify exact HEAD CI and correct any failures. `supabase/migrations/20261124231848_ct09_polls.sql` unapplied; see CT09_POLLS_REVIEW.md for proposed policy, privacy/retention, public gate and release tests. CT08 live activation remains pending. Continue larger coherent batches; no production SQL/flags/grants/accounts/email/deploy/main merge.
+
+---
+## Historical handoffs
 # CURRENT HANDOFF — CT-08 consolidated completion
 **NEXT CT-09 Newsroom Polls after exact final #48 CI; CT08 live activation and hosted integration gates remain explicitly pending.**
 - Draft PR #48, branch `feature/ct08c-completion-2026-11-24`. Parent #47 final a8d29adb8974298b9680d6e0394062d282ccbb57 all 34 workflows green; retry #45507690193 and app #45507689983.
