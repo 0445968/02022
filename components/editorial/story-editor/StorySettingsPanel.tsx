@@ -95,6 +95,7 @@ export function StorySettingsPanel({
   slugLocked,
   originallyPublishedAt,
   scheduledAt,
+  reviewedPublication=false,
   versions,
   userIsEditor,
   categories,
@@ -410,6 +411,9 @@ export function StorySettingsPanel({
           )}
         </Field>
 
+        {reviewedPublication?<Field label={dict.story.scheduledDate}>
+          <p className="text-sm text-muted-foreground">{locale==='es'?'La programación se gestiona desde la revisión editorial de una versión aprobada.':'Scheduling is managed from editorial review of an approved version.'}</p>
+        </Field>:(
         <Field
           label={
             dict.story
@@ -539,6 +543,7 @@ export function StorySettingsPanel({
             </div>
           )}
         </Field>
+        )}
       </Section>
 
       {/* =================================================== */}

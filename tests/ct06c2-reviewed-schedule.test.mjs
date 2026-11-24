@@ -16,3 +16,9 @@ test('CT06c2 UI queues only current approved fingerprint, confirms UTC and block
  assert.match(file('components/editorial/story-editor/StoryReviewPanel.tsx'),/state.decision==='approved'&&!schedule/);
  assert.match(file('.env.example'),/CT_REVIEWED_SCHEDULING_ENABLED=false/);
 });
+
+test('CT06c2 legacy date controls do not imply active scheduling',()=>{
+ assert.match(file('components/editorial/story-editor/StorySettingsPanel.tsx'),/reviewedPublication\?<Field label=\{dict.story.scheduledDate\}/);
+ assert.match(file('components/editorial/story-editor.tsx'),/const settingsProps = \{\s*reviewedPublication,/);
+ assert.match(file('components/editorial/story-editor/StoryReviewPanel.tsx'),/if\(scheduling\)\{window.location.reload\(\);return;\}/);
+});

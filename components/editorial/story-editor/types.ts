@@ -244,6 +244,7 @@ export interface StorySavePayload {
  * Props shared by desktop and mobile settings panels.
  */
 export interface StorySettingsPanelProps {
+  reviewedPublication?:boolean;
   dict: Dictionary;
 
   language: StoryLanguage;

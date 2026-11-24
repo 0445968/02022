@@ -20,6 +20,7 @@ export function StoryReviewPanel({initial,locale,backHref,canEdit,canPublish=fal
  function reset(){setNote('');setConfirmed(false);setOpened(false);setAction('approve');}
  async function refresh(){
   if(inFlight.current)return;
+  if(scheduling){window.location.reload();return;}
   inFlight.current=true;setBusy(true);setError('');setNotice('');
   try{const r=await fetch(url+'?kind='+state.kind,{cache:'no-store'});if(!r.ok)throw Error();
    setState(parseReviewState(await r.json(),state.storyId,state.kind));setBlocked(false);reset();

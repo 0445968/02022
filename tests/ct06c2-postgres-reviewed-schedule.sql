@@ -119,6 +119,21 @@ begin
 end;
 $fn$;
 commit;
+-- Explicit cancellation permits a current approved immediate publication
+-- after refactoring the common publisher; rollback retains the scheduled rows.
+begin;
+set local role authenticated;
+set local request.jwt.claim.sub='00000000-0000-0000-0000-000000000002';
+do $fn$
+declare sid uuid:='20000000-0000-0000-0000-000000000002'; v jsonb; q jsonb;
+begin
+ v:=public.staff_read_review(sid,'draft');q:=public.staff_read_reviewed_schedule(sid,'draft');
+ perform public.staff_cancel_reviewed_schedule(sid,'draft',(q->>'id')::uuid);
+ v:=public.staff_publish_reviewed_story(sid,'draft',(v->>'requestId')::uuid,v->>'fingerprint');
+ if v->>'status'<>'published' then raise exception 'Manual fallback did not publish approved copy';end if;
+end;
+$fn$;
+rollback;
 -- Test owner-only run without an Auth JWT; future rows must never publish.
 do $fn$ declare r jsonb;begin
  r:=newsroom_private.run_due_reviewed_publications(5);
@@ -126,6 +141,14 @@ do $fn$ declare r jsonb;begin
 end; $fn$;
 -- Simulate elapsed time on isolated fixtures only.
 update newsroom_private.reviewed_publication_schedules set due_at=now()-interval '1 second' where state='pending';
+begin;
+insert into public.staff_capability_overrides(membership_id,capability_key,effect,scope,reason,granted_by)
+values('10000000-0000-0000-0000-000000000002','story.schedule','deny','all','Remove scheduling authority before due time','00000000-0000-0000-0000-000000000001');
+do $fn$ declare r jsonb;begin
+ r:=newsroom_private.run_due_reviewed_publications(5);
+ if (r->>'blocked')::int<>2 or (r->>'published')::int<>0 or exists(select 1 from newsroom_private.publication_events) then raise exception 'Revoked scheduler authority escaped gate: %',r;end if;
+end; $fn$;
+rollback;
 begin;
 -- Reviewer revocation invalidates both due schedules; subtransactions leave
 -- live state, history and permits untouched.
