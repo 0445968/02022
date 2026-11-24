@@ -521,7 +521,7 @@ end $$;
 rollback;
 
 -- Failure did not partially replace the story's earlier category/tag links.
-do $
+do $$
 begin
   if (select count(*) from public.story_categories
       where story_id='20000000-0000-0000-0000-000000000001') <> 1
@@ -541,6 +541,6 @@ begin
     ) then
     raise exception 'Failed publication changed tag relationships';
   end if;
-end $;
+end $$;
 
 select 'CT-02f publisher and version RLS integration passed' as result;
