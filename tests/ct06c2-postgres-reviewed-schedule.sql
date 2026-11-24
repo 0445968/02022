@@ -2,6 +2,10 @@
 \i tests/ct06b2b-postgres-review-inbox.sql
 -- Clean the intentionally revoked draft image from earlier fixtures.
 update public.stories set body='{"type":"doc","content":[{"type":"paragraph"}]}' where id='20000000-0000-0000-0000-000000000002';
+\if :{?ct08a_calendar}
+-- Test-only pre-gate legacy schedule; never executed in hosted migration.
+update public.stories set status='scheduled',scheduled_at=now()-interval '1 day' where id='20000000-0000-0000-0000-000000000003';
+\endif
 \i supabase/migrations/20261124190734_ct06c_publication_gate.sql
 do $fn$ begin
  if has_table_privilege('authenticated','newsroom_private.publication_permits','INSERT')
@@ -119,6 +123,9 @@ begin
 end;
 $fn$;
 commit;
+\if :{?ct08a_calendar}
+\i tests/ct08a-calendar-active-fixture.sql
+\endif
 -- Explicit cancellation permits a current approved immediate publication
 -- after refactoring the common publisher; rollback retains the scheduled rows.
 begin;

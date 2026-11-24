@@ -225,3 +225,7 @@ These are recommended starter presets and architecture, NOT yet an instruction t
 
 ### CT-07d staged bulk moderation
 [Draft PR #41](https://github.com/0445968/02022/pull/41): authenticated invoker uses existing exact current verified comment.moderate per selected comment, same self-action prohibition and revision CAS, 1–20 all-or-nothing, individual audit events and reason, no raw table grants. Report resolution remains separately authorized/individual. Public comments use anonymous scoped read only with published parent + comment, no shared cache. Default off; no live changes.
+
+
+### CT-08a staged calendar read foundation
+[Draft PR #42](https://github.com/0445968/02022/pull/42): verified current newsroom access and exact story view plus calendar.view_team or calendar.view_assigned. Team sees scoped deadlines and minimal names, assigned-only own deadlines; revision queue requires revision.view, assigned queue existing review/scheduler access. Safe active queue metadata, snapshot consistency and independent cancel eligibility, legacy unverified team only. Read-only, flag OFF, no job installation or production changes.
