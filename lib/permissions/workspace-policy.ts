@@ -10,7 +10,7 @@ export const WORKSPACE_CAPABILITIES=[
   'homepage.edit','homepage.publish','team.view'
 ] as const;
 export type WorkspaceCapability=typeof WORKSPACE_CAPABILITIES[number];
-export type WorkspaceNavKey='dashboard'|'contributor'|'stories'|'newStory'|'media'|'authors'|'pageEditor'|'team'|'profile'|'reviewInbox';
+export type WorkspaceNavKey='dashboard'|'contributor'|'stories'|'newStory'|'media'|'authors'|'pageEditor'|'team'|'profile'|'reviewInbox'|'comments';
 export type WorkspaceAccess={
   allowed:boolean;landing:'/newsroom'|'/newsroom/contributor';nav:WorkspaceNavKey[];
   viewStories:boolean;fullEditor:boolean;createStory:boolean;fullMedia:boolean;privateMedia:boolean;
