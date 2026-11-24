@@ -3,6 +3,7 @@ import {notFound} from 'next/navigation';
 import {isLocale} from '@/lib/i18n/config';
 import {getCurrentUser} from '@/lib/auth/session';
 import {listPublicPolls,publicPollsEnabled} from '@/lib/services/polls';
+import type {PublicPollPage} from '@/lib/permissions/polls-contract';
 import {PublicPollCard} from '@/components/polls/PublicPollCard';
 export const dynamic='force-dynamic';
 export const metadata={robots:{index:false,follow:false},referrer:'no-referrer'};
@@ -11,7 +12,7 @@ export default async function PublicPolls({params,searchParams}:{params:{locale:
  const locale=params.locale,es=locale==='es',raw=searchParams.page??'0';
  if(typeof raw!=='string'||!/^\d{1,3}$/.test(raw)||Number(raw)>100)notFound();
  const page=Number(raw);
- let data;
+ let data:PublicPollPage;
  try{data=await listPublicPolls(locale,page);}catch{return <p role="alert" className="p-6 text-sm">{es?'No se pudieron cargar las encuestas.':'Unable to load polls.'}</p>;}
  if(!data.enabled)notFound();
  const user=await getCurrentUser();

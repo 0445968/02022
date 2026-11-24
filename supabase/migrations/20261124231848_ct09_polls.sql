@@ -48,7 +48,7 @@ as $fn$
  and newsroom_private.has_staff_permission('newsroom.access')
  and newsroom_private.has_staff_permission('poll.view_manage')
  and p_key in ('poll.view_manage','poll.edit','poll.publish','poll.manage_results')
- and newsroom_private.has_staff_permission(p_key)
+ and newsroom_private.has_staff_permission(p_key::public.staff_capability_key)
 $fn$;
 create function newsroom_private.poll_counts(p_id uuid,p_options integer)
 returns jsonb language sql stable security invoker set search_path=''
@@ -219,7 +219,8 @@ grant execute on function newsroom_private.staff_list_polls(integer),newsroom_pr
 grant execute on function newsroom_private.public_list_polls(text,integer) to anon,authenticated;
 create function public.staff_list_polls(p_page integer) returns jsonb language sql stable security invoker set search_path='' as $fn$ select newsroom_private.staff_list_polls(p_page) $fn$;
 create function public.staff_change_poll(p_action text,p_id uuid,p_version integer,p_copy jsonb) returns jsonb language sql security invoker set search_path='' as $fn$ select newsroom_private.staff_change_poll(p_action,p_id,p_version,p_copy) $fn$;
-create function public.public_list_polls(p_language text,p_page integer) returns jsonb language sql stable security invoker set search_path='' as $fn$ select newsroom_private.public_list_polls(p_language,p_page) $fn$;
+-- Bind the private function at creation without granting anon schema USAGE.
+create function public.public_list_polls(p_language text,p_page integer) returns jsonb language sql stable security invoker set search_path='' RETURN newsroom_private.public_list_polls(p_language,p_page);
 create function public.reader_vote_poll(p_id uuid,p_choice integer) returns jsonb language sql security invoker set search_path='' as $fn$ select newsroom_private.reader_vote_poll(p_id,p_choice) $fn$;
 revoke all on function public.staff_list_polls(integer),public.staff_change_poll(text,uuid,integer,jsonb),public.public_list_polls(text,integer),public.reader_vote_poll(uuid,integer) from public,anon,authenticated,service_role;
 grant execute on function public.staff_list_polls(integer),public.staff_change_poll(text,uuid,integer,jsonb),public.reader_vote_poll(uuid,integer) to authenticated;

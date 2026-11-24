@@ -2,12 +2,13 @@
 \i tests/ct08c-postgres-completion.sql
 \i supabase/migrations/20261124231848_ct09_polls.sql
 insert into public.staff_role_capabilities(role_preset_id,capability_key,scope)
-select p.id,k,'all' from public.staff_role_presets p cross join unnest(array['poll.view_manage','poll.edit','poll.publish','poll.manage_results']) k
+select p.id,k::public.staff_capability_key,'all' from public.staff_role_presets p cross join unnest(array['poll.view_manage','poll.edit','poll.publish','poll.manage_results']) k
 where p.role_key in ('owner','editor') on conflict do nothing;
 create temporary table ct09_ids(id uuid);
 grant select,insert on ct09_ids to authenticated;
 do $fn$ begin
- if has_table_privilege('authenticated','newsroom_private.poll_votes','SELECT')
+ if has_schema_privilege('anon','newsroom_private','USAGE')
+ or has_table_privilege('authenticated','newsroom_private.poll_votes','SELECT')
  or has_table_privilege('authenticated','newsroom_private.polls','UPDATE')
  or has_function_privilege('anon','public.reader_vote_poll(uuid,integer)','EXECUTE')
  or has_function_privilege('authenticated','newsroom_private.poll_counts(uuid,integer)','EXECUTE') then raise exception 'Poll privilege leak';end if;

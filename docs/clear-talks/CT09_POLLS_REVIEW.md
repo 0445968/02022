@@ -11,3 +11,5 @@ CT09 staged staff /newsroom/polls, bounded list/create/edit draft, submit/withdr
 
 ## Verification
 CLI-generated migration `supabase/migrations/20261124231848_ct09_polls.sql` #45508804980, unapplied. Private RLS tables and narrow public invoker wrappers with explicit grants. Isolated PG suite extends CT08 integration, tests approval, default gate, reader denial, replay, cap, aggregation, deletion suppression, explicit results deny and retirement; unit tests check payloads and projection. CI pending. Real browser, load/concurrency, role scope audit, hosted Auth/PostgREST/advisors, account deletion policy and monitoring remain. CT08 live activation remains pending. Next CT10 after exact final CI.
+
+- Pre-CI integration review: use the existing enum cast for global permission resolution and fixture grants; SQL-standard pre-bound public invoker wrapper avoids granting anonymous USAGE on private schema; explicitly typed public page response. Added anonymous schema privilege assertion. Exact corrected HEAD CI pending.
