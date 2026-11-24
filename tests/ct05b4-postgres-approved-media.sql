@@ -151,7 +151,7 @@ begin;
 delete from public.staff_role_capabilities where role_preset_id=(select id from public.staff_role_presets where role_key='freelancer') and capability_key='media.upload';
 set local role authenticated;
 set local request.jwt.claim.sub='00000000-0000-0000-0000-000000000003';
-do $
+do $$
 declare sid uuid:='20000000-0000-0000-0000-000000000002'; b jsonb; stamp timestamptz;
 begin
  select body,updated_at into b,stamp from public.stories where id=sid;
@@ -161,7 +161,7 @@ begin
    perform public.staff_save_assigned_draft_with_media(sid,stamp,'save','Duplicate media',null,null,jsonb_build_object('type','doc','content',jsonb_build_array(b->'content'->0,b->'content'->0)));
    raise exception 'New attachment without media grant';
  exception when invalid_parameter_value then null;end;
-end $;
+end $$;
 rollback;
 -- Rights change after attachment: cannot silently submit tagged invalid image.
 update public.media_assets set rights_status='restricted' where id='60000000-0000-0000-0000-000000000001';
