@@ -2,6 +2,11 @@
 -- Private reviewed association only. Existing public attribution still resolves
 -- stories.author_id -> editorial_profiles.account_id. NEVER modify either.
 begin;
+-- Hosted preflight found no service_role SELECT/UPDATE on editorial_profiles.
+-- Only the five read columns necessary for the private association are granted.
+-- Do not add UPDATE or broad SELECT to the existing author table.
+grant select (id,account_id,byline_name,slug,byline_status)
+on public.editorial_profiles to service_role;
 create table public.staff_byline_reviews (
   membership_id uuid primary key references public.staff_memberships(id) on delete restrict,
   editorial_profile_id uuid references public.editorial_profiles(id) on delete restrict,
@@ -131,9 +136,10 @@ begin
   if coalesce(v_review.revision,0)<>p_expected_review_revision then
     raise exception 'Review changed' using errcode='40001'; end if;
   if p_action='approve' then
-    -- Locks legacy byline row for this transaction; no update to public row.
-    perform 1 from public.editorial_profiles where id=p_byline for update;
-    if not found or not public.staff_byline_candidate_allowed(p_member,p_byline) then
+    -- Read only: legacy author edits may occur independently. Recheck candidate
+    -- in the guard and directory; subsequent legacy drift becomes a conflict,
+    -- not an effective public link. No UPDATE privilege for a row lock.
+    if not public.staff_byline_candidate_allowed(p_member,p_byline) then
       raise exception 'Byline unavailable for this account' using errcode='40001'; end if;
   end if;
   v_status:=case p_action when 'approve' then 'approved' when 'reject' then 'rejected' else 'unlinked' end;

@@ -5,7 +5,6 @@
 create table public.editorial_profiles(
  id uuid primary key, account_id uuid unique references auth.users(id),
  byline_name text not null,slug text not null unique,byline_status text not null);
-grant select,update on public.editorial_profiles to service_role;
 alter table public.stories add column author_id uuid references auth.users(id);
 insert into public.editorial_profiles values
  ('50000000-0000-4000-8000-000000000001','00000000-0000-0000-0000-000000000001','Historical Author','historic','active'),
@@ -18,6 +17,9 @@ do $$ begin
  if has_table_privilege('authenticated','public.staff_byline_reviews','SELECT')
  or has_function_privilege('authenticated','public.staff_review_byline(uuid,uuid,integer,integer,text,uuid,text,uuid)','EXECUTE')
  or has_function_privilege('anon','public.staff_list_byline_requests(uuid,integer)','EXECUTE')
+ or has_table_privilege('service_role','public.editorial_profiles','SELECT')
+ or has_table_privilege('service_role','public.editorial_profiles','UPDATE')
+ or not has_column_privilege('service_role','public.editorial_profiles','account_id','SELECT')
  or (select count(*) from public.staff_byline_reviews)<>0 then
  raise exception 'Unsafe privilege or seed'; end if;
 end $$;
