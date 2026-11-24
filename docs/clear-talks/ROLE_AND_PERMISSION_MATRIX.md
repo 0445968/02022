@@ -133,6 +133,10 @@ Protect against email mismatch, reused tokens, bulk invitation abuse, unauthoriz
 
 [Draft PR #21](https://github.com/0445968/02022/pull/21): separate disabled-by-default invitation flag, fresh verified Auth user plus live team.invite and independent current Owner DB check for management; redemption available to verified readers only via token POST, no staff roles required before redeem. Strict streamed 4KB bounded same-origin JSON; no caller actor/role grant in redemption. EN/ES manual code manager and redemption page, exact original email for replacement, masked list, explicit reason/confirmation; raw code returned once after issuance, no automatic delivery, no public query-string or persistent storage. No new database grant/migration or Auth user admin. Real Auth/browser tests and delivery/sender approval remain; CT-04b first-login and separate byline linkage follow.
 
+### CT-04b.1 staged first-login private profile
+
+[Draft PR #22](https://github.com/0445968/02022/pull/22): private membership-keyed staff profile, RLS and service-only self read/save, fresh verified Auth identity, active nonexpired membership and deny-first current newsroom.access, revision conflict and scrubbed audit. Separate disabled onboarding flag, EN/ES first-dashboard-login profile, read-only assigned roles/expiry, private display name/language and acknowledgement, optional byline request preference. No public byline or reader profile write, no authority from onboarding, no automatic grant, no backfill. Actual byline approval/link/reject/unlink separate CT-04b.2 and must preserve published attribution. Dashboard onboarding is UX not a new authorization boundary; deeper pages/APIs remain capability-gated. Real Auth and browser checks pending; no live migration or release.
+
 ## 8. Required negative-test matrix
 
 For EACH protected route/API/RPC/storage action test: anonymous; authenticated reader; freelancer with assignment; freelancer without assignment; staff writer; specialized staff; editor; managing editor; owner/admin; revoked member; user with expired invite; user whose profile includes forged user_metadata role.
