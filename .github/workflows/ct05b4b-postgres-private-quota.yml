@@ -33,3 +33,41 @@ jobs:
             sudo apt-get install -y -qq postgresql-client
           fi
           psql -X -v ON_ERROR_STOP=1 -f tests/ct05b4b-postgres-private-quota.sql
+
+      - name: Concurrent final-slot allocation (two independent connections)
+        run: |
+          psql -X -v ON_ERROR_STOP=1 <<'SQL'
+          set role authenticated;
+          set request.jwt.claim.sub='00000000-0000-0000-0000-000000000002';
+          do $fn$ begin
+            for i in 1..24 loop perform public.staff_reserve_private_upload('jpg');end loop;
+          end $fn$;
+          SQL
+          attempt() {
+            psql -X -v ON_ERROR_STOP=1 <<'SQL'
+          set role authenticated;
+          set request.jwt.claim.sub='00000000-0000-0000-0000-000000000002';
+          select public.staff_reserve_private_upload('jpg');
+          SQL
+          }
+          set +e
+          attempt > /tmp/quota-a.log 2>&1 & a=$!
+          attempt > /tmp/quota-b.log 2>&1 & b=$!
+          wait "$a"; sa=$?
+          wait "$b"; sb=$?
+          set -e
+          if [ "$sa" -eq 0 ] && [ "$sb" -ne 0 ]; then
+            grep -q 'Private upload allowance exhausted' /tmp/quota-b.log
+          elif [ "$sb" -eq 0 ] && [ "$sa" -ne 0 ]; then
+            grep -q 'Private upload allowance exhausted' /tmp/quota-a.log
+          else
+            cat /tmp/quota-a.log /tmp/quota-b.log
+            exit 1
+          fi
+          psql -X -v ON_ERROR_STOP=1 <<'SQL'
+          do $fn$ begin
+            if (select count(*) from newsroom_private.private_upload_reservations where auth_user_id='00000000-0000-0000-0000-000000000002')<>25 then
+              raise exception 'Concurrent final-slot count wrong';end if;
+          end $fn$;
+          SQL
+          echo "Concurrent final slot: one accepted, one denied."

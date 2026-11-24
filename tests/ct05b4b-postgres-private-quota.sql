@@ -35,8 +35,8 @@ begin
  exception when insufficient_privilege then null;end;
  p:=public.staff_reserve_private_upload('jpg');
  insert into storage.objects(bucket_id,name,owner_id) values('media-drafts',p,auth.uid()::text);
- insert into public.media_private_drafts(uploaded_by,storage_path,file_name,mime_type,file_size_bytes)
- values(auth.uid(),p,'test.jpg','image/jpeg',2048);
+ insert into public.media_private_drafts(uploaded_by,storage_path,file_name,mime_type,file_size_bytes,source_sha256)
+ values(auth.uid(),p,'test.jpg','image/jpeg',2048,repeat('a',64));
  begin
   update storage.objects set name=name||'2' where bucket_id='media-drafts' and name=p;
   get diagnostics n=row_count;
@@ -101,3 +101,33 @@ end;
 $fn$;
 rollback;
 select 'CT-05b.4b private upload quota, bypass prevention, retained reservations and reviewer compatibility passed' as result;
+
+-- Verify the existing promotion path AFTER installing the restrictive policy,
+-- using the retained linked contributor original, without new quota allocation.
+begin;
+set local role authenticated;
+set local request.jwt.claim.sub='00000000-0000-0000-0000-000000000002';
+set local test.storage_operation='object.copy';
+do $fn$
+declare did uuid; target text; mid uuid:=gen_random_uuid();
+begin
+ select id into did from public.media_private_drafts where uploaded_by='00000000-0000-0000-0000-000000000003';
+ if did is null then raise exception 'Linked original missing';end if;
+ -- Existing intake stores the actual source digest; isolated fixture had
+ -- no byte payload, so use a simulated digest provisioned before this check.
+ target:='approved/'||did::text||'.jpg';
+ update public.media_private_drafts set state='publishing',reviewed_by=auth.uid(),reviewed_at=now(),
+  rights_status='owned',rights_notes='Verified source ownership in test',publication_path=target,
+  publication_started_at=now(),attempt_count=1 where id=did;
+ insert into storage.objects(bucket_id,name,owner_id) values('media',target,auth.uid()::text);
+ insert into public.media_assets(id,url,storage_path,file_name,mime_type,uploaded_by,status,rights_status)
+ values(mid,'https://example.test/public/'||target,target,'reviewed.jpg','image/jpeg',auth.uid(),'draft','owned');
+ update public.media_assets set status='approved',approved_by=auth.uid(),approved_at=now() where id=mid;
+ update public.media_private_drafts set state='published',published_media_id=mid where id=did;
+ if not exists(select 1 from public.media_private_drafts where id=did and state='published' and published_media_id=mid)
+ then raise exception 'Promotion blocked by quota policy';end if;
+ if (public.staff_private_upload_quota()->>'usedSlots')::int<>0 then raise exception 'Promotion consumed reviewer quota';end if;
+end;
+$fn$;
+rollback;
+select 'Quota-compatible approved media promotion passed' as result;
