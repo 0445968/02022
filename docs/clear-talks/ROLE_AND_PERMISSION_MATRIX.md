@@ -141,6 +141,10 @@ Protect against email mismatch, reused tokens, bulk invitation abuse, unauthoriz
 
 [Draft PR #23](https://github.com/0445968/02022/pull/23): current verified nonexpiring active employee Owner with actual all-scope byline.manage and no deny; independently reviewed private request approval/reject/unlink, revision conflicts, audited transitions, unique eligible association to unlinked or same-account author only. All existing 18 published stories resolve account-linked authors; never overwrite legacy editorial_profiles.account_id or article author_id. Narrow five-column SELECT grant for service role requires release review; no legacy UPDATE or automatic public publication. New disabled flag; EN/ES owner admin directory, no staff-facing review status yet (CT-10). Public attribution model and existing Authors workflow compatibility CT-11, FK restrict deletion until unlink. No privilege grant or live changes.
 
+### CT-05a staged scoped Newsroom
+
+[Draft PR #24](https://github.com/0445968/02022/pull/24): actual verified current membership grants and deny-first policy drive sidebar and landing. Broad story.view_all only sees newsroom-wide counts/list; limited staff land on own active assignments with exact story.view_assigned checked before title data, preview only. Independent direct page guards for full legacy editor, story creation, revision/version preview, author management, homepage and media; resource-specific denies rechecked. Upload-only staff private draft panel only if private media flag active. Partial capability editor controls and staff-writer creation intentionally withheld until CT-05b granular UI and payloads. Missing module routes hidden in V2, no role-name defaults, no new grant, no live release. CT-06 assignment/review workflow and CT-07/08/09 modules follow.
+
 ## 8. Required negative-test matrix
 
 For EACH protected route/API/RPC/storage action test: anonymous; authenticated reader; freelancer with assignment; freelancer without assignment; staff writer; specialized staff; editor; managing editor; owner/admin; revoked member; user with expired invite; user whose profile includes forged user_metadata role.

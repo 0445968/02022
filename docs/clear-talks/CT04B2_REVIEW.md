@@ -22,3 +22,7 @@ Read-only hosted preflight: 23 stories, 4 revisions, 43 versions, 22 media, staf
 
 ## NEXT CT-05a
 Verify PR #23 latest HEAD CI, then implement role-specific workspace navigation and default landing, including /newsroom/contributor, using current server capabilities and active assignments; no legacy is_editor/is_author authority in v2, no unauthorized resource counts or actions, no scope expansion, keep disabled flags and original UI/fonts. Inspect Newsroom sidebar/topbar, dashboard, story list and existing RLS gates; use role/preset labels for display only. Stage subsequent CT-05b assigned-work queue/editor/media controls and CT-06 workflow. Track public attribution redesign and staff-facing byline status for CT-10/11, email and real Auth acceptance still outstanding.
+
+
+## Final verification update
+PR #23 final `12acd0721d60949504a96d5970b3290b5a614680`: all 15 workflows SUCCESS, 153/153 Node tests, TypeScript, ESLint and build green in [quality #45430359467](https://github.com/0445968/02022/actions/runs/45430359467). No live changes.
