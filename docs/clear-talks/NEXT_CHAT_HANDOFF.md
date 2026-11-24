@@ -1,3 +1,23 @@
+# CURRENT HANDOFF — CT-02e (2026-11-23)
+**CT-02 IN PROGRESS. Draft PR #9 complete as staged code, NO live changes or production merge.**
+
+## Stack/current state
+- Plan #2 -> CI #3 -> Stories #4 -> capability contract #5 -> staff schema #6 -> audit/owner guard #7 -> role presets and gated routes #8 -> **CT-02e** [draft PR #9](https://github.com/0445968/02022/pull/9), branch `feature/ct02e-story-revision-rls-2026-11-23`, base CT-02d head `2ba4dcdc72ed976dd7277478800a53da98ce2aff`.
+- `supabase/migrations/20261123235430_ct02e_story_revision_rls.sql` is staged **only on GitHub**, generated with pinned CLI naming. Requires CT-02b/c migrations before it. **No live schema application**.
+- Private `newsroom_private` invoker functions resolve current membership, role, scope, assignment, expiration and deny precedence in SQL; six existing stories staff policies and four revision policies replaced by deny-first new ones; public published stories SELECT preserved; authenticated direct UPDATE/INSERT guard triggers added. Does not alter live articles or bylines.
+- Source: `tests/ct02e-policy-contract.test.mjs`; `tests/ct02e-postgres-rls.sql`; `.github/workflows/ct02e-postgres-rls.yml`; `docs/clear-talks/CT02E_REVIEW.md`.
+- GitHub Actions quality `45293492498` **SUCCESS**: **61 tests**, typecheck, lint and build green. Isolated PG17 CT-02e `45293492430` **SUCCESS**: assigned freelancer can edit own assigned draft/revision, cannot publish/reassign/alter protected fields; revoked legacy editor with is_editor=true cannot see private story/revision; reader/anon only see published story; explicit deny beats editor. Inherited CT-02b `45293492418` and CT-02c `45293492472` green.
+- Read-only live audit: Supabase `yqqzohrlhiitctwacdad` ACTIVE_HEALTHY, zero recorded migrations, `staff_memberships` ABSENT, 23 original stories, 4 unpublished revisions; two security warnings, publisher privileged RPC and leaked-password protection. No hosted SQL applied, no Vercel merge/deploy; no new permission grants/owner backfill/role assignment.
+- Current fonts (Figtree, Source Serif 4, IBM Plex Sans, Inter), styling and EN/ES UI preserved; CT-15a/b/c design refinement/testing already documented.
+
+## NEXT CT-02f — close the remaining direct-access holes
+1. Re-verify all GitHub HEAD/PR CI and hosted schema; review CT02E_REVIEW and full original `publish_story_revision` body carefully.
+2. Author migration/negative tests to replace legacy publisher function's editor boolean gate with current SQL capability checks while **preserving complete atomic version/copy/relationships behavior** and original timestamps. Avoid untested FUNCTION replacement or abrupt revoke that breaks publish.
+3. Migrate `story_versions` RLS and any direct client version-creation service, preserving 41 historical versions and bylines. Include media metadata `public.media_assets` (currently SELECT true, including internal notes) and Storage media bucket write policies. Public media links must not break; bucket visibility requires explicit review.
+4. Finish remaining editorial routes/server actions/workflows and direct database negative suite, including expired/suspended/revoked old editors, owner, editor, freelancer, signed-out readers and full public read/publish/discard. Use a disposable Supabase integration environment before live deployment.
+5. Explicit approval required for production owner identity, backfill/grant matrix, migration history reconciliation/backup, production SQL and feature flag enablement. NEVER replay historic DEV_AUTH_BYPASS migration or claim new permissions live before cutover.
+---
+## Historical handoffs
 # CURRENT CT-02d HANDOFF — 2026-11-23
 **CT-02 remains IN PROGRESS; PR #8 is draft/unmerged. No Supabase hosted migration or production deployment.**
 

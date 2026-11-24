@@ -1,6 +1,6 @@
 # Clear Talks — Staff Roles, Permissions & Onboarding Contract
 Version: 1.0 proposal | 2026-11-23 | Companion to MASTER_COMPLETION_PLAN.md.
-Status: CT-02b PR #6 and CT-02c PR #7 are staged (not applied); CT-02d draft PR #8 introduces a **proposed TypeScript role/grant registry and disabled-by-default route checks**, not a production SQL seed. No memberships, role grants or changed production permissions exist. All preset mappings remain subject to explicit approval; verified owner backfill, direct RLS/API/storage/publishing RPC cutover and tests remain required.
+Status: CT-02e draft PR #9 adds unapplied, isolated PostgreSQL-tested direct `stories` and `story_revisions` RLS cutover; CT-02b/c/d #6–#8 remain stacked proposals. **No live migrations, membership backfill, approved role grants, new staff access or production permission changes.** Publishing RPC, version history, media/Storage, remaining routes and verified owner selection await CT-02f+ and explicit approval.
 
 ## 1. Principles
 
