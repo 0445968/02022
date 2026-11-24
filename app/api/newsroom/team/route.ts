@@ -11,7 +11,7 @@ export async function GET(request:Request){
     const url=new URL(request.url);
     const numberParam=(key:string)=>{
       const raw=url.searchParams.get(key)??'0';
-      return /^\\d{1,3}$/.test(raw)?Math.min(Number(raw),100):0;
+      return /^[0-9]{1,3}$/.test(raw)?Math.min(Number(raw),100):0;
     };
     const directory=await readStaffTeamDirectory(access,{
       page:numberParam('page'),auditPage:numberParam('auditPage'),
