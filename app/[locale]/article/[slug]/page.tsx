@@ -1,3 +1,4 @@
+import {readerReportingEnabled} from '@/lib/services/reader-reports';
 import type {
   Metadata,
 } from 'next';
@@ -334,6 +335,8 @@ export default async function ArticlePage({
       />
 
       <StoryComments
+        reportingEnabled={readerReportingEnabled()}
+        viewerId={reader?.id??null}
         storyId={
           story.id
         }

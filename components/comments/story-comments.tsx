@@ -6,6 +6,7 @@ import {
 } from 'react';
 
 import Link from 'next/link';
+import {ReaderReportControl} from './reader-report-control';
 
 import {
   LoaderCircle,
@@ -48,6 +49,8 @@ export interface StoryCommentLabels {
 }
 
 interface StoryCommentsProps {
+  reportingEnabled?:boolean;
+  viewerId?:string|null;
   storyId: string;
   locale: Locale;
   initialThread: PublicCommentThread;
@@ -98,8 +101,10 @@ function CommentEntry({
   signInHref,
   labels,
   depth,
-  onReply,
+  onReply,reportingEnabled,viewerId,
 }: {
+  reportingEnabled:boolean;
+  viewerId:string|null;
   comment: PublicComment;
   locale: Locale;
   isAuthenticated: boolean;
@@ -256,7 +261,7 @@ function CommentEntry({
               {comment.body}
             </p>
 
-            <div className="mt-3">
+            <div className="mt-3 flex flex-wrap items-start gap-2">
               {isAuthenticated ? (
                 <button
                   type="button"
@@ -325,6 +330,7 @@ function CommentEntry({
                   {labels.reply}
                 </Link>
               )}
+              {reportingEnabled&&!(viewerId&&comment.author?.id===viewerId)&&<ReaderReportControl key={comment.id+comment.updatedAt} storyId={comment.storyId} commentId={comment.id} updatedAt={comment.updatedAt} locale={locale} isAuthenticated={isAuthenticated} signInHref={signInHref}/>}
             </div>
           </div>
         </div>
@@ -333,6 +339,8 @@ function CommentEntry({
       {comment.replies.map(
         (reply) => (
           <CommentEntry
+            reportingEnabled={reportingEnabled}
+            viewerId={viewerId}
             key={
               reply.id
             }
@@ -368,6 +376,7 @@ export function StoryComments({
   storyId,
   locale,
   initialThread,
+  reportingEnabled=false,viewerId=null,
   isAuthenticated,
   signInHref,
   labels,
@@ -1053,6 +1062,8 @@ export function StoryComments({
                 {thread.comments.map(
                   (comment) => (
                     <CommentEntry
+            reportingEnabled={reportingEnabled}
+            viewerId={viewerId}
                       key={
                         comment.id
                       }

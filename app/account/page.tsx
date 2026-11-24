@@ -1,3 +1,4 @@
+import {readerReportingEnabled} from '@/lib/services/reader-reports';
 import Link from 'next/link';
 
 import {
@@ -6,6 +7,7 @@ import {
 
 import {
   ArrowRight,
+  Flag,
   Bell,
   Bookmark,
   CreditCard,
@@ -178,6 +180,7 @@ export default async function AccountPage() {
       .toUpperCase();
 
   const sections = [
+    ...(readerReportingEnabled()?[{href:'/account/reports',label:locale==='es'?'Mis denuncias':'My reports',icon:Flag,count:null}]:[]),
     {
       href:
         '/account/saved',
