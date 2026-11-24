@@ -39,6 +39,7 @@ interface StoryEditorHeaderProps {
   dict: Dictionary;
   assignmentHref?:string;
   reviewEnabled?:boolean;
+  reviewedPublication?:boolean;
   onOpenReview?:()=>void;
 
   locale:
@@ -106,6 +107,7 @@ export function StoryEditorHeader({
   dict,
   assignmentHref,
   reviewEnabled=false,
+  reviewedPublication=false,
   onOpenReview,
   locale,
   status,
@@ -455,8 +457,8 @@ export function StoryEditorHeader({
               </button>
             )}
 
-          {/* Initial publish */}
-          {userIsEditor &&
+          {/* Initial publish — only legacy workflow */}
+          {!reviewedPublication && userIsEditor &&
             !isPublishedStory &&
             status !==
               'published' &&
@@ -504,8 +506,8 @@ export function StoryEditorHeader({
               </button>
             )}
 
-          {/* Publish revision */}
-          {userIsEditor &&
+          {/* Publish revision — only legacy workflow */}
+          {!reviewedPublication && userIsEditor &&
             isPublishedStory && (
               <button
                 type="button"

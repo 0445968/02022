@@ -16,3 +16,10 @@ test('CT06c1 explicit reviewed publication UI sends only request and fingerprint
  assert.match(file('lib/services/reviewed-publication.ts'),/auth\.getUser\(\)/);
  assert.match(file('app/api/stories/[id]/route.ts'),/reviewedPublicationEnabled\(\)&&/);
 });
+
+test('CT06c1 removes legacy direct publish controls when gate active',()=>{
+ const s=file('components/editorial/story-editor/StoryEditorHeader.tsx');
+ assert.equal((s.match(/!reviewedPublication && userIsEditor &&/g)||[]).length,2);
+ assert.match(file('components/editorial/story-editor.tsx'),/reviewedPublication=\{reviewedPublication\}/);
+ assert.match(file('app/newsroom/(shell)/stories/[id]/edit/page.tsx'),/reviewedPublication=\{reviewedPublicationEnabled\(\)\}/);
+});

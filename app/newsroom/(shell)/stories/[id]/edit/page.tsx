@@ -1,3 +1,4 @@
+import {reviewedPublicationEnabled} from '@/lib/services/reviewed-publication';
 import {canAccessStoryReview} from '@/lib/services/story-review';
 import {canManageStoryAssignments} from '@/lib/services/story-assignments';
 import {requireWorkspacePage,scopedNewsroomEnabled,newsroomLocale,mayMountFullStoryEditor} from '@/lib/services/newsroom-workspace';
@@ -50,6 +51,7 @@ export default async function EditStoryPage({ params }: PageProps) {
   return (
     <StoryEditor
       dict={dict}
+      reviewedPublication={reviewedPublicationEnabled()}
       reviewHref={await canAccessStoryReview(params.id,story.status==='published'?'revision':'draft')?'/newsroom/stories/'+params.id+'/review?kind='+(story.status==='published'?'revision':'draft'):undefined}
       assignmentHref={await canManageStoryAssignments(params.id)?'/newsroom/stories/'+params.id+'/assignments':undefined}
       locale={locale}
