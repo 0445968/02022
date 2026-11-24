@@ -58,7 +58,13 @@ function roleKey(value:unknown):value is StaffRoleKey{
  * sensitive overrides or auth.users records to the browser.
  */
 export async function readStaffTeamDirectory(access:TeamAccess):Promise<TeamDirectory>{
-  if(!access.allowed||!access.userId)throw new Error('Forbidden');
+  // Treat an input access snapshot as untrusted, even from another server
+  // module. Recheck the actual cookie-bound principal and current grants
+  // immediately before any privileged service-role read.
+  const fresh=await getStaffTeamAccess();
+  if(!access.allowed||!access.userId||!fresh.allowed
+    ||fresh.userId!==access.userId)throw new Error('Forbidden');
+  access=fresh;
   const url=process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key=process.env.SUPABASE_SERVICE_ROLE_KEY;
   if(!url||!key)throw new Error('Staff directory unavailable');
