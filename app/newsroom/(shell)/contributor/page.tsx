@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import {CalendarAlerts} from '@/components/editorial/calendar/CalendarAlerts';
 import {canAccessStoryReview} from '@/lib/services/story-review';
 import {canStartWriterDraft} from '@/lib/services/writer-drafts';
 import {notFound,redirect} from 'next/navigation';
@@ -39,6 +40,7 @@ export default async function ContributorWorkspace({searchParams}:{searchParams:
       {links.map(({href,label,icon:Icon})=><Link key={href} href={href} className="flex items-center gap-3 rounded-lg border border-border bg-white p-4 text-sm font-medium text-deep hover:bg-surface-muted"><Icon className="h-4 w-4 text-primary"/>{label}</Link>)}
     </section>}
     {canCreate&&<Link href="/newsroom/contributor/new" className="inline-flex rounded-md bg-primary px-4 py-2 text-sm font-semibold text-white">{es?'Nuevo borrador':'New draft'}</Link>}
+    <CalendarAlerts locale={locale}/>
     <section className="space-y-3 rounded-lg border border-border bg-white p-5">
       <h2 className="font-headline text-lg font-semibold text-deep">{es?'Mis asignaciones activas':'My active assignments'}</h2>
       {assigned.unavailable?<p role="alert" className="text-sm text-muted-foreground">{es?'No se pudieron cargar sus asignaciones. Actualice esta página.':'Unable to load assignments. Refresh this page.'}</p>:<>

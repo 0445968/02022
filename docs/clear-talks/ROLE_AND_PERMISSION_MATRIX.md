@@ -233,3 +233,7 @@ These are recommended starter presets and architecture, NOT yet an instruction t
 
 ### CT-08b.1 staged calendar interface
 CT-08b.1 — bilingual scoped calendar interface: /newsroom/schedule, exact permission sidebar/page, month and agenda, all-date attention, filters and bounded pagination, explicit America/Bogota/UTC/America/Chicago civil-month boundaries and DST tests, story preview links, overdue/blocked/stale/legacy distinction, existing exact reviewed cancel action with confirm and uncertain-result lock. No migration, new flags, global styles or live changes. Calendar is page-scoped, not a complete unpaginated month; queue is not proof of real scheduler. CT08b.2 effective schedule projection in Stories/dashboard, deadline conflicts/alerts, and further link/access/browser QA remain; actual scheduler activation/reconciliation requires approval.
+
+
+### CT-08b.2a staged dashboard alerts
+EN/ES permission-gated Dashboard and Contributor alerts reuse scoped calendar RPC, first five attention items and next-48-hour items, explicit partial results, no global count, errors shown separately, Bogota timestamps. Calendar marks upcoming and possible same-story assignment due at/after current pending queue when both rows visible on the same page; never infer unseen conflicts, no claim of complete dependency coverage. No new migration, new flags, mutations, notification delivery or production changes. Exact batched story schedule status and complete cross-page conflict detection remain CT08b.2b and later.
