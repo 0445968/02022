@@ -201,3 +201,7 @@ These are recommended starter presets and architecture, NOT yet an instruction t
 
 ### CT-06c.2 staged reviewed scheduling
 [Draft PR #35](https://github.com/0445968/02022/pull/35): current verified exact story view/edit/publish and story.schedule (revision.view/publish if revision) authorize future exact approved queue, cancel with current authority; current independent reviewer/actor/media revalidated at DB due time. Owner-only private bounded executor, no API role or caller clock/actor; no duplicate, blocked failures, cancel before manual publish. Separate queue preserves in_review source; CT08 status projection/calendar and actual job installation required. No legacy auto publication, flag OFF, no live changes.
+
+
+### CT-07a staged audited comment moderation
+[Draft PR #36](https://github.com/0445968/02022/pull/36): verified newsroom access + exact published-story comment.view_queue or comment.moderate for queue/detail, current exact comment.moderate for audited actions, no own-comment moderation, explicit deny/assignment scope. Reader edit/erase preserved. Approve/hide/restore-to-pending/remove-redact, revision CAS and reason, private immutable events, no direct authenticated staff update/delete. Scoped comment.manage_reports required for report reads/counts, direct report disposition blocked until CT07c. API flag OFF, UI next CT07b. No live changes.
