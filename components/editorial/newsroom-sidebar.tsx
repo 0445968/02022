@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation';
 
 import {
   LayoutDashboard,
+  ClipboardCheck,
   FileText,
   PlusCircle,
   Image as ImageIcon,
@@ -114,7 +115,7 @@ export function NewsroomSidebar({
     usePathname();
 
   const items=scopedNav?scopedNav.map(key=>key==='contributor'?{key,icon:LayoutDashboard,href:'/newsroom/contributor'}:
-    key==='profile'?{key,icon:User,href:'/newsroom/onboarding'}:NAV.find(item=>item.key===key)!).filter(Boolean):NAV.filter(item=>item.key!=='team'||showTeamNav);
+    key==='profile'?{key,icon:User,href:'/newsroom/onboarding'}:key==='reviewInbox'?{key,icon:ClipboardCheck,href:'/newsroom/reviews'}:NAV.find(item=>item.key===key)!).filter(Boolean):NAV.filter(item=>item.key!=='team'||showTeamNav);
   return (
     <aside
       className="
@@ -211,7 +212,7 @@ export function NewsroomSidebar({
                * dictionary values next.
                */
               const label =
-  item.key==='contributor'?(locale==='es'?'Mi espacio de trabajo':'My workspace'):dict.newsroom[item.key as keyof typeof dict.newsroom];
+  item.key==='contributor'?(locale==='es'?'Mi espacio de trabajo':'My workspace'):item.key==='reviewInbox'?(locale==='es'?'Bandeja editorial':'Review inbox'):dict.newsroom[item.key as keyof typeof dict.newsroom];
 
               return (
                 <li
