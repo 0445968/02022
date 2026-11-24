@@ -23,7 +23,7 @@ test('staff directory requires real cookie session + current team.view, excludes
 });
 
 test('service-role lookups occur after live authorized viewer check and sanitize rows',()=>{
-  const gate=directory.indexOf('if(!access.allowed||!access.userId)');
+  const gate=directory.indexOf('if(!access.allowed||!access.userId||!fresh.allowed');
   const service=directory.indexOf('createServiceClient(url,key');
   assert.ok(gate>=0&&service>gate,'Privilege read must occur only after viewer gate');
   assert.match(directory,/SUPABASE_SERVICE_ROLE_KEY/);
