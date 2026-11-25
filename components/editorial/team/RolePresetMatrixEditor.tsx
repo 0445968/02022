@@ -1,5 +1,5 @@
 'use client';
-import {useEffect,useMemo,useState,type FormEvent} from 'react';
+import {useMemo,useState,type FormEvent} from 'react';
 import {AlertTriangle,CheckCircle2,LockKeyhole,Save} from 'lucide-react';
 import type {Locale} from '@/types';
 import type {TeamPreset} from '@/lib/permissions/staff-team-types';
@@ -57,17 +57,20 @@ export function RolePresetMatrixEditor({
 }){
   const t=translations[locale==='es'?'es':'en'];
   const allowed=useMemo(()=>editablePresetCapabilities(preset.key),[preset.key]);
-  const [selected,setSelected]=useState<Set<string>>(new Set());
+  const [selected,setSelected]=useState<Set<string>>(()=>new Set(preset.configuredGrants.map(keyOf)));
   const [reason,setReason]=useState('');
   const [confirmed,setConfirmed]=useState(false);
   const [busy,setBusy]=useState(false);
   const [stale,setStale]=useState(false);
   const [error,setError]=useState<string|null>(null);
   const [saved,setSaved]=useState(false);
-  useEffect(()=>{
+  const snapshot=JSON.stringify([preset.key,preset.grantRevision,preset.configuredGrants]);
+  const [previousSnapshot,setPreviousSnapshot]=useState(snapshot);
+  if(snapshot!==previousSnapshot){
+    setPreviousSnapshot(snapshot);
     setSelected(new Set(preset.configuredGrants.map(keyOf)));
     setReason('');setConfirmed(false);setStale(false);setSaved(false);setError(null);
-  },[preset.key,preset.grantRevision,preset.configuredGrants]);
+  }
 
   const baseline=useMemo(()=>new Set(preset.configuredGrants.map(keyOf)),
     [preset.configuredGrants]);

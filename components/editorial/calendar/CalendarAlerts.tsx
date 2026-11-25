@@ -7,9 +7,11 @@ import {canEnterEditorialCalendar,readEditorialCalendar} from '@/lib/services/ed
 import {CALENDAR_SOON_MS,calendarAlertPreview,calendarItemReasons} from '@/lib/permissions/calendar-alerts';
 
 const ZONE='America/Bogota';
+// Server request time, not client render state.
+async function requestClock(){return Date.now();}
 export async function CalendarAlerts({locale}:{locale:Locale}){
  if(!await canEnterEditorialCalendar())return null;
- const es=locale==='es',now=Date.now(),start=new Date(now).toISOString(),end=new Date(now+CALENDAR_SOON_MS).toISOString();
+ const es=locale==='es',now=await requestClock(),start=new Date(now).toISOString(),end=new Date(now+CALENDAR_SOON_MS).toISOString();
  const result=await Promise.allSettled([
   readEditorialCalendar({start,end,mode:'attention',filter:'all',page:0}),
   readEditorialCalendar({start,end,mode:'range',filter:'all',page:0})

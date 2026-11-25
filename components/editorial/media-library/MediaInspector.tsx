@@ -407,34 +407,12 @@ export function MediaInspector({
     setSaved,
   ] = useState(false);
 
-  useEffect(
-    () => {
-      if (!asset) {
-        setValues(
-          null
-        );
-
-        return;
-      }
-
-      setValues(
-        mediaAssetToMetadataValues(
-          asset
-        )
-      );
-
-      setError(
-        null
-      );
-
-      setSaved(
-        false
-      );
-    },
-    [
-      asset,
-    ]
-  );
+  const [previousAsset,setPreviousAsset]=useState<MediaAsset|null>(null);
+  if(asset!==previousAsset){
+    setPreviousAsset(asset);
+    setValues(asset?mediaAssetToMetadataValues(asset):null);
+    setError(null);setSaved(false);
+  }
 
   const dirty =
     useMemo(

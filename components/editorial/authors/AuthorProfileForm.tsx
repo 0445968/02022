@@ -1,7 +1,6 @@
 'use client';
 
 import {
-  useEffect,
   useState,
 } from 'react';
 
@@ -110,33 +109,17 @@ export function AuthorProfileForm({
     string | null
   >(null);
 
-  useEffect(() => {
-    setBylineName(
-      author.bylineName
-    );
-
-    setEditorialTitle(
-      author.editorialTitle ??
-        ''
-    );
-
-    setBio(
-      author.bio ?? ''
-    );
-
-    setBylineStatus(
-      author.bylineStatus
-    );
-
-    setSaved(false);
-    setError(null);
-  }, [
-    author.id,
-    author.bylineName,
-    author.editorialTitle,
-    author.bio,
-    author.bylineStatus,
-  ]);
+  // Reset edited fields only when the actual author snapshot changes.
+  const snapshot=JSON.stringify([author.id,author.bylineName,author.editorialTitle,author.bio,author.bylineStatus]);
+  const [previousSnapshot,setPreviousSnapshot]=useState(snapshot);
+  if(snapshot!==previousSnapshot){
+    setPreviousSnapshot(snapshot);
+    setBylineName(author.bylineName);
+    setEditorialTitle(author.editorialTitle??'');
+    setBio(author.bio??'');
+    setBylineStatus(author.bylineStatus);
+    setSaved(false);setError(null);
+  }
 
   const originalHeadshotId =
     author.headshot?.id ??

@@ -75,21 +75,21 @@ export function StaffPermissionInspector({
  const [confirmed,setConfirmed]=useState(false);
  const [selectedExisting,setSelectedExisting]=useState('');
 
- const reload=useCallback(async()=>{
+ const reload=useCallback(async(signal?:AbortSignal)=>{
    const response=await fetch('/api/newsroom/team/'+encodeURIComponent(member.id)+'/effective',{
-     cache:'no-store'
+     cache:'no-store',signal
    });
    const result=await response.json() as MemberEffectiveAccess & {error?:string};
    if(!response.ok)throw Error(result.error??t.error);
-   setPreview(result);
+   if(!signal?.aborted)setPreview(result);
  },[member.id,t.error]);
  useEffect(()=>{
-   let current=true;
-   setPreview(null);setError(null);setSuccess(null);
-   void reload().catch((e:unknown)=>{
-     if(current)setError(e instanceof Error?e.message:t.error);
+   // Parent keys this inspector by member identity; cancel outdated reads.
+   const controller=new AbortController();
+   void reload(controller.signal).catch((e:unknown)=>{
+     if(!controller.signal.aborted)setError(e instanceof Error?e.message:t.error);
    });
-   return ()=>{current=false;};
+   return ()=>controller.abort();
  },[reload,t.error]);
  const visible=useMemo(()=>preview?.permissions.filter(p=>p.capability.toLowerCase().includes(search.toLowerCase()))??[],[preview,search]);
  const existing=preview?.overrides??[];

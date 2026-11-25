@@ -483,8 +483,8 @@ export function ArticleListenBar({
         window
       )
     ) {
-      const frame=window.requestAnimationFrame(()=>setSupported(false));
-      return ()=>window.cancelAnimationFrame(frame);
+      const timer=setTimeout(()=>setSupported(false),0);
+      return ()=>clearTimeout(timer);
     }
 
     function loadVoices() {
