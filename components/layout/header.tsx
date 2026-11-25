@@ -108,7 +108,8 @@ export function Header({
             flex
             h-14
             items-center
-            gap-3
+            gap-1.5
+            sm:gap-3
             lg:h-[64px]
             lg:justify-between
           "
@@ -151,7 +152,9 @@ export function Header({
           {/* Logo */}
           <div
             className="
-              shrink-0
+              min-w-0
+              flex-1
+              sm:flex-none
             "
           >
             <Masthead

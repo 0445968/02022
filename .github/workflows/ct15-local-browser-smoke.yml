@@ -16,7 +16,12 @@ jobs:
   signed-out:
     runs-on: ubuntu-24.04
     timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        width: [390, 768, 1440]
     env:
+      CT15_VIEWPORT_WIDTH: ${{ matrix.width }}
       CI: 'true'
       CT15_LOCAL_SMOKE: 'yes'
       DEV_AUTH_BYPASS: 'false'
@@ -46,6 +51,6 @@ jobs:
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
-          name: ct15-local-signed-out-evidence
+          name: ct15-local-signed-out-evidence-${{ matrix.width }}
           path: ct15-local-evidence/
           retention-days: 7

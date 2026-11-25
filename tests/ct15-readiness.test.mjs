@@ -27,3 +27,14 @@ test('document language derives from the route and stays synchronized across nav
  assert.match(f('components/editorial/newsroom-shell.tsx'),/href="#newsroom-main"/);
  for(const path of ['.github/workflows/ct15-local-browser-smoke.yml','.github/workflows/ct15-preview-browser-audit.yml'])assert.match(f(path),/runs-on: ubuntu-24\.04/);
 });
+
+test('mobile header can shrink its masthead without hiding navigation and browser shards retain route evidence',()=>{
+ const header=f('components/layout/header.tsx'),masthead=f('components/layout/masthead.tsx');
+ assert.match(header,/min-w-0\s+flex-1\s+sm:flex-none/);
+ assert.match(masthead,/max-h-6 w-auto max-w-full object-contain/);
+ assert.match(f('components/navigation/account-button.tsx'),/aria-label=\{dict.nav.signIn\}/);
+ const smoke=f('scripts/ct15-local-browser-smoke.mjs');
+ assert.match(smoke,/AbortSignal.timeout\(10000\)/);assert.doesNotMatch(smoke,/waitUntil:'networkidle'/);
+ assert.match(smoke,/await checkpoint\(\)/);assert.match(smoke,/CT15_VIEWPORT_WIDTH/);
+ const ci=f('.github/workflows/ct15-local-browser-smoke.yml');assert.match(ci,/width: \[390, 768, 1440\]/);assert.match(ci,/fail-fast: false/);
+});

@@ -26,6 +26,7 @@ export function Masthead({
       )}
       className="
         inline-flex
+        max-w-full
         items-center
         transition-opacity
         hover:opacity-80
@@ -51,7 +52,7 @@ export function Masthead({
         priority
         className={
           compact
-  ? 'h-6 w-auto object-contain'
+  ? 'h-auto max-h-6 w-auto max-w-full object-contain'
   : 'h-12 w-auto object-contain sm:h-14'
         }
       />

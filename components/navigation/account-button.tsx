@@ -33,6 +33,7 @@ export function AccountButton({ user, dict, locale }: AccountButtonProps) {
     return (
       <Link
         href={localizedPath(locale, '/auth/sign-in')}
+        aria-label={dict.nav.signIn}
         className="inline-flex h-9 items-center gap-1.5 bg-primary px-3 text-xs font-semibold uppercase tracking-wide text-white transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
       >
         <LogIn className="h-3.5 w-3.5" aria-hidden />
