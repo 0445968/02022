@@ -13,10 +13,11 @@ import { canEditStory } from '@/lib/permissions/stories';
 import { StoryEditor } from '@/components/editorial/story-editor';
 
 interface PageProps {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }
 
-export default async function EditStoryPage({ params }: PageProps) {
+export default async function EditStoryPage(props: PageProps) {
+  const params = await props.params;
   await requireWorkspacePage('fullEditor');
   const scoped=scopedNewsroomEnabled();
   if(scoped&&!(await mayMountFullStoryEditor(params.id)))notFound();
@@ -52,8 +53,8 @@ export default async function EditStoryPage({ params }: PageProps) {
     <StoryEditor
       dict={dict}
       reviewedPublication={reviewedPublicationEnabled()}
-      reviewHref={await canAccessStoryReview(params.id,story.status==='published'?'revision':'draft')?'/newsroom/stories/'+params.id+'/review?kind='+(story.status==='published'?'revision':'draft'):undefined}
-      assignmentHref={await canManageStoryAssignments(params.id)?'/newsroom/stories/'+params.id+'/assignments':undefined}
+      reviewHref={(await canAccessStoryReview(params.id,story.status==='published'?'revision':'draft'))?'/newsroom/stories/'+params.id+'/review?kind='+(story.status==='published'?'revision':'draft'):undefined}
+      assignmentHref={(await canManageStoryAssignments(params.id))?'/newsroom/stories/'+params.id+'/assignments':undefined}
       locale={locale}
       story={story!}
       user={{

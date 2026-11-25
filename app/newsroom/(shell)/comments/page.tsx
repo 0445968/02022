@@ -9,11 +9,14 @@ import {DraftHttpError} from '@/lib/permissions/assigned-draft-http';
 import {CommentsWorkspace} from '@/components/editorial/comments/CommentsWorkspace';
 export const dynamic='force-dynamic';
 export const metadata={robots:{index:false,follow:false},referrer:'no-referrer'};
-export default async function CommentsPage({searchParams}:{searchParams:{status?:string;storyId?:string;q?:string;page?:string;commentId?:string;reportId?:string}}){
+export default async function CommentsPage(
+ props:{searchParams: Promise<{status?:string;storyId?:string;q?:string;page?:string;commentId?:string;reportId?:string}>}
+) {
+ const searchParams = await props.searchParams;
  if(!commentModerationEnabled())notFound();
  const user=await getCurrentUser();
  if(!user)redirect('/en/auth/sign-in?next=%2Fnewsroom%2Fcomments');
- if(!await canEnterCommentModeration())notFound();
+ if(!(await canEnterCommentModeration()))notFound();
  const locale=await newsroomLocale(user),status=searchParams.status??'pending',raw=searchParams.page??'0';
  const storyId=searchParams.storyId??null,q=searchParams.q??'';
  if(!moderationFilter(status)||typeof raw!=='string'||!/^\d{1,3}$/.test(raw)||Number(raw)>100

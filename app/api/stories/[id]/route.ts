@@ -29,14 +29,13 @@ import type {
 
 export async function PUT(
   request: Request,
-  {
-    params,
-  }: {
-    params: {
+  props: {
+    params: Promise<{
       id: string;
-    };
+    }>;
   }
 ) {
+  const params = await props.params;
   const user =
     await getCurrentUser();
 

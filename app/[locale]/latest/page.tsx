@@ -8,17 +8,20 @@ import type { Locale } from '@/types';
 import type { Metadata } from 'next';
 
 interface PageProps {
-  params: { locale: string };
-  searchParams: { page?: string };
+  params: Promise<{ locale: string }>;
+  searchParams: Promise<{ page?: string }>;
 }
 
-export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+export async function generateMetadata(props: PageProps): Promise<Metadata> {
+  const params = await props.params;
   const locale = isLocale(params.locale) ? params.locale : 'en';
   const dict = getDictionary(locale as Locale);
   return { title: dict.latest.title };
 }
 
-export default async function LatestPage({ params, searchParams }: PageProps) {
+export default async function LatestPage(props: PageProps) {
+  const searchParams = await props.searchParams;
+  const params = await props.params;
   if (!isLocale(params.locale)) notFound();
   const locale = params.locale as Locale;
   const dict = getDictionary(locale);

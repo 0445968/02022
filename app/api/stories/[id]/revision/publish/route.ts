@@ -21,20 +21,16 @@ import {
   
   import {reviewedPublicationEnabled} from '@/lib/services/reviewed-publication';
   interface RouteContext {
-    params: {
+    params: Promise<{
       id: string;
-    };
+    }>;
   }
   
-  export async function POST(
-    _request: Request,
-    {
-      params,
-    }: RouteContext
-  ) {
+  export async function POST(_request: Request, props: RouteContext) {
+    const params = await props.params;
     const user =
       await getCurrentUser();
-  
+
     if (!user) {
       return NextResponse.json(
         {
@@ -46,12 +42,12 @@ import {
         }
       );
     }
-  
+
     const story =
       await getStoryForEditing(
         params.id
       );
-  
+
     if (!story) {
       return NextResponse.json(
         {
@@ -63,7 +59,7 @@ import {
         }
       );
     }
-  
+
     /**
      * The user must still be allowed to edit/view
      * this story in the newsroom.
@@ -86,7 +82,7 @@ import {
         }
       );
     }
-  
+
     /**
      * Publishing is stricter than editing.
      *
@@ -109,7 +105,7 @@ import {
         }
       );
     }
-  
+
     /**
      * Revision publishing only applies to stories that
      * already have a live published version.
@@ -128,7 +124,7 @@ import {
         }
       );
     }
-  
+
     if(reviewedPublicationEnabled())return NextResponse.json({error:'Use the reviewed publication workflow.'},{status:409});
     try {
       await publishStoryRevision(

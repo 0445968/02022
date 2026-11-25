@@ -12,10 +12,13 @@ import {SchedulerHealthNotice} from '@/components/editorial/calendar/SchedulerHe
 import {CancelCalendarSchedule} from '@/components/editorial/calendar/CancelCalendarSchedule';
 export const dynamic='force-dynamic';
 export const metadata={robots:{index:false,follow:false},referrer:'no-referrer'};
-export default async function SchedulePage({searchParams}:{searchParams:{month?:string;zone?:string;mode?:string;filter?:string;view?:string;page?:string}}){
+export default async function SchedulePage(
+ props:{searchParams: Promise<{month?:string;zone?:string;mode?:string;filter?:string;view?:string;page?:string}>}
+) {
+ const searchParams = await props.searchParams;
  const user=await getCurrentUser();
  if(!user)redirect('/en/auth/sign-in?next=%2Fnewsroom%2Fschedule');
- if(!await canEnterEditorialCalendar())notFound();
+ if(!(await canEnterEditorialCalendar()))notFound();
  const locale=await newsroomLocale(user),es=locale==='es';
  const zone=searchParams.zone??'America/Bogota';if(!calendarZone(zone))notFound();
  const month=searchParams.month??localDay(new Date(),zone).slice(0,7);

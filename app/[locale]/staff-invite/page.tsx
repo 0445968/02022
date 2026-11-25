@@ -5,7 +5,8 @@ import {StaffInviteRedeemForm} from '@/components/forms/staff-invite-redeem-form
 import {isLocale} from '@/lib/i18n/config';
 export const dynamic='force-dynamic';
 export const metadata={robots:{index:false,follow:false},referrer:'no-referrer' as const};
-export default async function StaffInvitePage({params}:{params:{locale:string}}){
+export default async function StaffInvitePage(props:{params: Promise<{locale:string}>}) {
+  const params = await props.params;
   if(!staffInvitationsEnabled()||!isLocale(params.locale))notFound();
   const locale=params.locale,es=locale==='es';
   const user=await verifiedInvitationUser();

@@ -6,7 +6,8 @@ import { getDataClient } from '@/lib/db/supabase-data-access';
 import { privateDraftMediaEnabled } from '@/lib/permissions/private-draft-media';
 import { resolveStaffPermissionOnServer } from '@/lib/permissions/server';
 
-export async function POST(request:Request,{params}:{params:{id:string}}) {
+export async function POST(request:Request, props:{params: Promise<{id:string}>}) {
+  const params = await props.params;
   if (!privateDraftMediaEnabled() || isDevAuthBypass()) {
     return NextResponse.json({error:'Not found'},{status:404});
   }

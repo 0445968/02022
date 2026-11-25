@@ -57,11 +57,11 @@ import type {
 } from '@/types';
 
 interface PageProps {
-  params: {
+  params: Promise<{
     id: string;
-  };
+  }>;
 
-  searchParams?: {
+  searchParams?: Promise<{
     reviewFingerprint?:string|string[];
     revision?:
       | string
@@ -74,13 +74,12 @@ interface PageProps {
     view?:
       | string
       | string[];
-  };
+  }>;
 }
 
-export default async function PreviewPage({
-  params,
-  searchParams,
-}: PageProps) {
+export default async function PreviewPage(props: PageProps) {
+  const searchParams = await props.searchParams;
+  const params = await props.params;
   const user =
     await getCurrentUser();
 
@@ -91,7 +90,7 @@ export default async function PreviewPage({
   const scoped=scopedNewsroomEnabled();
   if(scoped&&!(await mayViewWorkspaceStory(params.id)))notFound();
   const access=scoped?await getWorkspaceAccess():null;
-  const canMountEditor=!scoped||await mayMountFullStoryEditor(params.id);
+  const canMountEditor=!scoped||(await mayMountFullStoryEditor(params.id));
   const canManageAssignments=await canManageStoryAssignments(params.id);
   const locale=await newsroomLocale(user);
 
@@ -302,7 +301,7 @@ export default async function PreviewPage({
   // Toolbar labels
   // ==================================================
 
-  const reviewLink=!isHistoricalComparison&&(isRevisionPreview||liveStory.status==='draft'||liveStory.status==='in_review')&&await canAccessStoryReview(params.id,isRevisionPreview?'revision':'draft');
+  const reviewLink=!isHistoricalComparison&&(isRevisionPreview||liveStory.status==='draft'||liveStory.status==='in_review')&&(await canAccessStoryReview(params.id,isRevisionPreview?'revision':'draft'));
   const toolbarModeLabel =
     isHistoricalComparison
       ? locale ===

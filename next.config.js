@@ -1,11 +1,5 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  eslint: {
-    ignoreDuringBuilds: false,
-  },
-  typescript: {
-    ignoreBuildErrors: false,
-  },
   images: { unoptimized: true },
   async headers() {
     return [{source: '/:locale(en|es)/staff-invite', headers: [

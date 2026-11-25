@@ -9,7 +9,8 @@ import {DraftHttpError} from '@/lib/permissions/assigned-draft-http';
 import {AssignedDraftEditor} from '@/components/editorial/story-editor/AssignedDraftEditor';
 export const dynamic='force-dynamic';
 export const metadata={robots:{index:false,follow:false}};
-export default async function AssignedDraftPage({params}:{params:{id:string}}){
+export default async function AssignedDraftPage(props:{params: Promise<{id:string}>}) {
+ const params = await props.params;
  if(!assignedDraftEnabled())notFound();
  const user=await getCurrentUser();
  if(!user)redirect('/en/auth/sign-in?next=%2Fnewsroom%2Fcontributor');
@@ -18,5 +19,5 @@ export default async function AssignedDraftPage({params}:{params:{id:string}}){
  try{state=await readAssignedDraft(params.id);}
  catch(e){if(e instanceof DraftHttpError&&(e.status===403||e.status===404||e.status===409))notFound();
    return <p role="alert" className="p-6 text-sm text-muted-foreground">{locale==='es'?'No se pudo cargar el borrador. Actualice la página.':'Unable to load the draft. Refresh this page.'}</p>;}
- return <AssignedDraftEditor key={state.id} initial={state} reviewEnabled={await canAccessStoryReview(state.id,'draft')} approvedMedia={state.status==='draft'&&await canPickAssignedMedia(state.id,false)} dict={getDictionary(locale)} locale={locale} userId={user.id}/>;
+ return <AssignedDraftEditor key={state.id} initial={state} reviewEnabled={await canAccessStoryReview(state.id,'draft')} approvedMedia={state.status==='draft'&&(await canPickAssignedMedia(state.id,false))} dict={getDictionary(locale)} locale={locale} userId={user.id}/>;
 }

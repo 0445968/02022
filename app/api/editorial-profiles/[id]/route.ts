@@ -8,7 +8,8 @@ import {parseAuthorProfileUpdate} from '@/lib/permissions/author-profile-contrac
 import {usableHeadshot} from '@/lib/permissions/public-editorial-contract';
 import {getMediaAsset} from '@/lib/services/media';
 const reply=(data:unknown,status=200)=>NextResponse.json(data,{status,headers:{'Cache-Control':'private, no-store'}});
-export async function PATCH(request:Request,{params}:{params:{id:string}}){
+export async function PATCH(request:Request, props:{params: Promise<{id:string}>}) {
+ const params = await props.params;
  const user=await getCurrentUser();if(!user||!(await mayManageByline(user)))return reply({error:'Forbidden'},403);
  if(!DRAFT_UUID.test(params.id))return reply({error:'Invalid profile'},422);
  try{

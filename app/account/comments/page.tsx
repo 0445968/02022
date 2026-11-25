@@ -39,9 +39,9 @@ import {
 } from '@/lib/services/account-comments';
 
 interface CommentsPageProps {
-  searchParams?: {
+  searchParams?: Promise<{
     page?: string;
-  };
+  }>;
 }
 
 function parsePage(
@@ -81,9 +81,8 @@ function replacePageTokens(
     );
 }
 
-export default async function CommentsPage({
-  searchParams,
-}: CommentsPageProps) {
+export default async function CommentsPage(props: CommentsPageProps) {
+  const searchParams = await props.searchParams;
   const user =
     await getCurrentUser();
 

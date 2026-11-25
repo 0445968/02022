@@ -7,13 +7,18 @@ import type { Locale } from '@/types';
  * If the user is already signed in, redirect away from auth pages
  * to the locale homepage. This is a server-side guard.
  */
-export default async function AuthLayout({
-  children,
-  params,
-}: {
-  children: React.ReactNode;
-  params: { locale: string };
-}) {
+export default async function AuthLayout(
+  props: {
+    children: React.ReactNode;
+    params: Promise<{ locale: string }>;
+  }
+) {
+  const params = await props.params;
+
+  const {
+    children
+  } = props;
+
   const locale = params.locale as Locale;
   const supabase = await createClient();
   const {

@@ -8,9 +8,10 @@ import {PollManager} from '@/components/editorial/polls/PollManager';
 async function getPollClock(){return Date.now();}
 export const dynamic='force-dynamic';
 export const metadata={robots:{index:false,follow:false},referrer:'no-referrer'};
-export default async function PollsPage({searchParams}:{searchParams:{page?:string}}){
+export default async function PollsPage(props:{searchParams: Promise<{page?:string}>}) {
+ const searchParams = await props.searchParams;
  const user=await getCurrentUser();if(!user)redirect('/en/auth/sign-in?next=%2Fnewsroom%2Fpolls');
- if(!await canEnterPolls())notFound();
+ if(!(await canEnterPolls()))notFound();
  const locale=await newsroomLocale(user),es=locale==='es',raw=searchParams.page??'0';
  if(typeof raw!=='string'||!/^\d{1,3}$/.test(raw)||Number(raw)>100)notFound();
  const page=Number(raw);

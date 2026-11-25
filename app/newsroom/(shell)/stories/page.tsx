@@ -13,7 +13,7 @@ import { StoriesDashboard } from '@/components/editorial/stories-dashboard';
 import type { StoryStatus, StoryLanguage, IslandScope } from '@/lib/db/database.types';
 
 interface PageProps {
-  searchParams: {
+  searchParams: Promise<{
     page?: string;
     search?: string;
     status?: string;
@@ -22,14 +22,15 @@ interface PageProps {
     category?: string;
     island?: string;
     sort?: string;
-  };
+  }>;
 }
 
 const VALID_STATUSES: StoryStatus[] = ['draft', 'in_review', 'scheduled', 'published', 'archived'];
 const VALID_LANGUAGES: StoryLanguage[] = ['en', 'es'];
 const VALID_ISLANDS: IslandScope[] = ['san_andres', 'old_providence', 'saint_catalina', 'archipelago', 'none'];
 
-export default async function StoriesPage({ searchParams }: PageProps) {
+export default async function StoriesPage(props: PageProps) {
+  const searchParams = await props.searchParams;
   await requireWorkspacePage('viewStories');
   const access=scopedNewsroomEnabled()?await getWorkspaceAccess():null;
   const user = await getCurrentUser();

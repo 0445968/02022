@@ -10,11 +10,12 @@ import { categoryLabel } from '@/types/editorial';
 import type { Metadata } from 'next';
 
 interface PageProps {
-  params: { locale: string; slug: string };
-  searchParams: { page?: string };
+  params: Promise<{ locale: string; slug: string }>;
+  searchParams: Promise<{ page?: string }>;
 }
 
-export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+export async function generateMetadata(props: PageProps): Promise<Metadata> {
+  const params = await props.params;
   const locale = isLocale(params.locale) ? params.locale : 'en';
   const result = await getPublishedStoriesByCategory(params.slug, 1, 1);
   if (!result.category) return { title: 'Not found' };
@@ -22,7 +23,9 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   return { title: name };
 }
 
-export default async function CategoryPage({ params, searchParams }: PageProps) {
+export default async function CategoryPage(props: PageProps) {
+  const searchParams = await props.searchParams;
+  const params = await props.params;
   if (!isLocale(params.locale)) notFound();
   const locale = params.locale as Locale;
   const dict = getDictionary(locale);

@@ -5,7 +5,8 @@ import {DRAFT_UUID} from '@/lib/permissions/assigned-draft-contract';
 import {reviewKind} from '@/lib/permissions/story-review-contract';
 export const dynamic='force-dynamic';
 const reply=(data:unknown,status=200)=>NextResponse.json(data,{status,headers:{'Cache-Control':'private, no-store, max-age=0','Referrer-Policy':'no-referrer'}});
-export async function POST(request:Request,{params}:{params:{id:string}}){
+export async function POST(request:Request, props:{params: Promise<{id:string}>}) {
+ const params = await props.params;
  if(!reviewedPublicationEnabled())return reply({error:'Not found'},404);
  try{
   const raw=await readDraftRequest(request);

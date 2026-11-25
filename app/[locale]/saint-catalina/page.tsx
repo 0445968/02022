@@ -9,18 +9,21 @@ import { islandLabel } from '@/types/editorial';
 import type { Metadata } from 'next';
 
 interface PageProps {
-  params: { locale: string };
-  searchParams: { page?: string };
+  params: Promise<{ locale: string }>;
+  searchParams: Promise<{ page?: string }>;
 }
 
 const ISLAND: IslandScope = 'saint_catalina';
 
-export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+export async function generateMetadata(props: PageProps): Promise<Metadata> {
+  const params = await props.params;
   const locale = isLocale(params.locale) ? params.locale : 'en';
   return { title: islandLabel(ISLAND, locale as Locale) };
 }
 
-export default async function SaintCatalinaPage({ params, searchParams }: PageProps) {
+export default async function SaintCatalinaPage(props: PageProps) {
+  const searchParams = await props.searchParams;
+  const params = await props.params;
   if (!isLocale(params.locale)) notFound();
   const locale = params.locale as Locale;
   const dict = getDictionary(locale);

@@ -21,9 +21,9 @@ import {
   } from '@/lib/services/bookmarks';
   
   interface RouteContext {
-    params: {
+    params: Promise<{
       storyId: string;
-    };
+    }>;
   }
   
   async function publishedStoryExists(
@@ -55,12 +55,8 @@ import {
    * Returns whether the current reader has saved
    * the requested story.
    */
-  export async function GET(
-    _request: Request,
-    {
-      params,
-    }: RouteContext
-  ) {
+  export async function GET(_request: Request, props: RouteContext) {
+    const params = await props.params;
     // A development/editor identity shortcut is not a verified reader
     // session and must never create or expose personal bookmarks.
     if (isDevAuthBypass()) {
@@ -72,7 +68,7 @@ import {
 
     const user =
       await getCurrentUser();
-  
+
     if (!user) {
       return NextResponse.json(
         {
@@ -84,7 +80,7 @@ import {
         }
       );
     }
-  
+
     try {
       const bookmarked =
         await isStoryBookmarked(
@@ -129,12 +125,8 @@ import {
    * user_id always comes from the authenticated session
    * and is never accepted from the request.
    */
-  export async function POST(
-    _request: Request,
-    {
-      params,
-    }: RouteContext
-  ) {
+  export async function POST(_request: Request, props: RouteContext) {
+    const params = await props.params;
     // A development/editor identity shortcut is not a verified reader
     // session and must never create or expose personal bookmarks.
     if (isDevAuthBypass()) {
@@ -146,7 +138,7 @@ import {
 
     const user =
       await getCurrentUser();
-  
+
     if (!user) {
       return NextResponse.json(
         {
@@ -158,7 +150,7 @@ import {
         }
       );
     }
-  
+
     try {
       const storyExists =
         await publishedStoryExists(
@@ -216,12 +208,8 @@ import {
    *
    * The underlying story is never modified or deleted.
    */
-  export async function DELETE(
-    _request: Request,
-    {
-      params,
-    }: RouteContext
-  ) {
+  export async function DELETE(_request: Request, props: RouteContext) {
+    const params = await props.params;
     // A development/editor identity shortcut is not a verified reader
     // session and must never create or expose personal bookmarks.
     if (isDevAuthBypass()) {
@@ -233,7 +221,7 @@ import {
 
     const user =
       await getCurrentUser();
-  
+
     if (!user) {
       return NextResponse.json(
         {
@@ -245,7 +233,7 @@ import {
         }
       );
     }
-  
+
     try {
       await removeStoryBookmark(
         user.id,

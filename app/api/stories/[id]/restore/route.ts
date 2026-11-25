@@ -23,14 +23,13 @@ import {
 
 export async function POST(
   request: Request,
-  {
-    params,
-  }: {
-    params: {
+  props: {
+    params: Promise<{
       id: string;
-    };
+    }>;
   }
 ) {
+  const params = await props.params;
   const user =
     await getCurrentUser();
 

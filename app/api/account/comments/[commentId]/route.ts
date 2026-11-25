@@ -22,9 +22,9 @@ import {
     5000;
   
   interface RouteContext {
-    params: {
+    params: Promise<{
       commentId: string;
-    };
+    }>;
   }
   
   interface UpdateCommentRequest {
@@ -49,25 +49,21 @@ import {
    * The reader may provide only the new body.
    * Ownership and moderation status are server-owned.
    */
-  export async function PATCH(
-    request: Request,
-    {
-      params,
-    }: RouteContext
-  ) {
+  export async function PATCH(request: Request, props: RouteContext) {
+    const params = await props.params;
     if (
       isDevAuthBypass()
     ) {
       return readerAuthUnavailable();
     }
-  
+
     const user =
       await getCurrentUser();
-  
+
     if (!user) {
       return readerAuthUnavailable();
     }
-  
+
     const contentLength =
       Number.parseInt(
         request.headers.get(
@@ -75,7 +71,7 @@ import {
         ) ?? '0',
         10
       );
-  
+
     if (
       Number.isFinite(
         contentLength
@@ -93,10 +89,10 @@ import {
         }
       );
     }
-  
+
     let requestBody:
       UpdateCommentRequest;
-  
+
     try {
       requestBody =
         await request.json();
@@ -111,7 +107,7 @@ import {
         }
       );
     }
-  
+
     if (
       typeof requestBody.body !==
       'string'
@@ -126,10 +122,10 @@ import {
         }
       );
     }
-  
+
     const body =
       requestBody.body.trim();
-  
+
     if (!body) {
       return NextResponse.json(
         {
@@ -141,7 +137,7 @@ import {
         }
       );
     }
-  
+
     if (
       body.length >
       MAX_COMMENT_LENGTH
@@ -156,7 +152,7 @@ import {
         }
       );
     }
-  
+
     try {
       const comment =
         await updateOwnComment({
@@ -222,25 +218,21 @@ import {
    * The stored body is erased, but the database row remains
    * so replies and moderation history retain their structure.
    */
-  export async function DELETE(
-    _request: Request,
-    {
-      params,
-    }: RouteContext
-  ) {
+  export async function DELETE(_request: Request, props: RouteContext) {
+    const params = await props.params;
     if (
       isDevAuthBypass()
     ) {
       return readerAuthUnavailable();
     }
-  
+
     const user =
       await getCurrentUser();
-  
+
     if (!user) {
       return readerAuthUnavailable();
     }
-  
+
     try {
       await deleteOwnComment({
         commentId:

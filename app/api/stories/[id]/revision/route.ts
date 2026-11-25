@@ -29,9 +29,9 @@ import type {
 } from '@/lib/db/database.types';
 
 interface RouteContext {
-  params: {
+  params: Promise<{
     id: string;
-  };
+  }>;
 }
 
 interface RevisionRequestBody {
@@ -120,12 +120,8 @@ interface RevisionRequestBody {
  *
  * The published story itself remains unchanged.
  */
-export async function GET(
-  _request: Request,
-  {
-    params,
-  }: RouteContext
-) {
+export async function GET(_request: Request, props: RouteContext) {
+  const params = await props.params;
   const user =
     await getCurrentUser();
 
@@ -214,12 +210,8 @@ export async function GET(
  * This route does not modify the published
  * public.stories row.
  */
-export async function PUT(
-  request: Request,
-  {
-    params,
-  }: RouteContext
-) {
+export async function PUT(request: Request, props: RouteContext) {
+  const params = await props.params;
   const user =
     await getCurrentUser();
 
@@ -598,12 +590,8 @@ export async function PUT(
  * This deletes the working revision and leaves
  * the live published article completely untouched.
  */
-export async function DELETE(
-  _request: Request,
-  {
-    params,
-  }: RouteContext
-) {
+export async function DELETE(_request: Request, props: RouteContext) {
+  const params = await props.params;
   const user =
     await getCurrentUser();
 

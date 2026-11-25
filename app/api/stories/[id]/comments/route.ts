@@ -27,9 +27,9 @@ import {
     5000;
   
   interface RouteContext {
-    params: {
+    params: Promise<{
       id: string;
-    };
+    }>;
   }
   
   interface CreateCommentRequest {
@@ -75,17 +75,13 @@ import {
   /**
    * Public endpoint for reading published comments.
    */
-  export async function GET(
-    request: Request,
-    {
-      params,
-    }: RouteContext
-  ) {
+  export async function GET(request: Request, props: RouteContext) {
+    const params = await props.params;
     const requestUrl =
       new URL(
         request.url
       );
-  
+
     const requestedLimit =
       Number.parseInt(
         requestUrl.searchParams.get(
@@ -93,14 +89,14 @@ import {
         ) ?? '',
         10
       );
-  
+
     const limit =
       Number.isFinite(
         requestedLimit
       )
         ? requestedLimit
         : undefined;
-  
+
     try {
       const thread =
         await getPublicCommentsForStory(
@@ -142,12 +138,8 @@ import {
    *
    * user_id and status are server/database-owned.
    */
-  export async function POST(
-    request: Request,
-    {
-      params,
-    }: RouteContext
-  ) {
+  export async function POST(request: Request, props: RouteContext) {
+    const params = await props.params;
     /*
      * DEV_AUTH_BYPASS is not a real authenticated
      * reader session and cannot create reader content.
@@ -165,10 +157,10 @@ import {
         }
       );
     }
-  
+
     const user =
       await getCurrentUser();
-  
+
     if (!user) {
       return NextResponse.json(
         {
@@ -180,7 +172,7 @@ import {
         }
       );
     }
-  
+
     const contentLength =
       Number.parseInt(
         request.headers.get(
@@ -188,7 +180,7 @@ import {
         ) ?? '0',
         10
       );
-  
+
     if (
       Number.isFinite(
         contentLength
@@ -206,10 +198,10 @@ import {
         }
       );
     }
-  
+
     let requestBody:
       CreateCommentRequest;
-  
+
     try {
       requestBody =
         await request.json();
@@ -224,7 +216,7 @@ import {
         }
       );
     }
-  
+
     if (
       typeof requestBody.body !==
       'string'
@@ -239,10 +231,10 @@ import {
         }
       );
     }
-  
+
     const commentBody =
       requestBody.body.trim();
-  
+
     if (!commentBody) {
       return NextResponse.json(
         {
@@ -254,7 +246,7 @@ import {
         }
       );
     }
-  
+
     if (
       commentBody.length >
       MAX_COMMENT_LENGTH
@@ -269,7 +261,7 @@ import {
         }
       );
     }
-  
+
     const parentId =
       requestBody.parentId ===
         undefined ||
@@ -280,7 +272,7 @@ import {
             'string'
           ? requestBody.parentId.trim()
           : null;
-  
+
     if (
       requestBody.parentId !==
         undefined &&
@@ -298,7 +290,7 @@ import {
         }
       );
     }
-  
+
     try {
       const storyExists =
         await publishedStoryExists(

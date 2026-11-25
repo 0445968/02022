@@ -15,12 +15,12 @@ import StarterKit from '@tiptap/starter-kit';
 import Link from '@tiptap/extension-link';
 import Underline from '@tiptap/extension-underline';
 import Placeholder from '@tiptap/extension-placeholder';
-import Color from '@tiptap/extension-color';
+import { Color } from '@tiptap/extension-text-style';
 import Highlight from '@tiptap/extension-highlight';
 import Subscript from '@tiptap/extension-subscript';
 import Superscript from '@tiptap/extension-superscript';
 import TextAlign from '@tiptap/extension-text-align';
-import TextStyle from '@tiptap/extension-text-style';
+import { TextStyle } from '@tiptap/extension-text-style';
 
 import {
   Image as ImageIcon,
@@ -126,8 +126,12 @@ export function RichTextEditor({
   const editor =
     useEditor({
       editable,
+      immediatelyRender: false,
+      shouldRerenderOnTransaction: true,
       extensions: [
         StarterKit.configure({
+          link: false,
+          underline: false,
           heading: {
             levels: [
               2,
@@ -262,7 +266,7 @@ export function RichTextEditor({
     ) {
       editor.commands.setContent(
         nextContent,
-        false
+        { emitUpdate: false }
       );
     }
   }, [

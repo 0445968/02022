@@ -54,15 +54,14 @@ import type {
 // Article includes reader-specific controls and live moderated comments.
 export const dynamic='force-dynamic';
 interface PageProps {
-  params: {
+  params: Promise<{
     locale: string;
     slug: string;
-  };
+  }>;
 }
 
-export async function generateMetadata({
-  params,
-}: PageProps): Promise<Metadata> {
+export async function generateMetadata(props: PageProps): Promise<Metadata> {
+  const params = await props.params;
   const locale =
     isLocale(params.locale)
       ? params.locale
@@ -136,9 +135,8 @@ export async function generateMetadata({
   };
 }
 
-export default async function ArticlePage({
-  params,
-}: PageProps) {
+export default async function ArticlePage(props: PageProps) {
+  const params = await props.params;
   if (
     !isLocale(params.locale)
   ) {

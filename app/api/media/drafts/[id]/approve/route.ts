@@ -54,7 +54,8 @@ async function digest(blob:Blob):Promise<string> {
     .digest('hex');
 }
 
-export async function POST(request:Request,{params}:{params:{id:string}}) {
+export async function POST(request:Request, props:{params: Promise<{id:string}>}) {
+  const params = await props.params;
   if (!privateDraftMediaEnabled() || isDevAuthBypass()) {
     return NextResponse.json({error:'Not found'},{status:404});
   }
@@ -125,7 +126,7 @@ export async function POST(request:Request,{params}:{params:{id:string}}) {
     return NextResponse.json({error:'Private original could not be verified'},{status:409});
   }
   if (sourceBlob.size!==draft.file_size_bytes
-    || await digest(sourceBlob)!==draft.source_sha256) {
+    || (await digest(sourceBlob))!==draft.source_sha256) {
     return NextResponse.json({error:'Private file integrity check failed'},{status:409});
   }
 
@@ -163,7 +164,7 @@ export async function POST(request:Request,{params}:{params:{id:string}}) {
       .from('media').download(destPath);
     if (publicReadError || !publicBlob
       || publicBlob.size!==draft.file_size_bytes
-      || await digest(publicBlob)!==draft.source_sha256) {
+      || (await digest(publicBlob))!==draft.source_sha256) {
       throw new Error(copyError ? 'copy_failed' : 'destination_integrity_failed');
     }
 
