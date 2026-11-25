@@ -117,7 +117,7 @@ try{
  mark('seed synthetic historical published comment for report workflow');
  const reportTargetId=randomUUID();
  sql('local published comment fixture',['-f','-'],"insert into public.comments(id,story_id,user_id,body,status) values("+uuid(reportTargetId)+","+uuid(storyIds.public)+","+uuid(users.legacy.id)+",'CT15 synthetic report target','published');");
- let submittedCommentId,submittedReportId;
+ let submittedCommentId,submittedReportId,approvedDraft,approvedRevision;
  mark('real JWT and REST boundaries');
  const anonymous=client();
  const anonStories=await anonymous.from('stories').select('slug').like('slug','ct15-%').order('slug');
@@ -166,7 +166,8 @@ try{
   CT_WRITER_DRAFT_CREATION_ENABLED:'true',CT_STORY_REVIEW_ENABLED:'true',
   CT_STAFF_ADMIN_MUTATIONS_ENABLED:'true',CT_READER_COMMUNICATIONS_ENABLED:'true',
   CT_EDITORIAL_CALENDAR_ENABLED:'true',CT_POLLS_ENABLED:'true',CT_REVIEW_INBOX_ENABLED:'true',CT_STORY_ASSIGNMENTS_ENABLED:'true',
-  CT_HOMEPAGE_HISTORY_ENABLED:'true',CT_READER_REPORTING_ENABLED:'true'
+  CT_HOMEPAGE_HISTORY_ENABLED:'true',CT_READER_REPORTING_ENABLED:'true',
+  CT_REVIEWED_PUBLICATION_ENABLED:'true',CT_REVIEWED_SCHEDULING_ENABLED:'true'
  };
  const appEnv={...process.env,...flags,NEXT_PUBLIC_SUPABASE_URL:apiOrigin,NEXT_PUBLIC_SUPABASE_ANON_KEY:values.ANON_KEY,SUPABASE_SERVICE_ROLE_KEY:values.SERVICE_ROLE_KEY};
  // Remove every other feature gate and provider credential inherited from the environment.
@@ -365,6 +366,37 @@ try{
     check('role revoked without affecting editor role',afterRevoke.members.find(m=>m.id===editorMember.id)?.roles.map(r=>r.roleKey).join(',')==='editor');
     const audit=await service.from('staff_access_audit').select('actor_auth_user_id,action_key,request_id').in('request_id',[(await granted.json()).requestId,(await revoked.json()).requestId]);
     check('owner role change audit attribution',!audit.error&&audit.data.length===2&&audit.data.every(a=>a.actor_auth_user_id===users.owner.id));
+    const assignments=appOrigin+'/api/newsroom/stories/'+storyIds.public+'/assignments';
+    const listing=await context.request.get(assignments);
+    check('owner actual assignment candidate API',listing.status()===200);
+    const freelancerMember=directory.members.find(m=>m.roles.some(r=>r.roleKey==='freelancer'));
+    const candidate=(await listing.json()).candidates.find(c=>c.id===freelancerMember.id);
+    check('freelancer eligible for author assignment',candidate?.types.includes('author'));
+    const assign=(data)=>context.request.post(assignments,{headers:{Origin:appOrigin},data});
+    const dueAt=new Date(Date.now()+2*86400000).toISOString();
+    const command={membershipId:freelancerMember.id,type:'author',action:'create',expectedRevision:0,dueAt,reason:'CT15 assign published story revision',requestId:randomUUID()};
+    const assigned=await assign(command);
+    check('owner creates real author assignment (HTTP '+assigned.status()+')',assigned.status()===200);
+    const created=await assigned.json();
+    check('assignment starts active revision one',created.status==='active'&&created.revision===1);
+    const stale=await assign({...command,requestId:randomUUID()});
+    check('duplicate assignment rejected',stale.status()===409);
+    const movedDue=new Date(Date.now()+3*86400000).toISOString();
+    const moved=await assign({...command,action:'reschedule',expectedRevision:created.revision,dueAt:movedDue,requestId:randomUUID()});
+    check('assignment deadline rescheduled',moved.status()===200&&(await moved.json()).revision===2);
+    const outdated=await assign({...command,action:'reschedule',expectedRevision:1,requestId:randomUUID()});
+    check('stale assignment revision rejected',outdated.status()===409);
+    const completed=await assign({...command,action:'complete',expectedRevision:2,dueAt:null,requestId:randomUUID()});
+    check('assignment completion recorded',completed.status()===200&&(await completed.json()).status==='completed');
+    const reopened=await assign({...command,action:'reopen',expectedRevision:3,dueAt:movedDue,requestId:randomUUID()});
+    check('assignment reopened with current revision',reopened.status()===200&&(await reopened.json()).revision===4);
+    const afterAssign=await context.request.get(assignments);
+    const assignedState=await afterAssign.json();
+    check('assignment history and deadline persisted',afterAssign.status()===200&&assignedState.assignments.some(a=>a.id===created.id&&a.status==='active'&&Date.parse(a.dueAt)===Date.parse(movedDue))&&assignedState.history.length>=4);
+    const calendar=appOrigin+'/api/newsroom/calendar?'+new URLSearchParams({start:new Date(Date.now()-86400000).toISOString(),end:new Date(Date.now()+7*86400000).toISOString(),filter:'assignments'});
+    const calendarResponse=await context.request.get(calendar);
+    check('team calendar reflects reopened assignment',calendarResponse.status()===200&&(await calendarResponse.json()).items.some(a=>a.id===created.id&&a.kind==='assignment'));
+
    }
    await page.goto(appOrigin+'/newsroom',{waitUntil:'domcontentloaded',timeout:20000});
    if(role==='reader'||role==='legacy'){
@@ -503,6 +535,27 @@ try{
     check('review attached to submitted snapshot',active.status==='in_review'&&active.current===true&&!!active.requestId);
     const selfDecision=await context.request.post(review,{headers:{Origin:appOrigin},data:{...request,action:'approve',requestId:active.requestId,fingerprint:active.fingerprint,commandId:randomUUID()}});
     check('freelancer cannot approve own review',selfDecision.status()===404||selfDecision.status()===403);
+    const revisionUrl=appOrigin+'/api/newsroom/contributor/stories/'+storyIds.public+'/revision';
+    const revisionRead=await context.request.get(revisionUrl);
+    check('assigned freelancer reads unpublished revision',revisionRead.status()===200);
+    const rev=await revisionRead.json();
+    check('revision source differs from live headline',rev.revisionId!==null&&rev.headline==='CT15 unpublished revision');
+    const revisionCommand={action:'save',expectedUpdatedAt:rev.updatedAt,liveUpdatedAt:rev.liveUpdatedAt,revisionId:rev.revisionId,copy:{headline:'CT15 reviewed public revision',subheadline:rev.subheadline,summary:rev.summary,body:rev.body}};
+    const revised=await context.request.put(revisionUrl,{headers:{Origin:appOrigin},data:revisionCommand});
+    check('freelancer saves assigned revision (HTTP '+revised.status()+')',revised.status()===200&&(await revised.json()).headline===revisionCommand.copy.headline);
+    const outdated=await context.request.put(revisionUrl,{headers:{Origin:appOrigin},data:revisionCommand});
+    check('stale revision update rejected',outdated.status()===409);
+    const unchanged=await anonymous.from('stories').select('headline').eq('id',storyIds.public).single();
+    check('revision save leaves public article unchanged',!unchanged.error&&unchanged.data.headline==='CT15 public story');
+    const revisionReview=appOrigin+'/api/newsroom/stories/'+storyIds.public+'/review';
+    const revisionSnapshot=await context.request.get(revisionReview+'?kind=revision');
+    check('assigned revision review state available',revisionSnapshot.status()===200);
+    const revisionToken=await revisionSnapshot.json();
+    const submittedRevision=await context.request.post(revisionReview,{headers:{Origin:appOrigin},data:{kind:'revision',action:'request',fingerprint:revisionToken.fingerprint,requestId:null,note:'CT15 saved revision ready for review',commandId:randomUUID()}});
+    check('freelancer submits revised copy for independent review',submittedRevision.status()===200&&(await submittedRevision.json()).status==='in_review');
+    const deniedPublish=await context.request.post(appOrigin+'/api/newsroom/stories/'+storyIds.assigned+'/publish-reviewed',{headers:{Origin:appOrigin},data:{kind:'draft',requestId:active.requestId,fingerprint:active.fingerprint}});
+    check('freelancer cannot publish reviewed copy',deniedPublish.status()===403);
+
    }
    if(role==='editor'){
     const review=appOrigin+'/api/newsroom/stories/'+storyIds.assigned+'/review';
@@ -517,6 +570,38 @@ try{
     check('second decision denied (HTTP '+duplicate.status()+')',duplicate.status()===409);
     const publicRead=await anonymous.from('stories').select('id').eq('id',storyIds.assigned);
     check('approval does not publish draft',!publicRead.error&&publicRead.data.length===0);
+    approvedDraft=await (await context.request.get(review+'?kind=draft')).json();
+    check('approved draft has current review token',approvedDraft.current&&approvedDraft.decision==='approved');
+    const revisionReview=appOrigin+'/api/newsroom/stories/'+storyIds.public+'/review';
+    const revisionRead=await context.request.get(revisionReview+'?kind=revision');
+    check('editor can read submitted revision review',revisionRead.status()===200);
+    const revisionState=await revisionRead.json();
+    check('independent revision review is actionable',revisionState.current&&revisionState.canDecide);
+    const revisionApproval=await context.request.post(revisionReview,{headers:{Origin:appOrigin},data:{kind:'revision',action:'approve',fingerprint:revisionState.fingerprint,requestId:revisionState.requestId,note:'CT15 independently approved revised copy',commandId:randomUUID()}});
+    check('editor approves revision independently',revisionApproval.status()===200&&(await revisionApproval.json()).decision==='approved');
+    approvedRevision=await (await context.request.get(revisionReview+'?kind=revision')).json();
+    const scheduleUrl=appOrigin+'/api/newsroom/stories/'+storyIds.assigned+'/schedule-reviewed';
+    const pubUrl=appOrigin+'/api/newsroom/stories/'+storyIds.assigned+'/publish-reviewed';
+    const postEditorial=(url,data)=>context.request.post(url,{headers:{Origin:appOrigin},data});
+    const publishToken={kind:'draft',requestId:approvedDraft.requestId,fingerprint:approvedDraft.fingerprint};
+    const schedule={...publishToken,action:'schedule',dueAt:new Date(Date.now()+3600000).toISOString()};
+    check('past reviewed schedule rejected',(await postEditorial(scheduleUrl,{...schedule,dueAt:new Date(Date.now()-3600000).toISOString()})).status()===422);
+    const queued=await postEditorial(scheduleUrl,schedule);
+    check('editor schedules approved draft (HTTP '+queued.status()+')',queued.status()===200);
+    const queueState=await queued.json();
+    check('reviewed schedule pending and current',queueState.state==='pending'&&queueState.current===true);
+    check('active schedule prevents immediate publish',(await postEditorial(pubUrl,publishToken)).status()===409);
+    check('duplicate schedule rejected',(await postEditorial(scheduleUrl,schedule)).status()===409);
+    const queueRead=await context.request.get(scheduleUrl+'?kind=draft');
+    check('schedule remains visible after reload',queueRead.status()===200&&(await queueRead.json()).id===queueState.id);
+    const calendar=appOrigin+'/api/newsroom/calendar?'+new URLSearchParams({start:new Date(Date.now()-86400000).toISOString(),end:new Date(Date.now()+86400000).toISOString(),filter:'publications'});
+    const calendarResponse=await context.request.get(calendar);
+    check('calendar reflects actual scheduled publication',calendarResponse.status()===200&&(await calendarResponse.json()).items.some(a=>a.id===queueState.id&&a.kind==='publication'&&a.snapshotCurrent));
+    const cancelled=await postEditorial(scheduleUrl,{action:'cancel',kind:'draft',scheduleId:queueState.id});
+    check('editor cancels reviewed schedule',cancelled.status()===200&&(await cancelled.json()).state==='cancelled');
+    const cleared=await context.request.get(scheduleUrl+'?kind=draft');
+    check('cancelled schedule no longer active',cleared.status()===200&&(await cleared.json())===null);
+
    }
    if(role==='moderator'){
     await page.goto(appOrigin+'/newsroom/comments',{waitUntil:'domcontentloaded',timeout:20000});
@@ -713,6 +798,48 @@ try{
   }finally{await context.close();}
  }
  assert.equal(report.roleErrors.length,0,'One or more authenticated role scenarios failed; inspect roleErrors');
+ // Publish only after all earlier reader/draft isolation assertions finish.
+ // No cron, provider dispatch or hosted write; a fresh real editor session.
+ mark('isolated final editorial publication');
+ const publicationContext=await browser.newContext({viewport:{width:1440,height:900},serviceWorkers:'block'});
+ try{
+  await publicationContext.route('**/*',route=>{
+   const req=route.request(),url=new URL(req.url()),method=req.method();
+   if(url.origin===appOrigin&&['GET','HEAD'].includes(method))return route.continue();
+   if(url.origin===apiOrigin&&(method==='OPTIONS'||(['GET','HEAD'].includes(method)&&url.pathname.startsWith('/auth/v1/'))||method==='POST'&&url.pathname==='/auth/v1/token'))return route.continue();
+   return route.abort();
+  });
+  const publicationPage=await publicationContext.newPage();
+  await publicationPage.goto(appOrigin+'/en/auth/sign-in?next=%2Faccount',{waitUntil:'load',timeout:20000});
+  await publicationPage.locator('#email').fill(users.editor.email);await publicationPage.locator('#password').fill(password);
+  await publicationPage.locator('form button[type="submit"]').click();
+  await publicationPage.waitForURL(url=>url.pathname==='/account',{timeout:20000});
+  check('fresh editor cookie session for publication',true);
+  const post=(id,data)=>publicationContext.request.post(appOrigin+'/api/newsroom/stories/'+id+'/publish-reviewed',{headers:{Origin:appOrigin},data});
+  const before=await anonymous.from('stories').select('headline,published_at').eq('id',storyIds.public).single();
+  check('original public headline preserved until publication',!before.error&&before.data.headline==='CT15 public story');
+  const draftToken={kind:'draft',requestId:approvedDraft.requestId,fingerprint:approvedDraft.fingerprint};
+  const revisionToken={kind:'revision',requestId:approvedRevision.requestId,fingerprint:approvedRevision.fingerprint};
+  check('incorrect publication fingerprint rejected',(await post(storyIds.assigned,{...draftToken,fingerprint:'0'.repeat(64)})).status()===409);
+  const published=await post(storyIds.assigned,draftToken);
+  check('approved draft actually publishes (HTTP '+published.status()+')',published.status()===200&&(await published.json()).status==='published');
+  const visible=await anonymous.from('stories').select('headline,status').eq('id',storyIds.assigned).single();
+  check('published draft now visible to public REST',!visible.error&&visible.data.status==='published'&&visible.data.headline==='CT15 assigned story edited');
+  const repeated=await post(storyIds.assigned,draftToken);
+  check('repeat publication cannot publish twice',repeated.status()===409);
+  const revisionPublished=await post(storyIds.public,revisionToken);
+  check('approved revision actually publishes (HTTP '+revisionPublished.status()+')',revisionPublished.status()===200&&(await revisionPublished.json()).status==='published');
+  const after=await anonymous.from('stories').select('headline,published_at').eq('id',storyIds.public).single();
+  check('published revision updates headline but preserves original publication timestamp',!after.error&&after.data.headline==='CT15 reviewed public revision'&&after.data.published_at===before.data.published_at);
+  const history=await service.from('story_versions').select('story_id,headline').in('story_id',[storyIds.public,storyIds.assigned]);
+  check('publication versions retain prior live copy and initial draft',!history.error&&history.data.some(v=>v.story_id===storyIds.public&&v.headline==='CT15 public story')&&history.data.some(v=>v.story_id===storyIds.assigned&&v.headline==='CT15 assigned story edited'));
+  check('published revision consumed and exact publication audit recorded',sql('publication audit',['-Atc'],"select ((select count(*) from newsroom_private.publication_events where story_id in ("+uuid(storyIds.public)+","+uuid(storyIds.assigned)+"))=2 and not exists(select 1 from public.story_revisions where story_id="+uuid(storyIds.public)+") and not exists(select 1 from newsroom_private.publication_permits))::text")==='true');
+  await publicationPage.goto(appOrigin+'/en/article/ct15-public',{waitUntil:'load',timeout:20000});
+  await publicationPage.getByRole('heading',{name:'CT15 reviewed public revision',exact:true}).waitFor({state:'visible'});
+  check('real public article displays reviewed headline',true);
+  await publicationPage.screenshot({path:resolve(output,'published-revision-article.png'),fullPage:true,timeout:10000,animations:'disabled'});
+ }finally{await publicationContext.close();}
+
  report.success=true;
 }catch(e){report.error=redact(e instanceof Error?e.message:String(e)).slice(0,500);throw new Error(report.error);}
 finally{
