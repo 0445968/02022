@@ -4,6 +4,9 @@ import { getDictionary } from '@/lib/i18n/dictionaries';
 import { defaultLocale } from '@/lib/i18n/config';
 import { getCurrentUser } from '@/lib/auth/session';
 
+// This endpoint reads the current request session; never prerender or cache it.
+export const dynamic = 'force-dynamic';
+
 export default async function NewsroomDenied() {
   const user = await getCurrentUser();
   const locale = user?.profile?.preferredLocale ?? defaultLocale;

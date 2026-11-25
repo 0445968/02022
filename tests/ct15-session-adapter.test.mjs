@@ -26,7 +26,7 @@ test('middleware reads all cookie chunks and forwards fresh cookies, preserving 
  assert.match(mw,/response\.cookies\.getAll\(\)\.forEach/);
 });
 test('server adapter supports both synchronous and asynchronous request cookie stores',async()=>{
- const mockHeaders=url(`export let store;export function setStore(s){store=s}export function cookies(){return store}`);
+ const mockHeaders=url(`export let store;export function setStore(s){store=s}export function cookies(){if(store instanceof Error)throw store;return store}`);
  const {setStore}=await import(mockHeaders);
  const {createClient}=await import(url(compile(f('lib/db/supabase-server.ts')).replace("'@supabase/ssr'","'"+mockSdk+"'").replace("'next/headers'","'"+mockHeaders+"'")));
  for(const asyncStore of [false,true]){
@@ -35,4 +35,13 @@ test('server adapter supports both synchronous and asynchronous request cookie s
   const client=createClient();assert.deepEqual(await client.getAll(),[{name:'session',value:'x'}]);
   await client.setAll([{name:'session',value:'y',options:{httpOnly:true}}]);assert.deepEqual(records,[['session','y',{httpOnly:true}]]);
  }
+});
+
+test('server cookie failures are observed by awaiting callers, never by an eager detached promise',async()=>{
+ const mockHeaders=url(`export function cookies(){throw new Error('request context unavailable')}`);
+ const {createClient}=await import(url(compile(f('lib/db/supabase-server.ts')).replace("'@supabase/ssr'","'"+mockSdk+"'").replace("'next/headers'","'"+mockHeaders+"'")));
+ const client=createClient();
+ await assert.rejects(client.getAll(),/request context unavailable/);
+ await assert.rejects(client.setAll([]),/request context unavailable/);
+ for(const path of ['app/api/media/route.ts','app/newsroom/denied/page.tsx'])assert.match(f(path),/export const dynamic = 'force-dynamic'/);
 });

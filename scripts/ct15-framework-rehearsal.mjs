@@ -34,6 +34,8 @@ try{
   p.dependencies.recharts='2.15.4';
   p.dependencies.sonner='1.7.4';
   p.dependencies.vaul='1.1.2';
+  // cmdk 1.0.0 pins Radix Dialog 1.0.5 (React <=18). 1.1.1 allows React 19.
+  p.dependencies.cmdk='1.1.1';
   p.dependencies['next-themes']='0.4.6';
   p.scripts.lint='eslint .';p.scripts.build='next build --webpack';
   writeFileSync('package.json',JSON.stringify(p,null,2)+'\n');

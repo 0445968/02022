@@ -11,23 +11,22 @@ async function requestCookieStore() {
 }
 
 export function createClient() {
-  // Next 13 returns a store; Next 15/16 return a Promise. Capture it in the
-  // request context and await inside the SDK's supported async callbacks.
-  const cookieStore = requestCookieStore();
-
+  // Resolve cookies only inside awaited SDK callbacks. An eager rejected
+  // promise during Next 13 prerender can escape the static-generation worker.
+  // Session-dependent pages and GET routes must opt into dynamic rendering.
   return createServerClient<Database>(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
         async getAll() {
-          return (await cookieStore).getAll();
+          return (await requestCookieStore()).getAll();
         },
 
         async setAll(
           cookiesToSet: Parameters<SetAllCookies>[0]
         ) {
-          const store = await cookieStore;
+          const store = await requestCookieStore();
           try {
             cookiesToSet.forEach(
               ({ name, value, options }) => {
