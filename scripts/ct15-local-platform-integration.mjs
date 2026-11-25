@@ -17,7 +17,7 @@ assert.equal(process.env.DEV_AUTH_BYPASS,'false');
 assert.ok(!process.env.SUPABASE_ACCESS_TOKEN&&!process.env.SUPABASE_SERVICE_ROLE_KEY&&!process.env.NEXT_PUBLIC_SUPABASE_URL);
 const output=resolve('ct15-platform-evidence');
 mkdirSync(output,{recursive:true});
-const report={scope:'real local Supabase services; synthetic legacy schema and accounts, NOT a hosted restore',stages:[],checks:[],success:false};
+const report={scope:'real local Supabase services; synthetic legacy schema and accounts, NOT a hosted restore',stages:[],checks:[],roleErrors:[],success:false};
 const checkpoint=()=>writeFileSync(resolve(output,'results.json'),JSON.stringify(report,null,2));
 const mark=(stage)=>{report.stages.push(stage);console.log('STAGE '+stage);checkpoint();};
 const check=(name,ok)=>{report.checks.push({name,ok:!!ok});console.log((ok?'PASS ':'FAIL ')+name);checkpoint();assert.ok(ok,name);};
@@ -179,7 +179,7 @@ try{
   try{
    await context.route('**/*',route=>{
     const req=route.request(),url=new URL(req.url()),method=req.method();
-    if(url.origin===appOrigin&&['GET','HEAD'].includes(method))return route.continue();
+    if(url.origin===appOrigin&&(['GET','HEAD'].includes(method)||(method==='POST'&&url.pathname==='/api/newsroom/onboarding')))return route.continue();
     if(url.origin===apiOrigin&&(method==='OPTIONS'||(['GET','HEAD'].includes(method)&&url.pathname.startsWith('/auth/v1/'))||method==='POST'&&['/auth/v1/token','/auth/v1/logout'].includes(url.pathname)))return route.continue();
     return route.abort();
    });
@@ -192,14 +192,25 @@ try{
    await page.locator('#account-main').waitFor({state:'visible'});
    check(role+' actual login and account shell',true);
    const account=await context.request.get(appOrigin+'/api/account/profile');
-   check(role+' cookie-authenticated profile API',account.status()===200&&(await account.json()).email===users[role].email);
+   check(role+' cookie-authenticated profile API (HTTP '+account.status()+')',account.status()===200&&(await account.json()).email===users[role].email);
+   check(role+' account newsroom navigation matches current role',(await page.locator('a[href="/newsroom"]').count()>0)===!['reader','legacy'].includes(role));
    if(role==='reader'){
     const initial=await (await context.request.get(appOrigin+'/api/account/profile')).json();
     const change=await context.request.post(appOrigin+'/api/account/profile',{headers:{Origin:appOrigin},data:{action:'profile',expectedUpdatedAt:initial.updatedAt,displayName:'CT15 Updated Reader',locale:'es',avatar:'ocean'}});
-    check('reader profile save through application API',change.status()===200&&(await change.json()).displayName==='CT15 Updated Reader');
+    check('reader profile save through application API (HTTP '+change.status()+')',change.status()===200&&(await change.json()).displayName==='CT15 Updated Reader');
+    const stale=await context.request.post(appOrigin+'/api/account/profile',{headers:{Origin:appOrigin},data:{action:'profile',expectedUpdatedAt:initial.updatedAt,displayName:'Stale overwrite',locale:'en',avatar:'initials'}});
+    check('reader stale profile rejected (HTTP '+stale.status()+')',stale.status()===409);
+    const retained=await context.request.get(appOrigin+'/api/account/profile');
+    check('reader saved identity retained',retained.status()===200&&(await retained.json()).displayName==='CT15 Updated Reader');
    }
    const team=await context.request.get(appOrigin+'/api/newsroom/team');
-   check(role+' team route authorization',team.status()===(role==='owner'?200:404));
+   check(role+' team route authorization (HTTP '+team.status()+')',team.status()===(role==='owner'?200:404));
+   if(role==='owner'){
+    const directory=await team.json();
+    check('owner sees exactly five synthetic members and own row',directory.totalMembers===5&&directory.members.filter(m=>m.isSelf).length===1);
+    check('owner directory read-only flag boundary',directory.mutationsEnabled===false&&directory.overrideMutationsEnabled===false&&directory.presetMutationsEnabled===false);
+    check('owner directory excludes raw Auth emails and invitation secrets',!JSON.stringify(directory).includes('@example.test')&&!JSON.stringify(directory).includes('token_hash'));
+   }
    await page.goto(appOrigin+'/newsroom',{waitUntil:'domcontentloaded',timeout:20000});
    if(role==='reader'||role==='legacy'){
     await page.waitForURL(url=>url.pathname==='/newsroom/denied',{timeout:15000});
@@ -208,8 +219,22 @@ try{
     await page.waitForURL(url=>url.pathname==='/newsroom/onboarding',{timeout:15000});
     const onboarding=await context.request.get(appOrigin+'/api/newsroom/onboarding');
     check(role+' real onboarding state',onboarding.status()===200&&(await onboarding.json()).profile===null);
-    const saved=await context.request.post(appOrigin+'/api/newsroom/onboarding',{headers:{Origin:appOrigin},data:{expectedRevision:0,displayName:'CT15 '+role,locale:'en',bylineRequested:false,acknowledgedVersion:1}});
-    check(role+' onboarding save',saved.status()===200&&(await saved.json()).profile?.revision===1);
+    const payload={expectedRevision:0,displayName:'CT15 '+role,locale:'en',bylineRequested:false,acknowledgedVersion:1};
+    const missingConfirmation=await context.request.post(appOrigin+'/api/newsroom/onboarding',{headers:{Origin:appOrigin},data:payload});
+    check(role+' missing onboarding confirmation rejected (HTTP '+missingConfirmation.status()+')',missingConfirmation.status()===422);
+    const form=page.locator('main form');
+    await form.getByRole('textbox').fill(payload.displayName);
+    await form.locator('select').selectOption('en');
+    const submit=form.getByRole('button',{name:'Complete onboarding',exact:true});
+    check(role+' form requires confirmation',!(await submit.isEnabled()));
+    await form.getByLabel('I understand that access is limited', {exact:false}).check();
+    const response=page.waitForResponse(r=>r.url()===appOrigin+'/api/newsroom/onboarding'&&r.request().method()==='POST');
+    await submit.click();
+    const saved=await response;
+    check(role+' real form onboarding save (HTTP '+saved.status()+')',saved.status()===200&&(await saved.json()).profile?.revision===1);
+    await form.getByRole('status').waitFor({state:'visible'});
+    const stale=await context.request.post(appOrigin+'/api/newsroom/onboarding',{headers:{Origin:appOrigin},data:{...payload,confirmed:true}});
+    check(role+' stale onboarding revision denied (HTTP '+stale.status()+')',stale.status()===409);
     await page.goto(appOrigin+'/newsroom',{waitUntil:'domcontentloaded',timeout:20000});
     const landing=['owner','editor'].includes(role)?'/newsroom':'/newsroom/contributor';
     await page.waitForURL(url=>url.pathname===landing,{timeout:15000});
@@ -220,10 +245,42 @@ try{
      check('assigned story shown, unrelated draft absent',await page.getByText('CT15 other story',{exact:true}).count()===0);
     }
    }
-   check(role+' no uncaught browser errors',runtime.length===0);
    await page.screenshot({path:resolve(output,role+'-workspace.png'),fullPage:true,timeout:10000,animations:'disabled'});
+   if(role==='owner'||role==='editor'){
+    await page.goto(appOrigin+'/newsroom/stories',{waitUntil:'domcontentloaded',timeout:20000});
+    await page.locator('#newsroom-main').waitFor({state:'visible'});
+    check(role+' story list available',new URL(page.url()).pathname==='/newsroom/stories');
+    await page.getByText('CT15 public story',{exact:true}).first().waitFor({state:'visible'});
+    await page.screenshot({path:resolve(output,role+'-stories.png'),fullPage:true,timeout:10000,animations:'disabled'});
+   }
+   if(role==='freelancer'||role==='staff_writer'||role==='moderator'){
+    await page.goto(appOrigin+'/newsroom/stories',{waitUntil:'domcontentloaded',timeout:20000});
+    await page.waitForURL(url=>url.pathname==='/newsroom/denied',{timeout:15000});
+    check(role+' full story list denied',true);
+   }
+   if(role==='moderator'){
+    await page.goto(appOrigin+'/newsroom/comments',{waitUntil:'domcontentloaded',timeout:20000});
+    await page.getByRole('heading',{name:'Comments',exact:true}).waitFor({state:'visible'});
+    check('moderator comment workspace available',true);
+    await page.goto(appOrigin+'/newsroom/reports',{waitUntil:'domcontentloaded',timeout:20000});
+    await page.getByRole('heading',{name:'Reports',exact:true}).waitFor({state:'visible'});
+    check('moderator reports workspace available',true);
+   }
+   if(role==='reader'){
+    await page.goto(appOrigin+'/account/profile',{waitUntil:'domcontentloaded',timeout:20000});
+    await page.locator('#account-main').waitFor({state:'visible'});
+    check('reader profile page accessible',new URL(page.url()).pathname==='/account/profile');
+    await page.setViewportSize({width:390,height:844});
+    await page.screenshot({path:resolve(output,'reader-profile-mobile.png'),fullPage:true,timeout:10000,animations:'disabled'});
+   }
+   check(role+' no uncaught browser errors',runtime.length===0);
+  }catch(e){
+   const error=redact(e instanceof Error?e.message:String(e)).slice(0,700);
+   report.roleErrors.push({role,error});console.log('ROLE FAILURE '+role+' '+error);checkpoint();
+   // Keep independent roles running; the overall workflow still fails.
   }finally{await context.close();}
  }
+ assert.equal(report.roleErrors.length,0,'One or more authenticated role scenarios failed; inspect roleErrors');
  report.success=true;
 }catch(e){report.error=redact(e instanceof Error?e.message:String(e)).slice(0,500);throw new Error(report.error);}
 finally{
