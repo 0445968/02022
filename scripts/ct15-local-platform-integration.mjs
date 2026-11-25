@@ -371,7 +371,7 @@ try{
     const audit=await service.from('staff_access_audit').select('actor_auth_user_id,action_key,request_id').in('request_id',[(await granted.json()).requestId,(await revoked.json()).requestId]);
     check('owner role change audit attribution',!audit.error&&audit.data.length===2&&audit.data.every(a=>a.actor_auth_user_id===users.owner.id));
     const invitations=appOrigin+'/api/newsroom/team/invitations';
-    const preset=directory.presets.find(p=>p.roleKey==='moderator');
+    const preset=directory.presets.find(p=>p.key==='moderator');
     check('configured moderator preset available for invitation',Number.isInteger(preset?.grantRevision)&&preset.grantRevision>=1);
     const invitation={action:'issue',input:{email:'ct15-invited@example.test',roleKey:'moderator',memberType:'employee',expectedPresetRevision:preset.grantRevision,expiresAt:new Date(Date.now()+86400000).toISOString(),membershipExpiresAt:null,reason:'CT15 disposable invitation review',confirmed:true}};
     const issue=await context.request.post(invitations,{headers:{Origin:appOrigin},data:invitation});
@@ -914,7 +914,7 @@ try{
   check('published revision updates headline but preserves original publication timestamp',!after.error&&after.data.headline==='CT15 reviewed public revision'&&after.data.published_at===before.data.published_at);
   const history=await service.from('story_versions').select('story_id,headline').in('story_id',[storyIds.public,storyIds.assigned]);
   check('publication versions retain prior live copy and initial draft',!history.error&&history.data.some(v=>v.story_id===storyIds.public&&v.headline==='CT15 public story')&&history.data.some(v=>v.story_id===storyIds.assigned&&v.headline==='CT15 assigned story edited'));
-  check('published revision consumed and exact publication audit recorded',sql('publication audit',['-Atc'],"select ((select count(*) from newsroom_private.publication_events where story_id in ("+uuid(storyIds.public)+","+uuid(storyIds.assigned)+"))=2 and not exists(select 1 from public.story_revisions where story_id="+uuid(storyIds.public)+") and not exists(select 1 from newsroom_private.publication_permits))::text")==='true');
+  check('published revision consumed and exact publication audit recorded',sql('publication audit',['-At','-f','-'],"select ((select count(*) from newsroom_private.publication_events where story_id in ("+uuid(storyIds.public)+","+uuid(storyIds.assigned)+"))=2 and not exists(select 1 from public.story_revisions where story_id="+uuid(storyIds.public)+") and not exists(select 1 from newsroom_private.publication_permits))::text")==='true');
   await publicationPage.goto(appOrigin+'/en/article/ct15-public',{waitUntil:'load',timeout:20000});
   await publicationPage.getByRole('heading',{name:'CT15 reviewed public revision',exact:true}).waitFor({state:'visible'});
   check('real public article displays reviewed headline',true);
