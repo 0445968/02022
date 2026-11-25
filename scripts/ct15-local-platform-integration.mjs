@@ -865,6 +865,14 @@ try{
        check('team invitations open by keyboard',await disclosure.evaluate(el=>el.open));
        await page.keyboard.press('Enter');
        check('team invitations close by keyboard',!(await disclosure.evaluate(el=>el.open)));
+       const extra=page.locator('details[data-team-disclosure="presets"],details[data-team-disclosure="audit"]');
+       check('team presets and audit start collapsed',await extra.count()===2&&await extra.evaluateAll(els=>els.every(el=>!el.open)));
+       for(const section of await extra.all()){
+        await section.locator('summary').focus();await page.keyboard.press('Enter');
+        check('team secondary management group opens with keyboard',await section.evaluate(el=>el.open));
+        await page.keyboard.press('Enter');
+       }
+       check('all team management disclosures remain reachable and compact',await extra.evaluateAll(els=>els.every(el=>!el.open)));
       }
       if(path==='/newsroom/page-editor'&&width===390){
        const sections=page.locator('details[data-front-page-section]');
@@ -886,7 +894,20 @@ try{
        await dialog.waitFor({state:'visible'});
        check('history uses accessible modal and focuses inside',await dialog.evaluate(el=>el.contains(document.activeElement)));
        await page.keyboard.press('Escape');await dialog.waitFor({state:'hidden'});
+       // Radix FocusScope schedules unmount autofocus on the next task.
+       // Wait for actual restored focus, not merely hidden dialog.
+       await page.waitForFunction(()=>document.activeElement?.id==='page-editor-actions',undefined,{timeout:3000});
        check('history Escape returns focus to Actions',await actions.evaluate(el=>document.activeElement===el));
+       await actions.click();await page.getByRole('button',{name:'Layout History',exact:true}).click();
+       await dialog.waitFor({state:'visible'});
+       await page.keyboard.press('Tab');
+       check('history traps forward keyboard focus',await dialog.evaluate(el=>el.contains(document.activeElement)));
+       await page.keyboard.press('Shift+Tab');
+       check('history traps reverse keyboard focus',await dialog.evaluate(el=>el.contains(document.activeElement)));
+       await dialog.getByRole('button',{name:'Close',exact:true}).click();
+       await dialog.waitFor({state:'hidden'});
+       await page.waitForFunction(()=>document.activeElement?.id==='page-editor-actions',undefined,{timeout:3000});
+       check('history Close restores trigger focus',true);
        await page.screenshot({path:resolve(output,'newsroom-page-editor-390-compact.png'),fullPage:true,timeout:10000,animations:'disabled'});
       }
       if(path==='/newsroom/schedule'&&width===390){
@@ -1042,6 +1063,37 @@ try{
   check('stale byline review rejected',(await ownerContext.request.post(byline,{headers:{Origin:appOrigin},data:command})).status()===409);
   const updated=await ownerContext.request.get(byline);
   check('byline decision appears in queue',updated.status()===200&&(await updated.json()).items.some(r=>r.membership_id===target.membership_id&&r.review_status==='rejected'));
+  // Fixture editorial identities only; the review API must not rewrite
+  // public author records or historical story attribution.
+  const availableByline=randomUUID(),historicalByline=randomUUID();
+  sql('synthetic editorial identities',['-f','-'],"insert into public.editorial_profiles(id,account_id,byline_name,slug,byline_status) values("+uuid(availableByline)+",null,'CT15 available byline','ct15-available-byline','hidden'),("+uuid(historicalByline)+","+uuid(users.legacy.id)+",'CT15 historical author','ct15-historical-author','active');");
+  const contributor=await adminTestContext(users.freelancer.email);
+  try{
+   const renewed=await contributor.request.post(appOrigin+'/api/newsroom/onboarding',{headers:{Origin:appOrigin},data:{expectedRevision:target.profile_revision,displayName:'CT15 freelancer',locale:'en',bylineRequested:true,acknowledgedVersion:1,confirmed:true}});
+   check('contributor renews rejected byline request',renewed.status()===200&&(await renewed.json()).profile.revision===target.profile_revision+1);
+   const newRequest=await ownerContext.request.get(byline);
+   const renewedTarget=(await newRequest.json()).items.find(r=>r.membership_id===target.membership_id);
+   check('renewed byline returns to pending',newRequest.status()===200&&renewedTarget.review_status==='pending');
+   const candidates=await ownerContext.request.get(byline+'?member='+target.membership_id);
+   const candidateRows=(await candidates.json()).items;
+   check('byline candidates include eligible identity but exclude historical author',candidates.status()===200&&candidateRows.some(r=>r.id===availableByline)&&!candidateRows.some(r=>r.id===historicalByline));
+   const approve={...command,profileRevision:renewedTarget.profile_revision,reviewRevision:renewedTarget.review_revision,action:'approve',bylineId:availableByline,reason:'CT15 reviewed synthetic editorial association'};
+   const forbidden=await ownerContext.request.post(byline,{headers:{Origin:appOrigin},data:{...approve,bylineId:historicalByline}});
+   check('historical byline cannot be claimed by another account',forbidden.status()===409);
+   const accepted=await ownerContext.request.post(byline,{headers:{Origin:appOrigin},data:approve});
+   check('owner approves renewed private byline association',accepted.status()===200&&(await accepted.json()).revision===approve.reviewRevision+1);
+   const contributorPage=contributor.pages()[0];
+   await contributorPage.goto(appOrigin+'/newsroom/profile',{waitUntil:'load',timeout:20000});
+   await contributorPage.getByText('Approved association',{exact:true}).waitFor({state:'visible'});
+   check('contributor profile shows approved private byline name',await contributorPage.getByText('CT15 available byline',{exact:true}).isVisible());
+   await contributorPage.screenshot({path:resolve(output,'freelancer-byline-approved.png'),fullPage:true,timeout:10000,animations:'disabled'});
+   const unlink=await ownerContext.request.post(byline,{headers:{Origin:appOrigin},data:{...approve,action:'unlink',bylineId:null,reviewRevision:approve.reviewRevision+1,reason:'CT15 remove synthetic private association'}});
+   check('owner unlinks private association',unlink.status()===200&&(await unlink.json()).revision===approve.reviewRevision+2);
+   await contributorPage.reload({waitUntil:'load',timeout:20000});
+   await contributorPage.getByText('Association removed',{exact:true}).waitFor({state:'visible'});
+   check('contributor profile confirms unlink without exposing former name',await contributorPage.getByText('CT15 available byline',{exact:true}).count()===0);
+   check('public authorship and historical article attribution unchanged',sql('private association integrity',['-At','-f','-'],"select (exists(select 1 from public.editorial_profiles where id="+uuid(availableByline)+" and account_id is null and byline_status='hidden') and exists(select 1 from public.editorial_profiles where id="+uuid(historicalByline)+" and account_id="+uuid(users.legacy.id)+") and exists(select 1 from public.stories where id="+uuid(storyIds.public)+" and author_id="+uuid(users.legacy.id)+"))::text;")==='true');
+  }finally{await contributor.close();}
   const privacy=appOrigin+'/api/newsroom/privacy';
   const queue=await ownerContext.request.get(privacy);
   check('owner privacy queue contains reader deletion request',queue.status()===200);

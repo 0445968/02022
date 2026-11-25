@@ -315,7 +315,9 @@ export function StaffTeamManager({locale,showInvitations=false,showBylines=false
         <summary className="cursor-pointer rounded-lg p-4 font-semibold text-deep focus-visible:ring-2 focus-visible:ring-primary">{locale==='es'?'Solicitudes de firma':'Byline requests'}</summary>
         <div className="px-3 pb-3"><StaffBylineReviewManager locale={locale}/></div>
       </details>}
-      <section className={row+' p-4'}>
+      <details className={row} data-team-disclosure="presets">
+        <summary className="cursor-pointer rounded-lg p-4 font-semibold text-deep focus-visible:ring-2 focus-visible:ring-primary">{t.roles}</summary>
+        <section className="p-4 pt-0">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div><h2 className="text-base font-semibold text-deep">{t.roles}</h2>
             <p className="mt-1 text-sm text-muted-foreground">{t.review}</p></div>
@@ -353,7 +355,10 @@ export function StaffTeamManager({locale,showInvitations=false,showBylines=false
           canEdit={data.presetMutationsEnabled && selectedRole.key!=='owner'}
           onSaved={refresh}/>}
       </section>
-      {data.canViewAudit&&<section className={row+' p-4'} aria-label={t.audit}>
+      </details>
+      {data.canViewAudit&&<details className={row} data-team-disclosure="audit">
+        <summary className="cursor-pointer rounded-lg p-4 font-semibold text-deep focus-visible:ring-2 focus-visible:ring-primary">{t.audit}</summary>
+        <section className="p-4 pt-0" aria-label={t.audit}>
         <div className="flex flex-wrap items-center justify-between gap-3">
           <h2 className="text-base font-semibold text-deep">{t.audit}</h2>
           <label className="text-xs text-muted-foreground">
@@ -383,7 +388,7 @@ export function StaffTeamManager({locale,showInvitations=false,showBylines=false
           <button type="button" className={button} disabled={loading||!data.hasMoreAudit}
             onClick={()=>setAuditPage(value=>value+1)}>{t.next}</button>
         </div>
-      </section>}
+      </section></details>}
     </>}
   </div>;
 }
