@@ -1,3 +1,4 @@
+import {readReaderJson,ReaderWriteError} from '@/lib/permissions/reader-write-http';
 import {NextResponse} from 'next/server';
 import {getStaffTeamAccess} from '@/lib/services/staff-team-directory';
 import {validatePresetGrantChange} from '@/lib/permissions/staff-preset-input';
@@ -24,8 +25,9 @@ export async function POST(request:Request){
       return NextResponse.json({error:'Not found'},{status:404});
     }
     let raw:unknown;
-    try{raw=await request.json();}
-    catch{return NextResponse.json({error:'Invalid JSON'},{status:400});}
+    try{raw=await readReaderJson(request,8192);}
+    catch(error){
+      return NextResponse.json({error:'Invalid request'},{status:error instanceof ReaderWriteError?error.status:400});}
     let input;
     try{input=validatePresetGrantChange(raw);}
     catch{return NextResponse.json({error:'Invalid role capability matrix'},{status:422});}

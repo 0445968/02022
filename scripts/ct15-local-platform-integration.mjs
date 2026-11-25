@@ -117,7 +117,7 @@ try{
  mark('seed synthetic historical published comment for report workflow');
  const reportTargetId=randomUUID();
  sql('local published comment fixture',['-f','-'],"insert into public.comments(id,story_id,user_id,body,status) values("+uuid(reportTargetId)+","+uuid(storyIds.public)+","+uuid(users.legacy.id)+",'CT15 synthetic report target','published');");
- let submittedCommentId,submittedReportId,approvedDraft,approvedRevision;
+ let submittedCommentId,submittedReportId,approvedDraft,approvedRevision,mediaDraftId,rejectedMediaDraftId;
  mark('real JWT and REST boundaries');
  const anonymous=client();
  const anonStories=await anonymous.from('stories').select('slug').like('slug','ct15-%').order('slug');
@@ -167,7 +167,7 @@ try{
   CT_STAFF_ADMIN_MUTATIONS_ENABLED:'true',CT_READER_COMMUNICATIONS_ENABLED:'true',
   CT_EDITORIAL_CALENDAR_ENABLED:'true',CT_POLLS_ENABLED:'true',CT_REVIEW_INBOX_ENABLED:'true',CT_STORY_ASSIGNMENTS_ENABLED:'true',
   CT_HOMEPAGE_HISTORY_ENABLED:'true',CT_READER_REPORTING_ENABLED:'true',
-  CT_REVIEWED_PUBLICATION_ENABLED:'true',CT_REVIEWED_SCHEDULING_ENABLED:'true'
+  CT_REVIEWED_PUBLICATION_ENABLED:'true',CT_REVIEWED_SCHEDULING_ENABLED:'true',CT_STAFF_INVITATIONS_ENABLED:'true'
  };
  const appEnv={...process.env,...flags,NEXT_PUBLIC_SUPABASE_URL:apiOrigin,NEXT_PUBLIC_SUPABASE_ANON_KEY:values.ANON_KEY,SUPABASE_SERVICE_ROLE_KEY:values.SERVICE_ROLE_KEY};
  // Remove every other feature gate and provider credential inherited from the environment.
@@ -266,6 +266,10 @@ try{
     check('reader notification preferences persisted',updated.status()===200&&(await updated.json()).preferences.stories===changes.stories);
     const outdated=await post('/api/account/notifications',changes);
     check('reader stale preference write rejected',outdated.status()===409);
+    check('reader denied staff invitation directory',(await context.request.get(appOrigin+'/api/newsroom/team/invitations')).status()===403);
+    check('reader denied homepage versioned editor',(await context.request.get(appOrigin+'/api/front-page/history')).status()===403);
+    check('reader denied private media list',(await context.request.get(appOrigin+'/api/media/drafts')).status()===403);
+    check('reader denied private media preview',(await context.request.get(appOrigin+'/api/media/drafts/'+mediaDraftId+'/preview')).status()===403);
     const bookmarkPath='/api/bookmarks/stories/'+storyIds.public,bookmark=appOrigin+bookmarkPath;
     const beforeBookmark=await context.request.get(bookmark);
     check('reader bookmark initially absent',beforeBookmark.status()===200&&(await beforeBookmark.json()).bookmarked===false);
@@ -366,6 +370,47 @@ try{
     check('role revoked without affecting editor role',afterRevoke.members.find(m=>m.id===editorMember.id)?.roles.map(r=>r.roleKey).join(',')==='editor');
     const audit=await service.from('staff_access_audit').select('actor_auth_user_id,action_key,request_id').in('request_id',[(await granted.json()).requestId,(await revoked.json()).requestId]);
     check('owner role change audit attribution',!audit.error&&audit.data.length===2&&audit.data.every(a=>a.actor_auth_user_id===users.owner.id));
+    const invitations=appOrigin+'/api/newsroom/team/invitations';
+    const preset=directory.presets.find(p=>p.roleKey==='moderator');
+    check('configured moderator preset available for invitation',Number.isInteger(preset?.grantRevision)&&preset.grantRevision>=1);
+    const invitation={action:'issue',input:{email:'ct15-invited@example.test',roleKey:'moderator',memberType:'employee',expectedPresetRevision:preset.grantRevision,expiresAt:new Date(Date.now()+86400000).toISOString(),membershipExpiresAt:null,reason:'CT15 disposable invitation review',confirmed:true}};
+    const issue=await context.request.post(invitations,{headers:{Origin:appOrigin},data:invitation});
+    check('owner creates manual invitation without delivery (HTTP '+issue.status()+')',issue.status()===200);
+    const issued=await issue.json();
+    check('invitation code only returned to issuer',issued.ok===true&&issued.delivery==='manual'&&typeof issued.code==='string'&&issued.code.length===43);
+    creds.push(issued.code);
+    const list=await context.request.get(invitations);
+    const listData=await list.json();
+    check('invitation list masks identity and excludes code',list.status()===200&&listData.items.some(r=>r.invitationId===issued.invitationId&&r.status==='pending')&&!JSON.stringify(listData).includes(issued.code)&&!JSON.stringify(listData).includes(invitation.input.email));
+    const cancel=await context.request.post(invitations,{headers:{Origin:appOrigin},data:{action:'cancel',id:issued.invitationId,reason:'CT15 cancel disposable invitation',confirmed:true}});
+    check('owner cancels unused invitation',cancel.status()===200&&(await cancel.json()).ok===true);
+    const afterCancel=await context.request.get(invitations);
+    check('cancelled invitation history retained',afterCancel.status()===200&&(await afterCancel.json()).items.some(r=>r.invitationId===issued.invitationId&&r.status==='canceled'));
+    const homepage=appOrigin+'/api/front-page/history';
+    const initialHome=await context.request.get(homepage);
+    check('owner loads versioned homepage layout',initialHome.status()===200);
+    const home=await initialHome.json();
+    check('synthetic homepage is editable',home.legacyBlocked===false);
+    const selection=[{slot:'lead',position:0,storyId:storyIds.public,categoryId:null}];
+    const homePost=(data)=>context.request.post(homepage,{headers:{Origin:appOrigin},data});
+    const save={action:'save',expectedRevision:home.revision,selections:selection,restoreRevision:null};
+    const draftHome=await homePost(save);
+    check('homepage draft saves without changing public placements',draftHome.status()===200);
+    const savedHome=await draftHome.json();
+    check('homepage draft isolated from public layout',JSON.stringify(savedHome.published)===JSON.stringify(home.published)&&savedHome.selections.some(r=>r.storyId===storyIds.public));
+    check('stale homepage save denied',(await homePost(save)).status()===409);
+    const publishedHome=await homePost({...save,action:'publish',expectedRevision:savedHome.revision});
+    check('owner publishes homepage selection',publishedHome.status()===200);
+    const publicHome=await publishedHome.json();
+    check('homepage publishes exact selection and version history',publicHome.published.some(r=>r.storyId===storyIds.public)&&publicHome.history.some(r=>r.revision===publicHome.revision));
+    const restored=await homePost({action:'restore',expectedRevision:publicHome.revision,selections:null,restoreRevision:home.history[0]?.revision??0});
+    check('homepage historical restore creates draft only',restored.status()===200);
+    const restoreState=await restored.json();
+    check('homepage restore does not change live selection',JSON.stringify(restoreState.published)===JSON.stringify(publicHome.published));
+    const revert=await homePost({action:'revert',expectedRevision:restoreState.revision,selections:null,restoreRevision:null});
+    check('homepage revert returns draft to current public layout',revert.status()===200&&(await revert.json()).selections.some(r=>r.storyId===storyIds.public));
+    const reset=await homePost({action:'publish',expectedRevision:restoreState.revision+1,selections:home.published,restoreRevision:null});
+    check('synthetic homepage original selection restored',reset.status()===200&&JSON.stringify((await reset.json()).published)===JSON.stringify(home.published));
     const assignments=appOrigin+'/api/newsroom/stories/'+storyIds.public+'/assignments';
     const listing=await context.request.get(assignments);
     check('owner actual assignment candidate API',listing.status()===200);
@@ -535,6 +580,22 @@ try{
     check('review attached to submitted snapshot',active.status==='in_review'&&active.current===true&&!!active.requestId);
     const selfDecision=await context.request.post(review,{headers:{Origin:appOrigin},data:{...request,action:'approve',requestId:active.requestId,fingerprint:active.fingerprint,commandId:randomUUID()}});
     check('freelancer cannot approve own review',selfDecision.status()===404||selfDecision.status()===403);
+    const privateMedia=appOrigin+'/api/media/drafts';
+    const uploadPrivate=async name=>context.request.post(privateMedia,{headers:{Origin:appOrigin},multipart:{file:{name,mimeType:'image/png',buffer:bytes}}});
+    const uploadOne=await uploadPrivate('ct15-approved.png');
+    check('freelancer uploads private media through actual HTTP route (HTTP '+uploadOne.status()+')',uploadOne.status()===201);
+    mediaDraftId=(await uploadOne.json()).draft.id;
+    const uploadTwo=await uploadPrivate('ct15-rejected.png');
+    check('freelancer uploads second private review fixture',uploadTwo.status()===201);
+    rejectedMediaDraftId=(await uploadTwo.json()).draft.id;
+    const ownMedia=await context.request.get(privateMedia);
+    check('freelancer list contains own pending media without private paths',ownMedia.status()===200);
+    const ownMediaJson=await ownMedia.json();
+    check('private media list is sanitized',ownMediaJson.drafts.some(r=>r.id===mediaDraftId&&r.state==='pending')&&!JSON.stringify(ownMediaJson).includes('storage_path')&&!JSON.stringify(ownMediaJson).includes('signedUrl'));
+    const preview=await context.request.get(privateMedia+'/'+mediaDraftId+'/preview');
+    check('freelancer receives short-lived own private preview',preview.status()===200&&(await preview.json()).expiresInSeconds===60);
+    const cannotApprove=await context.request.post(privateMedia+'/'+mediaDraftId+'/approve',{headers:{Origin:appOrigin},data:{confirmRights:true,rightsStatus:'owned',rightsNotes:'CT15 synthetic fixture only'}});
+    check('freelancer cannot approve own media',cannotApprove.status()===403);
     const revisionUrl=appOrigin+'/api/newsroom/contributor/stories/'+storyIds.public+'/revision';
     const revisionRead=await context.request.get(revisionUrl);
     check('assigned freelancer reads unpublished revision',revisionRead.status()===200);
@@ -580,6 +641,26 @@ try{
     const revisionApproval=await context.request.post(revisionReview,{headers:{Origin:appOrigin},data:{kind:'revision',action:'approve',fingerprint:revisionState.fingerprint,requestId:revisionState.requestId,note:'CT15 independently approved revised copy',commandId:randomUUID()}});
     check('editor approves revision independently',revisionApproval.status()===200&&(await revisionApproval.json()).decision==='approved');
     approvedRevision=await (await context.request.get(revisionReview+'?kind=revision')).json();
+    assert.ok(mediaDraftId&&rejectedMediaDraftId);
+    const media=appOrigin+'/api/media/drafts';
+    const mediaPost=(path,data,origin=appOrigin)=>context.request.post(media+'/'+path,{headers:{Origin:origin},data});
+    const rights={confirmRights:true,rightsStatus:'owned',rightsNotes:'CT15 disposable image created for integration',altText:'Synthetic test image'};
+    check('media approval denies hostile origin',(await mediaPost(mediaDraftId+'/approve',rights,'https://untrusted.example.test')).status()===403);
+    check('media rejection denies hostile origin',(await mediaPost(rejectedMediaDraftId+'/reject',{reason:'CT15 synthetic rejection'},'https://untrusted.example.test')).status()===403);
+    const approveMedia=await mediaPost(mediaDraftId+'/approve',rights);
+    check('editor approves private media via actual API (HTTP '+approveMedia.status()+')',approveMedia.status()===200);
+    const approvedMedia=await approveMedia.json();
+    check('approved media promotion records catalog identity',approvedMedia.state==='published'&&typeof approvedMedia.mediaId==='string');
+    const publicAsset=await service.from('media_assets').select('id,status,storage_path,rights_status').eq('id',approvedMedia.mediaId).single();
+    check('approved catalog has reviewed rights',!publicAsset.error&&publicAsset.data.status==='approved'&&publicAsset.data.rights_status==='owned');
+    const publicBytes=await anonymous.storage.from('media').download(publicAsset.data.storage_path);
+    check('promoted public bytes exactly match source',!publicBytes.error&&Buffer.compare(Buffer.from(await publicBytes.data.arrayBuffer()),bytes)===0);
+    const replayMedia=await mediaPost(mediaDraftId+'/approve',rights);
+    check('media promotion retry returns same catalog identity',replayMedia.status()===200&&(await replayMedia.json()).mediaId===approvedMedia.mediaId);
+    const rejectMedia=await mediaPost(rejectedMediaDraftId+'/reject',{reason:'CT15 synthetic review rejection'});
+    check('editor rejects second private media item',rejectMedia.status()===200&&(await rejectMedia.json()).state==='rejected');
+    check('rejected media cannot be approved',(await mediaPost(rejectedMediaDraftId+'/approve',rights)).status()===409);
+
     const scheduleUrl=appOrigin+'/api/newsroom/stories/'+storyIds.assigned+'/schedule-reviewed';
     const pubUrl=appOrigin+'/api/newsroom/stories/'+storyIds.assigned+'/publish-reviewed';
     const postEditorial=(url,data)=>context.request.post(url,{headers:{Origin:appOrigin},data});

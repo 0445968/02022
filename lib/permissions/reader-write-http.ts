@@ -9,11 +9,11 @@ export class ReaderWriteError extends Error {
 export function requireReaderOrigin(request:Request):void{
   if(request.headers.get('origin')!==new URL(request.url).origin)throw new ReaderWriteError(403);
 }
-export async function readReaderJson(request:Request):Promise<Record<string,unknown>>{
+export async function readReaderJson(request:Request,limit=READER_JSON_LIMIT):Promise<Record<string,unknown>>{
   requireReaderOrigin(request);
   if((request.headers.get('content-type')??'').split(';')[0].trim().toLowerCase()!=='application/json')throw new ReaderWriteError(415);
   const length=request.headers.get('content-length');
-  if(length!==null&&(!/^\d+$/.test(length)||Number(length)>READER_JSON_LIMIT))throw new ReaderWriteError(413);
+  if(length!==null&&(!/^\d+$/.test(length)||Number(length)>limit))throw new ReaderWriteError(413);
   if(!request.body)throw new ReaderWriteError(400);
   const reader=request.body.getReader(),chunks:Uint8Array[]=[];
   let size=0;
@@ -22,7 +22,7 @@ export async function readReaderJson(request:Request):Promise<Record<string,unkn
       const {done,value}=await reader.read();
       if(done)break;
       size+=value.byteLength;
-      if(size>READER_JSON_LIMIT){await reader.cancel().catch(()=>{});throw new ReaderWriteError(413);}
+      if(size>limit){await reader.cancel().catch(()=>{});throw new ReaderWriteError(413);}
       chunks.push(value);
     }
     const bytes=new Uint8Array(size);let offset=0;

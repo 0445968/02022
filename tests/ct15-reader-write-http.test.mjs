@@ -34,3 +34,13 @@ test('all five legacy reader write handlers apply the guard',()=>{
  assert.match(account,/await readReaderJson\(request\)/);
  assert.match(account,/requireReaderOrigin\(request\)/);
 });
+
+
+test('staff and media writes share a streamed request guard with route-specific limits',async()=>{
+ await assert.rejects(readReaderJson(req('{"body":"'+ 'x'.repeat(2048)+'"}'),2048),e=>e.status===413);
+ const f=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8');
+ for(const [route,limit] of [['role-change',2048],['override-change',2048],['preset-change',8192]]){
+  assert.ok(f('app/api/newsroom/team/'+route+'/route.ts').includes('await readReaderJson(request,'+limit+')'));
+ }
+ for(const route of ['approve','reject'])assert.match(f('app/api/media/drafts/[id]/'+route+'/route.ts'),/await readReaderJson\(request\)/);
+});

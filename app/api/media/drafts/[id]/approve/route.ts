@@ -1,3 +1,4 @@
+import {readReaderJson,ReaderWriteError} from '@/lib/permissions/reader-write-http';
 import { createHash } from 'node:crypto';
 import { NextResponse } from 'next/server';
 import type { SupabaseClient } from '@supabase/supabase-js';
@@ -71,8 +72,8 @@ export async function POST(request:Request, props:{params: Promise<{id:string}>}
   }
 
   let raw:unknown;
-  try {raw=await request.json();}
-  catch {return NextResponse.json({error:'Invalid JSON'},{status:400});}
+  try {raw=await readReaderJson(request);}
+  catch(error){return NextResponse.json({error:'Invalid request'},{status:error instanceof ReaderWriteError?error.status:400});}
   const input=readReview(raw);
   if (!input)return NextResponse.json({error:'Explicit verified media rights and credit are required'},{status:400});
   const client=await getDataClient() as unknown as SupabaseClient;
