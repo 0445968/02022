@@ -11,5 +11,5 @@ export function parseAuthorProfileUpdate(raw:unknown){
  if(r.headshotMediaId!==null&&(typeof r.headshotMediaId!=='string'||!DRAFT_UUID.test(r.headshotMediaId)))throw Error('Invalid headshot');
  if(!isDraftTimestamp(r.expectedUpdatedAt))throw Error('Invalid version');
  return {bylineName:field(r.bylineName,160,true),editorialTitle:field(r.editorialTitle,160)||null,bio:field(r.bio,10000)||null,
- bylineStatus:r.bylineStatus,headshotMediaId:r.headshotMediaId as string|null,expectedUpdatedAt:r.expectedUpdatedAt};
+ bylineStatus:r.bylineStatus as 'active'|'former'|'hidden',headshotMediaId:r.headshotMediaId as string|null,expectedUpdatedAt:r.expectedUpdatedAt};
 }
