@@ -19,7 +19,7 @@ const copy={
  finish:'Completar incorporación',save:'Guardar perfil',saved:'Se guardó su perfil privado.',continue:'Ir a la redacción',error:'No se pudo guardar su perfil. Actualice antes de reintentar.',conflict:'El perfil cambió en otra sesión. Recargue antes de guardar.',loading:'Guardando…'}
 } as const;
 const field='mt-1 w-full rounded-md border border-border bg-white px-3 py-2 text-sm';
-export function StaffOnboardingForm({initial,locale,suggestedName}:{initial:StaffOnboardingState;locale:Locale;suggestedName:string}){
+export function StaffOnboardingForm({initial,locale,suggestedName,embedded=false}:{initial:StaffOnboardingState;locale:Locale;suggestedName:string;embedded?:boolean}){
   const router=useRouter();
   const [state,setState]=useState(initial);
   const [name,setName]=useState(initial.profile?.displayName??suggestedName);
@@ -46,8 +46,8 @@ export function StaffOnboardingForm({initial,locale,suggestedName}:{initial:Staf
       router.refresh();
     }catch{setError(t.error);}finally{setBusy(false);}
   }
-  return <div className="mx-auto max-w-3xl space-y-5 px-6 py-8">
-    <header className="border-b border-border pb-5"><h1 className="font-headline text-2xl font-bold text-deep">{state.profile?t.title:t.welcome}</h1><p className="mt-1 text-sm text-muted-foreground">{t.desc}</p></header>
+  return <div className={embedded?"space-y-5":"mx-auto max-w-3xl space-y-5 px-6 py-8"}>
+    {!embedded&&<header className="border-b border-border pb-5"><h1 className="font-headline text-2xl font-bold text-deep">{state.profile?t.title:t.welcome}</h1><p className="mt-1 text-sm text-muted-foreground">{t.desc}</p></header>}
     <section className="rounded-lg border border-border bg-white p-5 space-y-3">
       <h2 className="text-base font-semibold text-deep">{t.access}</h2>
       <p className="text-sm">{t[state.memberType]} · {state.expiresAt?t.expires+' '+new Date(state.expiresAt).toLocaleString(language==='es'?'es-ES':'en-US'):t.noExpiry}</p>
@@ -65,7 +65,7 @@ export function StaffOnboardingForm({initial,locale,suggestedName}:{initial:Staf
       <p className="text-xs text-muted-foreground">{t.bylineNote}</p>
       <label className="flex items-start gap-2 text-sm"><input type="checkbox" className="mt-1" checked={confirmed} disabled={busy} onChange={e=>setConfirmed(e.target.checked)}/>{t.acknowledge}</label>
       <div className="flex flex-wrap items-center gap-3"><button type="submit" disabled={!valid||busy} className="rounded-md bg-primary px-4 py-2 text-sm font-semibold text-white disabled:opacity-50">{busy?t.loading:state.profile?t.save:t.finish}</button>
-      {state.profile&&<Link href="/newsroom" className="text-sm font-medium text-primary underline">{t.continue}</Link>}</div>
+      {state.profile&&!embedded&&<Link href="/newsroom" className="text-sm font-medium text-primary underline">{t.continue}</Link>}</div>
     </form>
   </div>;
 }

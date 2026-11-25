@@ -478,3 +478,9 @@ Notes: CT-00 and CT-01 are the intended opening work in the next chat. CT-02 pre
 - CLI-generated unapplied `supabase/migrations/20261124231848_ct09_polls.sql`; CI pending, see CT09_POLLS_REVIEW.md. Product/privacy/abuse and public activation explicitly pending; next CT10 after green CI.
 
 - CT09 pre-CI integration review corrected permission enum casts and bound the anonymous public read wrapper without broadening private schema usage, plus explicit page response type. Verify final head.
+
+
+### CT-10 — Newsroom Profile and Dashboard
+- STAGED branch `feature/ct10-profile-dashboard-2026-11-24`; parent #49 all 36 green.
+- CT10 staged dedicated /newsroom/profile with verified own private preferences, read-only sign-in email, roles/membership and minimal own reviewed byline association, no public attribution changes or role writes; shared dashboard cards for scoped pending reviews and own recent feedback, current active assignments, authorized tool shortcuts and bounded per-story-checked recent sample metrics (up to 25 candidates, clearly not global totals). Legacy dashboard remains unchanged while v2 disabled. Explicit dynamic account, localized public and newsroom layouts resolve caught cookie-prerender warnings without changing middleware behavior or fonts. No new migration; reuse reviewed CT04/CT06 RPCs. Existing account settings link works; password/security full route remains CT12; optional self-headshot upload deferred, existing authorized author workflow retained. No deployment, live settings, SQL or feature activation requested; one final code push only; automatic Git integration may independently create a preview. Manual browser QA intentionally deferred to CT15 per user. Preserve daily 100-deployment cap and avoid intermediate documentation/migration pushes when possible.
+- See CT10_PROFILE_DASHBOARD_REVIEW.md; verify exact CI. Next CT11.

@@ -7,6 +7,8 @@ import { defaultLocale } from '@/lib/i18n/config';
 import {getWorkspaceAccess,scopedNewsroomEnabled,readWorkspaceOnboarding} from '@/lib/services/newsroom-workspace';
 import { NewsroomShell } from '@/components/editorial/newsroom-shell';
 
+export const dynamic = 'force-dynamic';
+
 /**
  * Newsroom layout — NOT locale-prefixed (it is an internal tool).
  * The interface language follows the user's preferred_locale from their

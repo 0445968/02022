@@ -6,6 +6,9 @@ import { I18nProvider } from '@/lib/i18n/context';
 import { PublicShell } from '@/components/layout/public-shell';
 import type { Locale } from '@/types';
 
+// The public shell reads per-request authentication cookies. Do not prerender a session.
+export const dynamic = 'force-dynamic';
+
 export async function generateStaticParams() {
   return locales.map((locale) => ({ locale }));
 }

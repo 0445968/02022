@@ -80,7 +80,8 @@ export async function readAssignedWorkspace(page:number):Promise<{items:Assigned
     }
     const visible=await Promise.all([...grouped].map(async([id,a])=>{
       // A current assignment alone does not imply story access.
-      if(!(await resolveStaffPermissionOnServer('story.view_assigned',{kind:'story',storyId:id})).allowed)return null;
+      if(!(await resolveStaffPermissionOnServer('story.view_assigned',{kind:'story',storyId:id})).allowed&&
+        !(access.viewStories&&(await resolveStoryStaffPermissionsOnServer(id,['story.view_all'])).has('story.view_all')))return null;
       const {data:story,error:storyError}=await db.from('stories').select('id,headline,status,language').eq('id',id).maybeSingle();
       if(storyError||!story)return null;
       const canEditDraft=process.env.CT_ASSIGNED_DRAFT_EDITOR_ENABLED==='true'&&story.status==='draft'&&

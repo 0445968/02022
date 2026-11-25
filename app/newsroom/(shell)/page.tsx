@@ -1,3 +1,5 @@
+import {DashboardActivity} from '@/components/editorial/dashboard/DashboardActivity';
+import {readDashboardStorySample} from '@/lib/services/newsroom-dashboard';
 import {CalendarAlerts} from '@/components/editorial/calendar/CalendarAlerts';
 import { FileText, FileEdit, Send, Eye } from 'lucide-react';
 import Link from 'next/link';
@@ -24,13 +26,14 @@ export default async function NewsroomDashboard() {
   const access=scopedNewsroomEnabled()?await getWorkspaceAccess():null;
   if(access&&!access.allowed)redirect('/newsroom/denied');
   if(access&&!access.viewStories)redirect('/newsroom/contributor');
-  const counts = await getStoryCounts();
+  const sample=access?await readDashboardStorySample():null;
+  const counts=access?sample?.summary:await getStoryCounts();
 
   const stats = [
-    { key: 'statStories', value: counts.total, icon: FileText },
-    { key: 'statDrafts', value: counts.drafts, icon: FileEdit },
-    { key: 'statInReview', value: counts.inReview, icon: Eye },
-    { key: 'statPublished', value: counts.published, icon: Send },
+    { key: 'statStories', value: counts?.total, icon: FileText },
+    { key: 'statDrafts', value: counts?.drafts, icon: FileEdit },
+    { key: 'statInReview', value: counts?.inReview, icon: Eye },
+    { key: 'statPublished', value: counts?.published, icon: Send },
   ];
 
   return (
@@ -52,6 +55,7 @@ export default async function NewsroomDashboard() {
         </Link>}
       </div>
 
+      {access&&<p className="mt-4 text-xs text-muted-foreground">{sample?.unavailable?(locale==='es'?'Resumen no disponible.':'Story summary unavailable.'):(locale==='es'?'Resumen de hasta 25 historias recientes con acceso editorial verificado; no son totales de toda la redacción.':'Summary of up to 25 recent stories with verified editorial access; not newsroom-wide totals.')}</p>}
       {/* Stats grid */}
       <div className="mt-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
         {stats.map((stat) => {
@@ -65,15 +69,17 @@ export default async function NewsroomDashboard() {
                 </span>
               </div>
               <p className="mt-3 font-headline text-3xl font-bold text-deep">
-                {stat.value}
+                {stat.value??'—'}
               </p>
             </div>
           );
         })}
       </div>
 
-      {staffOnboardingEnabled()&&<Link href="/newsroom/onboarding" className="mt-4 inline-flex text-sm font-medium text-primary underline">{locale==='es'?'Perfil privado del equipo':'Private staff profile'}</Link>}
+      {staffOnboardingEnabled()&&<Link href="/newsroom/profile" className="mt-4 inline-flex text-sm font-medium text-primary underline">{locale==='es'?'Perfil privado del equipo':'Private staff profile'}</Link>}
       <CalendarAlerts locale={locale}/>
+      {access&&<DashboardActivity locale={locale} includeAssignments={true}/>}
+      {sample?.items.length?<section className="mt-6 space-y-3 rounded-lg border border-border bg-white p-5"><h2 className="font-headline text-lg font-semibold text-deep">{locale==='es'?'Historias recientes accesibles':'Recent accessible stories'}</h2><ul className="divide-y divide-border">{sample.items.slice(0,5).map(s=><li key={s.id} className="py-2"><Link className="break-words text-sm font-semibold text-deep underline" href={'/newsroom/stories/'+s.id+'/preview'}>{s.headline}</Link></li>)}</ul><Link href="/newsroom/stories" className="text-sm text-primary underline">{dict.newsroom.stories}</Link></section>:null}
       {/* Profile summary */}
       <div className="mt-8 rounded-xl border border-border bg-white p-6">
         <h2 className="font-headline text-lg font-semibold text-deep">
@@ -115,7 +121,7 @@ export default async function NewsroomDashboard() {
         </dl>
       </div>
 
-      <p className="mt-6 text-xs text-muted-foreground">{dict.newsroom.stageNotice}</p>
+      {!access&&<p className="mt-6 text-xs text-muted-foreground">{dict.newsroom.stageNotice}</p>}
     </div>
   );
 }
