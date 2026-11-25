@@ -501,16 +501,33 @@ try{
       const response=await page.goto(appOrigin+path,{waitUntil:'load',timeout:25000});
       const main=page.locator(role==='owner'?'#newsroom-main':'#account-main');
       await main.waitFor({state:'visible',timeout:10000});
+      if(path==='/newsroom/team'){
+       await page.locator('#ct-team-directory[aria-busy="false"]').waitFor({timeout:15000});
+       await page.getByRole('region',{name:'Team members',exact:true}).waitFor({state:'visible',timeout:5000});
+       check('owner settled team directory '+width+'px',await page.locator('#ct-team-directory section[aria-label="Team members"] li button').count()===5);
+      }
+      if(path==='/newsroom/media'){
+       await page.locator('#ct-media-library[aria-busy="false"]').waitFor({timeout:15000});
+       check('owner settled media library '+width+'px',await page.locator('#ct-media-library [role=alert]').count()===0);
+      }
       await page.waitForFunction(()=>document.documentElement.lang===document.querySelector('[lang]:not(html)')?.getAttribute('lang'),{},{timeout:5000}).catch(()=>{});
       metrics=await page.evaluate(()=>{
        const m=document.querySelector('main');
        const visible=el=>!!(el.offsetWidth||el.offsetHeight||el.getClientRects().length);
        return {root:document.documentElement.scrollWidth,viewport:innerWidth,main:m?.clientWidth,scroll:m?.scrollWidth,mains:document.querySelectorAll('main').length,headings:[...document.querySelectorAll('h1')].filter(visible).length,mainHeadings:[...(m?.querySelectorAll('h1')??[])].filter(visible).length,lang:document.documentElement.lang,alerts:[...(m?.querySelectorAll('[role=alert]')??[])].filter(visible).map(a=>a.textContent?.slice(0,160))};
       });
-      const ok=response?.status()===200&&new URL(page.url()).pathname===path&&metrics.root<=width+1&&metrics.scroll<=metrics.main+1&&metrics.mains===1&&metrics.headings===1&&metrics.mainHeadings===1&&metrics.lang===(role==='reader'?'es':'en')&&errors.length===0;
+      const ok=response?.status()===200&&new URL(page.url()).pathname===path&&metrics.root<=width+1&&metrics.scroll<=metrics.main+1&&metrics.mains===1&&metrics.headings===1&&metrics.mainHeadings===1&&metrics.lang===(role==='reader'?'es':'en')&&errors.length===0&&metrics.alerts.length===0;
       report.pageAudits??=[];report.pageAudits.push({role,path,width,status:response?.status(),metrics,errors,ok});checkpoint();
       await page.screenshot({path:resolve(output,key+'-audit.png'),fullPage:true,timeout:10000,animations:'disabled'});
       check(role+' page audit '+path+' '+width+'px',ok);
+      if(path==='/newsroom/schedule'&&width===390){
+       const month=page.getByRole('region',{name:'Monthly calendar',exact:true});
+       await month.focus();check('monthly calendar scroll region keyboard focusable',await month.evaluate(el=>document.activeElement===el));
+       await page.getByRole('navigation',{name:'Calendar view',exact:true}).getByRole('link',{name:'Agenda',exact:true}).click();
+       await page.waitForURL(url=>url.searchParams.get('view')==='agenda');
+       check('mobile calendar agenda switch keeps same calendar route',new URL(page.url()).pathname===path&&await month.count()===0);
+       await page.screenshot({path:resolve(output,'newsroom-schedule-390-agenda.png'),fullPage:true,timeout:10000,animations:'disabled'});
+      }
      }finally{page.off('pageerror',onError);}
     }catch(e){
      const error=redact(e instanceof Error?e.message:String(e)).slice(0,500);
@@ -521,7 +538,12 @@ try{
    if(role==='reader'){
     await page.goto(appOrigin+'/es',{waitUntil:'load',timeout:20000});
     const account=page.locator('header').getByRole('button',{name:/cuenta/i}).first();
-    await account.focus();
+    await account.click();
+    check('reader account menu reports expanded state',await account.getAttribute('aria-expanded')==='true');
+    await page.keyboard.press('Escape');
+    check('reader account menu Escape restores focus',await account.getAttribute('aria-expanded')==='false'&&await account.evaluate(el=>document.activeElement===el));
+    await account.press('Enter');
+    check('reader keyboard opens account disclosure',await account.getAttribute('aria-expanded')==='true');
     const signOut=page.locator('header').getByRole('button',{name:/cerrar sesi[oó]n/i}).first();
     const [logout]=await Promise.all([
       page.waitForResponse(r=>new URL(r.url()).origin===apiOrigin&&new URL(r.url()).pathname==='/auth/v1/logout'&&r.request().method()==='POST',{timeout:15000}),

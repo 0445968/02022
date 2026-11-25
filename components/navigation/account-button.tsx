@@ -1,6 +1,6 @@
 'use client';
 
-import {useRef,useState} from 'react';
+import {useEffect,useId,useRef,useState} from 'react';
 import Link from 'next/link';
 import { LogIn, LogOut, User, LayoutDashboard } from 'lucide-react';
 import { createClient } from '@/lib/db/supabase-client';
@@ -17,7 +17,15 @@ interface AccountButtonProps {
 }
 
 export function AccountButton({ user, dict, locale, canOpenNewsroom }: AccountButtonProps) {
-  const lock=useRef(false);
+  const lock=useRef(false),root=useRef<HTMLDivElement>(null),trigger=useRef<HTMLButtonElement>(null);
+  const panelId=useId();
+  const [open,setOpen]=useState(false);
+  useEffect(()=>{
+    if(!open)return;
+    const outside=(event:PointerEvent)=>{if(!root.current?.contains(event.target as Node))setOpen(false);};
+    document.addEventListener('pointerdown',outside);
+    return()=>document.removeEventListener('pointerdown',outside);
+  },[open]);
   const [isPending,setPending]=useState(false),[error,setError]=useState(false);
   async function handleSignOut(){
     if(lock.current)return;
@@ -50,12 +58,14 @@ export function AccountButton({ user, dict, locale, canOpenNewsroom }: AccountBu
     .toUpperCase();
 
   return (
-    <div className="group relative">
+    <div ref={root} className="relative" onBlur={event=>{if(!event.currentTarget.contains(event.relatedTarget as Node|null))setOpen(false);}} onKeyDown={event=>{if(event.key==='Escape'&&open){event.preventDefault();setOpen(false);trigger.current?.focus();}}}>
       <button
         type="button"
         className="inline-flex h-9 items-center gap-1.5 rounded-sm border border-border bg-white px-2 text-xs font-semibold text-foreground transition-colors hover:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-        aria-haspopup="true"
-        aria-expanded="false"
+        ref={trigger}
+        aria-controls={panelId}
+        aria-expanded={open}
+        onClick={()=>setOpen(value=>!value)}
         aria-label={dict.nav.account}
       >
         <span className="flex h-6 w-6 items-center justify-center rounded-full bg-deep text-[0.625rem] font-bold text-white">
@@ -66,7 +76,7 @@ export function AccountButton({ user, dict, locale, canOpenNewsroom }: AccountBu
         </span>
       </button>
 
-      <div className="invisible absolute right-0 top-full z-50 mt-1 w-56 border border-border bg-white opacity-0 shadow-lg transition-all group-hover:visible group-hover:opacity-100 group-focus-within:visible group-focus-within:opacity-100">
+      <div id={panelId} hidden={!open} className="absolute right-0 top-full z-50 mt-1 w-56 border border-border bg-white shadow-lg">
         <div className="border-b border-border px-3 py-2.5">
           <p className="text-[0.6875rem] font-semibold uppercase tracking-wide text-muted-foreground">
             {dict.account.signedInAs}

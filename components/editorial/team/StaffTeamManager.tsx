@@ -162,7 +162,7 @@ export function StaffTeamManager({locale,showInvitations=false,showBylines=false
     finally{setSaving(false);}
   }
 
-  return <div className="mx-auto max-w-7xl space-y-6 px-6 py-8">
+  return <div id="ct-team-directory" aria-busy={loading} className="mx-auto min-w-0 max-w-7xl space-y-6 px-4 py-6 sm:px-6 sm:py-8">
     <header className="flex flex-wrap items-center justify-between gap-4 border-b border-border pb-5">
       <div>
         <h1 className="font-headline text-2xl font-bold text-deep">{t.title}</h1>
@@ -175,7 +175,7 @@ export function StaffTeamManager({locale,showInvitations=false,showBylines=false
     {error&&<p role="alert" className="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700">{error}</p>}
     {success&&<p role="status" className="flex items-center gap-2 text-sm text-foreground">
       <CheckCircle2 className="h-4 w-4"/>{success}</p>}
-    {loading&&!data&&<p className="text-sm text-muted-foreground">{t.loading}</p>}
+    {loading&&!data&&<p role="status" className="text-sm text-muted-foreground">{t.loading}</p>}
     {data&&<>
       {showBylines&&<StaffBylineReviewManager locale={locale}/>}
       {showInvitations&&<StaffInvitationManager locale={locale} presets={data.presets}/>}
@@ -200,7 +200,7 @@ export function StaffTeamManager({locale,showInvitations=false,showBylines=false
             </label>
             <label>
               <span className="sr-only">{t.filter}</span>
-              <select className={selectClass} value={filter}
+              <select aria-label={t.filter} className={selectClass} value={filter}
                 onChange={e=>{setFilter(e.target.value as 'all'|TeamStatus);setPage(0);setAuditPage(0);setSelectedId(null);setAuditFilter('all');}}>
                 <option value="all">{t.all}</option>
                 {statusKeys.map(s=><option key={s} value={s}>{t[s]}</option>)}

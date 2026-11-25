@@ -13,6 +13,7 @@ export function MediaLoadingState({
 }: MediaLoadingStateProps) {
   return (
     <div
+      role="status"
       className="
         flex
         min-h-[420px]

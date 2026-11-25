@@ -1534,6 +1534,8 @@ export function MediaLibrary({
 
   return (
     <div
+      id="ct-media-library"
+      aria-busy={loading}
       className="
         min-h-full
         bg-background
@@ -1630,7 +1632,7 @@ export function MediaLibrary({
                 .loading
             }
           />
-        ) : media.length ===
+        ) : error ? null : media.length ===
           0 ? (
           <MediaEmptyState
             section={
