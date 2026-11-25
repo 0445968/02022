@@ -181,7 +181,7 @@ try{
   try{
    await context.route('**/*',route=>{
     const req=route.request(),url=new URL(req.url()),method=req.method();
-    if(url.origin===appOrigin&&(['GET','HEAD'].includes(method)||(method==='POST'&&['/api/newsroom/onboarding','/api/account/profile'].includes(url.pathname))))return route.continue();
+    if(url.origin===appOrigin&&(['GET','HEAD'].includes(method)||(method==='POST'&&['/api/newsroom/onboarding','/api/account/profile','/api/newsroom/contributor/stories'].includes(url.pathname))||(method==='PUT'&&/^\/api\/newsroom\/contributor\/stories\/[0-9a-f-]{36}$/.test(url.pathname))))return route.continue();
     if(url.origin===apiOrigin&&(method==='OPTIONS'||(['GET','HEAD'].includes(method)&&url.pathname.startsWith('/auth/v1/'))||method==='POST'&&['/auth/v1/token','/auth/v1/logout'].includes(url.pathname)))return route.continue();
     return route.abort();
    });
@@ -198,6 +198,8 @@ try{
    const account=await context.request.get(appOrigin+'/api/account/profile');
    check(role+' cookie-authenticated profile API (HTTP '+account.status()+')',account.status()===200&&(await account.json()).email===users[role].email);
    check(role+' account newsroom navigation matches current role',(await page.locator('a[href="/newsroom"]').count()>0)===!['reader','legacy'].includes(role));
+   await page.goto(appOrigin+'/en',{waitUntil:'domcontentloaded',timeout:20000});
+   check(role+' public header scoped newsroom navigation',(await page.locator('header a[href="/newsroom"]').count()>0)===!['reader','legacy'].includes(role));
    if(role==='reader'){
     const initial=await (await context.request.get(appOrigin+'/api/account/profile')).json();
     const payload={action:'profile',expectedUpdatedAt:initial.updatedAt,displayName:'CT15 Updated Reader',locale:'es',avatar:'ocean'};
@@ -283,6 +285,48 @@ try{
     await page.waitForURL(url=>url.pathname==='/newsroom/denied',{timeout:15000});
     check(role+' full story list denied',true);
    }
+   if(role==='staff_writer'){
+    await page.goto(appOrigin+'/newsroom/contributor/new',{waitUntil:'domcontentloaded',timeout:20000});
+    const form=page.locator('#newsroom-main form');
+    await form.getByLabel('Headline',{exact:true}).fill('CT15 writer-created draft');
+    const created=page.waitForResponse(r=>r.url()===appOrigin+'/api/newsroom/contributor/stories'&&r.request().method()==='POST');
+    await form.getByRole('button',{name:'Create draft',exact:true}).click();
+    const result=await created;
+    check('writer real form draft creation (HTTP '+result.status()+')',result.status()===201);
+    const id=(await result.json()).id;
+    assert.match(id,/^[0-9a-f-]{36}$/);
+    await page.waitForURL(url=>url.pathname==='/newsroom/contributor/stories/'+id,{timeout:15000});
+    await page.getByLabel('Headline',{exact:true}).waitFor({state:'visible'});
+    const ownDraft=await context.request.get(appOrigin+'/api/newsroom/contributor/stories/'+id);
+    check('writer created draft is immediately editable',ownDraft.status()===200&&(await ownDraft.json()).headline==='CT15 writer-created draft');
+    const hidden=await reader.from('stories').select('id').eq('id',id);
+    check('writer-created draft remains private',!hidden.error&&hidden.data.length===0);
+    await page.screenshot({path:resolve(output,'writer-draft-editor.png'),fullPage:true,timeout:10000,animations:'disabled'});
+   }
+   if(role==='freelancer'){
+    const endpoint='/api/newsroom/contributor/stories/'+storyIds.assigned;
+    const initial=await context.request.get(appOrigin+endpoint);
+    check('freelancer assigned draft API (HTTP '+initial.status()+')',initial.status()===200);
+    const state=await initial.json();
+    const unauthorized=await context.request.get(appOrigin+'/api/newsroom/contributor/stories/'+storyIds.other);
+    check('freelancer unrelated draft API denied',unauthorized.status()===404);
+    const cannotCreate=await context.request.post(appOrigin+'/api/newsroom/contributor/stories',{headers:{Origin:appOrigin},data:{requestId:randomUUID(),headline:'CT15 unauthorized draft',language:'en'}});
+    check('freelancer unassigned draft creation denied (HTTP '+cannotCreate.status()+')',cannotCreate.status()===403);
+    await page.goto(appOrigin+'/newsroom/contributor/stories/'+storyIds.assigned,{waitUntil:'domcontentloaded',timeout:20000});
+    await page.getByLabel('Headline',{exact:true}).fill('CT15 assigned story edited');
+    const saved=page.waitForResponse(r=>r.url()===appOrigin+endpoint&&r.request().method()==='PUT');
+    await page.getByRole('button',{name:'Save',exact:true}).click();
+    const result=await saved;
+    check('freelancer actual editor copy save (HTTP '+result.status()+')',result.status()===200&&(await result.json()).headline==='CT15 assigned story edited');
+    const stale=await page.evaluate(async ({endpoint,state})=>{
+      const r=await fetch(endpoint,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'save',expectedUpdatedAt:state.updatedAt,copy:{headline:state.headline,subheadline:state.subheadline,summary:state.summary,body:state.body}})});
+      return r.status;
+    },{endpoint,state});
+    check('freelancer stale draft write rejected (HTTP '+stale+')',stale===409);
+    const retained=await context.request.get(appOrigin+endpoint);
+    check('freelancer saved copy persisted',retained.status()===200&&(await retained.json()).headline==='CT15 assigned story edited');
+    await page.screenshot({path:resolve(output,'freelancer-draft-editor.png'),fullPage:true,timeout:10000,animations:'disabled'});
+   }
    if(role==='moderator'){
     await page.goto(appOrigin+'/newsroom/comments',{waitUntil:'domcontentloaded',timeout:20000});
     await page.getByRole('heading',{name:'Comments',exact:true}).waitFor({state:'visible'});
@@ -297,6 +341,14 @@ try{
     check('reader profile page accessible',new URL(page.url()).pathname==='/account/profile');
     await page.setViewportSize({width:390,height:844});
     await page.screenshot({path:resolve(output,'reader-profile-mobile.png'),fullPage:true,timeout:10000,animations:'disabled'});
+   }
+   if(role==='owner'){
+    await page.goto(appOrigin+'/newsroom',{waitUntil:'domcontentloaded',timeout:20000});
+    await page.locator('header').getByRole('button',{name:/sign out|log out/i}).first().click();
+    await page.waitForURL(url=>['/','/en','/es'].includes(url.pathname),{timeout:15000});
+    await page.goto(appOrigin+'/account',{waitUntil:'domcontentloaded',timeout:20000});
+    await page.waitForURL(url=>url.pathname.endsWith('/auth/sign-in'),{timeout:15000});
+    check('owner actual sign-out invalidates browser session',true);
    }
    check(role+' no uncaught browser errors',runtime.length===0);
   }catch(e){

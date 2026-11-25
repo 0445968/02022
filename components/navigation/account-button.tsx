@@ -12,11 +12,12 @@ import type { Locale, CurrentUser } from '@/types';
 
 interface AccountButtonProps {
   user: CurrentUser | null;
+  canOpenNewsroom?:boolean;
   dict: Dictionary;
   locale: Locale;
 }
 
-export function AccountButton({ user, dict, locale }: AccountButtonProps) {
+export function AccountButton({ user, dict, locale, canOpenNewsroom }: AccountButtonProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
 
@@ -76,7 +77,7 @@ export function AccountButton({ user, dict, locale }: AccountButtonProps) {
           </p>
         </div>
         <ul className="py-1">
-          {isStaff(user) && (
+          {(canOpenNewsroom??isStaff(user)) && (
             <li>
               <Link
                 href="/newsroom"

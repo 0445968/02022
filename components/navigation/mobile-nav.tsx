@@ -16,9 +16,10 @@ interface MobileNavProps {
   dict: Dictionary;
   locale: Locale;
   user: CurrentUser | null;
+  canOpenNewsroom?:boolean;
 }
 
-export function MobileNav({ open, onClose, dict, locale, user }: MobileNavProps) {
+export function MobileNav({ open, onClose, dict, locale, user, canOpenNewsroom }: MobileNavProps) {
   const items = getMobileNav(dict, locale);
 
   useEffect(() => {
@@ -79,7 +80,7 @@ export function MobileNav({ open, onClose, dict, locale, user }: MobileNavProps)
 
         <div className="flex items-center justify-between gap-3 border-t border-border px-4 py-4">
           <LanguageSwitcher locale={locale} label={dict.utility.language} />
-          <AccountButton user={user} dict={dict} locale={locale} />
+          <AccountButton user={user} dict={dict} locale={locale} canOpenNewsroom={canOpenNewsroom} />
         </div>
       </div>
     </div>

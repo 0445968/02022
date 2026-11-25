@@ -56,3 +56,12 @@ test('locale toggle uses a fresh document URL and full navigation to avoid stale
  assert.match(source,/new URL\(window.location.href\)/);assert.match(source,/stripLocale\(current.pathname\)/);
  assert.match(source,/window.location.assign\(next\)/);assert.doesNotMatch(source,/router\.push\(/);
 });
+
+
+test('reader profile language has a stable bilingual accessible name and public navigation receives scoped authorization',()=>{
+ assert.match(f('components/account/ReaderProfileForm.tsx'),/select aria-label=\{es\?'Idioma de la cuenta':'Account language'\}/);
+ assert.match(f('components/layout/public-shell.tsx'),/scopedNewsroomEnabled\(\)\?!!user&&await getWorkspaceAccess\(\)/);
+ for(const path of ['components/layout/header.tsx','components/navigation/mobile-nav.tsx'])assert.match(f(path),/canOpenNewsroom=\{canOpenNewsroom\}/);
+ assert.match(f('components/navigation/account-button.tsx'),/canOpenNewsroom\?\?isStaff\(user\)/);
+ execFileSync(process.execPath,['--check',new URL('../scripts/ct15-local-platform-integration.mjs',import.meta.url).pathname]);
+});

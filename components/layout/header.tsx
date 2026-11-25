@@ -53,12 +53,14 @@ interface HeaderProps {
   dict: Dictionary;
   locale: Locale;
   user: CurrentUser | null;
+  canOpenNewsroom?:boolean;
 }
 
 export function Header({
   dict,
   locale,
   user,
+  canOpenNewsroom,
 }: HeaderProps) {
   const [
     mobileOpen,
@@ -297,6 +299,7 @@ export function Header({
             />
 
             <AccountButton
+              canOpenNewsroom={canOpenNewsroom}
               user={
                 user
               }
@@ -327,6 +330,7 @@ export function Header({
       </header>
 
       <MobileNav
+        canOpenNewsroom={canOpenNewsroom}
         open={
           mobileOpen
         }
