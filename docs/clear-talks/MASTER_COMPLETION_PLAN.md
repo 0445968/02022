@@ -250,3 +250,6 @@ Decisions requiring confirmation only when their batch begins: exact staff role 
 ## 10. Current approved work versus future implementation
 
 This planning change commits **only documentation**. No app feature, RLS migration, Vercel environment setting, or Supabase record is changed here. Start implementation in new conversation on CT-00/CT-01 after checking current HEAD; follow the ledger strictly.
+
+
+**CT15 checkpoint (2026-11-25):** 43/43 automated workflows on c64568d, including 38 cumulative forward migrations, 110 signed-out browser checks and 140 real local platform checks across seven authenticated test accounts. Synthetic local data only. Expanded admin/review/reader communications rehearsal staged; dedicated CT15a visual review, actual restored database and hosted acceptance remain open. See CT15_INTEGRATION_READINESS.md and NEXT_CHAT_HANDOFF.md.

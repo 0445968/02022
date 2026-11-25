@@ -159,7 +159,8 @@ try{
   CT_STAFF_ONBOARDING_ENABLED:'true',CT_MEDIA_PRIVATE_DRAFTS_ENABLED:'true',
   CT_COMMENT_MODERATION_ENABLED:'true',CT_COMMENT_REPORTS_ENABLED:'true',
   CT_ASSIGNED_DRAFT_EDITOR_ENABLED:'true',CT_ASSIGNED_REVISION_EDITOR_ENABLED:'true',
-  CT_WRITER_DRAFT_CREATION_ENABLED:'true'
+  CT_WRITER_DRAFT_CREATION_ENABLED:'true',CT_STORY_REVIEW_ENABLED:'true',
+  CT_STAFF_ADMIN_MUTATIONS_ENABLED:'true',CT_READER_COMMUNICATIONS_ENABLED:'true'
  };
  const appEnv={...process.env,...flags,NEXT_PUBLIC_SUPABASE_URL:apiOrigin,NEXT_PUBLIC_SUPABASE_ANON_KEY:values.ANON_KEY,SUPABASE_SERVICE_ROLE_KEY:values.SERVICE_ROLE_KEY};
  // Remove every other feature gate and provider credential inherited from the environment.
@@ -175,7 +176,8 @@ try{
  check('local built application ready',ready);
  const {chromium}=await import(pathToFileURL(resolve(process.env.CT15_PLAYWRIGHT_MODULE)).href);
  browser=await chromium.launch({headless:true});
- for(const role of roles){
+ // Reviewer runs after contributor submission. No shared browser cookies.
+ for(const role of ['owner','staff_writer','freelancer','editor','moderator','reader','legacy']){
   mark('authenticated browser '+role);
   const context=await browser.newContext({viewport:{width:1440,height:900},serviceWorkers:'block'});
   let page;
@@ -223,14 +225,59 @@ try{
     check('reader stale profile rejected (HTTP '+stale+')',stale===409);
     const retained=await context.request.get(appOrigin+'/api/account/profile');
     check('reader saved identity retained',retained.status()===200&&(await retained.json()).displayName==='CT15 Updated Reader');
+    const post=(path,data)=>context.request.post(appOrigin+path,{headers:{Origin:appOrigin},data});
+    const request=await post('/api/account/profile',{action:'request',kind:'export',confirmation:'EXPORT'});
+    check('reader privacy export request recorded (HTTP '+request.status()+')',request.status()===200);
+    const receipt=(await request.json()).requests.find(r=>r.kind==='export'&&r.status==='pending');
+    assert.ok(receipt);
+    const repeated=await post('/api/account/profile',{action:'request',kind:'export',confirmation:'EXPORT'});
+    check('reader privacy request idempotent',repeated.status()===200&&(await repeated.json()).requests.filter(r=>r.kind==='export'&&r.status==='pending').length===1);
+    const cancel=await post('/api/account/profile',{action:'cancel',id:receipt.id,confirmation:'CANCEL'});
+    check('reader privacy request cancelled',cancel.status()===200&&(await cancel.json()).requests.some(r=>r.id===receipt.id&&r.status==='cancelled'));
+    const exported=await context.request.get(appOrigin+'/api/account/export');
+    check('reader export own bounded snapshot (HTTP '+exported.status()+')',exported.status()===200);
+    const snapshot=await exported.json();
+    check('reader export excludes other identities',snapshot.scope==='reader_snapshot_v1'&&snapshot.account.email===users.reader.email&&!JSON.stringify(snapshot).includes(users.owner.email));
+    const privacy=await context.request.get(appOrigin+'/api/newsroom/privacy');
+    check('reader cannot access staff privacy queue',privacy.status()===403);
+    const notices=await context.request.get(appOrigin+'/api/account/notifications');
+    check('reader notifications available (HTTP '+notices.status()+')',notices.status()===200);
+    const prefs=(await notices.json()).preferences;
+    const changes={action:'preferences',expectedRevision:prefs.revision,stories:!prefs.stories,replies:prefs.replies,privacy:prefs.privacy,page:0};
+    const updated=await post('/api/account/notifications',changes);
+    check('reader notification preferences persisted',updated.status()===200&&(await updated.json()).preferences.stories===changes.stories);
+    const outdated=await post('/api/account/notifications',changes);
+    check('reader stale preference write rejected',outdated.status()===409);
+    const newsletters=await context.request.get(appOrigin+'/api/account/newsletters');
+    check('reader newsletter topics visible without delivery',newsletters.status()===200&&(await newsletters.json()).deliveryEnabled===false);
+    const subscribe=await post('/api/account/newsletters',{action:'subscribe',topic:'latest'});
+    check('newsletter send stays disabled (HTTP '+subscribe.status()+')',subscribe.status()===503);
    }
    const team=await context.request.get(appOrigin+'/api/newsroom/team');
    check(role+' team route authorization (HTTP '+team.status()+')',team.status()===(role==='owner'?200:404));
    if(role==='owner'){
     const directory=await team.json();
     check('owner sees exactly five synthetic members and own row',directory.totalMembers===5&&directory.members.filter(m=>m.isSelf).length===1);
-    check('owner directory read-only flag boundary',directory.mutationsEnabled===false&&directory.overrideMutationsEnabled===false&&directory.presetMutationsEnabled===false);
+    check('owner local role mutation flag only',directory.mutationsEnabled===true&&directory.overrideMutationsEnabled===false&&directory.presetMutationsEnabled===false);
     check('owner directory excludes raw Auth emails and invitation secrets',!JSON.stringify(directory).includes('@example.test')&&!JSON.stringify(directory).includes('token_hash'));
+    const editorMember=directory.members.find(m=>m.roles.some(r=>r.roleKey==='editor'));
+    const self=directory.members.find(m=>m.isSelf);
+    assert.ok(editorMember&&self);
+    const endpoint=appOrigin+'/api/newsroom/team/role-change';
+    const mutate=(data,origin=appOrigin)=>context.request.post(endpoint,{headers:{Origin:origin},data});
+    const grant={targetMembershipId:editorMember.id,operation:'grant_role',roleKey:'moderator',reason:'CT15 disposable role grant and revoke test'};
+    check('owner hostile origin role mutation rejected',(await mutate(grant,'https://untrusted.example.test')).status()===403);
+    check('owner cannot demote self',(await mutate({targetMembershipId:self.id,operation:'revoke_role',roleKey:'owner',reason:'CT15 synthetic self demotion rejection'})).status()===409);
+    const granted=await mutate(grant);
+    check('owner actual role grant API (HTTP '+granted.status()+')',granted.status()===200);
+    const afterGrant=await (await context.request.get(appOrigin+'/api/newsroom/team')).json();
+    check('granted role appears in team directory',afterGrant.members.find(m=>m.id===editorMember.id)?.roles.some(r=>r.roleKey==='moderator'));
+    const revoked=await mutate({...grant,operation:'revoke_role'});
+    check('owner actual role revoke API (HTTP '+revoked.status()+')',revoked.status()===200);
+    const afterRevoke=await (await context.request.get(appOrigin+'/api/newsroom/team')).json();
+    check('role revoked without affecting editor role',afterRevoke.members.find(m=>m.id===editorMember.id)?.roles.map(r=>r.roleKey).join(',')==='editor');
+    const audit=await service.from('staff_access_audit').select('actor_auth_user_id,action_key,request_id').in('request_id',[(await granted.json()).requestId,(await revoked.json()).requestId]);
+    check('owner role change audit attribution',!audit.error&&audit.data.length===2&&audit.data.every(a=>a.actor_auth_user_id===users.owner.id));
    }
    await page.goto(appOrigin+'/newsroom',{waitUntil:'domcontentloaded',timeout:20000});
    if(role==='reader'||role==='legacy'){
@@ -352,6 +399,32 @@ try{
     const retained=await context.request.get(appOrigin+endpoint);
     check('freelancer saved copy persisted',retained.status()===200&&(await retained.json()).headline==='CT15 assigned story edited');
     await page.screenshot({path:resolve(output,'freelancer-draft-editor.png'),fullPage:true,timeout:10000,animations:'disabled'});
+    const review=appOrigin+'/api/newsroom/stories/'+storyIds.assigned+'/review';
+    const source=await context.request.get(review+'?kind=draft');
+    check('freelancer review state available (HTTP '+source.status()+')',source.status()===200);
+    const snapshot=await source.json();
+    check('freelancer can request but not decide',snapshot.canRequest===true&&snapshot.canDecide===false);
+    const request={kind:'draft',action:'request',fingerprint:snapshot.fingerprint,requestId:null,note:'CT15 saved copy ready for independent review',commandId:randomUUID()};
+    const submitted=await context.request.post(review,{headers:{Origin:appOrigin},data:request});
+    check('freelancer atomic review request (HTTP '+submitted.status()+')',submitted.status()===200);
+    const active=await submitted.json();
+    check('review attached to submitted snapshot',active.status==='in_review'&&active.current===true&&!!active.requestId);
+    const selfDecision=await context.request.post(review,{headers:{Origin:appOrigin},data:{...request,action:'approve',requestId:active.requestId,fingerprint:active.fingerprint,commandId:randomUUID()}});
+    check('freelancer cannot approve own review',selfDecision.status()===404||selfDecision.status()===403);
+   }
+   if(role==='editor'){
+    const review=appOrigin+'/api/newsroom/stories/'+storyIds.assigned+'/review';
+    const read=await context.request.get(review+'?kind=draft');
+    check('editor can read submitted review (HTTP '+read.status()+')',read.status()===200);
+    const current=await read.json();
+    check('editor independent decision available',current.canDecide===true&&current.current===true&&current.status==='in_review');
+    const decision={kind:'draft',action:'approve',fingerprint:current.fingerprint,requestId:current.requestId,note:'CT15 independent reviewer approved saved copy',commandId:randomUUID()};
+    const result=await context.request.post(review,{headers:{Origin:appOrigin},data:decision});
+    check('editor independent approval (HTTP '+result.status()+')',result.status()===200&&(await result.json()).decision==='approved');
+    const duplicate=await context.request.post(review,{headers:{Origin:appOrigin},data:{...decision,commandId:randomUUID()}});
+    check('second decision denied (HTTP '+duplicate.status()+')',duplicate.status()===409);
+    const publicRead=await anonymous.from('stories').select('id').eq('id',storyIds.assigned);
+    check('approval does not publish draft',!publicRead.error&&publicRead.data.length===0);
    }
    if(role==='moderator'){
     await page.goto(appOrigin+'/newsroom/comments',{waitUntil:'domcontentloaded',timeout:20000});
