@@ -16,9 +16,22 @@ do $fn$declare p jsonb;begin
  if jsonb_array_length(public.reader_read_newsletters()->'topics')<>3 then raise exception 'Topic projection';end if;
 end;$fn$;
 reset role;
--- Exercise actual story trigger instead of manually inserting the public event.
+-- Fixture operator only, inside rollback: assert direct unreviewed edit fails,
+-- then model the reviewed publisher's transaction-bound permit for access-level
+-- transition tests. CT06c separately tests the real request/approve/publish RPC.
+-- The production guard remains enabled throughout; no privilege or policy changed.
+do $fn$begin
+ if has_table_privilege('authenticated','newsroom_private.publication_permits','INSERT') then raise exception 'Reader can forge permit';end if;
+ begin update public.stories set access_level='registered' where id='20000000-0000-0000-0000-000000000001';raise exception 'Unreviewed live edit accepted';exception when insufficient_privilege then null;end;
+end;$fn$;
+set local request.jwt.claim.sub='00000000-0000-0000-0000-000000000001';
+insert into newsroom_private.publication_permits(story_id,transaction_id,backend_pid,actor) values('20000000-0000-0000-0000-000000000001',pg_current_xact_id(),pg_backend_pid(),'00000000-0000-0000-0000-000000000001');
 update public.stories set access_level='registered' where id='20000000-0000-0000-0000-000000000001';
+delete from newsroom_private.publication_permits where story_id='20000000-0000-0000-0000-000000000001' and transaction_id=pg_current_xact_id();
+set local request.jwt.claim.sub='00000000-0000-0000-0000-000000000001';
+insert into newsroom_private.publication_permits(story_id,transaction_id,backend_pid,actor) values('20000000-0000-0000-0000-000000000001',pg_current_xact_id(),pg_backend_pid(),'00000000-0000-0000-0000-000000000001');
 update public.stories set access_level='public' where id='20000000-0000-0000-0000-000000000001';
+delete from newsroom_private.publication_permits where story_id='20000000-0000-0000-0000-000000000001' and transaction_id=pg_current_xact_id();
 insert into newsroom_private.reader_privacy_requests(account_id,kind) values('00000000-0000-0000-0000-000000000002','export');
 update newsroom_private.reader_privacy_requests set status='reviewing' where account_id='00000000-0000-0000-0000-000000000002' and kind='export';
 set local role authenticated;
@@ -34,7 +47,10 @@ do $fn$declare p jsonb;eid uuid;begin
 end;$fn$;
 reset role;
 -- Direct database checks: verified readers may see registered content, never paid content.
+set local request.jwt.claim.sub='00000000-0000-0000-0000-000000000001';
+insert into newsroom_private.publication_permits(story_id,transaction_id,backend_pid,actor) values('20000000-0000-0000-0000-000000000001',pg_current_xact_id(),pg_backend_pid(),'00000000-0000-0000-0000-000000000001');
 update public.stories set access_level='registered' where id='20000000-0000-0000-0000-000000000001';
+delete from newsroom_private.publication_permits where story_id='20000000-0000-0000-0000-000000000001' and transaction_id=pg_current_xact_id();
 set local role anon;
 do $fn$begin
  if exists(select 1 from public.stories where id='20000000-0000-0000-0000-000000000001') then raise exception 'Anonymous registered access';end if;
@@ -46,14 +62,20 @@ do $fn$begin
  if not exists(select 1 from public.stories where id='20000000-0000-0000-0000-000000000001') then raise exception 'Verified registered access missing';end if;
 end;$fn$;
 reset role;
+set local request.jwt.claim.sub='00000000-0000-0000-0000-000000000001';
+insert into newsroom_private.publication_permits(story_id,transaction_id,backend_pid,actor) values('20000000-0000-0000-0000-000000000001',pg_current_xact_id(),pg_backend_pid(),'00000000-0000-0000-0000-000000000001');
 update public.stories set access_level='premium' where id='20000000-0000-0000-0000-000000000001';
+delete from newsroom_private.publication_permits where story_id='20000000-0000-0000-0000-000000000001' and transaction_id=pg_current_xact_id();
 set local role authenticated;
 set local request.jwt.claim.sub='00000000-0000-0000-0000-000000000005';
 do $fn$begin
  if exists(select 1 from public.stories where id='20000000-0000-0000-0000-000000000001') then raise exception 'Reader premium access';end if;
 end;$fn$;
 reset role;
+set local request.jwt.claim.sub='00000000-0000-0000-0000-000000000001';
+insert into newsroom_private.publication_permits(story_id,transaction_id,backend_pid,actor) values('20000000-0000-0000-0000-000000000001',pg_current_xact_id(),pg_backend_pid(),'00000000-0000-0000-0000-000000000001');
 update public.stories set access_level='public' where id='20000000-0000-0000-0000-000000000001';
+delete from newsroom_private.publication_permits where story_id='20000000-0000-0000-0000-000000000001' and transaction_id=pg_current_xact_id();
 do $fn$begin
  begin perform newsroom_private.begin_newsletter_confirmation('00000000-0000-0000-0000-000000000005','latest',repeat('a',64));raise exception 'Disabled delivery allowed';exception when insufficient_privilege then null;end;
 end;$fn$;

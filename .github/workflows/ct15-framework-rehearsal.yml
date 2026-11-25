@@ -1,0 +1,66 @@
+name: CT15 disposable Next.js 16 framework rehearsal
+on:
+  pull_request:
+    paths:
+      - 'scripts/ct15-framework-candidate.mjs'
+      - '.github/workflows/ct15-framework-rehearsal.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  rehearse:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      CT15_DISPOSABLE_FRAMEWORK_REHEARSAL: 'yes'
+      DEV_AUTH_BYPASS: 'false'
+      NEXT_PUBLIC_SUPABASE_URL: 'https://example.supabase.co'
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: 'ci-build-placeholder'
+      NEXT_TELEMETRY_DISABLED: '1'
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '22.16.0'
+      - name: Check exact candidate registry versions
+        run: |
+          npm view next@16.4.6 version
+          npm view @next/codemod@16.4.6 version
+          npm view react@19.2.7 version
+          npm view react-day-picker@9.11.1 peerDependencies
+      - name: Generate disposable candidate source and dependency manifest
+        run: node scripts/ct15-framework-candidate.mjs
+      - name: Resolve candidate lockfile without bypassing peer dependency checks
+        run: npm install --package-lock-only --ignore-scripts --no-audit
+      - name: Install reviewed candidate lockfile
+        run: npm ci --no-audit
+      - name: Unit tests
+        run: npm test
+      - name: TypeScript
+        if: always() && hashFiles('node_modules/typescript/bin/tsc') != ''
+        run: npm run typecheck
+      - name: Lint
+        if: always() && hashFiles('node_modules/eslint/bin/eslint.js') != ''
+        run: npm run lint
+      - name: Build candidate (not a deployment)
+        if: always() && hashFiles('node_modules/next/package.json') != ''
+        run: npm run build
+      - name: Collect upgrade diff and unresolved request API usage
+        if: always()
+        run: |
+          mkdir -p "$RUNNER_TEMP/ct15-candidate"
+          git add -N -- eslint.config.mjs 2>/dev/null || true
+          git diff --binary HEAD -- app components lib middleware.ts next.config.js eslint.config.mjs package.json package-lock.json tsconfig.json > "$RUNNER_TEMP/ct15-candidate/upgrade.patch"
+          git status --short > "$RUNNER_TEMP/ct15-candidate/status.txt"
+          git grep -n -E '@next-codemod-error|UnsafeUnwrapped' -- app lib components > "$RUNNER_TEMP/ct15-candidate/request-api-review.txt" || true
+          if test -f package-lock.json; then cp package-lock.json "$RUNNER_TEMP/ct15-candidate/package-lock.json"; fi
+          cp package.json "$RUNNER_TEMP/ct15-candidate/package.json"
+      - name: Preserve candidate patch for review
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: ct15-framework-candidate
+          path: ${{ runner.temp }}/ct15-candidate/
+          retention-days: 7

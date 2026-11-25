@@ -31,3 +31,8 @@ CT15 integration readiness: exact #54 37/39 green; both new PostgreSQL workflows
 
 ## Authorization boundaries
 This is the beginning of CT15, not signoff. No production or Preview changes made in this batch. Explicitly obtain the correct project/isolated target and owner identity before writes. Re-run exact CI and resolve remaining integration defects before activation. Only after acceptance and explicit production approval merge/release.
+
+
+## Technical readiness follow-up
+CT15 technical readiness: parent #55 exact 38/39 green; CT12 passes. Remaining CT13 test failed because it attempted direct edits to a published story, correctly rejected by CT06c. Fixture now explicitly asserts rejection, uses only privileged transaction-bound permit in rolled-back fixture to model publication transition and tests access RLS; no production authorization weakened. Build no longer ignores lint/type errors. Disposable CI candidate for Next 16.4.6 (Active LTS; Nov 3 security fixes at 16.4.5) + React 19.2.7, Node22, official async request API codemod, ESLint9, DayPicker9 adapter, webpack compatibility; no forced peer resolution, no secrets/deploy. Candidate dependency/source changes remain in CI runner, not yet adopted in repository runtime. Capture reviewed patch, generated lockfile, unresolved API inventory and verification logs. Existing fonts unchanged. Correct project/isolation and media rights still block activation. No hosted changes or production merge.
+See CT15_FRAMEWORK_REHEARSAL.md.

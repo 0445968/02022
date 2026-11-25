@@ -250,3 +250,6 @@ Decisions requiring confirmation only when their batch begins: exact staff role 
 ## 10. Current approved work versus future implementation
 
 This planning change commits **only documentation**. No app feature, RLS migration, Vercel environment setting, or Supabase record is changed here. Start implementation in new conversation on CT-00/CT-01 after checking current HEAD; follow the ledger strictly.
+
+
+**CT15 technical follow-up:** #55 38/39 passed; CT13 publication fixture correction and disposable Next 16 compatibility rehearsal staged. Exact candidate not adopted; UAT requires approved isolated Preview and all functional activation gates. See CT15_FRAMEWORK_REHEARSAL.md.
