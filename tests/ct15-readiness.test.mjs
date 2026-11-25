@@ -88,3 +88,15 @@ test('restricted writer sidebar uses its own draft route and account branding is
  const nav=f('components/editorial/newsroom-sidebar.tsx');assert.match(nav,/key==='contributorNew'\?\{key,icon:PlusCircle,href:'\/newsroom\/contributor\/new'\}/);assert.match(nav,/item.href===activeHref/);
  const account=f('components/account/account-shell.tsx');assert.doesNotMatch(account,/<h1\b/);assert.match(account,/mobileNavRef/);
 });
+
+
+test('page editor uses a single shell main and real localized page heading',()=>{
+ assert.doesNotMatch(f('components/editorial/page-editor/PageEditor.tsx'),/<main\b/);
+ assert.match(f('components/editorial/page-editor/PageEditorTopBar.tsx'),/<h1[\s\S]*?Page Editor[\s\S]*?<\/h1>/);
+ assert.match(f('components/editorial/page-editor/PageEditorNav.tsx'),/aria-pressed=\{active\}/);
+});
+test('header sign-out checks provider result, blocks duplicate submissions and clears navigation cache',()=>{
+ for(const path of ['components/editorial/sign-out-button.tsx','components/navigation/account-button.tsx']){
+  const s=f(path);assert.match(s,/if\(lock.current\)return/);assert.match(s,/if\(failure\)throw failure/);assert.match(s,/window.location.replace\(localizedPath\(locale,'\/'\)\)/);assert.match(s,/role="alert"/);assert.doesNotMatch(s,/router\.refresh\(/);
+ }
+});

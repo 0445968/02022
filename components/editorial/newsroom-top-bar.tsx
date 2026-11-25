@@ -123,6 +123,7 @@ export function NewsroomTopBar({
         </Link>
 
         <SignOutButton
+          locale={locale}
           dict={dict}
         />
       </div>

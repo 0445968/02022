@@ -1,7 +1,6 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
-import { useTransition } from 'react';
+import {useRef,useState} from 'react';
 import Link from 'next/link';
 import { LogIn, LogOut, User, LayoutDashboard } from 'lucide-react';
 import { createClient } from '@/lib/db/supabase-client';
@@ -18,16 +17,16 @@ interface AccountButtonProps {
 }
 
 export function AccountButton({ user, dict, locale, canOpenNewsroom }: AccountButtonProps) {
-  const router = useRouter();
-  const [isPending, startTransition] = useTransition();
-
-  async function handleSignOut() {
-    const supabase = createClient();
-    await supabase.auth.signOut();
-    startTransition(() => {
-      router.push(localizedPath(locale, '/'));
-      router.refresh();
-    });
+  const lock=useRef(false);
+  const [isPending,setPending]=useState(false),[error,setError]=useState(false);
+  async function handleSignOut(){
+    if(lock.current)return;
+    lock.current=true;setPending(true);setError(false);
+    try{
+      const {error:failure}=await createClient().auth.signOut();
+      if(failure)throw failure;
+      window.location.replace(localizedPath(locale,'/'));
+    }catch{setError(true);setPending(false);lock.current=false;}
   }
 
   if (!user) {
@@ -107,6 +106,7 @@ export function AccountButton({ user, dict, locale, canOpenNewsroom }: AccountBu
               <LogOut className="h-4 w-4" aria-hidden />
               {dict.nav.signOut}
             </button>
+            {error&&<p role="alert" className="px-3 py-2 text-xs text-breaking">{locale==='es'?'No se pudo cerrar sesión. Intente de nuevo.':'Sign-out could not be confirmed. Try again.'}</p>}
           </li>
         </ul>
       </div>

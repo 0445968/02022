@@ -58,9 +58,13 @@ export function PageEditorTopBar({
         className="
           flex
           min-h-14
+          flex-wrap
           items-center
           justify-between
-          gap-4
+          gap-2
+          py-2
+          sm:gap-4
+          sm:py-0
           px-4
           sm:px-6
         "
@@ -78,7 +82,7 @@ export function PageEditorTopBar({
               min-w-0
             "
           >
-            <p
+            <h1
               className="
                 truncate
                 text-sm
@@ -89,7 +93,7 @@ export function PageEditorTopBar({
               {locale === 'es'
                 ? 'Editor de páginas'
                 : 'Page Editor'}
-            </p>
+            </h1>
 
             <p
               className="

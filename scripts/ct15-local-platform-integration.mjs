@@ -518,10 +518,31 @@ try{
     }
    }
    await page.setViewportSize({width:1440,height:900});
+   if(role==='reader'){
+    await page.goto(appOrigin+'/es',{waitUntil:'load',timeout:20000});
+    const account=page.locator('header').getByRole('button',{name:/cuenta/i}).first();
+    await account.focus();
+    const signOut=page.locator('header').getByRole('button',{name:/cerrar sesi[oó]n/i}).first();
+    const [logout]=await Promise.all([
+      page.waitForResponse(r=>new URL(r.url()).origin===apiOrigin&&new URL(r.url()).pathname==='/auth/v1/logout'&&r.request().method()==='POST',{timeout:15000}),
+      signOut.click()
+    ]);
+    check('reader public menu real Auth logout succeeds',logout.ok());
+    await page.waitForURL(url=>url.pathname==='/es',{timeout:15000});
+    const after=await context.request.get(appOrigin+'/api/account/profile');
+    check('reader public logout clears session',after.status()===403);
+   }
    if(role==='owner'){
-    await page.goto(appOrigin+'/newsroom',{waitUntil:'domcontentloaded',timeout:20000});
-    await page.locator('header').getByRole('button',{name:/sign out|log out/i}).first().click();
+    await page.goto(appOrigin+'/newsroom',{waitUntil:'load',timeout:20000});
+    const signOut=page.locator('header').getByRole('button',{name:/sign out|log out/i}).first();
+    const [logout]=await Promise.all([
+      page.waitForResponse(r=>new URL(r.url()).origin===apiOrigin&&new URL(r.url()).pathname==='/auth/v1/logout'&&r.request().method()==='POST',{timeout:15000}),
+      signOut.click()
+    ]);
+    check('owner real Auth logout request successful (HTTP '+logout.status()+')',logout.ok());
     await page.waitForURL(url=>['/','/en','/es'].includes(url.pathname),{timeout:15000});
+    const after=await context.request.get(appOrigin+'/api/account/profile');
+    check('owner cookie profile API denied after logout (HTTP '+after.status()+')',after.status()===403);
     await page.goto(appOrigin+'/account',{waitUntil:'domcontentloaded',timeout:20000});
     await page.waitForURL(url=>url.pathname.endsWith('/auth/sign-in'),{timeout:15000});
     check('owner actual sign-out invalidates browser session',true);
