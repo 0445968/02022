@@ -31,7 +31,9 @@ assert.ok(['postgresql:','postgres:'].includes(db.protocol)&&['127.0.0.1','local
 assert.ok(values.ANON_KEY&&values.SERVICE_ROLE_KEY&&values.ANON_KEY!==values.SERVICE_ROLE_KEY);
 const dbEnv=Object.fromEntries(Object.entries(process.env).filter(([key])=>!key.startsWith('PG')&&!/DATABASE_URL|SUPABASE_/.test(key)));
 dbEnv.PGPASSWORD=decodeURIComponent(db.password);dbEnv.PGCONNECT_TIMEOUT='5';
-const apiOrigin=api.origin,appOrigin='http://127.0.0.1:3016';
+// NextURL normalizes loopback hostnames to localhost. Use the same canonical
+// hostname for real browser navigation and Origin, not a forged Origin alias.
+const apiOrigin=api.origin,appOrigin='http://localhost:3016';
 const creds=[values.ANON_KEY,values.SERVICE_ROLE_KEY,values.JWT_SECRET,dbEnv.PGPASSWORD].filter(Boolean);
 const redact=x=>creds.reduce((v,k)=>v.split(k).join('[redacted]'),String(x)).replace(/eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+/g,'[redacted jwt]');
 function sql(label,args,input){
@@ -166,7 +168,7 @@ try{
  const build=spawnSync(process.execPath,['node_modules/next/dist/bin/next','build','--webpack'],{env:appEnv,encoding:'utf8',timeout:300000,maxBuffer:16*1024*1024});
  writeFileSync(resolve(output,'build.log'),redact((build.stdout??'')+(build.stderr??'')));
  assert.equal(build.status,0,'local application build');
- app=spawn(process.execPath,['node_modules/next/dist/bin/next','start','--hostname','127.0.0.1','--port','3016'],{env:appEnv,stdio:['ignore','pipe','pipe']});
+ app=spawn(process.execPath,['node_modules/next/dist/bin/next','start','--hostname','localhost','--port','3016'],{env:appEnv,stdio:['ignore','pipe','pipe']});
  const log=chunk=>{const msg=redact(chunk);if(msg.trim())console.log(msg.slice(0,1000));};app.stdout.on('data',log);app.stderr.on('data',log);
  let ready=false;
  for(let i=0;i<80;i++){try{if((await fetch(appOrigin+'/en',{signal:AbortSignal.timeout(1500)})).ok){ready=true;break;}}catch{}await new Promise(r=>setTimeout(r,500));}
@@ -179,12 +181,14 @@ try{
   try{
    await context.route('**/*',route=>{
     const req=route.request(),url=new URL(req.url()),method=req.method();
-    if(url.origin===appOrigin&&(['GET','HEAD'].includes(method)||(method==='POST'&&url.pathname==='/api/newsroom/onboarding')))return route.continue();
+    if(url.origin===appOrigin&&(['GET','HEAD'].includes(method)||(method==='POST'&&['/api/newsroom/onboarding','/api/account/profile'].includes(url.pathname))))return route.continue();
     if(url.origin===apiOrigin&&(method==='OPTIONS'||(['GET','HEAD'].includes(method)&&url.pathname.startsWith('/auth/v1/'))||method==='POST'&&['/auth/v1/token','/auth/v1/logout'].includes(url.pathname)))return route.continue();
     return route.abort();
    });
    const page=await context.newPage();page.setDefaultTimeout(15000);
    const runtime=[];page.on('pageerror',e=>runtime.push(redact(e.message).slice(0,200)));
+   // Record only safe method/path/status and actual browser Origin, never body/cookies.
+   page.on('response',async r=>{if(r.request().method()!=='POST'||!r.url().startsWith(appOrigin+'/api/'))return;const origin=await r.request().headerValue('origin').catch(()=>null);console.log('BROWSER POST '+new URL(r.url()).pathname+' HTTP '+r.status()+' Origin '+redact(origin??'(missing)'));});
    await page.goto(appOrigin+'/en/auth/sign-in?next=%2Faccount',{waitUntil:'domcontentloaded',timeout:20000});
    await page.locator('#email').fill(users[role].email);await page.locator('#password').fill(password);
    await page.locator('form button[type="submit"]').click();
@@ -196,10 +200,23 @@ try{
    check(role+' account newsroom navigation matches current role',(await page.locator('a[href="/newsroom"]').count()>0)===!['reader','legacy'].includes(role));
    if(role==='reader'){
     const initial=await (await context.request.get(appOrigin+'/api/account/profile')).json();
-    const change=await context.request.post(appOrigin+'/api/account/profile',{headers:{Origin:appOrigin},data:{action:'profile',expectedUpdatedAt:initial.updatedAt,displayName:'CT15 Updated Reader',locale:'es',avatar:'ocean'}});
-    check('reader profile save through application API (HTTP '+change.status()+')',change.status()===200&&(await change.json()).displayName==='CT15 Updated Reader');
-    const stale=await context.request.post(appOrigin+'/api/account/profile',{headers:{Origin:appOrigin},data:{action:'profile',expectedUpdatedAt:initial.updatedAt,displayName:'Stale overwrite',locale:'en',avatar:'initials'}});
-    check('reader stale profile rejected (HTTP '+stale.status()+')',stale.status()===409);
+    const payload={action:'profile',expectedUpdatedAt:initial.updatedAt,displayName:'CT15 Updated Reader',locale:'es',avatar:'ocean'};
+    const cross=await context.request.post(appOrigin+'/api/account/profile',{headers:{Origin:'http://untrusted.example.test'},data:payload});
+    check('reader cross-origin mutation denied (HTTP '+cross.status()+')',cross.status()===403);
+    await page.goto(appOrigin+'/account/profile',{waitUntil:'domcontentloaded',timeout:20000});
+    const form=page.locator('#account-main form').filter({has:page.getByLabel('Display name',{exact:true})});
+    await form.getByLabel('Display name',{exact:true}).fill(payload.displayName);
+    await form.getByLabel('Account language',{exact:true}).selectOption('es');
+    await form.getByLabel('Choose avatar',{exact:true}).selectOption('ocean');
+    const changed=page.waitForResponse(r=>r.url()===appOrigin+'/api/account/profile'&&r.request().method()==='POST');
+    await form.getByRole('button',{name:'Save profile',exact:true}).click();
+    const change=await changed;
+    check('reader actual profile form save (HTTP '+change.status()+')',change.status()===200&&(await change.json()).displayName==='CT15 Updated Reader');
+    const stale=await page.evaluate(async timestamp=>{
+      const r=await fetch('/api/account/profile',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'profile',expectedUpdatedAt:timestamp,displayName:'Stale overwrite',locale:'en',avatar:'initials'})});
+      return r.status;
+    },initial.updatedAt);
+    check('reader stale profile rejected (HTTP '+stale+')',stale===409);
     const retained=await context.request.get(appOrigin+'/api/account/profile');
     check('reader saved identity retained',retained.status()===200&&(await retained.json()).displayName==='CT15 Updated Reader');
    }
@@ -220,8 +237,13 @@ try{
     const onboarding=await context.request.get(appOrigin+'/api/newsroom/onboarding');
     check(role+' real onboarding state',onboarding.status()===200&&(await onboarding.json()).profile===null);
     const payload={expectedRevision:0,displayName:'CT15 '+role,locale:'en',bylineRequested:false,acknowledgedVersion:1};
-    const missingConfirmation=await context.request.post(appOrigin+'/api/newsroom/onboarding',{headers:{Origin:appOrigin},data:payload});
-    check(role+' missing onboarding confirmation rejected (HTTP '+missingConfirmation.status()+')',missingConfirmation.status()===422);
+    const cross=await context.request.post(appOrigin+'/api/newsroom/onboarding',{headers:{Origin:'http://untrusted.example.test'},data:{...payload,confirmed:true}});
+    check(role+' cross-origin onboarding denied (HTTP '+cross.status()+')',cross.status()===403);
+    const missingConfirmation=await page.evaluate(async payload=>{
+      const r=await fetch('/api/newsroom/onboarding',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+      return r.status;
+    },payload);
+    check(role+' missing onboarding confirmation rejected (HTTP '+missingConfirmation+')',missingConfirmation===422);
     const form=page.locator('main form');
     await form.getByRole('textbox').fill(payload.displayName);
     await form.locator('select').selectOption('en');
@@ -233,8 +255,11 @@ try{
     const saved=await response;
     check(role+' real form onboarding save (HTTP '+saved.status()+')',saved.status()===200&&(await saved.json()).profile?.revision===1);
     await form.getByRole('status').waitFor({state:'visible'});
-    const stale=await context.request.post(appOrigin+'/api/newsroom/onboarding',{headers:{Origin:appOrigin},data:{...payload,confirmed:true}});
-    check(role+' stale onboarding revision denied (HTTP '+stale.status()+')',stale.status()===409);
+    const stale=await page.evaluate(async payload=>{
+      const r=await fetch('/api/newsroom/onboarding',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({...payload,confirmed:true})});
+      return r.status;
+    },payload);
+    check(role+' stale onboarding revision denied (HTTP '+stale+')',stale===409);
     await page.goto(appOrigin+'/newsroom',{waitUntil:'domcontentloaded',timeout:20000});
     const landing=['owner','editor'].includes(role)?'/newsroom':'/newsroom/contributor';
     await page.waitForURL(url=>url.pathname===landing,{timeout:15000});
