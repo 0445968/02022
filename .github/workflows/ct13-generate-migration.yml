@@ -1,0 +1,19 @@
+name: CT-13 CT-14 generate migration filename
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/ct13-generate-migration.yml'
+permissions:
+  contents: read
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - name: Generate local migration filename using pinned CLI
+        run: |
+          npx --yes supabase@3.2.0 --version
+          npx --yes supabase@3.2.0 migration new --help
+          npx --yes supabase@3.2.0 migration new ct13_reader_communications
+          find supabase/migrations -name '*_ct13_reader_communications.sql' -print
