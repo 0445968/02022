@@ -44,9 +44,15 @@ test('public homepage owns exactly one main landmark with fallback heading and p
  assert.doesNotMatch(grid,/<main\b/);
  assert.match(lead,/<h1 className="sr-only">/);
  assert.match(shell,/href="#main"/);assert.match(shell,/id="main"\s+tabIndex=\{-1\}/);
- assert.match(f('components/navigation/language-switcher.tsx'),/window\.location\.search \+ window\.location\.hash/);
+ assert.match(f('components/navigation/language-switcher.tsx'),/current\.search \+ current\.hash/);
  const smoke=f('scripts/ct15-local-browser-smoke.mjs');assert.match(smoke,/metrics.main===1&&metrics.headings===1/);assert.match(smoke,/queryAndHashPreserved:true/);
 });
 
 import {execFileSync} from 'node:child_process';
 test('browser harness parses before the expensive build',()=>{execFileSync(process.execPath,['--check',new URL('../scripts/ct15-local-browser-smoke.mjs',import.meta.url).pathname]);});
+
+test('locale toggle uses a fresh document URL and full navigation to avoid stale fragments',()=>{
+ const source=f('components/navigation/language-switcher.tsx');
+ assert.match(source,/new URL\(window.location.href\)/);assert.match(source,/stripLocale\(current.pathname\)/);
+ assert.match(source,/window.location.assign\(next\)/);assert.doesNotMatch(source,/router\.push\(/);
+});
