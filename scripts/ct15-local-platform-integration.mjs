@@ -80,12 +80,12 @@ try{
  const storyRows=Object.entries(storyIds).map(([kind,id])=>{
   const status=['assigned','other'].includes(kind)?'draft':'published';
   const access=['registered','premium'].includes(kind)?kind:'public';
-  return '('+[uuid(id),quote('ct15-'+kind),quote('CT15 '+kind+' story'),quote(status),quote(access),status==='draft'?'null':"now()-interval '1 day'",uuid(users.legacy.id),uuid(users.legacy.id)].join(',')+')';
+  return '('+[uuid(id),quote('ct15-'+kind),quote('CT15 '+kind+' story'),quote(status),quote(access),status==='draft'?'null':"now()-interval '1 day'",uuid(users.legacy.id),uuid(users.legacy.id),quote(JSON.stringify({type:'doc',content:[{type:'paragraph',content:[{type:'text',text:'CT15 synthetic story copy'}]}]}))+'::jsonb'].join(',')+')';
  });
  mark('synthetic legacy content seed through database owner');
  sql('legacy content',['-f','-'],"update public.profiles set is_editor=true,is_author=true where id="+uuid(users.legacy.id)+";\n"+
  "update public.profiles set display_name='CT15 Reader' where id="+uuid(users.reader.id)+";\n"+
- "insert into public.stories(id,slug,headline,status,access_level,published_at,author_id,created_by) values "+storyRows.join(',')+";\n"+
+ "insert into public.stories(id,slug,headline,status,access_level,published_at,author_id,created_by,body) values "+storyRows.join(',')+";\n"+
  "insert into public.story_revisions(story_id,headline,slug,author_id,created_by) values("+uuid(storyIds.public)+",'CT15 unpublished revision','ct15-public',"+uuid(users.legacy.id)+","+uuid(users.legacy.id)+");");
  const manifest=readFileSync('docs/clear-talks/CT15_FORWARD_MIGRATION_MANIFEST.md','utf8');
  const forward=[...manifest.matchAll(/^\d+\. \x60(supabase\/migrations\/202611[^\x60]+\.sql)\x60$/gm)].map(m=>m[1]);
@@ -178,6 +178,7 @@ try{
  for(const role of roles){
   mark('authenticated browser '+role);
   const context=await browser.newContext({viewport:{width:1440,height:900},serviceWorkers:'block'});
+  let page;
   try{
    await context.route('**/*',route=>{
     const req=route.request(),url=new URL(req.url()),method=req.method();
@@ -185,10 +186,10 @@ try{
     if(url.origin===apiOrigin&&(method==='OPTIONS'||(['GET','HEAD'].includes(method)&&url.pathname.startsWith('/auth/v1/'))||method==='POST'&&['/auth/v1/token','/auth/v1/logout'].includes(url.pathname)))return route.continue();
     return route.abort();
    });
-   const page=await context.newPage();page.setDefaultTimeout(15000);
+   page=await context.newPage();page.setDefaultTimeout(15000);
    const runtime=[];page.on('pageerror',e=>runtime.push(redact(e.message).slice(0,200)));
    // Record only safe method/path/status and actual browser Origin, never body/cookies.
-   page.on('response',async r=>{if(r.request().method()!=='POST'||!r.url().startsWith(appOrigin+'/api/'))return;const origin=await r.request().headerValue('origin').catch(()=>null);console.log('BROWSER POST '+new URL(r.url()).pathname+' HTTP '+r.status()+' Origin '+redact(origin??'(missing)'));});
+   page.on('response',async r=>{if(!['POST','PUT'].includes(r.request().method())||!r.url().startsWith(appOrigin+'/api/'))return;const origin=await r.request().headerValue('origin').catch(()=>null);console.log('BROWSER '+r.request().method()+' '+new URL(r.url()).pathname+' HTTP '+r.status()+' Origin '+redact(origin??'(missing)'));});
    await page.goto(appOrigin+'/en/auth/sign-in?next=%2Faccount',{waitUntil:'domcontentloaded',timeout:20000});
    await page.locator('#email').fill(users[role].email);await page.locator('#password').fill(password);
    await page.locator('form button[type="submit"]').click();
@@ -210,9 +211,10 @@ try{
     await form.getByLabel('Display name',{exact:true}).fill(payload.displayName);
     await form.getByLabel('Account language',{exact:true}).selectOption('es');
     await form.getByLabel('Choose avatar',{exact:true}).selectOption('ocean');
-    const changed=page.waitForResponse(r=>r.url()===appOrigin+'/api/account/profile'&&r.request().method()==='POST');
-    await form.getByRole('button',{name:'Save profile',exact:true}).click();
-    const change=await changed;
+    const [change]=await Promise.all([
+      page.waitForResponse(r=>r.url()===appOrigin+'/api/account/profile'&&r.request().method()==='POST'),
+      form.getByRole('button',{name:'Save profile',exact:true}).click()
+    ]);
     check('reader actual profile form save (HTTP '+change.status()+')',change.status()===200&&(await change.json()).displayName==='CT15 Updated Reader');
     const stale=await page.evaluate(async timestamp=>{
       const r=await fetch('/api/account/profile',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'profile',expectedUpdatedAt:timestamp,displayName:'Stale overwrite',locale:'en',avatar:'initials'})});
@@ -252,9 +254,10 @@ try{
     const submit=form.getByRole('button',{name:'Complete onboarding',exact:true});
     check(role+' form requires confirmation',!(await submit.isEnabled()));
     await form.getByLabel('I understand that access is limited', {exact:false}).check();
-    const response=page.waitForResponse(r=>r.url()===appOrigin+'/api/newsroom/onboarding'&&r.request().method()==='POST');
-    await submit.click();
-    const saved=await response;
+    const [saved]=await Promise.all([
+      page.waitForResponse(r=>r.url()===appOrigin+'/api/newsroom/onboarding'&&r.request().method()==='POST'),
+      submit.click()
+    ]);
     check(role+' real form onboarding save (HTTP '+saved.status()+')',saved.status()===200&&(await saved.json()).profile?.revision===1);
     await form.getByRole('status').waitFor({state:'visible'});
     const stale=await page.evaluate(async payload=>{
@@ -286,12 +289,34 @@ try{
     check(role+' full story list denied',true);
    }
    if(role==='staff_writer'){
-    await page.goto(appOrigin+'/newsroom/contributor/new',{waitUntil:'domcontentloaded',timeout:20000});
+    // Prove the authenticated HTTP write and idempotency independently of UI.
+    const endpoint=appOrigin+'/api/newsroom/contributor/stories';
+    const payload={requestId:randomUUID(),headline:'CT15 API writer draft',language:'en'};
+    const create=()=>context.request.post(endpoint,{headers:{Origin:appOrigin},data:payload});
+    const first=await create();
+    check('writer authenticated API creation (HTTP '+first.status()+')',first.status()===201);
+    const apiId=(await first.json()).id;
+    const replay=await create();
+    check('writer same request returns original draft',replay.status()===201&&(await replay.json()).id===apiId);
+    const collision=await context.request.post(endpoint,{headers:{Origin:appOrigin},data:{...payload,headline:'Different headline'}});
+    check('writer request reuse with changed payload rejected',collision.status()===409);
+    const assigned=await context.request.get(endpoint+'/'+apiId);
+    check('writer API draft self-assigned and editable',assigned.status()===200&&(await assigned.json()).headline===payload.headline);
+    await page.goto(appOrigin+'/newsroom/contributor/new',{waitUntil:'load',timeout:20000});
     const form=page.locator('#newsroom-main form');
-    await form.getByLabel('Headline',{exact:true}).fill('CT15 writer-created draft');
-    const created=page.waitForResponse(r=>r.url()===appOrigin+'/api/newsroom/contributor/stories'&&r.request().method()==='POST');
-    await form.getByRole('button',{name:'Create draft',exact:true}).click();
-    const result=await created;
+    const headline=form.getByLabel('Headline',{exact:true});
+    const submit=form.getByRole('button',{name:'Create draft',exact:true});
+    // Hydration can replace initial DOM inputs. Retry input only, never a
+    // mutation. A disabled submit must become enabled through normal typing.
+    for(let attempt=0;attempt<3;attempt++){
+      await headline.fill('');await headline.fill('CT15 writer-created draft');
+      try{await page.waitForFunction(()=>{const b=document.querySelector('#newsroom-main form button[type=submit]');return b&&!b.disabled;},{},{timeout:3000});break;}catch{if(attempt===2)throw Error('Writer form did not enable submit after typing');}
+    }
+    check('writer form enabled by typed headline',await submit.isEnabled());
+    const [result]=await Promise.all([
+      page.waitForResponse(r=>r.url()===endpoint&&r.request().method()==='POST'),
+      submit.click()
+    ]);
     check('writer real form draft creation (HTTP '+result.status()+')',result.status()===201);
     const id=(await result.json()).id;
     assert.match(id,/^[0-9a-f-]{36}$/);
@@ -312,11 +337,12 @@ try{
     check('freelancer unrelated draft API denied',unauthorized.status()===404);
     const cannotCreate=await context.request.post(appOrigin+'/api/newsroom/contributor/stories',{headers:{Origin:appOrigin},data:{requestId:randomUUID(),headline:'CT15 unauthorized draft',language:'en'}});
     check('freelancer unassigned draft creation denied (HTTP '+cannotCreate.status()+')',cannotCreate.status()===403);
-    await page.goto(appOrigin+'/newsroom/contributor/stories/'+storyIds.assigned,{waitUntil:'domcontentloaded',timeout:20000});
+    await page.goto(appOrigin+'/newsroom/contributor/stories/'+storyIds.assigned,{waitUntil:'load',timeout:20000});
     await page.getByLabel('Headline',{exact:true}).fill('CT15 assigned story edited');
-    const saved=page.waitForResponse(r=>r.url()===appOrigin+endpoint&&r.request().method()==='PUT');
-    await page.getByRole('button',{name:'Save',exact:true}).click();
-    const result=await saved;
+    const [result]=await Promise.all([
+      page.waitForResponse(r=>r.url()===appOrigin+endpoint&&r.request().method()==='PUT'),
+      page.getByRole('button',{name:'Save',exact:true}).click()
+    ]);
     check('freelancer actual editor copy save (HTTP '+result.status()+')',result.status()===200&&(await result.json()).headline==='CT15 assigned story edited');
     const stale=await page.evaluate(async ({endpoint,state})=>{
       const r=await fetch(endpoint,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'save',expectedUpdatedAt:state.updatedAt,copy:{headline:state.headline,subheadline:state.subheadline,summary:state.summary,body:state.body}})});
@@ -354,6 +380,13 @@ try{
   }catch(e){
    const error=redact(e instanceof Error?e.message:String(e)).slice(0,700);
    report.roleErrors.push({role,error});console.log('ROLE FAILURE '+role+' '+error);checkpoint();
+   // Synthetic page only; avoid login screenshots (password fields), traces,
+   // cookies, request bodies or session credentials.
+   if(page&&!page.isClosed()&&new URL(page.url()).origin===appOrigin&&!new URL(page.url()).pathname.includes('/auth/')){
+    await page.screenshot({path:resolve(output,role+'-failure.png'),fullPage:true,timeout:5000,animations:'disabled'}).catch(()=>{});
+    const diagnostic=await page.locator('main').evaluate(el=>({heading:el.querySelector('h1')?.textContent??null,alerts:[...el.querySelectorAll('[role=alert]')].map(a=>a.textContent),buttons:[...el.querySelectorAll('button[type=submit]')].map(b=>({label:b.textContent,disabled:b.disabled}))})).catch(()=>null);
+    if(diagnostic)console.log('ROLE DIAGNOSTIC '+role+' '+redact(JSON.stringify(diagnostic)).slice(0,1000));
+   }
    // Keep independent roles running; the overall workflow still fails.
   }finally{await context.close();}
  }
