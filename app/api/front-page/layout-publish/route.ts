@@ -1,3 +1,4 @@
+import {homepageHistoryEnabled} from '@/lib/services/homepage-history';
 import { NextResponse } from 'next/server';
 
 import { getCurrentUser } from '@/lib/auth/session';
@@ -9,6 +10,7 @@ import {
 } from '@/lib/services/front-page';
 
 export async function POST(request: Request) {
+  if(homepageHistoryEnabled())return NextResponse.json({error:'Use the versioned layout endpoint.'},{status:409});
   const user = await getCurrentUser();
 
   if (!user || !(await mayPublishHomepage(user))) {

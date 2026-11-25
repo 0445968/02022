@@ -49,6 +49,7 @@ import type {
   Category,
 } from '@/types/editorial';
 
+import {parseVersionedLayout,type VersionedLayout,type LayoutCommand} from '@/lib/permissions/homepage-history-contract';
 import {
   BreakingNewsEditor,
 } from './BreakingNewsEditor';
@@ -63,6 +64,7 @@ import {
 } from './HeadlineBarEditor';
 
 interface FrontPageControllerProps {
+  versioned?:VersionedLayout|null;
   locale: Locale;
 
   placements:
@@ -90,6 +92,7 @@ interface FrontPageControllerProps {
 }
 
 export interface FrontPageControllerHandle {
+  restore:(revision:number)=>Promise<void>;
   publish:
     () => Promise<void>;
 
@@ -239,6 +242,7 @@ export const FrontPageController =
     function FrontPageController(
       {
         locale,
+        versioned=null,
         placements,
         layoutDraft,
         breakingNews,
@@ -255,16 +259,16 @@ export const FrontPageController =
       const initialPublished =
         useMemo(
           () =>
-            placementsToSelections(
+            versioned?.published??placementsToSelections(
               placements
             ),
           [
-            placements,
+            placements,versioned,
           ]
         );
 
       const initialDraft =
-        layoutDraft?.selections ??
+        versioned?.selections??layoutDraft?.selections ??
         initialPublished;
 
       const [
@@ -302,7 +306,7 @@ export const FrontPageController =
         useState<
           string | null
         >(
-          layoutDraft
+          versioned?.updatedAt??layoutDraft
             ?.updatedAt ??
             null
         );
@@ -344,6 +348,19 @@ export const FrontPageController =
         );
 
       const mutationLock=useRef(false);
+      const versionRef=useRef(versioned?.revision??null);
+      const uncertain=useRef(false);
+      const versionCommand=useCallback(async(action:LayoutCommand['action'],copy:HomepageLayoutSelection[]|null,restoreRevision:number|null)=>{
+       if(versionRef.current===null||uncertain.current)throw Error('Reload before changing the layout.');
+       const expectedRevision=versionRef.current;
+       try{
+        const response=await fetch('/api/front-page/history',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action,expectedRevision,selections:copy,restoreRevision})});
+        if(!response.ok)throw Error('Layout changed or is unavailable. Reload before retrying.');
+        const state=parseVersionedLayout(await response.json());
+        if(state.revision!==expectedRevision+1)throw Error('Unexpected layout revision.');
+        versionRef.current=state.revision;setLastSavedAt(state.updatedAt);return state;
+       }catch(e){uncertain.current=true;throw e;}
+      },[]);
       const autosaveTail=useRef<Promise<unknown>>(Promise.resolve());
       const initialAutosave =
         useRef(
@@ -681,6 +698,7 @@ export const FrontPageController =
               null
             );
 
+            if(versionRef.current!==null){const state=await versionCommand('save',nextSelections,null);setSaveStatus('saved');return {selections:state.selections,updatedAt:state.updatedAt};}
             const response =
               await fetch(
                 '/api/front-page/layout-draft',
@@ -734,7 +752,7 @@ export const FrontPageController =
 
             return data.draft as HomepageLayoutDraft;
           },
-          []
+          [versionCommand]
         );
 
       useEffect(
@@ -950,6 +968,7 @@ export const FrontPageController =
 
 
               await autosaveTail.current.catch(()=>undefined);
+              if(versionRef.current!==null){const state=await versionCommand('publish',selections,null);setPublishedSelections(state.published);setSaveStatus('saved');setSuccessMessage(locale==='es'?'Portada publicada.':'Front Page published.');router.refresh();return;}
               await saveDraft(selections);
 
               const response =
@@ -1043,6 +1062,7 @@ export const FrontPageController =
             router,
             saveDraft,
             selections,
+            versionCommand,
           ]
         );
 
@@ -1072,9 +1092,9 @@ export const FrontPageController =
                   ...publishedSelections,
                 ];
 
-              await saveDraft(restored);
+              const next=versionRef.current!==null?(await versionCommand('revert',null,null)).selections:(await saveDraft(restored)).selections;
               initialAutosave.current=true;
-              setSelections(restored);
+              setSelections(next);setSaveStatus('saved');
 
               setSuccessMessage(
                 locale ===
@@ -1106,12 +1126,23 @@ export const FrontPageController =
             locale,
             publishedSelections,
             saveDraft,
+            versionCommand,
           ]
         );
+
+      const restoreVersion=useCallback(async(revision:number)=>{
+       if(mutationLock.current||uncertain.current||versionRef.current===null)throw Error('Reload before changing the layout.');
+       mutationLock.current=true;setBusy(true);setError(null);
+       try{if(autosaveTimeout.current!==null){window.clearTimeout(autosaveTimeout.current);autosaveTimeout.current=null;}await autosaveTail.current.catch(()=>undefined);
+        const state=await versionCommand('restore',null,revision);initialAutosave.current=true;setSelections(state.selections);setSaveStatus('saved');setSuccessMessage(locale==='es'?'Versión restaurada como borrador.':'Version restored as draft.');
+       }catch(e){setError(locale==='es'?'No se pudo restaurar. Recargue.':'Unable to restore. Reload before retrying.');throw e;}
+       finally{mutationLock.current=false;setBusy(false);}
+      },[versionCommand,locale]);
 
       useImperativeHandle(
         ref,
         () => ({
+          restore:restoreVersion,
           publish:async()=>{if(!mutationLock.current)setConfirmAction('publish');},
 
           revert:async()=>{if(!mutationLock.current)setConfirmAction('revert');},
@@ -1124,6 +1155,7 @@ export const FrontPageController =
           hasChanges,
           publishFrontPage,
           revertFrontPage,
+          restoreVersion,
         ]
       );
 

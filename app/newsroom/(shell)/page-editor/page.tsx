@@ -1,3 +1,4 @@
+import {homepageHistoryEnabled,readVersionedHomepage} from '@/lib/services/homepage-history';
 import {requireWorkspacePage,newsroomLocale} from '@/lib/services/newsroom-workspace';
 import {
     PageEditorClient,
@@ -27,6 +28,8 @@ import {
     const user = await getCurrentUser();
   
     const locale=await newsroomLocale(user);
+    const versioned=homepageHistoryEnabled()?await readVersionedHomepage():null;
+    if(versioned?.legacyBlocked)return <p role="alert" className="p-6 text-sm text-muted-foreground">{locale==='es'?'Las ubicaciones heredadas requieren revisión antes de editar.':'Legacy timed or inactive placements require reconciliation before editing.'}</p>;
   
     const [
       placements,
@@ -58,6 +61,7 @@ import {
         locale={
           locale
         }
+        versioned={versioned}
         placements={
           placements
         }
