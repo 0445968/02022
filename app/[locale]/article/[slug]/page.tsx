@@ -77,9 +77,11 @@ export async function generateMetadata({
     return {
       title:
         'Not found',
+      robots:{index:false,follow:false},
     };
   }
 
+  if(story.accessLevel!=='public')return {title:locale==='es'?'Contenido registrado':'Registered content',robots:{index:false,follow:false},referrer:'no-referrer'};
   const title =
     story.seoTitle ||
     story.headline;

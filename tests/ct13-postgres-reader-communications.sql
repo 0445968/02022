@@ -16,8 +16,9 @@ do $fn$declare p jsonb;begin
  if jsonb_array_length(public.reader_read_newsletters()->'topics')<>3 then raise exception 'Topic projection';end if;
 end;$fn$;
 reset role;
--- Deterministic captured events, including a second user's private event.
-insert into newsroom_private.reader_notice_events(kind,story_id) values('story','20000000-0000-0000-0000-000000000001') on conflict do nothing;
+-- Exercise actual story trigger instead of manually inserting the public event.
+update public.stories set access_level='registered' where id='20000000-0000-0000-0000-000000000001';
+update public.stories set access_level='public' where id='20000000-0000-0000-0000-000000000001';
 insert into newsroom_private.reader_privacy_requests(account_id,kind) values('00000000-0000-0000-0000-000000000002','export');
 update newsroom_private.reader_privacy_requests set status='reviewing' where account_id='00000000-0000-0000-0000-000000000002' and kind='export';
 set local role authenticated;
@@ -32,6 +33,27 @@ do $fn$declare p jsonb;eid uuid;begin
  p:=public.reader_change_notices('read_all',null,null,null,null,null,0);if (p->>'unread')::int<>0 then raise exception 'Mark all failed';end if;
 end;$fn$;
 reset role;
+-- Direct database checks: verified readers may see registered content, never paid content.
+update public.stories set access_level='registered' where id='20000000-0000-0000-0000-000000000001';
+set local role anon;
+do $fn$begin
+ if exists(select 1 from public.stories where id='20000000-0000-0000-0000-000000000001') then raise exception 'Anonymous registered access';end if;
+end;$fn$;
+reset role;
+set local role authenticated;
+set local request.jwt.claim.sub='00000000-0000-0000-0000-000000000005';
+do $fn$begin
+ if not exists(select 1 from public.stories where id='20000000-0000-0000-0000-000000000001') then raise exception 'Verified registered access missing';end if;
+end;$fn$;
+reset role;
+update public.stories set access_level='premium' where id='20000000-0000-0000-0000-000000000001';
+set local role authenticated;
+set local request.jwt.claim.sub='00000000-0000-0000-0000-000000000005';
+do $fn$begin
+ if exists(select 1 from public.stories where id='20000000-0000-0000-0000-000000000001') then raise exception 'Reader premium access';end if;
+end;$fn$;
+reset role;
+update public.stories set access_level='public' where id='20000000-0000-0000-0000-000000000001';
 do $fn$begin
  begin perform newsroom_private.begin_newsletter_confirmation('00000000-0000-0000-0000-000000000005','latest',repeat('a',64));raise exception 'Disabled delivery allowed';exception when insufficient_privilege then null;end;
 end;$fn$;

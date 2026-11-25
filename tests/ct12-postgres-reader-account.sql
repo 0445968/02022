@@ -1,6 +1,15 @@
 \set ON_ERROR_STOP on
 \i tests/ct11b-postgres-homepage-history.sql
 create table if not exists public.bookmarks(id uuid primary key default gen_random_uuid(),user_id uuid not null references public.profiles(id),story_id uuid not null references public.stories(id),created_at timestamptz not null default now());
+-- Include the actual reader relation shapes used by CT12 export and CT13 triggers.
+create table if not exists public.comments(
+ id uuid primary key default gen_random_uuid(),story_id uuid not null references public.stories(id),
+ user_id uuid references public.profiles(id),parent_id uuid references public.comments(id),
+ body text not null,status text not null default 'pending',created_at timestamptz not null default now(),updated_at timestamptz not null default now());
+create table if not exists public.comment_reports(
+ id uuid primary key default gen_random_uuid(),comment_id uuid not null references public.comments(id),
+ reporter_id uuid not null references public.profiles(id),reason text not null,status text not null default 'open',
+ reviewed_at timestamptz,created_at timestamptz not null default now());
 -- Isolated fixture augments the deliberately minimal restored schema; never hosted.
 alter table public.profiles add column if not exists name text,add column if not exists display_name text default 'Reader',add column if not exists email text,add column if not exists email_verified timestamptz,add column if not exists image text,add column if not exists editorial_title text,add column if not exists preferred_locale text default 'en',add column if not exists created_at timestamptz default now(),add column if not exists updated_at timestamptz default now();
 alter table public.profiles enable row level security;
