@@ -15,6 +15,7 @@ import type {
   Locale,
 } from '@/types';
 
+import { DocumentLanguage } from '@/components/layout/document-language';
 import type {WorkspaceNavKey} from '@/lib/permissions/workspace-policy';
 
 interface NewsroomShellProps {
@@ -36,7 +37,9 @@ export function NewsroomShell({
   showTeamNav = false,scopedNav,staffName,staffRoles,
 }: NewsroomShellProps) {
   return (
-    <div className="flex h-screen flex-col overflow-hidden bg-surface-subtle">
+    <div lang={locale} className="flex h-screen flex-col overflow-hidden bg-surface-subtle">
+      <DocumentLanguage locale={locale}/>
+      <a href="#newsroom-main" className="sr-only focus:not-sr-only focus:absolute focus:left-3 focus:top-3 focus:z-50 focus:rounded-md focus:bg-white focus:p-3 focus:text-deep focus:ring-2 focus:ring-primary">{locale==='es'?'Ir al contenido':'Skip to content'}</a>
       <NewsroomTopBar
         dict={dict}
         locale={locale}

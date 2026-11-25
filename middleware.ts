@@ -17,6 +17,10 @@ import {
  *     tool with a single interface language, set per user).
  */
 export async function middleware(request: NextRequest) {
+  // Derive the locale from the route, never from a caller-supplied header.
+  // The refreshed middleware response forwards the same request headers.
+  const segment=request.nextUrl.pathname.split('/').filter(Boolean)[0];
+  request.headers.set(LOCALE_HEADER,isLocale(segment)?segment:defaultLocale);
   const { client, getResponse } = createMiddlewareClient(request);
 
   // Refresh the session — this also sets updated auth cookies on the response.

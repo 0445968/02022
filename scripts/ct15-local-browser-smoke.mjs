@@ -84,6 +84,11 @@ try{
   const page=await context.newPage();
   for(const locale of ['en','es'])for(const path of publicPaths){
    const target='/'+locale+path,errors=[],badResponses=[];
+   // Verify server HTML as well as hydrated document language, including
+   // a forged locale header which middleware must overwrite.
+   const raw=await fetch(base+target,{headers:{'x-sr-locale':locale==='es'?'en':'es'},redirect:'manual'});
+   const html=await raw.text();
+   check(new RegExp('<html[^>]*\\blang="'+locale+'"').test(html),target+' server document language mismatch');
    const error=e=>errors.push(e.name+': '+e.message.slice(0,300));
    const response=r=>{if(r.status()>=500&&new URL(r.url()).origin===base)badResponses.push(new URL(r.url()).pathname);};
    page.on('pageerror',error);page.on('response',response);
@@ -93,7 +98,8 @@ try{
     const metrics=await page.evaluate(()=>({overflow:Math.max(0,document.documentElement.scrollWidth-innerWidth),main:document.querySelectorAll('main').length,headings:document.querySelectorAll('h1').length,lang:document.documentElement.lang,visibleText:document.body.innerText.length}));
     const final=new URL(page.url());
     check(r?.status()===200&&final.origin===base&&final.pathname===target,target+' failed navigation at '+width);
-    check(metrics.visibleText>40&&metrics.main>=1,target+' missing meaningful shell at '+width);
+    check(metrics.visibleText>40&&metrics.main===1,target+' missing meaningful shell at '+width);
+    check(metrics.lang===locale,target+' document language mismatch at '+width);
     check(metrics.overflow<=1,target+' horizontal overflow '+metrics.overflow+' at '+width);
     check(!errors.length&&!badResponses.length,target+' runtime/HTTP error at '+width);
     rows.push({path:target,width,status:r?.status(),finalPath:final.pathname,...metrics,errors,badResponses});

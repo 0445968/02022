@@ -1,4 +1,6 @@
 import type { Metadata } from 'next';
+import { headers } from 'next/headers';
+import { defaultLocale, isLocale, LOCALE_HEADER } from '@/lib/i18n/config';
 
 import {
   Figtree,
@@ -56,14 +58,16 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const requestLocale=(await headers()).get(LOCALE_HEADER);
+  const locale=isLocale(requestLocale)?requestLocale:defaultLocale;
   return (
     <html
-      lang="en"
+      lang={locale}
       suppressHydrationWarning
     >
       <body

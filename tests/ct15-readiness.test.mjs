@@ -14,3 +14,16 @@ test('account navigation uses actual scoped access, skip link and non-public met
  assert.match(f('app/account/layout.tsx'),/scopedAccessEnabled=\{scopedNewsroomEnabled\(\)\}/);
  assert.match(f('app/\[locale\]/article/\[slug\]/page.tsx'),/story.accessLevel!=='public'/);
 });
+
+test('document language derives from the route and stays synchronized across navigation',()=>{
+ const mw=f('middleware.ts'),root=f('app/layout.tsx');
+ assert.ok(mw.indexOf('request.headers.set(LOCALE_HEADER')<mw.indexOf('createMiddlewareClient(request)'));
+ assert.match(mw,/isLocale\(segment\)\?segment:defaultLocale/);
+ assert.match(root,/\(await headers\(\)\)\.get\(LOCALE_HEADER\)/);
+ assert.match(root,/lang=\{locale\}/);
+ assert.match(f('components/layout/document-language.tsx'),/document\.documentElement\.lang=locale/);
+ for(const path of ['lib/i18n/context.tsx','components/account/account-shell.tsx','components/editorial/newsroom-shell.tsx'])assert.match(f(path),/<DocumentLanguage locale=\{locale\}/);
+ for(const path of ['app/[locale]/(auth)/layout.tsx','app/[locale]/staff-invite/page.tsx'])assert.doesNotMatch(f(path),/<main\b/);
+ assert.match(f('components/editorial/newsroom-shell.tsx'),/href="#newsroom-main"/);
+ for(const path of ['.github/workflows/ct15-local-browser-smoke.yml','.github/workflows/ct15-preview-browser-audit.yml'])assert.match(f(path),/runs-on: ubuntu-24\.04/);
+});
