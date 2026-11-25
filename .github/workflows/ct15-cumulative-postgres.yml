@@ -1,0 +1,51 @@
+name: CT-15 cumulative synthetic PostgreSQL migration rehearsal
+on:
+  pull_request:
+    paths:
+      - 'supabase/migrations/**'
+      - 'tests/fixtures/ct15-local-legacy-*.sql'
+      - 'tests/ct15-cumulative-postgres.sql'
+      - 'scripts/ct15-cumulative-postgres.py'
+      - '.github/workflows/ct15-cumulative-postgres.yml'
+      - 'docs/clear-talks/CT15_FORWARD_MIGRATION_MANIFEST.md'
+permissions:
+  contents: read
+jobs:
+  cumulative:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_PASSWORD: ct15-local-only
+          POSTGRES_DB: ct15_disposable
+        ports: [55415:5432]
+        options: >-
+          --health-cmd "pg_isready -U postgres -d ct15_disposable"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      CI: 'true'
+      CT15_DISPOSABLE_DB: 'yes'
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - name: Prepare disposable PostgreSQL client
+        run: |
+          if ! command -v psql >/dev/null; then
+            sudo apt-get update -qq
+            sudo apt-get install -y -qq postgresql-client
+          fi
+          python3 -m py_compile scripts/ct15-cumulative-postgres.py
+      - name: Apply historical synthetic baseline and ordered forward manifest
+        run: python3 scripts/ct15-cumulative-postgres.py
+      - name: Preserve migration evidence including first failing stage
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: ct15-cumulative-synthetic-postgres
+          path: ct15-cumulative-evidence/
+          retention-days: 7
