@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import {useEffect,useRef} from 'react';
 import { DocumentLanguage } from '@/components/layout/document-language';
 import {safeAvatar} from '@/lib/permissions/reader-account-contract';
 
@@ -71,6 +72,13 @@ export function AccountShell({
 }: AccountShellProps) {
   const pathname =
     usePathname();
+  const mobileNavRef=useRef<HTMLElement>(null);
+  useEffect(()=>{
+    const nav=mobileNavRef.current;if(!nav||!window.matchMedia('(max-width: 1023px)').matches)return;
+    const active=nav.querySelector<HTMLElement>('[aria-current="page"]');if(!active)return;
+    const b=nav.getBoundingClientRect(),r=active.getBoundingClientRect();
+    if(r.left<b.left||r.right>b.right)nav.scrollLeft+=r.left-b.left-(b.width-r.width)/2;
+  },[pathname]);
 
   const profile =
     user.profile;
@@ -257,7 +265,7 @@ export function AccountShell({
             West Island Times
           </Link>
 
-          <h1
+          <p
             className="
               mt-1
               font-headline
@@ -270,7 +278,7 @@ export function AccountShell({
               dict.account
                 .title
             }
-          </h1>
+          </p>
         </div>
 
         <div
@@ -597,6 +605,7 @@ export function AccountShell({
           </div>
 
           <nav
+            ref={mobileNavRef}
             aria-label={
               dict.account
                 .menuLabel

@@ -160,7 +160,9 @@ try{
   CT_COMMENT_MODERATION_ENABLED:'true',CT_COMMENT_REPORTS_ENABLED:'true',
   CT_ASSIGNED_DRAFT_EDITOR_ENABLED:'true',CT_ASSIGNED_REVISION_EDITOR_ENABLED:'true',
   CT_WRITER_DRAFT_CREATION_ENABLED:'true',CT_STORY_REVIEW_ENABLED:'true',
-  CT_STAFF_ADMIN_MUTATIONS_ENABLED:'true',CT_READER_COMMUNICATIONS_ENABLED:'true'
+  CT_STAFF_ADMIN_MUTATIONS_ENABLED:'true',CT_READER_COMMUNICATIONS_ENABLED:'true',
+  CT_EDITORIAL_CALENDAR_ENABLED:'true',CT_POLLS_ENABLED:'true',CT_REVIEW_INBOX_ENABLED:'true',CT_STORY_ASSIGNMENTS_ENABLED:'true',
+  CT_HOMEPAGE_HISTORY_ENABLED:'true',CT_READER_REPORTING_ENABLED:'true'
  };
  const appEnv={...process.env,...flags,NEXT_PUBLIC_SUPABASE_URL:apiOrigin,NEXT_PUBLIC_SUPABASE_ANON_KEY:values.ANON_KEY,SUPABASE_SERVICE_ROLE_KEY:values.SERVICE_ROLE_KEY};
  // Remove every other feature gate and provider credential inherited from the environment.
@@ -349,7 +351,12 @@ try{
     check('writer request reuse with changed payload rejected',collision.status()===409);
     const assigned=await context.request.get(endpoint+'/'+apiId);
     check('writer API draft self-assigned and editable',assigned.status()===200&&(await assigned.json()).headline===payload.headline);
-    await page.goto(appOrigin+'/newsroom/contributor/new',{waitUntil:'load',timeout:20000});
+    await page.goto(appOrigin+'/newsroom/contributor',{waitUntil:'load',timeout:20000});
+    const writerLink=page.locator('aside nav a[href="/newsroom/contributor/new"]');
+    check('writer sidebar offers restricted draft form, not full editor',await writerLink.count()===1&&await page.locator('aside nav a[href="/newsroom/stories/new"]').count()===0);
+    await writerLink.click();
+    await page.waitForURL(url=>url.pathname==='/newsroom/contributor/new');
+    check('writer new draft active nav only',await page.locator('aside nav [aria-current=page]').count()===1&&await writerLink.getAttribute('aria-current')==='page');
     const form=page.locator('#newsroom-main form');
     const headline=form.getByLabel('Headline',{exact:true});
     const submit=form.getByRole('button',{name:'Create draft',exact:true});
@@ -480,6 +487,37 @@ try{
     }
     await page.setViewportSize({width:1440,height:900});
    }
+   // Page-level audit is independent of individual route failures, but all
+   // failed assertions remain release-visible. No mutation through audited pages.
+   const audits=role==='owner'?['/newsroom','/newsroom/team','/newsroom/media','/newsroom/authors','/newsroom/page-editor','/newsroom/comments','/newsroom/reports','/newsroom/reviews','/newsroom/schedule','/newsroom/polls','/newsroom/profile','/newsroom/privacy']:
+     role==='reader'?['/account','/account/saved','/account/comments','/account/reports','/account/notifications','/account/newsletters','/account/subscription','/account/profile','/account/security']:[];
+   for(const path of audits)for(const width of [390,1440]){
+    const key=path.split('/').filter(Boolean).join('-')+'-'+width;
+    try{
+     await page.setViewportSize({width,height:900});
+     const errors=[];const onError=e=>errors.push(redact(e.message).slice(0,200));page.on('pageerror',onError);
+     let metrics;
+     try{
+      const response=await page.goto(appOrigin+path,{waitUntil:'load',timeout:25000});
+      const main=page.locator(role==='owner'?'#newsroom-main':'#account-main');
+      await main.waitFor({state:'visible',timeout:10000});
+      await page.waitForFunction(()=>document.documentElement.lang===document.querySelector('[lang]:not(html)')?.getAttribute('lang'),{},{timeout:5000}).catch(()=>{});
+      metrics=await page.evaluate(()=>{
+       const m=document.querySelector('main');
+       const visible=el=>!!(el.offsetWidth||el.offsetHeight||el.getClientRects().length);
+       return {root:document.documentElement.scrollWidth,viewport:innerWidth,main:m?.clientWidth,scroll:m?.scrollWidth,mains:document.querySelectorAll('main').length,headings:[...document.querySelectorAll('h1')].filter(visible).length,mainHeadings:[...(m?.querySelectorAll('h1')??[])].filter(visible).length,lang:document.documentElement.lang,alerts:[...(m?.querySelectorAll('[role=alert]')??[])].filter(visible).map(a=>a.textContent?.slice(0,160))};
+      });
+      const ok=response?.status()===200&&new URL(page.url()).pathname===path&&metrics.root<=width+1&&metrics.scroll<=metrics.main+1&&metrics.mains===1&&metrics.headings===1&&metrics.mainHeadings===1&&metrics.lang===(role==='reader'?'es':'en')&&errors.length===0;
+      report.pageAudits??=[];report.pageAudits.push({role,path,width,status:response?.status(),metrics,errors,ok});checkpoint();
+      await page.screenshot({path:resolve(output,key+'-audit.png'),fullPage:true,timeout:10000,animations:'disabled'});
+      check(role+' page audit '+path+' '+width+'px',ok);
+     }finally{page.off('pageerror',onError);}
+    }catch(e){
+     const error=redact(e instanceof Error?e.message:String(e)).slice(0,500);
+     report.roleErrors.push({role,path,width,error});console.log('PAGE AUDIT FAILURE '+key+' '+error);checkpoint();
+    }
+   }
+   await page.setViewportSize({width:1440,height:900});
    if(role==='owner'){
     await page.goto(appOrigin+'/newsroom',{waitUntil:'domcontentloaded',timeout:20000});
     await page.locator('header').getByRole('button',{name:/sign out|log out/i}).first().click();

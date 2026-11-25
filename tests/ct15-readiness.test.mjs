@@ -81,3 +81,10 @@ test('story sorting uses explicit dictionary keys and readable filter labels',()
  assert.match(source,/Object.entries\(SORT_LABELS\)/);assert.match(source,/Clear filters/);assert.match(source,/type="submit"/);
  assert.match(f('components/editorial/newsroom-sidebar.tsx'),/nav.scrollLeft\+=/);
 });
+
+
+test('restricted writer sidebar uses its own draft route and account branding is not another page heading',()=>{
+ assert.match(f('lib/services/newsroom-workspace.ts'),/canStartWriterDraft\(\)\)access.nav.push\('contributorNew'\)/);
+ const nav=f('components/editorial/newsroom-sidebar.tsx');assert.match(nav,/key==='contributorNew'\?\{key,icon:PlusCircle,href:'\/newsroom\/contributor\/new'\}/);assert.match(nav,/item.href===activeHref/);
+ const account=f('components/account/account-shell.tsx');assert.doesNotMatch(account,/<h1\b/);assert.match(account,/mobileNavRef/);
+});

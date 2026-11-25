@@ -23,7 +23,7 @@ export const getWorkspaceAccess=cache(async():Promise<WorkspaceAccess>=>{
   if(!scopedNewsroomEnabled()||isDevAuthBypass())return buildWorkspaceAccess(new Set(),options);
   const grants=await resolveGlobalStaffPermissionsOnServer(WORKSPACE_CAPABILITIES);
   const access=buildWorkspaceAccess(grants,options);
-  if(access.allowed&&!access.createStory&&await canStartWriterDraft())access.nav.push('newStory');
+  if(access.allowed&&!access.createStory&&await canStartWriterDraft())access.nav.push('contributorNew');
   if(access.allowed&&await canEnterCommentModeration())access.nav.push('comments');
   if(access.allowed&&await canEnterReportManagement())access.nav.push('reports');
   if(access.allowed&&await canEnterEditorialCalendar())access.nav.push('schedule');

@@ -126,7 +126,8 @@ export function NewsroomSidebar({
   },[pathname]);
 
   const items=scopedNav?scopedNav.map(key=>key==='contributor'?{key,icon:LayoutDashboard,href:'/newsroom/contributor'}:
-    key==='profile'?{key,icon:User,href:'/newsroom/profile'}:key==='reviewInbox'?{key,icon:ClipboardCheck,href:'/newsroom/reviews'}:key==='reports'?{key,icon:Flag,href:'/newsroom/reports'}:NAV.find(item=>item.key===key)!).filter(Boolean):NAV.filter(item=>(item.key!=='team'||showTeamNav)&&item.key!=='comments'&&item.key!=='schedule'&&item.key!=='polls');
+    key==='contributorNew'?{key,icon:PlusCircle,href:'/newsroom/contributor/new'}:key==='profile'?{key,icon:User,href:'/newsroom/profile'}:key==='reviewInbox'?{key,icon:ClipboardCheck,href:'/newsroom/reviews'}:key==='reports'?{key,icon:Flag,href:'/newsroom/reports'}:NAV.find(item=>item.key===key)!).filter(Boolean):NAV.filter(item=>(item.key!=='team'||showTeamNav)&&item.key!=='comments'&&item.key!=='schedule'&&item.key!=='polls');
+  const activeHref=items.filter(item=>pathname===item.href||(item.href!=='/newsroom'&&pathname.startsWith(item.href+'/'))).sort((a,b)=>b.href.length-a.href.length)[0]?.href;
   return (
     <aside
       className="
@@ -222,12 +223,7 @@ export function NewsroomSidebar({
               const Icon =
                 item.icon;
 
-              const active =
-                item.href ===
-                '/newsroom'
-                  ? pathname ===
-                    '/newsroom'
-                  : (pathname===item.href||pathname.startsWith(item.href+'/'))&&!(item.key==='stories'&&pathname==='/newsroom/stories/new');
+              const active = item.href===activeHref;
 
               /*
                * Temporary literal label
@@ -237,7 +233,7 @@ export function NewsroomSidebar({
                * dictionary values next.
                */
               const label =
-  item.key==='contributor'?(locale==='es'?'Mi espacio de trabajo':'My workspace'):item.key==='reviewInbox'?(locale==='es'?'Bandeja editorial':'Review inbox'):item.key==='reports'?(locale==='es'?'Denuncias':'Reports'):dict.newsroom[item.key as keyof typeof dict.newsroom];
+  item.key==='contributorNew'?(locale==='es'?'Nuevo borrador':'New draft'):item.key==='contributor'?(locale==='es'?'Mi espacio de trabajo':'My workspace'):item.key==='reviewInbox'?(locale==='es'?'Bandeja editorial':'Review inbox'):item.key==='reports'?(locale==='es'?'Denuncias':'Reports'):dict.newsroom[item.key as keyof typeof dict.newsroom];
 
               return (
                 <li
