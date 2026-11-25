@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import {readerAccountEnabled} from '@/lib/services/reader-account';
 import {redirect} from 'next/navigation';
 import {getCurrentUser} from '@/lib/auth/session';
 import {getWorkspaceAccess,scopedNewsroomEnabled,newsroomLocale} from '@/lib/services/newsroom-workspace';
@@ -24,8 +25,8 @@ export default async function NewsroomProfile(){
   <header className="border-b border-border pb-5"><h1 className="font-headline text-2xl font-bold text-deep">{es?'Perfil de redacción':'Newsroom profile'}</h1><p className="mt-1 text-sm text-muted-foreground">{es?'Su identidad privada, preferencias y cuenta de acceso.':'Your private working identity, preferences and sign-in account.'}</p></header>
   <section className="space-y-2 rounded-lg border border-border bg-white p-5"><h2 className="font-headline text-lg font-semibold text-deep">{es?'Cuenta de acceso':'Sign-in account'}</h2><dl><dt className="text-xs text-muted-foreground">{es?'Correo electrónico':'Email address'}</dt><dd className="break-all text-sm">{user.email??'—'}</dd></dl>
    <p className="text-sm text-muted-foreground">{es?'Los permisos del equipo y la firma editorial se administran por separado.':'Staff permissions and public editorial attribution are administered separately.'}</p>
-   <Link className="text-sm font-medium text-primary underline" href={localizedPath(locale,'/account')}>{es?'Preferencias de mi cuenta':'My account settings'}</Link>
-   <p className="text-xs text-muted-foreground">{es?'La gestión de contraseña y seguridad estará en la sección de seguridad de la cuenta cuando esté disponible.':'Password and security management will be handled in the account security section when available.'}</p>
+   <Link className="text-sm font-medium text-primary underline" href={readerAccountEnabled()?'/account/profile':localizedPath(locale,'/account')}>{es?'Preferencias de mi cuenta':'My account settings'}</Link>
+   {readerAccountEnabled()?<Link href="/account/security" className="block text-sm text-primary underline">{es?'Seguridad y privacidad':'Security and privacy'}</Link>:<p className="text-xs text-muted-foreground">{es?'Seguridad de la cuenta aún no habilitada.':'Account security is not enabled yet.'}</p>}
   </section>
   {unavailable&&<p role="alert" className="text-sm text-breaking">{es?'No se pudo cargar el perfil privado. Actualice esta página.':'Unable to load private profile. Refresh this page.'}</p>}
   {state?.profile?<StaffOnboardingForm initial={state} locale={locale} suggestedName="" embedded/>:!unavailable&&<p className="text-sm text-muted-foreground">{es?'La edición privada del equipo aún no está habilitada.':'Private staff profile editing is not enabled yet.'}</p>}

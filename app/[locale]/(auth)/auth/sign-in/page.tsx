@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import {readerAccountEnabled} from '@/lib/services/reader-account';
 import { ArrowLeft } from 'lucide-react';
 import { SignInForm } from '@/components/forms/sign-in-form';
 import { getDictionary } from '@/lib/i18n/dictionaries';
@@ -22,6 +23,7 @@ export default async function SignInPage({ params }: PageProps) {
 
       <div className="border border-border bg-white p-6 sm:p-8">
         <SignInForm dict={dict} locale={locale} />
+        {readerAccountEnabled()&&<Link className="mt-4 block text-center text-sm text-primary underline" href={localizedPath(locale,'/auth/forgot-password')}>{locale==='es'?'¿Olvidó su contraseña?':'Forgot your password?'}</Link>}
       </div>
 
       <div className="text-center">

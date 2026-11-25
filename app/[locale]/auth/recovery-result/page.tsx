@@ -1,0 +1,4 @@
+import Link from 'next/link';
+export const dynamic='force-dynamic';
+export const metadata={robots:{index:false,follow:false},referrer:'no-referrer'};
+export default function RecoveryResult({params}:{params:{locale:string}}){const es=params.locale==='es';return <div className="mx-auto max-w-lg space-y-3 px-4 py-12"><h1 className="font-headline text-2xl font-bold text-deep">{es?'Verificación no disponible':'Verification unavailable'}</h1><p className="text-sm text-muted-foreground">{es?'El enlace puede haber vencido o haberse abierto en otro navegador. Vuelva a solicitarlo en el navegador original.':'The link may have expired or been opened in a different browser. Request a new link in the original browser.'}</p><Link className="text-sm text-primary underline" href={'/'+(es?'es':'en')+'/auth/sign-in'}>{es?'Iniciar sesión':'Sign in'}</Link></div>;}

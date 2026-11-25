@@ -1,3 +1,4 @@
+import {safeArticleLink,safeImageUrl} from '@/lib/permissions/public-content-contract';
 import { Fragment } from 'react';
 
 interface ArticleBodyProps {
@@ -137,6 +138,7 @@ export function ArticleBody({
         const src =
           (attrs?.src as string) ?? '';
 
+        if(!safeImageUrl(src))return null;
         const alt =
           (attrs?.alt as string) ?? '';
 
@@ -263,6 +265,7 @@ export function ArticleBody({
                 unknown
               >;
 
+            if(!safeArticleLink(attrs?.href))continue;
             text = (
               <a
                 href={

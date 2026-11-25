@@ -1,3 +1,6 @@
+import {createDataClient} from '@/lib/db/supabase-data';
+import {securePublicMedia} from '@/lib/services/public-editorial-media';
+import type {SupabaseClient} from '@supabase/supabase-js';
 import {
   getDataClient,
 } from '@/lib/db/supabase-data-access';
@@ -230,7 +233,7 @@ async function runStorySearch(
     );
 
   const supabase =
-    await getDataClient();
+    (securePublicMedia()?createDataClient():await getDataClient()) as unknown as SupabaseClient;
 
   /*
    * The cast prevents a TypeScript error if your generated
@@ -301,7 +304,7 @@ async function enrichSearchResults(
   }
 
   const supabase =
-    await getDataClient();
+    (securePublicMedia()?createDataClient():await getDataClient()) as unknown as SupabaseClient;
 
   const categoryIds =
     Array.from(
@@ -449,7 +452,7 @@ async function enrichSearchResults(
       imageError,
     } = await supabase
       .from(
-        'media_assets'
+        securePublicMedia()?'media_public_assets':'media_assets'
       )
       .select(
         `
@@ -821,7 +824,7 @@ export async function searchPublishedStorySuggestions(
     );
 
   const supabase =
-    await getDataClient();
+    (securePublicMedia()?createDataClient():await getDataClient()) as unknown as SupabaseClient;
 
   const rpcClient =
     supabase as unknown as {

@@ -30,19 +30,19 @@ export async function mayRestoreStoryVersion(
 }
 export async function mayEditHomepage(user: CurrentUser | null): Promise<boolean> {
   if (!v2()) return user?.profile?.isEditor === true;
-  return !!user && await has('homepage.edit');
+  return !!user && await has('newsroom.access') && await has('homepage.edit');
 }
 export async function mayPublishHomepage(user: CurrentUser | null): Promise<boolean> {
   if (!v2()) return user?.profile?.isEditor === true;
   // Publishing is not the same as editing a draft layout.
-  return !!user && (await has('homepage.edit')) && (await has('homepage.publish'));
+  return !!user && await has('newsroom.access') && (await has('homepage.edit')) && (await has('homepage.publish'));
 }
 export async function mayManageBreakingNews(user: CurrentUser | null): Promise<boolean> {
   return mayPublishHomepage(user);
 }
 export async function mayManageByline(user: CurrentUser | null): Promise<boolean> {
   if (!v2()) return user?.profile?.isEditor === true;
-  return !!user && await has('byline.manage');
+  return !!user && await has('newsroom.access') && await has('byline.manage');
 }
 export async function mayCreateTag(user: CurrentUser | null): Promise<boolean> {
   if (!v2()) return !!user && (user.profile?.isAuthor === true || user.profile?.isEditor === true);

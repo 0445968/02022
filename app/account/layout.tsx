@@ -1,4 +1,7 @@
 export const dynamic = 'force-dynamic';
+export const metadata={robots:{index:false,follow:false},referrer:'no-referrer'};
+import {readerAccountEnabled} from '@/lib/services/reader-account';
+import {getWorkspaceAccess,scopedNewsroomEnabled} from '@/lib/services/newsroom-workspace';
 
 import {
     redirect,
@@ -76,8 +79,11 @@ import {
         locale
       );
   
+    const canOpenNewsroom=scopedNewsroomEnabled()?await getWorkspaceAccess().then(a=>a.allowed).catch(()=>false):!!(user.profile?.isAuthor||user.profile?.isEditor);
     return (
       <AccountShell
+        readerAccountEnabled={readerAccountEnabled()}
+        canOpenNewsroom={canOpenNewsroom}
         dict={
           dict
         }

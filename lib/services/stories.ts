@@ -1,3 +1,5 @@
+import {createDataClient} from '@/lib/db/supabase-data';
+import {readPublicBylines,safePublishedBody} from '@/lib/services/public-editorial-media';
 import { getDataClient } from '@/lib/db/supabase-data-access';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { enrichStoryListItems } from '@/lib/services/story-list-metadata';
@@ -233,7 +235,7 @@ export async function getPublishedStoryBySlug(
   StoryWithRelations | null
 > {
   const supabase =
-    await getDataClient();
+    securePublicMediaEnabled()?createDataClient():await getDataClient();
 
   const {
     data: story,
@@ -360,7 +362,7 @@ async function resolveStoryRelations(
   publicPage = false
 ): Promise<StoryWithRelations> {
   const supabase =
-    await getDataClient();
+    publicPage&&securePublicMediaEnabled()?createDataClient():await getDataClient();
 
 // ==================================================
 // Editorial identities
@@ -402,7 +404,7 @@ const legacyProfiles =
 
 if (
   staffAccountIds.length >
-  0
+  0 && !(publicPage&&securePublicMediaEnabled())
 ) {
   const {
     data:
@@ -454,10 +456,7 @@ if (
   }
 }
 
-const editorialProfiles =
-  await getEditorialProfilesByAccountIds(
-    staffAccountIds
-  );
+const editorialProfiles=publicPage&&securePublicMediaEnabled()?await readPublicBylines(staffAccountIds):await getEditorialProfilesByAccountIds(staffAccountIds);
 
   function resolveEditorialIdentity(
     accountId:
@@ -478,13 +477,14 @@ const editorialProfiles =
         accountId
       );
   
+    if(publicPage&&securePublicMediaEnabled()&&!editorialProfile)return null;
     return {
       /**
        * Keep returning the account ID until story foreign
        * keys migrate to editorial-profile IDs.
        */
       id:
-        accountId,
+        publicPage&&securePublicMediaEnabled()?editorialProfile!.id:accountId,
   
       name:
         editorialProfile
@@ -743,7 +743,7 @@ const editorialProfiles =
       story.summary,
 
     body:
-      story.body,
+      publicPage&&securePublicMediaEnabled()?await safePublishedBody(story.body):story.body,
 
     language:
       story.language,
@@ -1250,7 +1250,7 @@ const PUBLIC_STORY_SELECT = `
 const PUBLIC_STORY_SELECT_SAFE = PUBLIC_STORY_SELECT.replace(
   /\s*featured_image:media_assets!stories_featured_image_id_fkey\(\s*id,\s*url,\s*alt_text\s*\),/,
   '\n  featured_image_id,'
-);
+).replace(/author:profiles!stories_author_id_fkey\(\s*id,\s*name\s*\)/,'author_id');
 
 function securePublicMediaEnabled(): boolean {
   return process.env.CT_STAFF_ACCESS_V2_ENABLED === 'true';
@@ -1262,18 +1262,20 @@ async function hydratePublicMedia(
   if (!securePublicMediaEnabled()) return [...rows];
   const ids = [...new Set(rows.map(row => row.featured_image_id)
     .filter((id): id is string => typeof id === 'string' && id.length > 0))];
-  if (!ids.length) return rows.map(row => ({ ...row, featured_image: null }));
+  const bylines=await readPublicBylines(rows.map(row=>row.author_id).filter((id):id is string=>typeof id==='string'));
+  const authors:Record<string,unknown>[]=rows.map(row=>({...row,author:{name:bylines.get(row.author_id as string)?.bylineName??null}}));
+  if (!ids.length) return authors.map(row => ({ ...row, featured_image: null }));
 
-  const client = await getDataClient() as unknown as SupabaseClient;
+  const client = createDataClient() as unknown as SupabaseClient;
   const { data, error } = await client.from('media_public_assets')
     .select('id, url, alt_text')
     .in('id', ids);
   if (error) {
     console.error('Unable to load public media metadata:', error);
-    return rows.map(row => ({ ...row, featured_image: null }));
+    return authors.map(row => ({ ...row, featured_image: null }));
   }
   const mediaById = new Map((data ?? []).map(item => [item.id, item]));
-  return rows.map(row => ({
+  return authors.map(row => ({
     ...row,
     featured_image: mediaById.get(row.featured_image_id as string) ?? null,
   }));
@@ -1288,7 +1290,7 @@ async function fetchPublicStories(
   perPage: number
 ): Promise<PublicListResult> {
   const supabase =
-    await getDataClient();
+    securePublicMediaEnabled()?createDataClient():await getDataClient();
 
   const offset =
     (page - 1) *
@@ -1514,7 +1516,7 @@ export async function getPublishedStoriesByCategory(
   }
 > {
   const supabase =
-    await getDataClient();
+    securePublicMediaEnabled()?createDataClient():await getDataClient();
 
   const {
     data: categoryRow,
@@ -1589,7 +1591,7 @@ export async function getRelatedStories(
   PublicStoryListItem[]
 > {
   const supabase =
-    await getDataClient();
+    securePublicMediaEnabled()?createDataClient():await getDataClient();
 
   const now =
     new Date().toISOString();

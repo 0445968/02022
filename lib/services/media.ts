@@ -1690,7 +1690,7 @@ export async function restoreMediaAsset(
     id,
     {
       status:
-        'approved',
+        'draft',
 
       archivedAt:
         null,

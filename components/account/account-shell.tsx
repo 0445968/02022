@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import {safeAvatar} from '@/lib/permissions/reader-account-contract';
 
 import {
   Bell,
@@ -30,6 +31,8 @@ import type {
 } from '@/types';
 
 interface AccountShellProps {
+  readerAccountEnabled?:boolean;
+  canOpenNewsroom?:boolean;
   children:
     React.ReactNode;
 
@@ -54,6 +57,8 @@ interface AccountNavigationItem {
 
 export function AccountShell({
   children,
+  readerAccountEnabled=false,
+  canOpenNewsroom:newsroomAllowed,
   dict,
   locale,
   user,
@@ -76,8 +81,7 @@ export function AccountShell({
       .toUpperCase() ||
     'W';
 
-  const canOpenNewsroom =
-    Boolean(
+  const canOpenNewsroom = newsroomAllowed??Boolean(
       profile?.isAuthor ||
       profile?.isEditor
     );
@@ -290,7 +294,7 @@ export function AccountShell({
               "
               aria-hidden
             >
-              {initial}
+              {readerAccountEnabled&&safeAvatar(profile?.image)?<img src={safeAvatar(profile?.image)!} alt="" className="h-full w-full rounded-lg"/>:initial}
             </div>
 
             <div className="min-w-0">
