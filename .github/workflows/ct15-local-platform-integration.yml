@@ -1,0 +1,79 @@
+name: CT-15 real local Supabase integration
+on:
+  pull_request:
+    paths:
+      - 'app/**'
+      - 'components/**'
+      - 'lib/**'
+      - 'middleware.ts'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'supabase/migrations/**'
+      - 'tests/fixtures/ct15-local-legacy-*.sql'
+      - 'scripts/ct15-local-platform-integration.mjs'
+      - '.github/workflows/ct15-local-platform-integration.yml'
+permissions:
+  contents: read
+jobs:
+  platform:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    env:
+      CI: 'true'
+      CT15_REAL_LOCAL_PLATFORM: 'yes'
+      DEV_AUTH_BYPASS: 'false'
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '22.16.0'
+          cache: npm
+      - name: Install and verify test dependencies
+        run: |
+          npm ci --ignore-scripts --strict-peer-deps
+          node --experimental-strip-types --check scripts/ct15-local-platform-integration.mjs
+          npm install --prefix "$RUNNER_TEMP/ct15-cli" --no-save supabase@3.2.0
+          npm install --prefix "$RUNNER_TEMP/ct15-browser" --ignore-scripts --no-save playwright@1.56.1
+          "$RUNNER_TEMP/ct15-browser/node_modules/.bin/playwright" install --with-deps chromium
+          if ! command -v psql >/dev/null; then
+            sudo apt-get update -qq
+            sudo apt-get install -y -qq postgresql-client
+          fi
+      - name: Start real local Supabase in empty unlinked directory
+        run: |
+          unset SUPABASE_ACCESS_TOKEN SUPABASE_SERVICE_ROLE_KEY NEXT_PUBLIC_SUPABASE_URL
+          mkdir -p "$RUNNER_TEMP/ct15-platform"
+          cd "$RUNNER_TEMP/ct15-platform"
+          CLI="$RUNNER_TEMP/ct15-cli/node_modules/.bin/supabase"
+          "$CLI" --version
+          "$CLI" init --help
+          "$CLI" start --help
+          "$CLI" status --help
+          "$CLI" init
+          # No repo migrations in this directory; no link/login/hosted operation.
+          "$CLI" start > "$RUNNER_TEMP/ct15-local-start.log" 2>&1 || { echo 'Local Supabase startup failed; inspect redacted startup evidence'; mkdir -p "$GITHUB_WORKSPACE/ct15-platform-evidence"; sed -E 's/eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+/[redacted jwt]/g; s/(sb_secret_|sb_publishable_)[A-Za-z0-9_-]+/[redacted key]/g' "$RUNNER_TEMP/ct15-local-start.log" | grep -Ei 'error|failed|unhealthy|unable' | tail -30 > "$GITHUB_WORKSPACE/ct15-platform-evidence/start-error.log"; exit 1; }
+          "$CLI" status -o env > "$RUNNER_TEMP/ct15-local-status.env"
+          chmod 600 "$RUNNER_TEMP/ct15-local-status.env"
+      - name: Verify ordered migrations, real Auth, role access, Storage and browser workflows
+        run: |
+          export CT15_LOCAL_STATUS_FILE="$RUNNER_TEMP/ct15-local-status.env"
+          export CT15_PLAYWRIGHT_MODULE="$RUNNER_TEMP/ct15-browser/node_modules/playwright/index.mjs"
+          node --experimental-strip-types scripts/ct15-local-platform-integration.mjs
+      - name: Preserve sanitized integration evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: ct15-real-local-platform-evidence
+          path: ct15-platform-evidence/
+          retention-days: 7
+      - name: Stop only this disposable local stack
+        if: always()
+        run: |
+          if test -d "$RUNNER_TEMP/ct15-platform"; then
+            cd "$RUNNER_TEMP/ct15-platform"
+            "$RUNNER_TEMP/ct15-cli/node_modules/.bin/supabase" stop --help
+            "$RUNNER_TEMP/ct15-cli/node_modules/.bin/supabase" stop --no-backup > /dev/null 2>&1
+          fi
+          rm -f "$RUNNER_TEMP/ct15-local-status.env" "$RUNNER_TEMP/ct15-local-start.log"
