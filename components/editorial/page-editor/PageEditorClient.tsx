@@ -2,6 +2,7 @@
 
 import {
   useCallback,
+  useRef,
   useState,
 } from 'react';
 import {
@@ -28,6 +29,7 @@ import {
 import {
   FrontPageController,
   type FrontPageEditorState,
+  type FrontPageControllerHandle,
 } from './front-page/FrontPageController';
 
 interface PageEditorClientProps {
@@ -70,8 +72,7 @@ export function PageEditorClient({
   worldStories,
   categories,
 }: PageEditorClientProps) {
-  const router =
-    useRouter();
+  const controller=useRef<FrontPageControllerHandle>(null);
 
   const [
     frontPageState,
@@ -137,22 +138,8 @@ export function PageEditorClient({
         busy={
           frontPageState.busy
         }
-        onPublishAll={() => {
-          /*
-           * The next step will connect this
-           * to the page-controller action API.
-           *
-           * We deliberately do not publish
-           * directly here because this shell
-           * does not own the Front Page draft.
-           */
-        }}
-        onRevertAll={() => {
-          /*
-           * This will also be connected to
-           * the controller action API next.
-           */
-        }}
+        onPublishAll={()=>{void controller.current?.publish();}}
+        onRevertAll={()=>{void controller.current?.revert();}}
         onOpenHistory={() =>
           setHistoryOpen(
             true
@@ -168,6 +155,7 @@ export function PageEditorClient({
           ) {
             return (
               <FrontPageController
+                ref={controller}
                 locale={
                   locale
                 }
@@ -287,8 +275,8 @@ export function PageEditorClient({
                   "
                 >
                   {locale === 'es'
-                    ? 'El historial y la recuperación de diseños se conectarán después de completar la nueva estructura del editor.'
-                    : 'Layout history and recovery will be connected after the new editor structure is complete.'}
+                    ? 'El historial de versiones aún no está disponible. Revertir restaura el diseño publicado cargado, no una versión anterior.'
+                    : 'No version history is available yet. Revert restores the currently loaded published layout, not an earlier version.'}
                 </p>
               </div>
 

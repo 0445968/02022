@@ -206,6 +206,7 @@ export function AuthorManager({
 
     const payload = {
       ...values,
+      expectedUpdatedAt:selectedAuthor.updatedAt,
 
       headshotMediaId:
         headshotRemoved
@@ -247,6 +248,7 @@ export function AuthorManager({
       );
     }
 
+    if(result?.ok!==true||result.profile?.id!==selectedAuthor.id||typeof result.profile.updated_at!=='string')throw Error('Save result uncertain; reload before editing.');
     /*
      * Update local state immediately,
      * avoiding a full page reload.
@@ -264,9 +266,10 @@ export function AuthorManager({
 
             return {
               ...author,
+              updatedAt:result.profile.updated_at,
 
               bylineName:
-                values.bylineName,
+                result.profile.byline_name,
 
               editorialTitle:
                 values

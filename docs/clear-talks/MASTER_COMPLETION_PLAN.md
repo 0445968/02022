@@ -163,6 +163,8 @@ Every batch starts only after reading the current repo HEAD and ledger. Marked P
 - Complete missing behavior in already-rendered controls, check front-page drafts/publish/revert/history, media moderation/rights/asset delete, editorial byline management and homepage article previews. Distinguish page-editor destinations actually supported from unimplemented tabs.
 - Gate: all existing visible operations perform real changes with correct privileges and public frontend reflects reviewed updates; no visual change to current UI.
 
+**CT11a staged; CT11b required for cross-session transactional history/versioning, direct DB rights/reference controls and remaining public output verification. See CT11A_EDITORIAL_AUDIT.md.**
+
 ### CT-12 — Reader profile and security pages [P1]
 - Implement /account/profile and /account/security, with bilingual naming, editable permitted profile info, language/avatar preferences, password update/reset, email change verification, active-session/revocation controls where supported, account export/deletion flow with confirmation and privacy constraints.
 - Consolidate /[locale]/account compatibility and account links. Do not expose editorial role controls.

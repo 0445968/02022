@@ -247,9 +247,6 @@ function buildUpdatePayload(
         values.sourceUrl
       ),
 
-    status:
-      values.status,
-
     rightsStatus:
       values.rightsStatus,
 
@@ -1249,20 +1246,7 @@ export function MediaInspector({
                       }
                     />
 
-                    <WorkflowButton
-                      label="Delete permanently"
-                      icon={
-                        Trash2
-                      }
-                      danger
-                      loading={
-                        actionLoading ===
-                        'delete'
-                      }
-                      onClick={
-                        handlePermanentDelete
-                      }
-                    />
+                    <p className="text-xs text-muted-foreground">Permanent deletion is unavailable until asset reference checks are complete. Trashed assets can still be restored.</p>
                   </>
                 )}
               </div>

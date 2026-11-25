@@ -1,3 +1,6 @@
+import {createDataClient} from '@/lib/db/supabase-data';
+import type {SupabaseClient} from '@supabase/supabase-js';
+import {currentPublicWindow,isPublicStory,safeExternalAlertUrl} from '@/lib/permissions/public-editorial-contract';
 import { getDataClient } from '@/lib/db/supabase-data-access';
 
 import type {
@@ -359,6 +362,8 @@ export interface UpdateBreakingNewsInput {
 }
 
 type RawStory = {
+  status?:string;
+  featured_image_id?:string|null;
   id: string;
   slug: string;
   headline: string;
@@ -779,63 +784,30 @@ export async function getHomepageSlot(
  * This makes development-bypass rendering behave like production
  * even while anonymous CRUD is temporarily enabled.
  */
-export async function getPublicHomepageSlots(): Promise<
-  HomepagePlacement[]
-> {
-  const slots =
-    await getHomepageSlots();
-
-  const now =
-    Date.now();
-
-  return slots.filter(
-    (placement) => {
-      if (
-        !placement.active
-      ) {
-        return false;
-      }
-
-      if (
-        placement.startsAt
-      ) {
-        const start =
-          new Date(
-            placement.startsAt
-          ).getTime();
-
-        if (
-          Number.isFinite(start) &&
-          start > now
-        ) {
-          return false;
-        }
-      }
-
-      if (
-        placement.endsAt
-      ) {
-        const end =
-          new Date(
-            placement.endsAt
-          ).getTime();
-
-        if (
-          Number.isFinite(end) &&
-          end <= now
-        ) {
-          return false;
-        }
-      }
-
-      return true;
-    }
-  );
+export async function getPublicHomepageSlots(): Promise<HomepagePlacement[]> {
+ const now=Date.now(),db=createDataClient() as unknown as SupabaseClient;
+ const secure=process.env.CT_STAFF_ACCESS_V2_ENABLED==='true';
+ const imageSelect=secure?'featured_image_id':'featured_image:media_assets!stories_featured_image_id_fkey(id,url,alt_text)';
+ const {data,error}=await db.from('homepage_slots').select(`
+ id,slot,position,category_id,starts_at,ends_at,active,created_at,updated_at,
+ story:stories!homepage_slots_story_id_fkey(id,slug,headline,short_title,language,status,published_at,
+ primary_category:categories!stories_primary_category_id_fkey(id,slug,name_en,name_es),${imageSelect})
+ `).eq('active',true).order('slot').order('position');
+ if(error)throw Error('Unable to load public homepage placements');
+ const rows=(data??[]) as unknown as RawHomepagePlacement[];
+ const eligible=rows.filter(row=>{const story=firstRelation(row.story);return currentPublicWindow(row.active,row.starts_at,row.ends_at,now)&&!!story&&isPublicStory(story.status,story.published_at,now);});
+ const media=new Map<string,{id:string;url:string;alt_text:string}>();
+ if(secure){
+  const ids=[...new Set(eligible.map(r=>firstRelation(r.story)?.featured_image_id).filter((id):id is string=>typeof id==='string'))];
+  if(ids.length){const {data:images,error:imageError}=await db.from('media_public_assets').select('id,url,alt_text').in('id',ids);
+   if(!imageError)for(const image of images??[])media.set(image.id,image);}
+ }
+ return eligible.map(row=>{
+  const story=firstRelation(row.story)!;
+  return mapHomepagePlacement({...row,created_by:null,updated_by:null,story:secure?{...story,featured_image:media.get(story.featured_image_id??'')??null}:story});
+ }).filter((row):row is HomepagePlacement=>row!==null);
 }
 
-/**
- * Creates a new homepage placement.
- */
 export async function setHomepageSlot(
   input: SetHomepagePlacementInput
 ): Promise<
@@ -1505,61 +1477,18 @@ export async function getBreakingNews(): Promise<
  * This explicitly applies schedule/active checks so development bypass
  * behaves like production on the public site.
  */
-export async function getPublicBreakingNews(): Promise<
-  BreakingNewsItem[]
-> {
-  const items =
-    await getBreakingNews();
-
-  const now =
-    Date.now();
-
-  return items.filter(
-    (item) => {
-      if (!item.active) {
-        return false;
-      }
-
-      if (
-        item.startsAt
-      ) {
-        const start =
-          new Date(
-            item.startsAt
-          ).getTime();
-
-        if (
-          Number.isFinite(start) &&
-          start > now
-        ) {
-          return false;
-        }
-      }
-
-      if (
-        item.endsAt
-      ) {
-        const end =
-          new Date(
-            item.endsAt
-          ).getTime();
-
-        if (
-          Number.isFinite(end) &&
-          end <= now
-        ) {
-          return false;
-        }
-      }
-
-      return true;
-    }
-  );
+export async function getPublicBreakingNews(): Promise<BreakingNewsItem[]> {
+ const now=Date.now(),db=createDataClient();
+ const {data,error}=await db.from('breaking_news').select(`
+ id,headline,story_id,external_url,active,position,starts_at,ends_at,created_at,updated_at,
+ story:stories!breaking_news_story_id_fkey(id,slug,headline,language,status,published_at)
+ `).eq('active',true).order('position').order('created_at',{ascending:false});
+ if(error)throw Error('Unable to load public breaking news');
+ return ((data??[]) as unknown as (Omit<RawBreakingNews,'story'>&{story:RawStory|RawStory[]|null})[])
+ .filter(row=>{const story=firstRelation(row.story);return currentPublicWindow(row.active,row.starts_at,row.ends_at,now)&&safeExternalAlertUrl(row.external_url)&&(!row.story_id||!!story&&isPublicStory(story.status,story.published_at,now));})
+ .map(row=>mapBreakingNews({...row,created_by:null,updated_by:null}));
 }
 
-/**
- * Creates a breaking-news alert.
- */
 export async function createBreakingNews(
   input: CreateBreakingNewsInput
 ): Promise<
