@@ -27,7 +27,7 @@ test('profile and dashboard use own actor/current capabilities, bounded scope, n
  for(const token of ["!access.viewStories","resolveGlobalStaffPermissionsOnServer(['newsroom.access','story.view_all'])","resolveStoryStaffPermissionsOnServer(row.id,['story.view_all'])",".limit(DASHBOARD_STORY_LIMIT+1)","dashboardStorySummary(items)","fresh?.id!==user.id","readReviewInbox(mode,0)"])assert.ok(dashboard.includes(token),token);
  assert.doesNotMatch(dashboard,/SERVICE_ROLE|user_metadata/);
  const page=file('app/newsroom/(shell)/profile/page.tsx');
- assert.match(page,/getWorkspaceAccess\(\)/);assert.match(page,/readOwnByline\(\)/);assert.doesNotMatch(page,/href="\/account\/security"/);
+ assert.match(page,/getWorkspaceAccess\(\)/);assert.match(page,/readOwnByline\(\)/);assert.match(page,/readerAccountEnabled\(\)\?<Link href="\/account\/security"/);
  for(const p of ['app/[locale]/layout.tsx','app/account/layout.tsx','app/newsroom/(shell)/layout.tsx'])assert.match(file(p),/export const dynamic = 'force-dynamic'/);
  assert.match(file('app/newsroom/(shell)/page.tsx'),/not newsroom-wide totals/);
 });

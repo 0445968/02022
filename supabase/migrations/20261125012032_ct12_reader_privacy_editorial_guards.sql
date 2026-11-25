@@ -78,7 +78,7 @@ begin
  if not newsroom_private.reader_account_allowed() then raise exception 'Account unavailable' using errcode='42501';end if;
  perform pg_advisory_xact_lock(hashtextextended(actor::text,120026));
  if p_action='request' and p_kind in ('export','delete') and p_id is null
- and p_confirmation=case when p_kind='delete' then 'DELETE' else 'EXPORT' end then
+ and p_confirmation=(case when p_kind='delete' then 'DELETE' else 'EXPORT' end) then
   select id into v_id from newsroom_private.reader_privacy_requests where account_id=actor and kind=p_kind and status in ('pending','reviewing');
   if v_id is not null then return newsroom_private.read_reader_account();end if;
   if exists(select 1 from newsroom_private.reader_privacy_requests where account_id=actor and kind=p_kind and created_at>clock_timestamp()-interval '24 hours') then raise exception 'Request limit' using errcode='40001';end if;
