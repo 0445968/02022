@@ -1,0 +1,51 @@
+name: CT-15 local built-app browser smoke
+on:
+  pull_request:
+    paths:
+      - 'app/**'
+      - 'components/**'
+      - 'lib/**'
+      - 'middleware.ts'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'scripts/ct15-local-browser-smoke.mjs'
+      - '.github/workflows/ct15-local-browser-smoke.yml'
+permissions:
+  contents: read
+jobs:
+  signed-out:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      CI: 'true'
+      CT15_LOCAL_SMOKE: 'yes'
+      DEV_AUTH_BYPASS: 'false'
+      NEXT_PUBLIC_SUPABASE_URL: 'http://127.0.0.1:54329'
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: 'ct15-local-anon-fixture'
+      CT_STAFF_ACCESS_V2_ENABLED: 'true'
+      CT_READER_ACCOUNT_ENABLED: 'true'
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '22.16.0'
+          cache: npm
+      - name: Install exact application dependencies
+        run: npm ci --ignore-scripts --strict-peer-deps
+      - name: Install disposable browser
+        run: |
+          npm install --prefix "$RUNNER_TEMP/ct15-browser" --ignore-scripts --no-save playwright@1.56.1
+          "$RUNNER_TEMP/ct15-browser/node_modules/.bin/playwright" install --with-deps chromium
+      - name: Build and verify signed-out local routes
+        run: |
+          export CT15_PLAYWRIGHT_MODULE="$RUNNER_TEMP/ct15-browser/node_modules/playwright/index.mjs"
+          node scripts/ct15-local-browser-smoke.mjs
+      - name: Preserve synthetic browser evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: ct15-local-signed-out-evidence
+          path: ct15-local-evidence/
+          retention-days: 7
