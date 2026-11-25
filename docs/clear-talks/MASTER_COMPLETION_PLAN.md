@@ -184,6 +184,8 @@ Every batch starts only after reading the current repo HEAD and ledger. Marked P
 - Keep /account/saved and /comments stable; check paginated lists, bookmarks, content access levels and denied entitlements. Never launch mock billing.
 - Gate: provider test mode flows, cancel/refund/failed payment reconciliation, webhook retry, role-independent entitlement security. If paid product not approved, finish the page with truthful 'not offered' state and keep charging disabled.
 
+**CT13 + CT14 staged in PR #54. Free-only subscription fallback chosen because paid product approval is absent; mail and billing not activated. See CT13_CT14_COMMUNICATIONS_SUBSCRIPTIONS_REVIEW.md for release gates.**
+
 ### CT-15 — Cross-site final refinement, release readiness and closure [P1/P2]
 Following the November 23, 2026 user decision, reserve a **dedicated final visual refinement phase** after the major Newsroom/reader features are functional; do not merely combine visual polish with last-minute debugging. Through CT-03–CT-14, keep lightweight UI cleanup and consistent responsiveness in each delivered batch, without changing the existing fonts or established style.
 
