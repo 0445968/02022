@@ -189,6 +189,8 @@ Every batch starts only after reading the current repo HEAD and ledger. Marked P
 ### CT-15 — Cross-site final refinement, release readiness and closure [P1/P2]
 Following the November 23, 2026 user decision, reserve a **dedicated final visual refinement phase** after the major Newsroom/reader features are functional; do not merely combine visual polish with last-minute debugging. Through CT-03–CT-14, keep lightweight UI cleanup and consistent responsiveness in each delivered batch, without changing the existing fonts or established style.
 
+**CT15 started: integration readiness, forward migration manifest, first source-level UI corrections and opt-in browser audit staged. See CT15_INTEGRATION_READINESS.md; correct Preview isolation, exact CI, supported framework upgrade and rights reconciliation are release blockers. Dedicated interactive UI/UX review remains pending.**
+
 #### CT-15a — Final UI/UX refinement [dedicated]
 - Review the **completed** public website, Newsroom dashboard/stories/editor/media/team manager, freelancer workspace and reader account portal together as one product. Inspect desktop, tablet and phone breakpoints.
 - Refine hierarchy, whitespace, table density, filters, menus, interactive feedback, forms, empty/loading/error states, typography consistency, accessible contrast and mobile overflow. Compare EN/ES copy and layouts.

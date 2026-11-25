@@ -85,6 +85,7 @@ import {
       <AccountShell
         readerAccountEnabled={readerAccountEnabled()}
         reportsEnabled={readerReportingEnabled()}
+        scopedAccessEnabled={scopedNewsroomEnabled()}
         canOpenNewsroom={canOpenNewsroom}
         dict={
           dict

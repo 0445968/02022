@@ -34,6 +34,7 @@ import type {
 interface AccountShellProps {
   readerAccountEnabled?:boolean;
   reportsEnabled?:boolean;
+  scopedAccessEnabled?:boolean;
   canOpenNewsroom?:boolean;
   children:
     React.ReactNode;
@@ -61,6 +62,7 @@ export function AccountShell({
   children,
   readerAccountEnabled=false,
   reportsEnabled=false,
+  scopedAccessEnabled=false,
   canOpenNewsroom:newsroomAllowed,
   dict,
   locale,
@@ -89,7 +91,7 @@ export function AccountShell({
       profile?.isEditor
     );
 
-  const roleLabel =
+  const roleLabel = scopedAccessEnabled?(canOpenNewsroom?(locale==='es'?'Acceso a redacción':'Newsroom access'):dict.account.roleUser):
     profile?.isAuthor &&
     profile?.isEditor
       ? dict.account
@@ -106,7 +108,6 @@ export function AccountShell({
   const navigation:
     AccountNavigationItem[] =
     [
-      ...(reportsEnabled?[{href:'/account/reports',label:locale==='es'?'Mis denuncias':'My reports',icon:Flag}]:[]),
       {
         href:
           '/account',
@@ -134,6 +135,7 @@ export function AccountShell({
         icon:
           MessageSquare,
       },
+      ...(reportsEnabled?[{href:'/account/reports',label:locale==='es'?'Mis denuncias':'My reports',icon:Flag}]:[]),
       {
         href:
           '/account/notifications',
@@ -211,6 +213,7 @@ export function AccountShell({
         lg:flex
       "
     >
+      <a href="#account-main" className="sr-only focus:not-sr-only focus:absolute focus:left-3 focus:top-3 focus:z-50 focus:rounded-md focus:bg-white focus:p-3 focus:text-deep focus:ring-2 focus:ring-primary">{locale==='es'?'Ir al contenido':'Skip to content'}</a>
       {/* Desktop sidebar */}
 
       <aside
@@ -671,7 +674,7 @@ export function AccountShell({
           </nav>
         </header>
 
-        <main className="min-w-0">
+        <main id="account-main" tabIndex={-1} className="min-w-0 focus:outline-none">
           {children}
         </main>
       </div>

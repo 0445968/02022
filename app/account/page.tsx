@@ -1,3 +1,4 @@
+import {getWorkspaceAccess,scopedNewsroomEnabled} from '@/lib/services/newsroom-workspace';
 import {safeAvatar} from '@/lib/permissions/reader-account-contract';
 import {readerAccountEnabled} from '@/lib/services/reader-account';
 import {communicationsEnabled,readNotices} from '@/lib/services/reader-communications';
@@ -162,7 +163,9 @@ export default async function AccountPage() {
     user.email ||
     dict.account.roleUser;
 
-  const roleLabel =
+  const scoped=scopedNewsroomEnabled();
+  const newsroomAccess=scoped?await getWorkspaceAccess().then(x=>x.allowed).catch(()=>false):false;
+  const roleLabel = scoped?(newsroomAccess?(locale==='es'?'Acceso a redacción':'Newsroom access'):dict.account.roleUser):
     user.profile?.isAuthor &&
     user.profile?.isEditor
       ? dict.account
