@@ -121,10 +121,14 @@ export function NewsroomSidebar({
     <aside
       className="
         flex
-        w-60
+        w-full
+        min-w-0
         shrink-0
         flex-col
-        border-r
+        border-b
+        lg:w-60
+        lg:border-b-0
+        lg:border-r
         border-border
         bg-surface-muted
       "
@@ -132,11 +136,13 @@ export function NewsroomSidebar({
       {/* User block */}
       <div
         className="
+          hidden
           border-b
           border-border
           bg-white
           px-4
           py-3
+          lg:block
         "
       >
         <p
@@ -181,16 +187,23 @@ export function NewsroomSidebar({
 
       <nav
         className="
+          min-w-0
           flex-1
-          overflow-y-auto
+          overflow-x-auto
           py-2
+          lg:overflow-y-auto
         "
-        aria-label="Newsroom"
+        aria-label={locale==='es'?'Redacción':'Newsroom'}
       >
         <ul
           className="
-            space-y-0.5
+            flex
+            min-w-max
+            gap-1
             px-2
+            lg:block
+            lg:min-w-0
+            lg:space-y-0.5
           "
         >
           {items.map(
@@ -229,7 +242,9 @@ export function NewsroomSidebar({
                       `
                         flex
                         items-center
+                        whitespace-nowrap
                         gap-2.5
+                        lg:whitespace-normal
                         rounded-[6px]
                         px-3
                         py-2
@@ -272,10 +287,12 @@ export function NewsroomSidebar({
 
       <div
         className="
+          hidden
           border-t
           border-border
           px-3
           py-3
+          lg:block
         "
       >
         <Link

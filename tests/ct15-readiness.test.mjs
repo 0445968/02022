@@ -65,3 +65,11 @@ test('reader profile language has a stable bilingual accessible name and public 
  assert.match(f('components/navigation/account-button.tsx'),/canOpenNewsroom\?\?isStaff\(user\)/);
  execFileSync(process.execPath,['--check',new URL('../scripts/ct15-local-platform-integration.mjs',import.meta.url).pathname]);
 });
+
+
+test('responsive newsroom keeps one scoped navigation and keyboard focusable main, and story status uses current locale',()=>{
+ const shell=f('components/editorial/newsroom-shell.tsx'),sidebar=f('components/editorial/newsroom-sidebar.tsx'),stories=f('components/editorial/stories-dashboard.tsx');
+ assert.match(shell,/flex-col overflow-hidden lg:flex-row/);assert.match(shell,/id="newsroom-main"\s+tabIndex=\{-1\}/);
+ assert.match(sidebar,/lg:w-60/);assert.match(sidebar,/overflow-x-auto/);assert.match(sidebar,/lg:min-w-0/);
+ assert.match(stories,/statusLabel\(status, locale\)/);assert.match(stories,/islandLabel\(i, locale\)/);assert.match(stories,/aria-label=\{label\}/);
+});

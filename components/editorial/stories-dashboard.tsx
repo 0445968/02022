@@ -73,10 +73,10 @@ export function StoriesDashboard({ dict, locale='en', publicationQueue=null, can
   }
 
   return (
-    <div className="mt-6">
+    <div className="mt-6 min-w-0">
       {/* Filters bar */}
       <div className="flex flex-col gap-3 border border-border bg-white p-4 lg:flex-row lg:items-center">
-        <form onSubmit={handleSearch} className="relative flex-1">
+        <form onSubmit={handleSearch} className="relative min-w-0 flex-1">
           <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" aria-hidden />
           <input
             type="search"
@@ -88,12 +88,12 @@ export function StoriesDashboard({ dict, locale='en', publicationQueue=null, can
           />
         </form>
 
-        <div className="flex flex-wrap gap-2">
+        <div className="flex min-w-0 flex-wrap gap-2">
           <FilterSelect
             label={dict.stories.filterStatus}
             value={currentFilters.status}
             onChange={(v) => updateFilter('status', v)}
-            options={STATUSES.map((s) => ({ value: s, label: s === 'all' ? dict.common.all : statusLabel(s, 'en') }))}
+            options={STATUSES.map((s) => ({ value: s, label: s === 'all' ? dict.common.all : statusLabel(s, locale) }))}
           />
           <FilterSelect
             label={dict.stories.filterLanguage}
@@ -116,14 +116,14 @@ export function StoriesDashboard({ dict, locale='en', publicationQueue=null, can
             onChange={(v) => updateFilter('category', v)}
             options={[
               { value: 'all', label: dict.common.all },
-              ...categories.map((c) => ({ value: c.id, label: c.nameEn })),
+              ...categories.map((c) => ({ value: c.id, label: categoryLabel(c, locale) })),
             ]}
           />
           <FilterSelect
             label={dict.stories.filterIsland}
             value={currentFilters.island}
             onChange={(v) => updateFilter('island', v)}
-            options={ISLANDS.map((i) => ({ value: i, label: i === 'all' ? dict.common.all : islandLabel(i, 'en') }))}
+            options={ISLANDS.map((i) => ({ value: i, label: i === 'all' ? dict.common.all : islandLabel(i, locale) }))}
           />
           <FilterSelect
             label={dict.stories.sortBy}
@@ -137,7 +137,7 @@ export function StoriesDashboard({ dict, locale='en', publicationQueue=null, can
       {publicationQueue!==null&&<p className="mt-3 text-xs text-muted-foreground">{es?'El filtro de estado usa el estado guardado del artículo. La cola se muestra por separado según sus permisos; un guion no confirma que no haya una programación.':'The status filter uses the stored article status. Queue information is shown separately according to your permissions; a dash does not confirm that no schedule exists.'} {es?'La cola no garantiza la publicación automática.':'A queue does not guarantee automatic publication.'} · America/Bogota</p>}
       {publicationQueue==='unavailable'&&<p role="alert" className="mt-2 text-xs text-muted-foreground">{es?'No se pudo verificar la cola. Actualice la página.':'Unable to verify the publication queue. Refresh the page.'}</p>}
       {/* Table */}
-      <div className="mt-4 overflow-x-auto border border-border bg-white">
+      <div role="region" aria-label={es?'Lista de artículos':'Story list'} tabIndex={0} className="mt-4 max-w-full overflow-x-auto border border-border bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-border bg-surface-muted text-left">
@@ -199,7 +199,7 @@ export function StoriesDashboard({ dict, locale='en', publicationQueue=null, can
                     </div>
                   </td>
                   <td className="px-4 py-3">
-                    <StatusBadge status={story.status} dict={dict} />
+                    <StatusBadge status={story.status} locale={locale} />
                   </td>
                   <td className="px-4 py-3">
                     {story.hasUnpublishedChanges ? (
@@ -226,10 +226,10 @@ export function StoriesDashboard({ dict, locale='en', publicationQueue=null, can
                   <td className="hidden px-4 py-3 text-muted-foreground lg:table-cell">{story.authorName ?? '—'}</td>
                   <td className="hidden px-4 py-3 text-muted-foreground lg:table-cell">{story.editorName ?? '—'}</td>
                   <td className="hidden px-4 py-3 text-muted-foreground xl:table-cell">
-                    {story.primaryCategoryNameEn ?? '—'}
+                    {(es?story.primaryCategoryNameEs:story.primaryCategoryNameEn) ?? '—'}
                   </td>
                   <td className="px-4 py-3 text-xs text-muted-foreground">
-                    {new Date(story.updatedAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+                    {new Date(story.updatedAt).toLocaleDateString(locale, { month: 'short', day: 'numeric', year: 'numeric' })}
                   </td>
                 </tr>
                 );
@@ -283,12 +283,13 @@ function FilterSelect({
   options: { value: string; label: string }[];
 }) {
   return (
-    <label className="flex items-center gap-1.5">
+    <label className="flex min-w-0 max-w-full items-center gap-1.5">
       <span className="sr-only">{label}</span>
       <select
+        aria-label={label}
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="h-9 border border-border bg-white px-2 text-xs font-medium text-foreground focus:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        className="h-9 min-w-0 max-w-full border border-border bg-white px-2 text-xs font-medium text-foreground focus:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
       >
         {options.map((opt) => (
           <option key={opt.value} value={opt.value}>
@@ -300,7 +301,7 @@ function FilterSelect({
   );
 }
 
-function StatusBadge({ status, dict }: { status: StoryStatus; dict: Dictionary }) {
+function StatusBadge({ status, locale }: { status: StoryStatus; locale: Locale }) {
   const colors: Record<StoryStatus, string> = {
     draft: 'bg-surface-muted text-foreground border-border',
     in_review: 'bg-highlight/20 text-deep border-highlight/40',
@@ -310,7 +311,7 @@ function StatusBadge({ status, dict }: { status: StoryStatus; dict: Dictionary }
   };
   return (
     <span className={`inline-flex items-center border px-2 py-0.5 text-xs font-semibold uppercase tracking-wide ${colors[status]}`}>
-      {statusLabel(status, 'en')}
+      {statusLabel(status, locale)}
     </span>
   );
 }

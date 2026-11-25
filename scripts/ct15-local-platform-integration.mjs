@@ -441,6 +441,24 @@ try{
     await page.setViewportSize({width:390,height:844});
     await page.screenshot({path:resolve(output,'reader-profile-mobile.png'),fullPage:true,timeout:10000,animations:'disabled'});
    }
+   if(!['reader','legacy'].includes(role)){
+    const landing=['owner','editor'].includes(role)?'/newsroom/stories':'/newsroom/contributor';
+    for(const width of [390,768]){
+     await page.setViewportSize({width,height:844});
+     await page.goto(appOrigin+landing,{waitUntil:'load',timeout:20000});
+     await page.locator('#newsroom-main').waitFor({state:'visible'});
+     const metrics=await page.evaluate(()=>{
+       const main=document.getElementById('newsroom-main'),nav=document.querySelector('aside nav');
+       return {width:window.innerWidth,root:document.documentElement.scrollWidth,mainWidth:main?.clientWidth,mainScroll:main?.scrollWidth,navWidth:nav?.clientWidth,navScroll:nav?.scrollWidth,active:nav?.querySelectorAll('[aria-current=page]').length};
+     });
+     check(role+' '+width+'px responsive shell and scoped nav',metrics.root<=width+1&&metrics.mainWidth>=width-2&&metrics.mainScroll<=metrics.mainWidth+1&&metrics.navWidth<=width&&metrics.active===1);
+     await page.locator('a[href="#newsroom-main"]').focus();
+     await page.keyboard.press('Enter');
+     check(role+' '+width+'px keyboard skip link focuses content',await page.locator('#newsroom-main').evaluate(el=>document.activeElement===el));
+     await page.screenshot({path:resolve(output,role+'-'+width+'-responsive.png'),fullPage:true,timeout:10000,animations:'disabled'});
+    }
+    await page.setViewportSize({width:1440,height:900});
+   }
    if(role==='owner'){
     await page.goto(appOrigin+'/newsroom',{waitUntil:'domcontentloaded',timeout:20000});
     await page.locator('header').getByRole('button',{name:/sign out|log out/i}).first().click();

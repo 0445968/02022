@@ -34,6 +34,7 @@ export function NewsroomTopBar({
       className="
         flex
         h-14
+        shrink-0
         items-center
         justify-between
         border-b
@@ -42,7 +43,7 @@ export function NewsroomTopBar({
         px-4
       "
     >
-      <div className="flex items-center gap-3">
+      <div className="flex min-w-0 items-center gap-3">
         <Link
           href={siteHref}
           className="
@@ -63,8 +64,10 @@ export function NewsroomTopBar({
             height={36}
             priority
             className="
-              h-6
+              h-auto
+              max-h-6
               w-auto
+              max-w-full
               object-contain
             "
           />
