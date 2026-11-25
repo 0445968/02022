@@ -858,6 +858,37 @@ try{
       report.pageAudits??=[];report.pageAudits.push({role,path,width,status:response?.status(),metrics,errors,ok});checkpoint();
       await page.screenshot({path:resolve(output,key+'-audit.png'),fullPage:true,timeout:10000,animations:'disabled'});
       check(role+' page audit '+path+' '+width+'px',ok);
+      if(path==='/newsroom/team'&&width===390){
+       const disclosure=page.locator('details[data-team-disclosure="invitations"]');
+       check('team administration starts with compact invitation disclosure',await disclosure.count()===1&&!(await disclosure.evaluate(el=>el.open)));
+       await disclosure.locator('summary').focus();await page.keyboard.press('Enter');
+       check('team invitations open by keyboard',await disclosure.evaluate(el=>el.open));
+       await page.keyboard.press('Enter');
+       check('team invitations close by keyboard',!(await disclosure.evaluate(el=>el.open)));
+      }
+      if(path==='/newsroom/page-editor'&&width===390){
+       const sections=page.locator('details[data-front-page-section]');
+       check('all six homepage sections initially compact',await sections.count()===6&&await sections.evaluateAll(els=>els.every(el=>!el.open)));
+       const main=page.locator('#newsroom-main');
+       const compactHeight=await main.evaluate(el=>el.scrollHeight);
+       check('collapsed page editor is under 2500 CSS pixels',compactHeight<2500);
+       const section=sections.first(),summary=section.locator('summary');
+       await summary.focus();await page.keyboard.press('Enter');
+       check('homepage section opens with keyboard',await section.evaluate(el=>el.open));
+       check('opening section exposes actual placement controls',await section.getByRole('button',{name:/assign story/i}).first().isVisible());
+       await summary.focus();await page.keyboard.press('Space');
+       check('homepage section collapses and preserves compact layout',!(await section.evaluate(el=>el.open))&&await main.evaluate(el=>el.scrollHeight)<=compactHeight+2);
+       const actions=page.getByRole('button',{name:'Actions',exact:true});
+       await actions.click();await page.keyboard.press('Escape');
+       check('page editor actions Escape restores focus',await actions.getAttribute('aria-expanded')==='false'&&await actions.evaluate(el=>document.activeElement===el));
+       await actions.click();await page.getByRole('button',{name:'Layout History',exact:true}).click();
+       const dialog=page.getByRole('dialog',{name:'Layout History'});
+       await dialog.waitFor({state:'visible'});
+       check('history uses accessible modal and focuses inside',await dialog.evaluate(el=>el.contains(document.activeElement)));
+       await page.keyboard.press('Escape');await dialog.waitFor({state:'hidden'});
+       check('history Escape returns focus to Actions',await actions.evaluate(el=>document.activeElement===el));
+       await page.screenshot({path:resolve(output,'newsroom-page-editor-390-compact.png'),fullPage:true,timeout:10000,animations:'disabled'});
+      }
       if(path==='/newsroom/schedule'&&width===390){
        const month=page.getByRole('region',{name:'Monthly calendar',exact:true});
        await month.focus();check('monthly calendar scroll region keyboard focusable',await month.evaluate(el=>document.activeElement===el));

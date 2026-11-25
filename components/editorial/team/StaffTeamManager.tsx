@@ -32,7 +32,7 @@ const copy={
     limited:'Showing 25 members per page. Search applies to this page.',page:'Page',previous:'Previous',next:'Next',
     auditAll:'All changes',auditSelected:'Selected member',activePage:'Active on this page',
     caution:'Changes are accepted only after the server verifies a current owner and the database records an audit.',
-    review:'Role definitions and proposed grants cannot be changed in this phase.',
+    review:'Compare configured permissions against the reviewed baseline. Changes require current owner authorization.',
     readOnly:'Read-only',error:'Unable to load staff permissions',noResult:'No matching members.',
     permissionNote:'Role assignments do not imply access until the corresponding database grants are configured.',
   },
@@ -56,7 +56,7 @@ const copy={
     limited:'Se muestran 25 integrantes por página. La búsqueda se aplica a esta página.',page:'Página',previous:'Anterior',next:'Siguiente',
     auditAll:'Todos los cambios',auditSelected:'Integrante seleccionado',activePage:'Activos en esta página',
     caution:'Solo un propietario verificado puede cambiar accesos; la base de datos audita cada cambio.',
-    review:'Las definiciones y propuestas de funciones no pueden editarse en esta fase.',
+    review:'Compare los permisos configurados con la propuesta revisada. Los cambios requieren autorización del propietario.',
     readOnly:'Solo lectura',error:'No se pudieron cargar los permisos',noResult:'Sin coincidencias.',
     permissionNote:'Una función no concede acceso hasta que sus permisos se configuren en la base de datos.',
   }
@@ -177,8 +177,6 @@ export function StaffTeamManager({locale,showInvitations=false,showBylines=false
       <CheckCircle2 className="h-4 w-4"/>{success}</p>}
     {loading&&!data&&<p role="status" className="text-sm text-muted-foreground">{t.loading}</p>}
     {data&&<>
-      {showBylines&&<StaffBylineReviewManager locale={locale}/>}
-      {showInvitations&&<StaffInvitationManager locale={locale} presets={data.presets}/>}
       <div className="grid gap-3 sm:grid-cols-3">
         <div className={row+' p-4'}><p className="text-xs text-muted-foreground">{t.directory}</p>
           <p className="mt-1 text-2xl font-bold text-deep">{data.totalMembers}</p></div>
@@ -309,6 +307,14 @@ export function StaffTeamManager({locale,showInvitations=false,showBylines=false
           </>}
         </section>
       </div>
+      {showInvitations&&<details className={row+' group'} data-team-disclosure="invitations">
+        <summary className="cursor-pointer rounded-lg p-4 font-semibold text-deep focus-visible:ring-2 focus-visible:ring-primary">{locale==='es'?'Invitaciones del equipo':'Staff invitations'}</summary>
+        <div className="px-3 pb-3"><StaffInvitationManager locale={locale} presets={data.presets}/></div>
+      </details>}
+      {showBylines&&<details className={row+' group'} data-team-disclosure="bylines">
+        <summary className="cursor-pointer rounded-lg p-4 font-semibold text-deep focus-visible:ring-2 focus-visible:ring-primary">{locale==='es'?'Solicitudes de firma':'Byline requests'}</summary>
+        <div className="px-3 pb-3"><StaffBylineReviewManager locale={locale}/></div>
+      </details>}
       <section className={row+' p-4'}>
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div><h2 className="text-base font-semibold text-deep">{t.roles}</h2>
