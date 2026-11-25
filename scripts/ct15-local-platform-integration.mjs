@@ -117,7 +117,7 @@ try{
  mark('seed synthetic historical published comment for report workflow');
  const reportTargetId=randomUUID();
  sql('local published comment fixture',['-f','-'],"insert into public.comments(id,story_id,user_id,body,status) values("+uuid(reportTargetId)+","+uuid(storyIds.public)+","+uuid(users.legacy.id)+",'CT15 synthetic report target','published');");
- let submittedCommentId,submittedReportId,approvedDraft,approvedRevision,mediaDraftId,rejectedMediaDraftId;
+ let submittedCommentId,submittedReportId,approvedDraft,approvedRevision,mediaDraftId,rejectedMediaDraftId,redemptionCode;
  mark('real JWT and REST boundaries');
  const anonymous=client();
  const anonStories=await anonymous.from('stories').select('slug').like('slug','ct15-%').order('slug');
@@ -167,7 +167,7 @@ try{
   CT_STAFF_ADMIN_MUTATIONS_ENABLED:'true',CT_READER_COMMUNICATIONS_ENABLED:'true',
   CT_EDITORIAL_CALENDAR_ENABLED:'true',CT_POLLS_ENABLED:'true',CT_REVIEW_INBOX_ENABLED:'true',CT_STORY_ASSIGNMENTS_ENABLED:'true',
   CT_HOMEPAGE_HISTORY_ENABLED:'true',CT_READER_REPORTING_ENABLED:'true',
-  CT_REVIEWED_PUBLICATION_ENABLED:'true',CT_REVIEWED_SCHEDULING_ENABLED:'true',CT_STAFF_INVITATIONS_ENABLED:'true'
+  CT_REVIEWED_PUBLICATION_ENABLED:'true',CT_REVIEWED_SCHEDULING_ENABLED:'true',CT_STAFF_INVITATIONS_ENABLED:'true',CT_STAFF_PRESET_MUTATIONS_ENABLED:'true',CT_STAFF_OVERRIDE_MUTATIONS_ENABLED:'true',CT_STAFF_BYLINE_REVIEW_ENABLED:'true'
  };
  const appEnv={...process.env,...flags,NEXT_PUBLIC_SUPABASE_URL:apiOrigin,NEXT_PUBLIC_SUPABASE_ANON_KEY:values.ANON_KEY,SUPABASE_SERVICE_ROLE_KEY:values.SERVICE_ROLE_KEY};
  // Remove every other feature gate and provider credential inherited from the environment.
@@ -267,6 +267,8 @@ try{
     const outdated=await post('/api/account/notifications',changes);
     check('reader stale preference write rejected',outdated.status()===409);
     check('reader denied staff invitation directory',(await context.request.get(appOrigin+'/api/newsroom/team/invitations')).status()===403);
+    check('unrelated verified reader cannot redeem invitation',(await context.request.post(appOrigin+'/api/newsroom/team/invitations',{headers:{Origin:appOrigin},data:{action:'redeem',token:redemptionCode}})).status()===403);
+    check('reader denied private byline queue',(await context.request.get(appOrigin+'/api/newsroom/team/bylines')).status()===403);
     check('reader denied homepage versioned editor',(await context.request.get(appOrigin+'/api/front-page/history')).status()===403);
     check('reader denied private media list',(await context.request.get(appOrigin+'/api/media/drafts')).status()===403);
     check('reader denied private media preview',(await context.request.get(appOrigin+'/api/media/drafts/'+mediaDraftId+'/preview')).status()===403);
@@ -350,7 +352,7 @@ try{
    if(role==='owner'){
     const directory=await team.json();
     check('owner sees exactly five synthetic members and own row',directory.totalMembers===5&&directory.members.filter(m=>m.isSelf).length===1);
-    check('owner local role mutation flag only',directory.mutationsEnabled===true&&directory.overrideMutationsEnabled===false&&directory.presetMutationsEnabled===false);
+    check('owner local role, override and preset mutation flags',directory.mutationsEnabled===true&&directory.overrideMutationsEnabled===true&&directory.presetMutationsEnabled===true);
     check('owner directory excludes raw Auth emails and invitation secrets',!JSON.stringify(directory).includes('@example.test')&&!JSON.stringify(directory).includes('token_hash'));
     const editorMember=directory.members.find(m=>m.roles.some(r=>r.roleKey==='editor'));
     const self=directory.members.find(m=>m.isSelf);
@@ -372,8 +374,33 @@ try{
     check('owner role change audit attribution',!audit.error&&audit.data.length===2&&audit.data.every(a=>a.actor_auth_user_id===users.owner.id));
     const invitations=appOrigin+'/api/newsroom/team/invitations';
     const preset=directory.presets.find(p=>p.key==='moderator');
-    check('configured moderator preset available for invitation',Number.isInteger(preset?.grantRevision)&&preset.grantRevision>=1);
-    const invitation={action:'issue',input:{email:'ct15-invited@example.test',roleKey:'moderator',memberType:'employee',expectedPresetRevision:preset.grantRevision,expiresAt:new Date(Date.now()+86400000).toISOString(),membershipExpiresAt:null,reason:'CT15 disposable invitation review',confirmed:true}};
+    check('synthetic moderator template initially has grants but no reviewed revision',preset?.grantRevision===0&&preset.configuredGrants.length>1);
+    const presetUrl=appOrigin+'/api/newsroom/team/preset-change';
+    const presetPost=data=>context.request.post(presetUrl,{headers:{Origin:appOrigin},data});
+    const presetCommand={roleKey:'moderator',expectedRevision:preset.grantRevision,grants:preset.configuredGrants.filter(g=>g.capability!=='comment.manage_reports'),reason:'CT15 explicitly review disposable moderator matrix',confirmed:true};
+    const savedPreset=await presetPost(presetCommand);
+    check('owner saves actual versioned moderator preset (HTTP '+savedPreset.status()+')',savedPreset.status()===200&&(await savedPreset.json()).revision===1);
+    check('stale role preset save rejected',(await presetPost(presetCommand)).status()===409);
+    const restoredPreset=await presetPost({...presetCommand,expectedRevision:1,grants:preset.configuredGrants});
+    check('owner restores original moderator grants with reviewed revision',restoredPreset.status()===200&&(await restoredPreset.json()).revision===2);
+    const currentDirectory=await (await context.request.get(appOrigin+'/api/newsroom/team')).json();
+    const reviewedPreset=currentDirectory.presets.find(p=>p.key==='moderator');
+    check('configured moderator preset available for invitation',reviewedPreset?.grantRevision===2&&reviewedPreset.configuredGrants.length===preset.configuredGrants.length);
+    const overrideUrl=appOrigin+'/api/newsroom/team/override-change';
+    const effectiveUrl=appOrigin+'/api/newsroom/team/'+editorMember.id+'/effective';
+    const overridePost=data=>context.request.post(overrideUrl,{headers:{Origin:appOrigin},data});
+    const beforeOverride=await context.request.get(effectiveUrl);
+    check('owner reads editor effective access',beforeOverride.status()===200&&(await beforeOverride.json()).permissions.some(p=>p.capability==='story.publish'&&p.state==='allowed'));
+    const override={targetMembershipId:editorMember.id,operation:'set',capability:'story.publish',scope:'all',effect:'deny',expiresAt:null,reason:'CT15 temporary deny of editor publication'};
+    const deniedOverride=await overridePost(override);
+    check('owner sets actual explicit permission deny',deniedOverride.status()===200);
+    const denyEffective=await context.request.get(effectiveUrl);
+    check('effective preview reflects explicit deny',denyEffective.status()===200&&(await denyEffective.json()).permissions.some(p=>p.capability==='story.publish'&&p.state==='denied'&&p.explanation==='explicit_deny'));
+    const removedOverride=await overridePost({...override,operation:'remove',effect:null,expiresAt:null});
+    check('owner removes temporary permission deny',removedOverride.status()===200);
+    const restoredEffective=await context.request.get(effectiveUrl);
+    check('removal restores editor publication permission',restoredEffective.status()===200&&(await restoredEffective.json()).permissions.some(p=>p.capability==='story.publish'&&p.state==='allowed'));
+    const invitation={action:'issue',input:{email:'ct15-invited@example.test',roleKey:'moderator',memberType:'employee',expectedPresetRevision:reviewedPreset.grantRevision,expiresAt:new Date(Date.now()+86400000).toISOString(),membershipExpiresAt:null,reason:'CT15 disposable invitation review',confirmed:true}};
     const issue=await context.request.post(invitations,{headers:{Origin:appOrigin},data:invitation});
     check('owner creates manual invitation without delivery (HTTP '+issue.status()+')',issue.status()===200);
     const issued=await issue.json();
@@ -386,6 +413,9 @@ try{
     check('owner cancels unused invitation',cancel.status()===200&&(await cancel.json()).ok===true);
     const afterCancel=await context.request.get(invitations);
     check('cancelled invitation history retained',afterCancel.status()===200&&(await afterCancel.json()).items.some(r=>r.invitationId===issued.invitationId&&r.status==='canceled'));
+    const newInvite=await context.request.post(invitations,{headers:{Origin:appOrigin},data:{...invitation,input:{...invitation.input,email:'ct15-redeem@example.test'}}});
+    check('owner issues separate redemption invitation',newInvite.status()===200);
+    const newInviteJson=await newInvite.json();redemptionCode=newInviteJson.code;assert.equal(typeof redemptionCode,'string');creds.push(redemptionCode);
     const homepage=appOrigin+'/api/front-page/history';
     const initialHome=await context.request.get(homepage);
     check('owner loads versioned homepage layout',initialHome.status()===200);
@@ -580,6 +610,8 @@ try{
     check('review attached to submitted snapshot',active.status==='in_review'&&active.current===true&&!!active.requestId);
     const selfDecision=await context.request.post(review,{headers:{Origin:appOrigin},data:{...request,action:'approve',requestId:active.requestId,fingerprint:active.fingerprint,commandId:randomUUID()}});
     check('freelancer cannot approve own review',selfDecision.status()===404||selfDecision.status()===403);
+    const requestByline=await context.request.post(appOrigin+'/api/newsroom/onboarding',{headers:{Origin:appOrigin},data:{expectedRevision:1,displayName:'CT15 freelancer',locale:'en',bylineRequested:true,acknowledgedVersion:1,confirmed:true}});
+    check('freelancer submits actual private byline request',requestByline.status()===200&&(await requestByline.json()).profile.bylineRequested===true);
     const privateMedia=appOrigin+'/api/media/drafts';
     const uploadPrivate=async name=>context.request.post(privateMedia,{headers:{Origin:appOrigin},multipart:{file:{name,mimeType:'image/png',buffer:bytes}}});
     const uploadOne=await uploadPrivate('ct15-approved.png');
@@ -920,6 +952,54 @@ try{
   check('real public article displays reviewed headline',true);
   await publicationPage.screenshot({path:resolve(output,'published-revision-article.png'),fullPage:true,timeout:10000,animations:'disabled'});
  }finally{await publicationContext.close();}
+ // Fresh owner session and new verified invitee after all original role checks.
+ // No real address, external mail, or persistent credentials in artifacts.
+ async function adminTestContext(email){
+  const ctx=await browser.newContext({viewport:{width:1440,height:900},serviceWorkers:'block'});
+  try{
+   await ctx.route('**/*',route=>{
+    const req=route.request(),url=new URL(req.url()),method=req.method();
+    if(url.origin===appOrigin&&['GET','HEAD'].includes(method))return route.continue();
+    if(url.origin===apiOrigin&&(method==='OPTIONS'||(['GET','HEAD'].includes(method)&&url.pathname.startsWith('/auth/v1/'))||method==='POST'&&url.pathname==='/auth/v1/token'))return route.continue();
+    return route.abort();
+   });
+   const pg=await ctx.newPage();
+   await pg.goto(appOrigin+'/en/auth/sign-in?next=%2Faccount',{waitUntil:'load',timeout:20000});
+   await pg.locator('#email').fill(email);await pg.locator('#password').fill(password);
+   await pg.locator('form button[type="submit"]').click();
+   await pg.waitForURL(url=>url.pathname==='/account',{timeout:20000});
+   return ctx;
+  }catch(e){await ctx.close();throw e;}
+ }
+ mark('isolated invitation redemption and byline review');
+ const inviteeEmail='ct15-redeem@example.test';
+ const invitee=await service.auth.admin.createUser({email:inviteeEmail,password,email_confirm:true});
+ check('new disposable verified invitee created',!invitee.error&&!!invitee.data.user?.id);
+ const inviteeContext=await adminTestContext(inviteeEmail);
+ try{
+  const endpoint=appOrigin+'/api/newsroom/team/invitations';
+  const redeem=()=>inviteeContext.request.post(endpoint,{headers:{Origin:appOrigin},data:{action:'redeem',token:redemptionCode}});
+  const accepted=await redeem();
+  check('verified matching account redeems invitation (HTTP '+accepted.status()+')',accepted.status()===200&&(await accepted.json()).ok===true);
+  check('invitation cannot be redeemed twice',(await redeem()).status()===403);
+  const access=await inviteeContext.request.get(appOrigin+'/api/newsroom/onboarding');
+  check('new member receives moderator onboarding only',access.status()===200&&(await access.json()).roles.some(r=>r.key==='moderator'));
+  check('new moderator denied team management',(await inviteeContext.request.get(appOrigin+'/api/newsroom/team')).status()===404);
+ }finally{await inviteeContext.close();}
+ const ownerContext=await adminTestContext(users.owner.email);
+ try{
+  const byline=appOrigin+'/api/newsroom/team/bylines';
+  const pending=await ownerContext.request.get(byline);
+  check('owner loads private byline review queue',pending.status()===200);
+  const target=(await pending.json()).items.find(r=>r.display_name==='CT15 freelancer'&&r.requested);
+  check('freelancer request appears in owner review queue',target?.review_status==='pending'&&target.eligible===true);
+  const command={membershipId:target.membership_id,profileRevision:target.profile_revision,reviewRevision:target.review_revision,action:'reject',bylineId:null,reason:'CT15 synthetic byline request requires correction',confirmed:true};
+  const rejected=await ownerContext.request.post(byline,{headers:{Origin:appOrigin},data:command});
+  check('owner records reviewed byline rejection',rejected.status()===200&&(await rejected.json()).revision===target.review_revision+1);
+  check('stale byline review rejected',(await ownerContext.request.post(byline,{headers:{Origin:appOrigin},data:command})).status()===409);
+  const updated=await ownerContext.request.get(byline);
+  check('byline decision appears in queue',updated.status()===200&&(await updated.json()).items.some(r=>r.membership_id===target.membership_id&&r.review_status==='rejected'));
+ }finally{await ownerContext.close();}
 
  report.success=true;
 }catch(e){report.error=redact(e instanceof Error?e.message:String(e)).slice(0,500);throw new Error(report.error);}
