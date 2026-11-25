@@ -1547,9 +1547,7 @@ export function MediaMetadataForm({
                     .value as MediaStatus
                 )
               }
-              disabled={
-                disabled
-              }
+              disabled={true}
               className={
                 inputClassName
               }

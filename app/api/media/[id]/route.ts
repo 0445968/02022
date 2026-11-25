@@ -1,3 +1,4 @@
+import {readDraftRequest,DraftHttpError} from '@/lib/permissions/assigned-draft-http';
 import { NextResponse } from 'next/server';
 
 import { getCurrentUser } from '@/lib/auth/session';
@@ -739,8 +740,9 @@ export async function PATCH(
     Record<string, unknown>;
 
   try {
-    rawBody =
-      await request.json();
+    const raw=await readDraftRequest(request);
+    if(!raw||typeof raw!=='object'||Array.isArray(raw))return NextResponse.json({error:'Invalid metadata'},{status:422});
+    rawBody=raw as Record<string,unknown>;
   } catch {
     return NextResponse.json(
       {
@@ -822,6 +824,7 @@ export async function PATCH(
       );
     }
 
+    if(action==='approve'&&(['unknown','restricted'].includes(existing.rightsStatus)||existing.licenseExpiresAt!==null&&(!Number.isFinite(Date.parse(existing.licenseExpiresAt))||Date.parse(existing.licenseExpiresAt)<=Date.now())))return NextResponse.json({error:'Resolve media rights and license before approval'},{status:422});
     let success = false;
 
     switch (action) {
@@ -909,6 +912,8 @@ export async function PATCH(
     delete rawBody.status;
   }
 
+  if('status' in rawBody&&rawBody.status!==existing.status)return NextResponse.json({error:'Use workflow actions to change media status'},{status:422});
+  delete rawBody.status;delete rawBody.approvedAt;delete rawBody.approvedBy;delete rawBody.archivedAt;delete rawBody.trashedAt;
   const update =
     buildMediaUpdate(
       rawBody,
@@ -1043,35 +1048,7 @@ export async function DELETE(
     );
   }
 
-  /*
-   * Later, media_usage will be checked here as well.
-   *
-   * Once usage tracking is connected, assets referenced
-   * by published content will be blocked from permanent
-   * deletion even when they are in Trash.
-   */
-
-  const success =
-    await deleteMediaAsset(
-      asset.id,
-      asset.storagePath
-    );
-
-  if (!success) {
-    return NextResponse.json(
-      {
-        error:
-          'Failed to permanently delete media asset',
-      },
-      {
-        status: 500,
-      }
-    );
-  }
-
-  return NextResponse.json(
-    {
-      success: true,
-    }
-  );
+  // Storage and catalog deletion are not atomic, and legacy usage tracking is incomplete.
+  // Fail closed until the reviewed usage check and deletion lifecycle exist.
+  return NextResponse.json({error:'Permanent deletion is temporarily unavailable. Keep the asset in Trash until reference checks are complete.'},{status:409});
 }

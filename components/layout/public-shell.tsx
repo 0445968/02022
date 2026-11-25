@@ -11,7 +11,7 @@ import {
 } from '@/components/layout/headline-bar';
 
 import {
-  getHomepageSlots,
+  getPublicHomepageSlots,
 } from '@/lib/services/front-page';
 
 import type {
@@ -37,7 +37,7 @@ export async function PublicShell({
   children,
 }: PublicShellProps) {
   const homepageSlots =
-    await getHomepageSlots();
+    await getPublicHomepageSlots();
 
   const headlineBarPlacements =
     homepageSlots.filter(

@@ -343,6 +343,8 @@ export const FrontPageController =
           null
         );
 
+      const mutationLock=useRef(false);
+      const autosaveTail=useRef<Promise<unknown>>(Promise.resolve());
       const initialAutosave =
         useRef(
           true
@@ -649,11 +651,12 @@ export const FrontPageController =
 
             hasChanges,
 
-            busy,
+            busy:busy||saveStatus==='saving',
           });
         },
         [
           busy,
+          saveStatus,
           hasChanges,
           onStateChange,
           totalAssignedSlots,
@@ -754,10 +757,9 @@ export const FrontPageController =
           autosaveTimeout.current =
             window.setTimeout(
               () => {
-                void saveDraft(
-                  selections,
-                  controller.signal
-                ).catch(
+                const queued=autosaveTail.current.catch(()=>undefined).then(()=>{if(controller.signal.aborted||mutationLock.current)return;return saveDraft(selections);});
+                autosaveTail.current=queued;
+                void queued.catch(
                   (
                     autosaveError
                   ) => {
@@ -787,6 +789,8 @@ export const FrontPageController =
             );
 
             return () => {
+                controller.abort();
+                // Cancel queued work but allow dispatched writes to finish in order.
                 if (
                   autosaveTimeout.current !==
                   null
@@ -848,10 +852,8 @@ export const FrontPageController =
           | string
           | null = null
       ) {
-        setSuccessMessage(
-          null
-        );
-
+        if(mutationLock.current)return;
+        setSuccessMessage(null);
         setSelections(
           (
             current
@@ -895,10 +897,8 @@ export const FrontPageController =
           HomepageSlotType,
         position = 0
       ) {
-        setSuccessMessage(
-          null
-        );
-
+        if(mutationLock.current)return;
+        setSuccessMessage(null);
         setSelections(
           (
             current
@@ -920,15 +920,12 @@ export const FrontPageController =
       const publishFrontPage =
         useCallback(
           async () => {
-            if (
-              busy
-            ) {
+            if (busy||mutationLock.current) {
               return;
             }
 
-            setBusy(
-              true
-            );
+            mutationLock.current=true;
+            setBusy(true);
 
             setError(
               null
@@ -952,9 +949,8 @@ export const FrontPageController =
               }
 
 
-              await saveDraft(
-                selections
-              );
+              await autosaveTail.current.catch(()=>undefined);
+              await saveDraft(selections);
 
               const response =
                 await fetch(
@@ -1035,6 +1031,7 @@ export const FrontPageController =
                     : 'Unable to publish the Front Page.'
               );
             } finally {
+              mutationLock.current=false;
               setBusy(
                 false
               );
@@ -1052,15 +1049,12 @@ export const FrontPageController =
       const revertFrontPage =
         useCallback(
           async () => {
-            if (
-              busy
-            ) {
+            if (busy||mutationLock.current) {
               return;
             }
 
-            setBusy(
-              true
-            );
+            mutationLock.current=true;
+            setBusy(true);
 
             setError(
               null
@@ -1071,18 +1065,16 @@ export const FrontPageController =
             );
 
             try {
+              if(autosaveTimeout.current!==null){window.clearTimeout(autosaveTimeout.current);autosaveTimeout.current=null;}
+              await autosaveTail.current.catch(()=>undefined);
               const restored =
                 [
                   ...publishedSelections,
                 ];
 
-              setSelections(
-                restored
-              );
-
-              await saveDraft(
-                restored
-              );
+              await saveDraft(restored);
+              initialAutosave.current=true;
+              setSelections(restored);
 
               setSuccessMessage(
                 locale ===
@@ -1103,6 +1095,7 @@ export const FrontPageController =
                     : 'Unable to revert Front Page changes.'
               );
             } finally {
+              mutationLock.current=false;
               setBusy(
                 false
               );
@@ -1119,11 +1112,9 @@ export const FrontPageController =
       useImperativeHandle(
         ref,
         () => ({
-          publish:
-            publishFrontPage,
+          publish:async()=>{if(!mutationLock.current)setConfirmAction('publish');},
 
-          revert:
-            revertFrontPage,
+          revert:async()=>{if(!mutationLock.current)setConfirmAction('revert');},
 
           hasChanges:
             () =>
