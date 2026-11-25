@@ -237,10 +237,8 @@ export async function getPublishedStoryBySlug(
   const supabase =
     securePublicMediaEnabled()?createDataClient():await getDataClient();
 
-  const {
-    data: story,
-    error,
-  } = await supabase
+  const restricted=process.env.CT_STAFF_ACCESS_V2_ENABLED==='true'&&process.env.CT_READER_COMMUNICATIONS_ENABLED==='true';
+  let query = supabase
     .from('stories')
     .select(
       STORY_SELECT
@@ -257,7 +255,13 @@ export async function getPublishedStoryBySlug(
       'published_at',
       new Date().toISOString()
     )
-    .maybeSingle();
+    ;
+  if(restricted)query=query.eq('access_level','public');
+  let {data:story,error}=await query.maybeSingle();
+  if(restricted&&!error&&!story){
+   const {createClient}=await import('@/lib/db/supabase-server');const db=createClient();const {data:{user},error:authError}=await db.auth.getUser();
+   if(!authError&&user&&!user.is_anonymous&&user.email_confirmed_at){const result=await db.from('stories').select(STORY_SELECT).eq('slug',slug).eq('status','published').eq('access_level','registered').lte('published_at',new Date().toISOString()).maybeSingle();story=result.data;error=result.error;}
+  }
 
   if (error) {
     console.error(

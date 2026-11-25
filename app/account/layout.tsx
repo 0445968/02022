@@ -1,5 +1,6 @@
 export const dynamic = 'force-dynamic';
 export const metadata={robots:{index:false,follow:false},referrer:'no-referrer'};
+import {readerReportingEnabled} from '@/lib/services/reader-reports';
 import {readerAccountEnabled} from '@/lib/services/reader-account';
 import {getWorkspaceAccess,scopedNewsroomEnabled} from '@/lib/services/newsroom-workspace';
 
@@ -83,6 +84,7 @@ import {
     return (
       <AccountShell
         readerAccountEnabled={readerAccountEnabled()}
+        reportsEnabled={readerReportingEnabled()}
         canOpenNewsroom={canOpenNewsroom}
         dict={
           dict

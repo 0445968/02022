@@ -1,5 +1,6 @@
 import {safeAvatar} from '@/lib/permissions/reader-account-contract';
 import {readerAccountEnabled} from '@/lib/services/reader-account';
+import {communicationsEnabled,readNotices} from '@/lib/services/reader-communications';
 import {readerReportingEnabled} from '@/lib/services/reader-reports';
 import Link from 'next/link';
 
@@ -181,6 +182,7 @@ export default async function AccountPage() {
       .charAt(0)
       .toUpperCase();
 
+  const noticeCount=communicationsEnabled()?await readNotices(0).then(x=>x.unread).catch(()=>null):null;
   const sections = [
     ...(readerReportingEnabled()?[{href:'/account/reports',label:locale==='es'?'Mis denuncias':'My reports',icon:Flag,count:null}]:[]),
     {
@@ -222,7 +224,7 @@ export default async function AccountPage() {
         Bell,
 
       count:
-        null,
+        noticeCount,
     },
 
     {

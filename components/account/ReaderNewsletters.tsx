@@ -1,0 +1,17 @@
+'use client';
+import {useState,useRef} from 'react';
+import {parseNewsletterState,type NewsletterState,type Topic} from '@/lib/permissions/reader-communications-contract';
+import type {Locale} from '@/types';
+export function ReaderNewsletters({initial,locale,configured}:{initial:NewsletterState;locale:Locale;configured:boolean}){
+ const es=locale==='es',lock=useRef(false),[state,setState]=useState(initial),[busy,setBusy]=useState(false),[error,setError]=useState(false);
+ const labels:Record<Topic,string>={latest:es?'Últimas noticias':'Latest news',san_andres:'San Andrés',old_providence:'Providencia'};
+ const status:Record<string,string>=es?{pending:'Confirme por correo',active:'Suscripción activa',unsubscribed:'Sin suscripción',suppressed:'Envíos bloqueados',expired:'Confirmación vencida',address_changed:'Correo cambiado'}:{pending:'Awaiting email confirmation',active:'Subscribed',unsubscribed:'Not subscribed',suppressed:'Delivery suppressed',expired:'Confirmation expired',address_changed:'Email changed'};
+ async function run(action?:'subscribe'|'unsubscribe',topic?:Topic){if(lock.current)return;lock.current=true;setBusy(true);try{const r=await fetch('/api/account/newsletters',action?{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action,topic})}:{cache:'no-store'});if(!r.ok)throw Error();setState(parseNewsletterState(await r.json()));setError(false);}catch{setError(true);}finally{lock.current=false;setBusy(false);}}
+ const btn='rounded-md border border-border px-3 py-2 text-xs font-semibold disabled:opacity-50';
+ return <section className="space-y-4 rounded-lg border border-border bg-white p-5">
+ <p className="text-sm text-muted-foreground">{es?'Elija temas por separado. Tras confirmar por correo, puede recibir hasta un resumen diario por tema cuando haya noticias nuevas. Puede cancelar en cualquier momento.':'Choose topics separately. After email confirmation, receive at most one daily update per topic when there is new news. Unsubscribe at any time.'}</p><p className="break-all text-sm font-semibold">{state.email}</p>
+ {(!configured||!state.deliveryEnabled)&&<p role="status" className="text-sm text-muted-foreground">{es?'Los envíos todavía no están habilitados. Puede cancelar suscripciones existentes.':'Email delivery is not enabled yet. You can still unsubscribe.'}</p>}
+ {error&&<p role="alert" className="text-sm text-breaking">{es?'No se confirmó la acción. Actualice antes de reintentar.':'Action could not be confirmed. Refresh before retrying.'} <button className={btn} disabled={busy} onClick={()=>void run()}>{es?'Actualizar':'Refresh'}</button></p>}
+ <ul className="divide-y divide-border">{state.topics.map(t=><li className="flex flex-wrap items-center justify-between gap-3 py-4" key={t.topic}><div><p className="font-semibold">{labels[t.topic]}</p><p className="text-xs text-muted-foreground">{status[t.status]}</p></div><div className="flex gap-2">{t.status!=='unsubscribed'&&t.status!=='suppressed'&&<button className={btn} disabled={busy||error} onClick={()=>void run('unsubscribe',t.topic)}>{es?'Cancelar':'Unsubscribe'}</button>}{!['active','suppressed'].includes(t.status)&&<button className={btn} disabled={busy||error||!configured||!state.deliveryEnabled} onClick={()=>{if(window.confirm(es?'¿Solicitar un correo de confirmación?':'Request a confirmation email?'))void run('subscribe',t.topic);}}>{t.status==='pending'?(es?'Reenviar confirmación':'Resend confirmation'):(es?'Suscribirme':'Subscribe')}</button>}</div></li>)}</ul>
+ </section>;
+}

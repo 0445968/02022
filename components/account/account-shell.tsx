@@ -5,6 +5,7 @@ import {safeAvatar} from '@/lib/permissions/reader-account-contract';
 
 import {
   Bell,
+  Flag,
   Bookmark,
   CreditCard,
   Home,
@@ -32,6 +33,7 @@ import type {
 
 interface AccountShellProps {
   readerAccountEnabled?:boolean;
+  reportsEnabled?:boolean;
   canOpenNewsroom?:boolean;
   children:
     React.ReactNode;
@@ -58,6 +60,7 @@ interface AccountNavigationItem {
 export function AccountShell({
   children,
   readerAccountEnabled=false,
+  reportsEnabled=false,
   canOpenNewsroom:newsroomAllowed,
   dict,
   locale,
@@ -103,6 +106,7 @@ export function AccountShell({
   const navigation:
     AccountNavigationItem[] =
     [
+      ...(reportsEnabled?[{href:'/account/reports',label:locale==='es'?'Mis denuncias':'My reports',icon:Flag}]:[]),
       {
         href:
           '/account',
