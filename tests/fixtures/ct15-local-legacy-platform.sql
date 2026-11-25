@@ -20,3 +20,10 @@ grant usage on schema storage to anon,authenticated,service_role;
 grant select on storage.objects to anon;
 grant select,insert,update,delete on storage.objects to authenticated;
 grant all on storage.buckets,storage.objects to service_role;
+
+-- Same test-only Storage operation contract used by CT05b4b quota tests.
+-- This is not a real Storage API or a deployable implementation.
+create function storage.allow_only_operation(expected_operation text)
+returns boolean language sql stable as $fn$
+ select coalesce(current_setting('test.storage_operation',true)=expected_operation,false)
+$fn$;

@@ -1,5 +1,16 @@
 -- Cross-module assertions after all 38 migrations on the SAME synthetic baseline.
 \set ON_ERROR_STOP on
+-- Confirm the synthetic operation contract is fail-closed before quota assertions.
+begin;
+set local role authenticated;
+do $fn$begin
+ if storage.allow_only_operation('object.upload') then raise exception 'Unset storage operation allowed';end if;
+ perform set_config('test.storage_operation','object.sign_upload_url',true);
+ if storage.allow_only_operation('object.upload') then raise exception 'Signed operation confused with ordinary upload';end if;
+ perform set_config('test.storage_operation','object.upload',true);
+ if not storage.allow_only_operation('object.upload') then raise exception 'Ordinary operation fixture missing';end if;
+end;$fn$;
+rollback;
 do $$begin
  if (select count(*) from public.profiles)<>2 or (select count(*) from public.stories)<>4
  or (select count(*) from public.story_revisions)<>1 then raise exception 'Legacy row counts changed';end if;
@@ -14,6 +25,14 @@ do $$begin
  then raise exception 'Cumulative privilege leak';end if;
  if not exists(select 1 from storage.buckets where id='media-drafts' and not public)
  then raise exception 'Private media bucket missing';end if;
+ if not exists(select 1 from pg_policies where schemaname='storage' and tablename='objects'
+ and policyname='ct05b_private_reserved_upload' and permissive='RESTRICTIVE' and cmd='INSERT'
+ and with_check like '%allow_only_operation%')
+ then raise exception 'Private reservation operation policy missing';end if;
+ if has_function_privilege('anon','public.staff_reserve_private_upload(text)','EXECUTE')
+ or has_table_privilege('authenticated','newsroom_private.private_upload_reservations','UPDATE')
+ or has_table_privilege('authenticated','newsroom_private.private_upload_reservations','DELETE')
+ then raise exception 'Private quota privileges leaked';end if;
 end$$;
 begin;
 set local role anon;
