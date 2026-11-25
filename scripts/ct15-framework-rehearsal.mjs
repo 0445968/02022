@@ -36,9 +36,16 @@ try{
   p.dependencies.vaul='1.1.2';
   // cmdk 1.0.0 pins Radix Dialog 1.0.5 (React <=18). 1.1.1 allows React 19.
   p.dependencies.cmdk='1.1.1';
+  p.dependencies['embla-carousel-react']='8.6.0';
+  p.dependencies['input-otp']='1.4.2';
+  p.dependencies['lucide-react']='^0.468.0';
   p.dependencies['next-themes']='0.4.6';
   p.scripts.lint='eslint .';p.scripts.build='next build --webpack';
   writeFileSync('package.json',JSON.stringify(p,null,2)+'\n');
+  // Do not carry stale React 18 transitive resolutions into a major-version candidate.
+  // Only disposable CI is affected; review the whole new lockfile before adoption.
+  rmSync('node_modules',{recursive:true,force:true});
+  rmSync('package-lock.json',{force:true});
   const radix=Object.entries(p.dependencies).filter(([k])=>k.startsWith('@radix-ui/')).map(([k,v])=>k+'@'+v);
   run('npm',['install','--save-exact','--ignore-scripts','--strict-peer-deps','react@19.3.1','react-dom@19.3.1','@types/react@19','@types/react-dom@19','eslint@9',...radix]);
  });
@@ -46,15 +53,26 @@ try{
   let calendar=readFileSync('components/ui/calendar.tsx','utf8');
   const renamed={caption:'month_caption',nav_button_previous:'button_previous',nav_button_next:'button_next',table:'month_grid',head_row:'weekdays',head_cell:'weekday',row:'week',cell:'day',day:'day_button',day_range_end:'range_end',day_selected:'selected',day_today:'today',day_outside:'outside',day_disabled:'disabled',day_range_middle:'range_middle',day_hidden:'hidden'};
   for(const [from,to] of Object.entries(renamed))calendar=calendar.replace(new RegExp('(^\\s*)'+from+':','m'),'$1__ct15_'+to+':');
-  calendar=calendar.replaceAll('__ct15_','').replace(/        nav_button: cn\([\s\S]*?\),\n/,'');
-  calendar=calendar.replace("button_previous: 'absolute left-1',","button_previous: cn(buttonVariants({variant:'outline'}),'absolute left-1 h-7 w-7 p-0'),");
-  calendar=calendar.replace("button_next: 'absolute right-1',","button_next: cn(buttonVariants({variant:'outline'}),'absolute right-1 h-7 w-7 p-0'),");
+  // Match the entire nav_button property through its own closing line,
+  // not the nested buttonVariants() call.
+  const navBlock=/^        nav_button: cn\([\s\S]*?^        \),\r?\n/m;
+  assert.match(calendar,navBlock);
+  calendar=calendar.replaceAll('__ct15_','').replace(navBlock,'');
+  calendar=calendar.replace("button_previous: 'absolute left-1',","button_previous: cn(buttonVariants({variant:'outline'}),'absolute left-1 h-7 w-7 bg-transparent p-0 opacity-50 hover:opacity-100'),");
+  calendar=calendar.replace("button_next: 'absolute right-1',","button_next: cn(buttonVariants({variant:'outline'}),'absolute right-1 h-7 w-7 bg-transparent p-0 opacity-50 hover:opacity-100'),");
   calendar=calendar.replace(/        IconLeft:[^\n]+\n        IconRight:[^\n]+/,"        Chevron: ({orientation,className}) => orientation==='left'?<ChevronLeft className={cn('h-4 w-4',className)}/>:<ChevronRight className={cn('h-4 w-4',className)}/>,");
-  if(calendar.includes('IconLeft:')||calendar.includes('__ct15_'))throw Error('Calendar adapter incomplete');
+  calendar=calendar.replace("      showOutsideDays={showOutsideDays}","      navLayout=\"around\"\n      showOutsideDays={showOutsideDays}");
+  // v9 selection flags live on the containing day rather than its button.
+  calendar=calendar.replace(/        selected:\n          '([^']+)',/,"        selected: '[&>button]:bg-primary [&>button]:text-primary-foreground [&>button:hover]:bg-primary [&>button:focus]:bg-primary',");
+  calendar=calendar.replace("aria-selected:bg-accent aria-selected:text-accent-foreground","[&>button]:bg-accent [&>button]:text-accent-foreground");
+  if(calendar.includes('IconLeft:')||calendar.includes('__ct15_')||calendar.includes('nav_button:'))throw Error('Calendar adapter incomplete');
   writeFileSync('components/ui/calendar.tsx',calendar);
  });
  stage('Apply official async request API codemod',()=>{
-  run('npx',['--yes','@next/codemod@'+version,'next-async-request-api','.','--force']);
+  const codemod=spawnSync('npx',['--yes','@next/codemod@'+version,'next-async-request-api','.','--force'],{encoding:'utf8',maxBuffer:32*1024*1024});
+  const output=(codemod.stdout??'')+'\n'+(codemod.stderr??'');console.log(output);
+  const plain=output.replace(/\x1b\[[0-9;]*m/g,'');
+  if(codemod.error||codemod.status!==0||/\b[1-9]\d* errors?\b|Transformation error|SyntaxError:/i.test(plain))throw Error('Codemod did not complete without errors');
   // Codemod can mark manual cases; fail instead of silently accepting them.
   const p=spawnSync('git',['grep','-n','@next-codemod-error','--','app','lib','components'],{encoding:'utf8'});
   if(p.status===0){console.log(p.stdout);throw Error('Manual codemod cases remain');}
@@ -69,6 +87,9 @@ try{
  });
  stage('Verify locked candidate installation',()=>run('npm',['ci','--ignore-scripts','--strict-peer-deps']));
  stage('Verify resolved dependency tree',()=>run('npm',['ls','--all']),true);
+ stage('Verify candidate source syntax',()=>{
+  run('node',['--input-type=module','-e',"import ts from 'typescript'; import {readFileSync} from 'node:fs'; const f=ts.createSourceFile('calendar.tsx',readFileSync('components/ui/calendar.tsx','utf8'),ts.ScriptTarget.Latest,true,ts.ScriptKind.TSX); if(f.parseDiagnostics.length){console.error(f.parseDiagnostics.map(x=>ts.flattenDiagnosticMessageText(x.messageText,' ')));process.exit(1);}"]);
+ },true);
  stage('Dependency audit (high and critical)',()=>run('npm',['audit','--audit-level=high']),true);
  stage('Unit and authorization tests',()=>run('npm',['test']),true);
  stage('Generate Next route types',()=>run('npx',['--no-install','next','typegen']),true);
