@@ -7,15 +7,18 @@ export type AssignedMediaPickerContext={storyId:string;revision:boolean;locale:L
 const btn='rounded-md border border-border px-3 py-2 text-sm font-medium hover:bg-surface-muted disabled:opacity-50';
 export function AssignedApprovedMediaPicker({context,onClose,onSelect}:{context:AssignedMediaPickerContext;onClose:()=>void;onSelect:(node:ApprovedImageNode)=>void}){
  const {storyId,revision,locale}=context,es=locale==='es';
- const [page,setPage]=useState(0),[data,setData]=useState<ApprovedMediaPage|null>(null),[error,setError]=useState(false),[retry,setRetry]=useState(0);
+ const [page,setPage]=useState(0),[retry,setRetry]=useState(0);
+ const requestKey=JSON.stringify([storyId,revision,page,retry]);
+ const [result,setResult]=useState<{key:string;data:ApprovedMediaPage|null;error:boolean}|null>(null);
+ const data=result?.key===requestKey?result.data:null,error=result?.key===requestKey&&result.error;
  useEffect(()=>{
-  const controller=new AbortController();setData(null);setError(false);
+  const controller=new AbortController();
   fetch('/api/newsroom/contributor/stories/'+storyId+'/approved-media?mode='+(revision?'revision':'draft')+'&page='+page,{cache:'no-store',signal:controller.signal})
     .then(async response=>{if(!response.ok)throw Error();return parseApprovedMediaPage(await response.json());})
-    .then(result=>{if(!controller.signal.aborted)setData(result);})
-    .catch(()=>{if(!controller.signal.aborted)setError(true);});
+    .then(data=>{if(!controller.signal.aborted)setResult({key:requestKey,data,error:false});})
+    .catch(()=>{if(!controller.signal.aborted)setResult({key:requestKey,data:null,error:true});});
   return()=>controller.abort();
- },[storyId,revision,page,retry]);
+ },[storyId,revision,page,requestKey]);
  useEffect(()=>{
   const close=(event:KeyboardEvent)=>{if(event.key==='Escape')onClose();};
   window.addEventListener('keydown',close);return()=>window.removeEventListener('keydown',close);

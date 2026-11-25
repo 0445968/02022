@@ -483,11 +483,8 @@ export function ArticleListenBar({
         window
       )
     ) {
-      setSupported(
-        false
-      );
-
-      return;
+      const frame=window.requestAnimationFrame(()=>setSupported(false));
+      return ()=>window.cancelAnimationFrame(frame);
     }
 
     function loadVoices() {
@@ -567,9 +564,7 @@ export function ArticleListenBar({
 
   const speakSegment =
     useCallback(
-      (
-        index: number
-      ) => {
+      function speak(index: number) {
         if (
           typeof window ===
             'undefined' ||
@@ -684,7 +679,7 @@ export function ArticleListenBar({
             currentSegmentRef.current =
               next;
 
-            speakSegment(
+            speak(
               next
             );
           };

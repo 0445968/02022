@@ -57,6 +57,16 @@ try{
   const radix=Object.entries(p.dependencies).filter(([k])=>k.startsWith('@radix-ui/')).map(([k,v])=>k+'@'+v);
   run('npm',['install','--save-exact','--ignore-scripts','--strict-peer-deps','react@19.3.1','react-dom@19.3.1','@types/react@19','@types/react-dom@19','eslint@9',...radix]);
  });
+ stage('Adapt candidate localized Zod 4 form resolver',()=>{
+  const path='lib/validation/resolver.ts';
+  let resolver=readFileSync(path,'utf8');
+  const replace=(a,b)=>{assert.ok(resolver.includes(a),'Expected resolver source: '+a);resolver=resolver.replace(a,b)};
+  replace("import type { Resolver } from 'react-hook-form';","import type { FieldValues, Resolver } from 'react-hook-form';");
+  replace("makeLocalizedResolver<T extends z.ZodTypeAny>","makeLocalizedResolver<T extends FieldValues>");
+  replace("schema: T,","schema: z.ZodType<T, T>,");
+  replace("Resolver<z.infer<T>>","Resolver<T>");
+  writeFileSync(path,resolver);
+ });
  stage('Adapt candidate rich text editor to Tiptap 3',()=>{
   const path='components/editorial/rich-text-editor.tsx';
   let editor=readFileSync(path,'utf8');

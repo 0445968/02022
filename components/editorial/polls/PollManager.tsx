@@ -1,5 +1,5 @@
 'use client';
-import {useState,useRef} from 'react';
+import {useState,useRef,useEffect} from 'react';
 import type {Locale} from '@/types';
 import type {StaffPoll,StaffPollPage,PollCopy,PollAction,PollCommand} from '@/lib/permissions/polls-contract';
 const input='mt-1 block w-full rounded-[6px] border border-border bg-white px-3 py-2 text-sm';
@@ -27,7 +27,7 @@ function PollForm({poll,locale,disabled,send}:{poll?:StaffPoll;locale:Locale;dis
   <button type="submit" disabled={disabled} className={button}>{poll?(es?'Guardar borrador':'Save draft'):(es?'Crear borrador':'Create draft')}</button>
  </form>;
 }
-export function PollManager({data,locale}:{data:StaffPollPage;locale:Locale}){
+export function PollManager({data,locale,initialNow}:{data:StaffPollPage;locale:Locale;initialNow:number}){
  const es=locale==='es',lang=es?1:0;
  const [busy,setBusy]=useState(false),[locked,setLocked]=useState(false),[error,setError]=useState(''),[editing,setEditing]=useState<string|null>(null),[creating,setCreating]=useState(false);
  const inFlight=useRef(false);
@@ -43,6 +43,8 @@ export function PollManager({data,locale}:{data:StaffPollPage;locale:Locale}){
   }catch{setLocked(true);setError(es?'Resultado incierto. Actualice la página.':'Uncertain result. Refresh the page.');}
   finally{inFlight.current=false;setBusy(false);}
  }
+ const [now,setNow]=useState(initialNow);
+ useEffect(()=>{const timer=window.setInterval(()=>setNow(Date.now()),1000);return()=>window.clearInterval(timer);},[]);
  const disabled=busy||locked;
  const act=(p:StaffPoll,action:PollAction,label:string)=><button type="button" className={button} disabled={disabled} onClick={()=>void send({action,id:p.id,version:p.version,copy:null})}>{label}</button>;
  return <div className="space-y-4">
@@ -60,8 +62,8 @@ export function PollManager({data,locale}:{data:StaffPollPage;locale:Locale}){
     {data.canEdit&&['in_review','approved'].includes(p.status)&&act(p,'withdraw',es?'Volver a borrador':'Withdraw to draft')}
     {data.canPublish&&p.status==='in_review'&&<>{p.canApprove&&act(p,'approve',es?'Aprobar':'Approve')}{act(p,'return',es?'Devolver':'Return to draft')}</>}
     {data.canPublish&&p.status==='approved'&&act(p,'publish',es?'Publicar':'Publish')}
-    {data.canPublish&&p.status==='published'&&<>{!p.closedAt&&Date.parse(p.closesAt)>Date.now()&&act(p,'close',es?'Cerrar votación':'Close voting')}{act(p,'retire',es?'Retirar':'Retire')}</>}
-    {data.canManageResults&&p.status==='published'&&!p.resultsReleased&&(p.closedAt||Date.parse(p.closesAt)<=Date.now())&&act(p,'release_results',es?'Publicar resultados':'Release results')}
+    {data.canPublish&&p.status==='published'&&<>{!p.closedAt&&Date.parse(p.closesAt)>now&&act(p,'close',es?'Cerrar votación':'Close voting')}{act(p,'retire',es?'Retirar':'Retire')}</>}
+    {data.canManageResults&&p.status==='published'&&!p.resultsReleased&&(p.closedAt||Date.parse(p.closesAt)<=now)&&act(p,'release_results',es?'Publicar resultados':'Release results')}
    </div>
    {editing===p.id&&data.canEdit&&p.status==='draft'&&<PollForm poll={p} locale={locale} disabled={disabled} send={send}/>}
   </article>)}
