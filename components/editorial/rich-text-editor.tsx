@@ -273,10 +273,7 @@ export function RichTextEditor({
   if (!editor) {
     return (
       <div
-        className="
-          min-h-[400px]
-          bg-white
-        "
+        className="min-h-[400px] bg-white"
       />
     );
   }
@@ -511,11 +508,7 @@ export function RichTextEditor({
   return (
     <>
       <div
-        className="
-          relative
-          w-full
-          bg-white
-        "
+        className="relative w-full bg-white"
       >
         {/* Formatting toolbar */}
 
@@ -532,19 +525,10 @@ export function RichTextEditor({
         {/* Article body */}
 
         <div
-          className="
-            w-full
-            bg-white
-          "
+          className="w-full bg-white"
         >
           <div
-            className="
-              mx-auto
-              w-full
-              max-w-3xl
-              px-6
-              lg:px-12
-            "
+            className="mx-auto w-full max-w-3xl px-6 lg:px-12"
           >
             <EditorContent
               editor={ed}
@@ -835,53 +819,23 @@ export function RichTextEditor({
 
       {allowMedia&&editable&&!assignedMedia&&selectedImage && (
         <div
-          className="
-            fixed
-            inset-0
-            z-[80]
-            flex
-            items-center
-            justify-center
-            bg-black/40
-            p-4
-          "
+          className="fixed inset-0 z-[80] flex items-center justify-center bg-black/40 p-4"
           role="dialog"
           aria-modal="true"
           aria-labelledby="image-details-title"
         >
           <div
-            className="
-              w-full
-              max-w-lg
-              rounded-xl
-              border
-              border-border
-              bg-white
-              shadow-xl
-            "
+            className="w-full max-w-lg rounded-xl border border-border bg-white shadow-xl"
           >
             {/* Header */}
 
             <div
-              className="
-                flex
-                items-center
-                justify-between
-                border-b
-                border-border
-                px-5
-                py-4
-              "
+              className="flex items-center justify-between border-b border-border px-5 py-4"
             >
               <div>
                 <h2
                   id="image-details-title"
-                  className="
-                    font-headline
-                    text-lg
-                    font-semibold
-                    text-deep
-                  "
+                  className="font-headline text-lg font-semibold text-deep"
                 >
                   {
                     dict.story
@@ -890,11 +844,7 @@ export function RichTextEditor({
                 </h2>
 
                 <p
-                  className="
-                    mt-0.5
-                    text-xs
-                    text-muted-foreground
-                  "
+                  className="mt-0.5 text-xs text-muted-foreground"
                 >
                   The Media Library description and credit have been added automatically. You can customize them for this story.
                 </p>
@@ -906,27 +856,10 @@ export function RichTextEditor({
                   cancelImageInsert
                 }
                 aria-label="Close"
-                className="
-                  inline-flex
-                  h-8
-                  w-8
-                  items-center
-                  justify-center
-                  rounded-lg
-                  text-muted-foreground
-                  transition-colors
-                  hover:bg-surface-muted
-                  hover:text-foreground
-                  focus-visible:outline-none
-                  focus-visible:ring-2
-                  focus-visible:ring-ring
-                "
+                className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-surface-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               >
                 <X
-                  className="
-                    h-4
-                    w-4
-                  "
+                  className="h-4 w-4"
                   aria-hidden
                 />
               </button>
@@ -935,10 +868,7 @@ export function RichTextEditor({
             {/* Content */}
 
             <div
-              className="
-                space-y-4
-                p-5
-              "
+              className="space-y-4 p-5"
             >
               <img
                 src={
@@ -948,23 +878,13 @@ export function RichTextEditor({
                   selectedImage.altText ||
                   selectedImage.fileName
                 }
-                className="
-                  aspect-video
-                  w-full
-                  rounded-lg
-                  bg-surface-muted
-                  object-cover
-                "
+                className="aspect-video w-full rounded-lg bg-surface-muted object-cover"
               />
 
               <div>
                 <label
                   htmlFor="inline-image-description"
-                  className="
-                    text-xs
-                    font-semibold
-                    text-foreground
-                  "
+                  className="text-xs font-semibold text-foreground"
                 >
                   Description
                 </label>
@@ -983,35 +903,14 @@ export function RichTextEditor({
                   }
                   rows={3}
                   placeholder="Describe what is shown in the image…"
-                  className="
-                    mt-1
-                    w-full
-                    resize-y
-                    rounded-lg
-                    border
-                    border-border
-                    bg-white
-                    px-3
-                    py-2
-                    text-sm
-                    text-foreground
-                    placeholder:text-muted-foreground
-                    focus:border-primary
-                    focus-visible:outline-none
-                    focus-visible:ring-2
-                    focus-visible:ring-ring
-                  "
+                  className="mt-1 w-full resize-y rounded-lg border border-border bg-white px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 />
               </div>
 
               <div>
                 <label
                   htmlFor="inline-image-credit"
-                  className="
-                    text-xs
-                    font-semibold
-                    text-foreground
-                  "
+                  className="text-xs font-semibold text-foreground"
                 >
                   Credit
                 </label>
@@ -1030,55 +929,23 @@ export function RichTextEditor({
                     )
                   }
                   placeholder="Photographer / Agency / Source"
-                  className="
-                    mt-1
-                    h-9
-                    w-full
-                    rounded-lg
-                    border
-                    border-border
-                    bg-white
-                    px-3
-                    text-sm
-                    text-foreground
-                    placeholder:text-muted-foreground
-                    focus:border-primary
-                    focus-visible:outline-none
-                    focus-visible:ring-2
-                    focus-visible:ring-ring
-                  "
+                  className="mt-1 h-9 w-full rounded-lg border border-border bg-white px-3 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 />
               </div>
 
               {(imageDescription ||
                 imageCredit) && (
                   <div
-                    className="
-                    border-t
-                    border-border
-                    pt-4
-                  "
+                    className="border-t border-border pt-4"
                   >
                     <p
-                      className="
-                      mb-1
-                      text-[0.6875rem]
-                      font-semibold
-                      uppercase
-                      tracking-wide
-                      text-muted-foreground
-                    "
+                      className="mb-1 text-[0.6875rem] font-semibold uppercase tracking-wide text-muted-foreground"
                     >
                       Preview
                     </p>
 
                     <p
-                      className="
-                      font-headline
-                      text-sm
-                      leading-relaxed
-                      text-muted-foreground
-                    "
+                      className="font-headline text-sm leading-relaxed text-muted-foreground"
                     >
                       {imageDescription}
 
@@ -1100,33 +967,16 @@ export function RichTextEditor({
                 )}
 
               <div
-                className="
-                  rounded-lg
-                  bg-surface-muted
-                  px-3
-                  py-2.5
-                "
+                className="rounded-lg bg-surface-muted px-3 py-2.5"
               >
                 <p
-                  className="
-                    text-[10px]
-                    font-bold
-                    uppercase
-                    tracking-[0.08em]
-                    text-muted-foreground
-                  "
+                  className="text-[10px] font-bold uppercase tracking-[0.08em] text-muted-foreground"
                 >
                   Media Library asset
                 </p>
 
                 <p
-                  className="
-                    mt-1
-                    truncate
-                    text-xs
-                    font-medium
-                    text-foreground
-                  "
+                  className="mt-1 truncate text-xs font-medium text-foreground"
                 >
                   {selectedImage.title ||
                     selectedImage.fileName}
@@ -1137,41 +987,14 @@ export function RichTextEditor({
             {/* Actions */}
 
             <div
-              className="
-                flex
-                items-center
-                justify-end
-                gap-2
-                border-t
-                border-border
-                px-5
-                py-4
-              "
+              className="flex items-center justify-end gap-2 border-t border-border px-5 py-4"
             >
               <button
                 type="button"
                 onClick={
                   cancelImageInsert
                 }
-                className="
-                  inline-flex
-                  h-9
-                  items-center
-                  justify-center
-                  rounded-lg
-                  border
-                  border-border
-                  bg-white
-                  px-4
-                  text-sm
-                  font-medium
-                  text-foreground
-                  transition-colors
-                  hover:bg-surface-muted
-                  focus-visible:outline-none
-                  focus-visible:ring-2
-                  focus-visible:ring-ring
-                "
+                className="inline-flex h-9 items-center justify-center rounded-lg border border-border bg-white px-4 text-sm font-medium text-foreground transition-colors hover:bg-surface-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               >
                 {
                   dict.common
@@ -1184,30 +1007,10 @@ export function RichTextEditor({
                 onClick={
                   insertSelectedImage
                 }
-                className="
-                  inline-flex
-                  h-9
-                  items-center
-                  justify-center
-                  rounded-lg
-                  bg-primary
-                  px-4
-                  text-sm
-                  font-semibold
-                  text-white
-                  transition-colors
-                  hover:bg-primary/90
-                  focus-visible:outline-none
-                  focus-visible:ring-2
-                  focus-visible:ring-ring
-                "
+                className="inline-flex h-9 items-center justify-center rounded-lg bg-primary px-4 text-sm font-semibold text-white transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               >
                 <ImageIcon
-                  className="
-                    mr-1.5
-                    h-4
-                    w-4
-                  "
+                  className="mr-1.5 h-4 w-4"
                   aria-hidden
                 />
 

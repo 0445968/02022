@@ -29,6 +29,14 @@ try{
   // in this disposable job;
   // npm --save-exact stores the resulting versions. Never force peer conflicts.
   p.dependencies.typescript='^5.9.3';
+  p.dependencies['@types/node']='^22.0.0';
+  // Exact audit remediation candidates; never run npm audit fix --force.
+  p.dependencies.postcss='8.5.33';
+  p.dependencies.zod='4.6.7';
+  p.dependencies['@hookform/resolvers']='5.2.2';
+  p.dependencies['react-hook-form']='^7.55.0';
+  for(const k of Object.keys(p.dependencies))if(k.startsWith('@tiptap/'))p.dependencies[k]='3.35.0';
+  p.dependencies['@tiptap/core']='3.35.0';
   p.dependencies['react-day-picker']='9.11.1';
   p.dependencies['react-resizable-panels']='2.1.9';
   p.dependencies.recharts='2.15.4';
@@ -48,6 +56,17 @@ try{
   rmSync('package-lock.json',{force:true});
   const radix=Object.entries(p.dependencies).filter(([k])=>k.startsWith('@radix-ui/')).map(([k,v])=>k+'@'+v);
   run('npm',['install','--save-exact','--ignore-scripts','--strict-peer-deps','react@19.3.1','react-dom@19.3.1','@types/react@19','@types/react-dom@19','eslint@9',...radix]);
+ });
+ stage('Adapt candidate rich text editor to Tiptap 3',()=>{
+  const path='components/editorial/rich-text-editor.tsx';
+  let editor=readFileSync(path,'utf8');
+  const replace=(a,b)=>{assert.ok(editor.includes(a),'Expected editor source: '+a);editor=editor.replace(a,b)};
+  replace("import TextStyle from '@tiptap/extension-text-style';","import { TextStyle } from '@tiptap/extension-text-style';");
+  replace("import Color from '@tiptap/extension-color';","import { Color } from '@tiptap/extension-text-style';");
+  replace("      editable,\n      extensions:","      editable,\n      immediatelyRender: false,\n      shouldRerenderOnTransaction: true,\n      extensions:");
+  replace("        StarterKit.configure({","        StarterKit.configure({\n          link: false,\n          underline: false,");
+  replace("        nextContent,\n        false","        nextContent,\n        { emitUpdate: false }");
+  writeFileSync(path,editor);
  });
  stage('Adapt candidate date picker to React 19',()=>{
   let calendar=readFileSync('components/ui/calendar.tsx','utf8');
