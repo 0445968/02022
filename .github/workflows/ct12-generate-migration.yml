@@ -1,0 +1,19 @@
+name: CT-11c CT-12 generate migration filename
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/ct12-generate-migration.yml'
+permissions:
+  contents: read
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - name: Generate local migration filename using pinned CLI
+        run: |
+          npx --yes supabase@3.2.0 --version
+          npx --yes supabase@3.2.0 migration new --help
+          npx --yes supabase@3.2.0 migration new ct12_reader_privacy_editorial_guards
+          find supabase/migrations -name '*_ct12_reader_privacy_editorial_guards.sql' -print
