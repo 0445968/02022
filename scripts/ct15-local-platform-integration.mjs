@@ -210,8 +210,10 @@ try{
     const payload={action:'profile',expectedUpdatedAt:initial.updatedAt,displayName:'CT15 Updated Reader',locale:'es',avatar:'ocean'};
     const cross=await context.request.post(appOrigin+'/api/account/profile',{headers:{Origin:'http://untrusted.example.test'},data:payload});
     check('reader cross-origin mutation denied (HTTP '+cross.status()+')',cross.status()===403);
-    await page.goto(appOrigin+'/account/profile',{waitUntil:'domcontentloaded',timeout:20000});
+    await page.goto(appOrigin+'/account/profile',{waitUntil:'load',timeout:20000});
     const form=page.locator('#account-main form').filter({has:page.getByLabel('Display name',{exact:true})});
+    await form.locator('button[type=submit]').waitFor({state:'visible'});
+    await page.locator('#account-main form[aria-busy="false"]').waitFor({state:'visible',timeout:10000});
     await form.getByLabel('Display name',{exact:true}).fill(payload.displayName);
     await form.getByLabel('Account language',{exact:true}).selectOption('es');
     await form.getByLabel('Choose avatar',{exact:true}).selectOption('ocean');
@@ -219,14 +221,23 @@ try{
       page.waitForResponse(r=>r.url()===appOrigin+'/api/account/profile'&&r.request().method()==='POST'),
       form.getByRole('button',{name:'Save profile',exact:true}).click()
     ]);
-    check('reader actual profile form save (HTTP '+change.status()+')',change.status()===200&&(await change.json()).displayName==='CT15 Updated Reader');
+    const sent=change.request().postDataJSON();
+    const savedProfile=await change.json();
+    const fields={nameSent:sent.displayName===payload.displayName,localeSent:sent.locale===payload.locale,avatarSent:sent.avatar===payload.avatar,revisionSent:sent.expectedUpdatedAt===payload.expectedUpdatedAt,nameSaved:savedProfile.displayName===payload.displayName,localeSaved:savedProfile.locale==='es',avatarSaved:savedProfile.image==='/avatars/reader-ocean.svg'};
+    console.log('READER PROFILE FIELD MATCHES '+JSON.stringify(fields));
+    check('reader actual profile form save (HTTP '+change.status()+')',change.status()===200&&Object.values(fields).every(Boolean));
+    await page.getByRole('heading',{name:'Mi perfil',exact:true}).waitFor({state:'visible',timeout:15000});
     const stale=await page.evaluate(async timestamp=>{
       const r=await fetch('/api/account/profile',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'profile',expectedUpdatedAt:timestamp,displayName:'Stale overwrite',locale:'en',avatar:'initials'})});
       return r.status;
     },initial.updatedAt);
     check('reader stale profile rejected (HTTP '+stale+')',stale===409);
     const retained=await context.request.get(appOrigin+'/api/account/profile');
-    check('reader saved identity retained',retained.status()===200&&(await retained.json()).displayName==='CT15 Updated Reader');
+    const persisted=await retained.json();
+    check('reader saved identity retained',retained.status()===200&&persisted.displayName===payload.displayName&&persisted.locale==='es'&&persisted.image==='/avatars/reader-ocean.svg');
+    await page.reload({waitUntil:'load'});
+    await page.locator('#account-main form[aria-busy="false"]').waitFor({state:'visible',timeout:10000});
+    check('reader reloaded form reflects all saved preferences',await page.getByLabel('Nombre visible',{exact:true}).inputValue()===payload.displayName&&await page.getByLabel('Idioma de la cuenta',{exact:true}).inputValue()==='es'&&await page.locator('#account-main form img[src="/avatars/reader-ocean.svg"]').count()===1);
     const post=(path,data)=>context.request.post(appOrigin+path,{headers:{Origin:appOrigin},data});
     const request=await post('/api/account/profile',{action:'request',kind:'export',confirmation:'EXPORT'});
     check('reader privacy export request recorded (HTTP '+request.status()+')',request.status()===200);

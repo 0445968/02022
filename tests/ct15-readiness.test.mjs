@@ -108,3 +108,8 @@ test('calendar offers an accessible scroll region and explicit agenda link; load
  assert.match(f('components/editorial/media-library/MediaErrorState.tsx'),/role="alert"/);
  const menu=f('components/navigation/account-button.tsx');assert.match(menu,/aria-expanded=\{open\}/);assert.match(menu,/hidden=\{!open\}/);assert.match(menu,/event.key==='Escape'/);
 });
+
+
+test('reader profile cannot accept edits before hydration',()=>{
+ const s=f('components/account/ReaderProfileForm.tsx');assert.match(s,/useSyncExternalStore\(subscribeHydration,clientHydrated,serverHydrated\)/);assert.match(s,/if\(!hydrated\|\|lock.current\|\|uncertain\)return/);assert.match(s,/aria-busy=\{!hydrated\|\|busy\}/);assert.equal((s.match(/disabled=\{!hydrated\|\|busy\|\|uncertain/g)||[]).length,4);
+});
