@@ -1,3 +1,5 @@
+
+import {requireReaderOrigin,ReaderWriteError} from '@/lib/permissions/reader-write-http';
 import {
     NextResponse,
   } from 'next/server';
@@ -40,6 +42,7 @@ import {
       .select('id')
       .eq('id', storyId)
       .eq('status', 'published')
+      .lte('published_at', new Date().toISOString())
       .maybeSingle();
   
     if (error) {
@@ -125,7 +128,7 @@ import {
    * user_id always comes from the authenticated session
    * and is never accepted from the request.
    */
-  export async function POST(_request: Request, props: RouteContext) {
+  export async function POST(request: Request, props: RouteContext) {
     const params = await props.params;
     // A development/editor identity shortcut is not a verified reader
     // session and must never create or expose personal bookmarks.
@@ -150,6 +153,9 @@ import {
         }
       );
     }
+
+    try { requireReaderOrigin(request); }
+    catch (error) { return NextResponse.json({error:'Invalid reader request'},{status:error instanceof ReaderWriteError?error.status:400}); }
 
     try {
       const storyExists =
@@ -208,7 +214,7 @@ import {
    *
    * The underlying story is never modified or deleted.
    */
-  export async function DELETE(_request: Request, props: RouteContext) {
+  export async function DELETE(request: Request, props: RouteContext) {
     const params = await props.params;
     // A development/editor identity shortcut is not a verified reader
     // session and must never create or expose personal bookmarks.
@@ -233,6 +239,9 @@ import {
         }
       );
     }
+
+    try { requireReaderOrigin(request); }
+    catch (error) { return NextResponse.json({error:'Invalid reader request'},{status:error instanceof ReaderWriteError?error.status:400}); }
 
     try {
       await removeStoryBookmark(

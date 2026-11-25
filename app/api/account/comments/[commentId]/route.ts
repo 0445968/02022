@@ -1,3 +1,5 @@
+
+import {readReaderJson,requireReaderOrigin,ReaderWriteError} from '@/lib/permissions/reader-write-http';
 import {
     NextResponse,
   } from 'next/server';
@@ -15,9 +17,6 @@ import {
     updateOwnComment,
   } from '@/lib/services/account-comments';
   
-  const MAX_REQUEST_SIZE =
-    20_000;
-  
   const MAX_COMMENT_LENGTH =
     5000;
   
@@ -25,10 +24,6 @@ import {
     params: Promise<{
       commentId: string;
     }>;
-  }
-  
-  interface UpdateCommentRequest {
-    body?: unknown;
   }
   
   function readerAuthUnavailable() {
@@ -64,49 +59,10 @@ import {
       return readerAuthUnavailable();
     }
 
-    const contentLength =
-      Number.parseInt(
-        request.headers.get(
-          'content-length'
-        ) ?? '0',
-        10
-      );
-
-    if (
-      Number.isFinite(
-        contentLength
-      ) &&
-      contentLength >
-        MAX_REQUEST_SIZE
-    ) {
-      return NextResponse.json(
-        {
-          error:
-            'Request is too large',
-        },
-        {
-          status: 413,
-        }
-      );
-    }
-
-    let requestBody:
-      UpdateCommentRequest;
-
-    try {
-      requestBody =
-        await request.json();
-    } catch {
-      return NextResponse.json(
-        {
-          error:
-            'Invalid JSON',
-        },
-        {
-          status: 400,
-        }
-      );
-    }
+    let requestBody:Record<string,unknown>;
+    try { requestBody=await readReaderJson(request); }
+    catch(error){return NextResponse.json({error:'Invalid reader request'},{status:error instanceof ReaderWriteError?error.status:400});}
+    if(Object.keys(requestBody).some(key=>!['body'].includes(key)))return NextResponse.json({error:'Invalid comment fields'},{status:422});
 
     if (
       typeof requestBody.body !==
@@ -218,7 +174,7 @@ import {
    * The stored body is erased, but the database row remains
    * so replies and moderation history retain their structure.
    */
-  export async function DELETE(_request: Request, props: RouteContext) {
+  export async function DELETE(request: Request, props: RouteContext) {
     const params = await props.params;
     if (
       isDevAuthBypass()
@@ -232,6 +188,9 @@ import {
     if (!user) {
       return readerAuthUnavailable();
     }
+
+    try { requireReaderOrigin(request); }
+    catch (error) { return NextResponse.json({error:'Invalid reader request'},{status:error instanceof ReaderWriteError?error.status:400}); }
 
     try {
       await deleteOwnComment({
