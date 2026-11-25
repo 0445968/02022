@@ -56,6 +56,8 @@ try:
     for path in legacy:
         if Path(path).name in omitted:
             continue
+        if Path(path).name == "20260902_create_comments.sql":
+            apply("tests/fixtures/ct15-local-legacy-profile.sql")
         if Path(path).name == "20260908_editorial_profiles_editor_update.sql":
             apply("tests/fixtures/ct15-local-legacy-extras.sql")
         apply(path)

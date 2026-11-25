@@ -20,6 +20,7 @@ set local role anon;
 do $$begin
  if (select array_agg(slug order by slug) from public.stories where slug like 'ct15-%') is distinct from array['ct15-public']::text[]
  then raise exception 'Anonymous content boundary incorrect';end if;
+ if (select display_name from public.reader_public_profiles where id='a1500000-0000-4000-8000-000000000002') is distinct from 'Synthetic Reader' then raise exception 'Public reader projection incorrect';end if;
 end$$;
 rollback;
 begin;
@@ -29,7 +30,9 @@ do $$begin
  if (select array_agg(slug order by slug) from public.stories where slug like 'ct15-%') is distinct from array['ct15-public','ct15-registered']::text[]
  then raise exception 'Reader content boundary incorrect';end if;
  if exists(select 1 from public.staff_memberships) then raise exception 'Reader staff visibility';end if;
- if public.reader_read_account()->'account' is null and public.reader_read_account() is null then raise exception 'Reader account unavailable';end if;
+ if (public.reader_read_account()->>'email') is distinct from 'reader@example.test'
+ or (public.reader_read_account()->>'displayName') is distinct from 'Synthetic Reader'
+ then raise exception 'Reader account identity unavailable or incorrect';end if;
 end$$;
 rollback;
 begin;

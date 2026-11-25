@@ -1,6 +1,5 @@
--- Fixture-only missing legacy byline/profile shape, reconstructed from existing
+-- Fixture-only missing legacy byline shape, reconstructed from existing
 -- database.types.ts and CT02h/CT12 tests. This is not a migration or hosted schema dump.
-alter table public.profiles add column if not exists display_name text;
 create table public.editorial_profiles(
  id uuid primary key default gen_random_uuid(),
  account_id uuid references public.profiles(id) on delete set null,
