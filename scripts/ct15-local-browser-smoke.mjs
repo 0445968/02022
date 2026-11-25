@@ -119,8 +119,7 @@ try{
    }catch(e){check(false,target+' browser failure at '+width+': '+String(e).slice(0,300));await record({path:target,width,error:String(e).slice(0,300)});}
    finally{page.off('pageerror',error);page.off('response',response);await page.close();await checkpoint();}
   }
-  // Exercise real client-side language navigation, preserving URL state.
-  // The signed-out fixture still forbids writes and off-origin traffic.
+  // Exercise real client-side language navigation with URL state preserved.
   const switchPage=await context.newPage();switchPage.setDefaultTimeout(10000);
   const switchErrors=[];
   switchPage.on('pageerror',e=>switchErrors.push(e.name+': '+e.message.slice(0,300)));
@@ -128,34 +127,7 @@ try{
    await switchPage.goto(base+'/en/latest?fixture=1#main',{waitUntil:'domcontentloaded',timeout:12000});
    for(const [from,to] of [['en','es'],['es','en']]){
     const expected='/'+to+'/latest?fixture=1#main';
-    await switchPage.locator('header button').filter({hasText:new RegExp('^'+to.toUpperCase()+'
-  // cookies or credentials and never follow off-origin navigation.
-  if(width!==768)for(const path of privatePaths){
-   console.log('BEGIN '+width+' '+path);
-   const page=await context.newPage();page.setDefaultTimeout(10000);
-   try{
-    const r=await page.goto(base+path,{waitUntil:'domcontentloaded',timeout:12000});
-    await page.waitForURL(url=>url.origin===base&&/^\/(en|es)\/auth\/sign-in$/.test(url.pathname),{timeout:10000});
-    const final=new URL(page.url());
-    check(final.origin===base&&/^\/(en|es)\/auth\/sign-in$/.test(final.pathname),path+' not denied at '+width);
-    check(await page.locator('input[type="password"]').count()>0,path+' missing real sign-in form');
-    await record({path,width,status:r?.status(),finalPath:final.pathname,denied:true});
-   }catch(e){check(false,path+' denial failure at '+width+': '+String(e).slice(0,300));await record({path,width,error:String(e).slice(0,300)});}
-   finally{await page.close();await checkpoint();}
-  }
-  await context.close();
- }
- check(fixture.unexpected.length===0,'Unexpected or mutating fixture calls: '+JSON.stringify(fixture.unexpected));
- for(const table of ['stories','homepage_slots','breaking_news','categories'])check((fixture.reads[table]||0)>0,'Fixture was never queried for '+table);
-}finally{
- if(browser)await browser.close();
- if(app&&app.exitCode===null)app.kill('SIGTERM');
- server.closeAllConnections();await new Promise(ok=>server.close(ok));
- await checkpoint();
-}
-console.log(JSON.stringify({checks:rows.length,issues,fixture}));
-assert.equal(issues.length,0,'Inspect disposable local evidence; no live validation implied');
-)}).click();
+    await switchPage.locator('header button').filter({has:switchPage.getByText(to.toUpperCase(),{exact:true})}).click();
     await switchPage.waitForURL(url=>url.origin===base&&url.pathname+url.search+url.hash===expected,{timeout:10000});
     await switchPage.waitForFunction(locale=>document.documentElement.lang===locale,to,{timeout:8000});
     check(switchErrors.length===0,'Locale switch runtime error at '+width);

@@ -47,3 +47,6 @@ test('public homepage owns exactly one main landmark with fallback heading and p
  assert.match(f('components/navigation/language-switcher.tsx'),/window\.location\.search \+ window\.location\.hash/);
  const smoke=f('scripts/ct15-local-browser-smoke.mjs');assert.match(smoke,/metrics.main===1&&metrics.headings===1/);assert.match(smoke,/queryAndHashPreserved:true/);
 });
+
+import {execFileSync} from 'node:child_process';
+test('browser harness parses before the expensive build',()=>{execFileSync(process.execPath,['--check',new URL('../scripts/ct15-local-browser-smoke.mjs',import.meta.url).pathname]);});

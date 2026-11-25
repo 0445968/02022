@@ -39,6 +39,8 @@ jobs:
           cache: npm
       - name: Install exact application dependencies
         run: npm ci --ignore-scripts --strict-peer-deps
+      - name: Verify browser script syntax
+        run: node --check scripts/ct15-local-browser-smoke.mjs
       - name: Install disposable browser
         run: |
           npm install --prefix "$RUNNER_TEMP/ct15-browser" --ignore-scripts --no-save playwright@1.56.1
