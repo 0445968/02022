@@ -1,3 +1,6 @@
+import {createDataClient} from '@/lib/db/supabase-data';
+import {securePublicMedia,publicImageSelection,hydratePublicEditorialImages} from '@/lib/services/public-editorial-media';
+import type {SupabaseClient} from '@supabase/supabase-js';
 import {
   getDataClient,
 } from '@/lib/db/supabase-data-access';
@@ -38,6 +41,7 @@ export interface HomeStory {
 }
 
 type RawHomeStory = {
+  featured_image_id?:string|null;
   id: string;
   slug: string;
   headline: string;
@@ -190,7 +194,7 @@ export async function getPublishedStoriesByIsland(
   limit = 4
 ): Promise<HomeStory[]> {
   const supabase =
-    await getDataClient();
+    (securePublicMedia()?createDataClient():await getDataClient()) as unknown as SupabaseClient;
 
   const now =
     new Date().toISOString();
@@ -200,7 +204,7 @@ export async function getPublishedStoriesByIsland(
     error,
   } = await supabase
     .from('stories')
-    .select(`
+    .select(publicImageSelection(`
       id,
       slug,
       headline,
@@ -219,7 +223,7 @@ export async function getPublishedStoriesByIsland(
         url,
         alt_text
       )
-    `)
+    `))
     .eq(
       'status',
       'published'
@@ -265,14 +269,7 @@ export async function getPublishedStoriesByIsland(
     );
   }
 
-  return (
-    (
-      data ??
-      []
-    ) as unknown as RawHomeStory[]
-  ).map(
-    mapStory
-  );
+  return (await hydratePublicEditorialImages((data??[]) as unknown as RawHomeStory[])).map(mapStory);
 }
 
 /**

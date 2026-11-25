@@ -1,3 +1,5 @@
+import Link from 'next/link';
+import {readerAccountEnabled,privacyQueue} from '@/lib/services/reader-account';
 import {redirect} from 'next/navigation';
 import {getCurrentUser} from '@/lib/auth/session';
 import {newsroomLocale} from '@/lib/services/newsroom-workspace';
@@ -12,5 +14,6 @@ export default async function NewsroomTeamPage(){
   if(!access.allowed)redirect('/newsroom/denied');
   const user=await getCurrentUser();
   const locale=await newsroomLocale(user);
-  return <StaffTeamManager locale={locale} showInvitations={await canManageStaffInvitations()} showBylines={await canReviewStaffBylines()}/>;
+  const canPrivacy=readerAccountEnabled()&&await privacyQueue(0).then(()=>true).catch(()=>false);
+  return <>{canPrivacy&&<div className="px-6 pt-5"><Link className="text-sm font-semibold text-primary underline" href="/newsroom/privacy">{locale==='es'?'Solicitudes de privacidad':'Privacy requests'}</Link></div>}<StaffTeamManager locale={locale} showInvitations={await canManageStaffInvitations()} showBylines={await canReviewStaffBylines()}/></>;
 }

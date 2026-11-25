@@ -1,3 +1,5 @@
+import {securePublicMedia,publicImageSelection,hydratePublicEditorialImages} from '@/lib/services/public-editorial-media';
+import type {SupabaseClient} from '@supabase/supabase-js';
 import 'server-only';
 
 import type {
@@ -61,6 +63,7 @@ interface RawFeaturedImage {
 }
 
 interface RawSavedStory {
+  featured_image_id?:string|null;
   id: string;
   slug: string;
   headline: string;
@@ -233,8 +236,10 @@ export async function getSavedStories(
     perPage;
 
   const supabase =
-    await getDataClient();
+    await getDataClient() as unknown as SupabaseClient;
 
+  const {data:{user},error:identityError}=await supabase.auth.getUser();
+  if(identityError||!user||user.id!==resolvedUserId)throw Error('Account unavailable');
   const now =
     new Date().toISOString();
 
@@ -245,7 +250,7 @@ export async function getSavedStories(
   } = await supabase
     .from('bookmarks')
     .select(
-      `
+      publicImageSelection(`
         id,
         created_at,
         story:stories!inner (
@@ -269,7 +274,7 @@ export async function getSavedStories(
             alt_text
           )
         )
-      `,
+      `),
       {
         count:
           'exact',
@@ -324,13 +329,10 @@ export async function getSavedStories(
     );
   }
 
-  const items =
-    (
-      (
-        data ??
-        []
-      ) as unknown as RawSavedStoryItem[]
-    )
+  const rows=(data??[]) as unknown as RawSavedStoryItem[];
+  const stories=await hydratePublicEditorialImages(rows.map(r=>firstRelation(r.story)).filter((s):s is RawSavedStory=>s!==null));
+  const map=new Map(stories.map(s=>[s.id,s]));
+  const items = rows.map(r=>({...r,story:map.get(firstRelation(r.story)?.id??'')??null}))
       .map(
         mapSavedStoryItem
       )

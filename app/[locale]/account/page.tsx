@@ -1,3 +1,4 @@
+import {readerAccountEnabled} from '@/lib/services/reader-account';
 import { redirect } from 'next/navigation';
 import { getCurrentUser } from '@/lib/auth/session';
 import { getDictionary } from '@/lib/i18n/dictionaries';
@@ -17,6 +18,7 @@ export default async function AccountPage({ params }: PageProps) {
     redirect(localizedPath(locale, '/auth/sign-in'));
   }
 
+  if(readerAccountEnabled())redirect('/account/profile');
   const dict = getDictionary(locale);
 
   return <AccountSettings dict={dict} locale={locale} user={user} />;

@@ -1,3 +1,5 @@
+import {safeAvatar} from '@/lib/permissions/reader-account-contract';
+import {readerAccountEnabled} from '@/lib/services/reader-account';
 import {readerReportingEnabled} from '@/lib/services/reader-reports';
 import Link from 'next/link';
 
@@ -395,7 +397,7 @@ export default async function AccountPage() {
               aria-hidden="true"
               className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-deep text-lg font-bold text-white"
             >
-              {initial}
+              {readerAccountEnabled()&&safeAvatar(user.profile?.image)?<img src={safeAvatar(user.profile?.image)!} alt="" className="h-full w-full rounded-full"/>:initial}
             </div>
 
             <div className="min-w-0">

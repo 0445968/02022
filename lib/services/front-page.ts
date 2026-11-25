@@ -1,3 +1,4 @@
+import {securePublicMedia,publicImageSelection,hydratePublicEditorialImages} from '@/lib/services/public-editorial-media';
 import {createDataClient} from '@/lib/db/supabase-data';
 import type {SupabaseClient} from '@supabase/supabase-js';
 import {currentPublicWindow,isPublicStory,safeExternalAlertUrl} from '@/lib/permissions/public-editorial-contract';
@@ -1222,12 +1223,12 @@ export async function getFrontPageStoryOptions(
   FrontPageStoryOption[]
 > {
   const supabase =
-    await getDataClient();
+    (securePublicMedia()?createDataClient():await getDataClient()) as unknown as SupabaseClient;
 
   let query =
     supabase
       .from('stories')
-      .select(`
+      .select(publicImageSelection(`
         id,
         slug,
         headline,
@@ -1245,7 +1246,7 @@ export async function getFrontPageStoryOptions(
           url,
           alt_text
         )
-      `)
+      `))
       .eq(
         'status',
         'published'
@@ -1298,10 +1299,7 @@ export async function getFrontPageStoryOptions(
     );
   }
 
-  return (
-    (data ?? []) as unknown as
-      RawStory[]
-  ).map(mapStory);
+  return (await hydratePublicEditorialImages((data??[]) as unknown as RawStory[])).map(mapStory);
 }
 
 /**
@@ -1313,7 +1311,7 @@ export async function getPublishedStoriesByCategory(
   limit = 12
 ): Promise<FrontPageStoryOption[]> {
   const supabase =
-    await getDataClient();
+    (securePublicMedia()?createDataClient():await getDataClient()) as unknown as SupabaseClient;
 
   const {
     data: category,
@@ -1360,7 +1358,7 @@ export async function getPublishedStoriesByCategory(
 
   let query = supabase
     .from('stories')
-    .select(`
+    .select(publicImageSelection(`
       id,
       slug,
       headline,
@@ -1378,7 +1376,7 @@ export async function getPublishedStoriesByCategory(
         url,
         alt_text
       )
-    `)
+    `))
     .eq('status', 'published')
     .not('published_at', 'is', null)
     .lte('published_at', new Date().toISOString())
@@ -1400,9 +1398,7 @@ export async function getPublishedStoriesByCategory(
     );
   }
 
-  return (
-    (data ?? []) as unknown as RawStory[]
-  ).map(mapStory);
+  return (await hydratePublicEditorialImages((data??[]) as unknown as RawStory[])).map(mapStory);
 }
 
 /**

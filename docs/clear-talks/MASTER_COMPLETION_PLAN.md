@@ -172,6 +172,8 @@ Every batch starts only after reading the current repo HEAD and ledger. Marked P
 - Consolidate /[locale]/account compatibility and account links. Do not expose editorial role controls.
 - Gate: reader can maintain own data, other users cannot access it; tested verification links, invalid sessions, sign-out, deletion safeguards.
 
+**CT11c + CT12 staged in consolidated PR #53; see CT11C_CT12_READER_ACCOUNT_REVIEW.md. Remaining operator/hosted auth, media reference reconciliation and manual UI gates retained. Next consolidated CT13 + CT14, then dedicated CT15.**
+
 ### CT-13 — Reader notifications and newsletters [P1]
 - Implement /account/notifications inbox, read/unread controls, preference matrix, actual event triggers from stories/replies/editorial changes where authorized; delivery retention rules.
 - Implement /account/newsletters with topic subscriptions, double opt-in where needed, unsubscribe/resubscribe/preferences, actual email integration and bounce/no-send behavior.

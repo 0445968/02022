@@ -1,4 +1,5 @@
 'use client';
+import {MediaReferenceReview} from './MediaReferenceReview';
 
 import {
   useEffect,
@@ -1231,7 +1232,7 @@ export function MediaInspector({
                   'trashed' && (
                   <>
                     <WorkflowButton
-                      label="Restore"
+                      label="Restore to draft"
                       icon={
                         RotateCcw
                       }
@@ -1246,7 +1247,7 @@ export function MediaInspector({
                       }
                     />
 
-                    <p className="text-xs text-muted-foreground">Permanent deletion is unavailable until asset reference checks are complete. Trashed assets can still be restored.</p>
+                    <MediaReferenceReview key={asset.id} assetId={asset.id}/>
                   </>
                 )}
               </div>
