@@ -165,6 +165,8 @@ Every batch starts only after reading the current repo HEAD and ledger. Marked P
 
 **CT11a staged; CT11b required for cross-session transactional history/versioning, direct DB rights/reference controls and remaining public output verification. See CT11A_EDITORIAL_AUDIT.md.**
 
+**CT11b staged history and concurrency; CT11c remains required for public projections and media/direct DB guards. See CT11B_HOMEPAGE_HISTORY_REVIEW.md.**
+
 ### CT-12 — Reader profile and security pages [P1]
 - Implement /account/profile and /account/security, with bilingual naming, editable permitted profile info, language/avatar preferences, password update/reset, email change verification, active-session/revocation controls where supported, account export/deletion flow with confirmation and privacy constraints.
 - Consolidate /[locale]/account compatibility and account links. Do not expose editorial role controls.

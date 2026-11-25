@@ -9,6 +9,8 @@ import {
   useRouter,
 } from 'next/navigation';
 
+import type {VersionedLayout} from '@/lib/permissions/homepage-history-contract';
+import {LayoutHistoryPanel} from './LayoutHistoryPanel';
 import type {
   BreakingNewsItem,
   FrontPageStoryOption,
@@ -33,6 +35,7 @@ import {
 } from './front-page/FrontPageController';
 
 interface PageEditorClientProps {
+  versioned?:VersionedLayout|null;
   locale: Locale;
 
   placements:
@@ -65,6 +68,7 @@ const EMPTY_FRONT_PAGE_STATE:
 
 export function PageEditorClient({
   locale,
+  versioned=null,
   placements,
   layoutDraft,
   breakingNews,
@@ -156,6 +160,7 @@ export function PageEditorClient({
             return (
               <FrontPageController
                 ref={controller}
+                versioned={versioned}
                 locale={
                   locale
                 }
@@ -266,7 +271,7 @@ export function PageEditorClient({
                     : 'Layout History'}
                 </h2>
 
-                <p
+                {versioned?<LayoutHistoryPanel locale={locale} onRestore={async revision=>{await controller.current?.restore(revision);setHistoryOpen(false);}}/>:<p
                   className="
                     mt-1
                     text-sm
@@ -277,7 +282,7 @@ export function PageEditorClient({
                   {locale === 'es'
                     ? 'El historial de versiones aún no está disponible. Revertir restaura el diseño publicado cargado, no una versión anterior.'
                     : 'No version history is available yet. Revert restores the currently loaded published layout, not an earlier version.'}
-                </p>
+                </p>}
               </div>
 
               <button
