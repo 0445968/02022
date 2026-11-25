@@ -117,7 +117,7 @@ try{
  mark('seed synthetic historical published comment for report workflow');
  const reportTargetId=randomUUID();
  sql('local published comment fixture',['-f','-'],"insert into public.comments(id,story_id,user_id,body,status) values("+uuid(reportTargetId)+","+uuid(storyIds.public)+","+uuid(users.legacy.id)+",'CT15 synthetic report target','published');");
- let submittedCommentId,submittedReportId,approvedDraft,approvedRevision,mediaDraftId,rejectedMediaDraftId,redemptionCode;
+ let submittedCommentId,submittedReportId,approvedDraft,approvedRevision,mediaDraftId,rejectedMediaDraftId,redemptionCode,privacyRequestId;
  mark('real JWT and REST boundaries');
  const anonymous=client();
  const anonStories=await anonymous.from('stories').select('slug').like('slug','ct15-%').order('slug');
@@ -157,7 +157,7 @@ try{
  check('reader denied private bytes',!!other.error);
  const publicUpload=await free.storage.from('media').upload('uploads/ct15-bypass.png',bytes,{contentType:'image/png',upsert:false});
  check('freelancer cannot evade quota via public bucket',!!publicUpload.error);
- // Do not activate provider sends, cron, public polls, payments or destructive jobs.
+ // No provider sends, cron, payments or destructive jobs. Public poll APP flag is local-only; DB voting stays off until the final disposable poll scenario.
  const flags={
   DEV_AUTH_BYPASS:'false',CT_STAFF_ACCESS_V2_ENABLED:'true',CT_READER_ACCOUNT_ENABLED:'true',
   CT_STAFF_ONBOARDING_ENABLED:'true',CT_MEDIA_PRIVATE_DRAFTS_ENABLED:'true',
@@ -165,7 +165,7 @@ try{
   CT_ASSIGNED_DRAFT_EDITOR_ENABLED:'true',CT_ASSIGNED_REVISION_EDITOR_ENABLED:'true',
   CT_WRITER_DRAFT_CREATION_ENABLED:'true',CT_STORY_REVIEW_ENABLED:'true',
   CT_STAFF_ADMIN_MUTATIONS_ENABLED:'true',CT_READER_COMMUNICATIONS_ENABLED:'true',
-  CT_EDITORIAL_CALENDAR_ENABLED:'true',CT_POLLS_ENABLED:'true',CT_REVIEW_INBOX_ENABLED:'true',CT_STORY_ASSIGNMENTS_ENABLED:'true',
+  CT_EDITORIAL_CALENDAR_ENABLED:'true',CT_POLLS_ENABLED:'true',CT_PUBLIC_POLLS_ENABLED:'true',CT_REVIEW_INBOX_ENABLED:'true',CT_STORY_ASSIGNMENTS_ENABLED:'true',
   CT_HOMEPAGE_HISTORY_ENABLED:'true',CT_READER_REPORTING_ENABLED:'true',
   CT_REVIEWED_PUBLICATION_ENABLED:'true',CT_REVIEWED_SCHEDULING_ENABLED:'true',CT_STAFF_INVITATIONS_ENABLED:'true',CT_STAFF_PRESET_MUTATIONS_ENABLED:'true',CT_STAFF_OVERRIDE_MUTATIONS_ENABLED:'true',CT_STAFF_BYLINE_REVIEW_ENABLED:'true'
  };
@@ -261,11 +261,19 @@ try{
     const notices=await context.request.get(appOrigin+'/api/account/notifications');
     check('reader notifications available (HTTP '+notices.status()+')',notices.status()===200);
     const prefs=(await notices.json()).preferences;
-    const changes={action:'preferences',expectedRevision:prefs.revision,stories:!prefs.stories,replies:prefs.replies,privacy:prefs.privacy,page:0};
+    const changes={action:'preferences',expectedRevision:prefs.revision,stories:true,replies:true,privacy:true,page:0};
     const updated=await post('/api/account/notifications',changes);
     check('reader notification preferences persisted',updated.status()===200&&(await updated.json()).preferences.stories===changes.stories);
     const outdated=await post('/api/account/notifications',changes);
     check('reader stale preference write rejected',outdated.status()===409);
+    const deletion=await post('/api/account/profile',{action:'request',kind:'delete',confirmation:'DELETE'});
+    check('reader submits deletion request without deleting account',deletion.status()===200);
+    privacyRequestId=(await deletion.json()).requests.find(r=>r.kind==='delete'&&r.status==='pending')?.id;
+    check('deletion request receipt is pending',typeof privacyRequestId==='string');
+    const stillSignedIn=await context.request.get(appOrigin+'/api/account/profile');
+    check('request does not revoke reader session',stillSignedIn.status()===200);
+    const premature=await post('/api/polls/'+randomUUID()+'/vote',{choice:0});
+    check('database poll activation remains off',premature.status()===403);
     check('reader denied staff invitation directory',(await context.request.get(appOrigin+'/api/newsroom/team/invitations')).status()===403);
     check('unrelated verified reader cannot redeem invitation',(await context.request.post(appOrigin+'/api/newsroom/team/invitations',{headers:{Origin:appOrigin},data:{action:'redeem',token:redemptionCode}})).status()===403);
     check('reader denied private byline queue',(await context.request.get(appOrigin+'/api/newsroom/team/bylines')).status()===403);
@@ -346,6 +354,9 @@ try{
     check('reader newsletter topics visible without delivery',newsletters.status()===200&&(await newsletters.json()).deliveryEnabled===false);
     const subscribe=await post('/api/account/newsletters',{action:'subscribe',topic:'latest'});
     check('newsletter send stays disabled (HTTP '+subscribe.status()+')',subscribe.status()===503);
+    const optOut=await post('/api/account/newsletters',{action:'unsubscribe',topic:'latest'});
+    check('reader can unsubscribe even with delivery disabled',optOut.status()===200&&(await optOut.json()).topics.some(t=>t.topic==='latest'&&t.status==='unsubscribed'));
+    check('unsupported newsletter topic rejected',(await post('/api/account/newsletters',{action:'unsubscribe',topic:'forged'})).status()===422);
    }
    const team=await context.request.get(appOrigin+'/api/newsroom/team');
    check(role+' team route authorization (HTTP '+team.status()+')',team.status()===(role==='owner'?200:404));
@@ -987,6 +998,7 @@ try{
   check('new moderator denied team management',(await inviteeContext.request.get(appOrigin+'/api/newsroom/team')).status()===404);
  }finally{await inviteeContext.close();}
  const ownerContext=await adminTestContext(users.owner.email);
+ let pollState;
  try{
   const byline=appOrigin+'/api/newsroom/team/bylines';
   const pending=await ownerContext.request.get(byline);
@@ -999,7 +1011,133 @@ try{
   check('stale byline review rejected',(await ownerContext.request.post(byline,{headers:{Origin:appOrigin},data:command})).status()===409);
   const updated=await ownerContext.request.get(byline);
   check('byline decision appears in queue',updated.status()===200&&(await updated.json()).items.some(r=>r.membership_id===target.membership_id&&r.review_status==='rejected'));
+  const privacy=appOrigin+'/api/newsroom/privacy';
+  const queue=await ownerContext.request.get(privacy);
+  check('owner privacy queue contains reader deletion request',queue.status()===200);
+  const entry=(await queue.json()).items.find(r=>r.id===privacyRequestId);
+  check('owner sees exact independently reviewable receipt',entry?.status==='pending'&&entry.canReview===true&&entry.email===users.reader.email);
+  const privacyPost=data=>ownerContext.request.post(privacy,{headers:{Origin:appOrigin},data});
+  const review={id:entry.id,expectedUpdatedAt:entry.updatedAt,action:'review',resolution:null};
+  check('owner moves privacy request to review',(await privacyPost(review)).status()===200);
+  check('stale privacy review denied',(await privacyPost(review)).status()===409);
+  const current=(await (await ownerContext.request.get(privacy)).json()).items.find(r=>r.id===entry.id);
+  check('reviewing receipt persists',current?.status==='reviewing');
+  check('owner records non-destructive privacy decline',(await privacyPost({...review,expectedUpdatedAt:current.updatedAt,action:'decline',resolution:'retention_required'})).status()===200);
+  const closed=await ownerContext.request.get(privacy);
+  check('closed privacy request no longer in open queue',closed.status()===200&&!(await closed.json()).items.some(r=>r.id===entry.id));
+  const team=await (await ownerContext.request.get(appOrigin+'/api/newsroom/team')).json();
+  const editor=team.members.find(m=>m.roles.some(r=>r.roleKey==='editor'));
+  assert.ok(editor);
+  const overrideUrl=appOrigin+'/api/newsroom/team/override-change';
+  const overridePost=data=>ownerContext.request.post(overrideUrl,{headers:{Origin:appOrigin},data});
+  for(const capability of ['poll.view_manage','poll.publish']){
+   const grant=await overridePost({targetMembershipId:editor.id,operation:'set',capability,scope:'all',effect:'allow',expiresAt:new Date(Date.now()+7200000).toISOString(),reason:'CT15 disposable independent poll reviewer'});
+   check('temporary isolated editor grant '+capability,grant.status()===200);
+  }
+  const polls=appOrigin+'/api/newsroom/polls';
+  const pollPost=data=>ownerContext.request.post(polls,{headers:{Origin:appOrigin},data});
+  const copy={language:'en',question:'CT15 synthetic poll question?',options:['Option A','Option B'],opensAt:new Date(Date.now()-3600000).toISOString(),closesAt:new Date(Date.now()+86400000).toISOString(),cap:5};
+  const created=await pollPost({action:'create',id:null,version:null,copy});
+  check('owner creates poll via actual authenticated API (HTTP '+created.status()+')',created.status()===200);
+  const draft=await created.json();
+  check('new poll is draft version one',draft.status==='draft'&&draft.version===1);
+  const submitted=await pollPost({action:'submit',id:draft.id,version:draft.version,copy:null});
+  check('owner submits poll for review',submitted.status()===200);
+  pollState=await submitted.json();
+  check('poll cannot be approved by creator',(await pollPost({action:'approve',id:draft.id,version:pollState.version,copy:null})).status()===403);
+  check('unapproved poll cannot publish',(await pollPost({action:'publish',id:draft.id,version:pollState.version,copy:null})).status()===409);
+  check('stale poll edit rejected',(await pollPost({action:'save',id:draft.id,version:draft.version,copy})).status()===409);
  }finally{await ownerContext.close();}
+ mark('isolated public poll lifecycle and reader communications');
+ const pollEditor=await adminTestContext(users.editor.email);
+ try{
+  const pollPost=data=>pollEditor.request.post(appOrigin+'/api/newsroom/polls',{headers:{Origin:appOrigin},data});
+  const approved=await pollPost({action:'approve',id:pollState.id,version:pollState.version,copy:null});
+  check('independent editor approves poll',approved.status()===200);
+  pollState=await approved.json();
+  const published=await pollPost({action:'publish',id:pollState.id,version:pollState.version,copy:null});
+  check('independently approved poll publishes',published.status()===200);
+  pollState=await published.json();
+  const hidden=await anonymous.rpc('public_list_polls',{p_language:'en',p_page:0});
+  check('published poll remains hidden until database activation',!hidden.error&&hidden.data.enabled===false&&hidden.data.items.length===0);
+ }finally{await pollEditor.close();}
+ // These guards check CI/local loopback at startup. This database-owner write
+ // is an explicit test fixture, never a migration, provider or hosted action.
+ mark('activate disposable local poll gate only');
+ sql('local poll gate',['-f','-'],'update newsroom_private.poll_settings set public_enabled=true where singleton;');
+ const readerContext=await adminTestContext(users.reader.email);
+ try{
+  const post=(path,data)=>readerContext.request.post(appOrigin+path,{headers:{Origin:appOrigin},data});
+  const publicPolls=await anonymous.rpc('public_list_polls',{p_language:'en',p_page:0});
+  const publicPoll=publicPolls.data?.items.find(p=>p.id===pollState.id);
+  check('anonymous poll projection excludes identity and open counts',!publicPolls.error&&publicPoll?.open===true&&publicPoll.ownChoice===null&&publicPoll.counts===null);
+  const votePath='/api/polls/'+pollState.id+'/vote';
+  const anonymousContext=await browser.newContext();
+  try{
+   check('anonymous cannot cast poll vote',(await anonymousContext.request.post(appOrigin+votePath,{headers:{Origin:appOrigin},data:{choice:0}})).status()===401);
+  }finally{await anonymousContext.close();}
+  check('invalid poll choice rejected',(await post(votePath,{choice:7})).status()===422);
+  const first=await post(votePath,{choice:0});
+  check('verified reader casts actual poll vote',first.status()===200&&(await first.json()).alreadyVoted===false);
+  const replay=await post(votePath,{choice:0});
+  check('same poll vote is idempotent',replay.status()===200&&(await replay.json()).alreadyVoted===true);
+  check('changing recorded vote denied',(await post(votePath,{choice:1})).status()===409);
+  const own=await users.reader.client.rpc('public_list_polls',{p_language:'en',p_page:0});
+  const ownPoll=own.data?.items.find(p=>p.id===pollState.id);
+  check('reader sees own choice but not aggregate counts',!own.error&&ownPoll?.ownChoice===0&&ownPoll.counts===null);
+  const other=await users.legacy.client.rpc('public_list_polls',{p_language:'en',p_page:0});
+  check('unrelated verified account sees no other choice',!other.error&&other.data.items.find(p=>p.id===pollState.id)?.ownChoice===null);
+  for(const [role,choice] of [['legacy',1],['staff_writer',0],['freelancer',1],['moderator',0]]){
+   const ballot=await users[role].client.rpc('reader_vote_poll',{p_id:pollState.id,p_choice:choice});
+   check('real JWT separate poll ballot '+role,!ballot.error&&ballot.data.alreadyVoted===false);
+  }
+  const overflow=await users.editor.client.rpc('reader_vote_poll',{p_id:pollState.id,p_choice:1});
+  check('poll response cap prevents further voting',overflow.error?.code==='40001');
+  const capped=await anonymous.rpc('public_list_polls',{p_language:'en',p_page:0});
+  const cappedPoll=capped.data?.items.find(p=>p.id===pollState.id);
+  check('cap closes poll without automatic results release',!capped.error&&cappedPoll?.open===false&&cappedPoll.counts===null);
+  const exported=await readerContext.request.get(appOrigin+'/api/account/export');
+  check('reader export contains only own poll ballot',exported.status()===200&&(await exported.json()).pollVotes.filter(v=>v.poll_id===pollState.id).length===1);
+  const profile=await readerContext.request.get(appOrigin+'/api/account/profile');
+  check('reader account remains active with declined deletion receipt',profile.status()===200&&(await profile.json()).requests.some(r=>r.id===privacyRequestId&&r.status==='declined'));
+  const notices=await readerContext.request.get(appOrigin+'/api/account/notifications');
+  check('reader inbox loads real generated events',notices.status()===200);
+  const inbox=await notices.json();
+  const news=inbox.items.find(n=>n.kind==='story'&&n.slug==='ct15-assigned');
+  const privacy=inbox.items.filter(n=>n.kind==='privacy');
+  check('publication and owner privacy decisions generate reader notices',!!news&&privacy.some(n=>n.requestStatus==='reviewing')&&privacy.some(n=>n.requestStatus==='declined'));
+  const otherNotices=await users.legacy.client.rpc('reader_read_notices',{p_page:0});
+  check('other reader cannot see private decision notices',!otherNotices.error&&!otherNotices.data.items.some(n=>n.kind==='privacy'));
+  const read=await post('/api/account/notifications',{action:'read',id:news.id,page:0});
+  check('mark individual notification read',read.status()===200&&(await read.json()).items.some(n=>n.id===news.id&&n.read));
+  const unread=await post('/api/account/notifications',{action:'unread',id:news.id,page:0});
+  check('mark individual notification unread',unread.status()===200&&(await unread.json()).items.some(n=>n.id===news.id&&!n.read));
+  const all=await post('/api/account/notifications',{action:'read_all',page:0});
+  check('mark all notifications read',all.status()===200&&(await all.json()).unread===0);
+ }finally{await readerContext.close();}
+ const finishOwner=await adminTestContext(users.owner.email);
+ try{
+  const current=await users.owner.client.rpc('staff_list_polls',{p_page:0});
+  assert.ok(!current.error);
+  const capped=current.data.items.find(p=>p.id===pollState.id);
+  const release=await finishOwner.request.post(appOrigin+'/api/newsroom/polls',{headers:{Origin:appOrigin},data:{action:'release_results',id:capped.id,version:capped.version,copy:null}});
+  check('owner releases threshold-qualified aggregate results',release.status()===200&&(await release.json()).resultsReleased===true);
+  const result=await anonymous.rpc('public_list_polls',{p_language:'en',p_page:0});
+  check('public aggregate exactly matches five votes',!result.error&&JSON.stringify(result.data.items.find(p=>p.id===pollState.id)?.counts)==='[3,2]');
+  const latest=await users.owner.client.rpc('staff_list_polls',{p_page:0});
+  const published=latest.data.items.find(p=>p.id===pollState.id);
+  const retired=await finishOwner.request.post(appOrigin+'/api/newsroom/polls',{headers:{Origin:appOrigin},data:{action:'retire',id:published.id,version:published.version,copy:null}});
+  check('owner retires poll',retired.status()===200&&(await retired.json()).status==='retired');
+  const retiredPublic=await anonymous.rpc('public_list_polls',{p_language:'en',p_page:0});
+  check('retired poll no longer appears publicly',!retiredPublic.error&&!retiredPublic.data.items.some(p=>p.id===pollState.id));
+  const team=await (await finishOwner.request.get(appOrigin+'/api/newsroom/team')).json();
+  const editor=team.members.find(m=>m.roles.some(r=>r.roleKey==='editor'));
+  for(const capability of ['poll.view_manage','poll.publish']){
+   const remove=await finishOwner.request.post(appOrigin+'/api/newsroom/team/override-change',{headers:{Origin:appOrigin},data:{targetMembershipId:editor.id,operation:'remove',capability,scope:'all',effect:null,expiresAt:null,reason:'CT15 remove disposable poll reviewer grant'}});
+   check('temporary poll reviewer grant removed '+capability,remove.status()===200);
+  }
+ }finally{await finishOwner.close();sql('local poll gate off',['-f','-'],'update newsroom_private.poll_settings set public_enabled=false where singleton;');}
+ check('local poll gate reset and external newsletter delivery remains off',sql('provider gates',['-At','-f','-'],"select (not (select public_enabled from newsroom_private.poll_settings where singleton) and not (select delivery_enabled from newsroom_private.newsletter_settings where singleton))::text;")==='true');
 
  report.success=true;
 }catch(e){report.error=redact(e instanceof Error?e.message:String(e)).slice(0,500);throw new Error(report.error);}
