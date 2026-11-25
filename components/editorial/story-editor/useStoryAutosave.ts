@@ -124,6 +124,10 @@ export function useStoryAutosave({
   const endpoint =
     saveEndpoint ??
     `/api/stories/${storyId}`;
+  const [previousEndpoint,setPreviousEndpoint]=useState(endpoint);
+  if(previousEndpoint!==endpoint){
+    setPreviousEndpoint(endpoint);setSaveState('saved');setError(null);
+  }
 
   /**
    * Keep the newest React state available
@@ -154,13 +158,6 @@ export function useStoryAutosave({
     pendingVersionRef.current =
       false;
 
-    setSaveState(
-      'saved'
-    );
-
-    setError(
-      null
-    );
   }, [
     endpoint,
   ]);

@@ -94,7 +94,8 @@ export function StaffTeamManager({locale,showInvitations=false,showBylines=false
   const [confirmed,setConfirmed]=useState(false);
   const [saving,setSaving]=useState(false);
 
-  const refresh=useCallback(async()=>{
+  const refresh=useCallback(async(signal?:AbortSignal)=>{
+    if(signal?.aborted)return;
     setLoading(true);
     try{
       const query=new URLSearchParams({
@@ -102,15 +103,16 @@ export function StaffTeamManager({locale,showInvitations=false,showBylines=false
       });
       if(filter!=='all')query.set('status',filter);
       if(auditFilter==='selected'&&selectedId)query.set('auditMemberId',selectedId);
-      const result=await fetch('/api/newsroom/team?'+query.toString(),{cache:'no-store'});
+      const result=await fetch('/api/newsroom/team?'+query.toString(),{cache:'no-store',signal});
       if(!result.ok)throw new Error(t.error);
       const directory=await result.json() as TeamDirectory;
+      if(signal?.aborted)return;
       setData(directory);setError(null);
     }catch(e){
-      setError(e instanceof Error?e.message:t.error);
-    }finally{setLoading(false);}
+      if(!signal?.aborted)setError(e instanceof Error?e.message:t.error);
+    }finally{if(!signal?.aborted)setLoading(false);}
   },[t.error,page,auditPage,filter,auditFilter,selectedId]);
-  useEffect(()=>{void refresh();},[refresh]);
+  useEffect(()=>{const controller=new AbortController();const timer=setTimeout(()=>void refresh(controller.signal),0);return()=>{clearTimeout(timer);controller.abort();};},[refresh]);
 
   const members=useMemo(()=>data?.members.filter(m=>{
     const normalized=search.trim().toLocaleLowerCase(locale);

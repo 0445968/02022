@@ -627,7 +627,8 @@ export function MediaLibrary({
 
   const fetchMedia =
     useCallback(
-      async () => {
+      async (signal?:AbortSignal) => {
+        if(signal?.aborted)return;
         setLoading(
           true
         );
@@ -646,6 +647,7 @@ export function MediaLibrary({
               {
                 cache:
                   'no-store',
+                signal,
               }
             );
 
@@ -657,6 +659,7 @@ export function MediaLibrary({
                   null
               );
 
+          if(signal?.aborted)return;
           if (
             !response.ok
           ) {
@@ -761,6 +764,7 @@ export function MediaLibrary({
         } catch (
           fetchError
         ) {
+          if(signal?.aborted)return;
           console.error(
             'Failed to load media:',
             fetchError
@@ -785,7 +789,7 @@ export function MediaLibrary({
               : 'Unable to load media library.'
           );
         } finally {
-          setLoading(
+          if(!signal?.aborted)setLoading(
             false
           );
         }
@@ -798,7 +802,10 @@ export function MediaLibrary({
 
   useEffect(
     () => {
-      void fetchMedia();
+      const controller=new AbortController();
+      // Schedule external loading after commit; cancel abandoned requests.
+      const timer=setTimeout(()=>void fetchMedia(controller.signal),0);
+      return ()=>{clearTimeout(timer);controller.abort();};
     },
     [
       fetchMedia,
@@ -808,21 +815,6 @@ export function MediaLibrary({
   /* ======================================================= */
   /* RESET PAGE WHEN QUERY CHANGES */
   /* ======================================================= */
-
-  useEffect(
-    () => {
-      setPage(
-        1
-      );
-    },
-    [
-      filters,
-      search,
-      section,
-      sort,
-      perPage,
-    ]
-  );
 
   /* ======================================================= */
   /* SECTION */
@@ -864,6 +856,7 @@ export function MediaLibrary({
       mode
     );
 
+    setPage(1);
     setPerPage(
       mode ===
         'compact'
@@ -1601,12 +1594,8 @@ export function MediaLibrary({
           filters={
             filters
           }
-          onSearchChange={
-            setSearch
-          }
-          onSortChange={
-            setSort
-          }
+          onSearchChange={value=>{setSearch(value);setPage(1);}}
+          onSortChange={value=>{setSort(value);setPage(1);}}
           onFiltersClick={() =>
             setFiltersOpen(
               true
@@ -1626,9 +1615,7 @@ export function MediaLibrary({
             message={
               error
             }
-            onRetry={
-              fetchMedia
-            }
+            onRetry={()=>void fetchMedia()}
           />
         )}
 
@@ -1756,9 +1743,7 @@ export function MediaLibrary({
           filters={
             filters
           }
-          onChange={
-            setFilters
-          }
+          onChange={value=>{setFilters(value);setPage(1);}}
           onReset={
             resetFilters
           }

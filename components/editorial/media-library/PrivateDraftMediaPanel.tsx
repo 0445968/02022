@@ -33,16 +33,17 @@ export function PrivateDraftMediaPanel({canReview,locale='en'}:{canReview:boolea
   const [confirmRights,setConfirmRights]=useState(false);
   const [reason,setReason]=useState('');
 
-  const refresh=useCallback(async()=>{
-    const response=await fetch('/api/media/drafts',{cache:'no-store'});
+  const refresh=useCallback(async(signal?:AbortSignal)=>{
+    const response=await fetch('/api/media/drafts',{cache:'no-store',signal});
     const data=await response.json() as {drafts?:Draft[];quota?:PrivateUploadQuota|null;error?:string};
     if(!response.ok)throw new Error(data.error??'Unable to list drafts');
+    if(signal?.aborted)return;
     setDrafts(data.drafts??[]);setQuota(data.quota??null);
   },[]);
   useEffect(()=>{
-    let active=true;
-    void refresh().catch((e:unknown)=>{if(active)setError(e instanceof Error?e.message:'Draft list unavailable');});
-    return ()=>{active=false;};
+    const controller=new AbortController();
+    const timer=setTimeout(()=>void refresh(controller.signal).catch((e:unknown)=>{if(!controller.signal.aborted)setError(e instanceof Error?e.message:'Draft list unavailable');}),0);
+    return ()=>{clearTimeout(timer);controller.abort();};
   },[refresh]);
 
   async function upload(){

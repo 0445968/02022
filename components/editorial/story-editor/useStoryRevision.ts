@@ -281,7 +281,8 @@ export function useStoryRevision({
 
   const loadRevision =
     useCallback(
-      async () => {
+      async (signal?:AbortSignal) => {
+        if(signal?.aborted)return;
         if (
           !isPublishedStory
         ) {
@@ -311,6 +312,7 @@ export function useStoryRevision({
               {
                 cache:
                   'no-store',
+                signal,
               }
             );
 
@@ -333,6 +335,7 @@ export function useStoryRevision({
           const data =
             await response.json();
 
+          if(signal?.aborted)return;
           const nextRevision =
             data.revision as
               | StoryRevisionData
@@ -473,6 +476,7 @@ export function useStoryRevision({
         } catch (
           revisionError
         ) {
+          if(signal?.aborted)return;
           console.error(
             'Unable to load story revision:',
             revisionError
@@ -486,7 +490,7 @@ export function useStoryRevision({
                   .errorDesc
           );
         } finally {
-          setRevisionLoaded(
+          if(!signal?.aborted)setRevisionLoaded(
             true
           );
         }
@@ -504,7 +508,9 @@ export function useStoryRevision({
     );
 
   useEffect(() => {
-    void loadRevision();
+    const controller=new AbortController();
+    const timer=setTimeout(()=>void loadRevision(controller.signal),0);
+    return ()=>{clearTimeout(timer);controller.abort();};
   }, [
     loadRevision,
   ]);

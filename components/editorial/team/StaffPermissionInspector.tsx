@@ -86,10 +86,10 @@ export function StaffPermissionInspector({
  useEffect(()=>{
    // Parent keys this inspector by member identity; cancel outdated reads.
    const controller=new AbortController();
-   void reload(controller.signal).catch((e:unknown)=>{
+   const timer=setTimeout(()=>void reload(controller.signal).catch((e:unknown)=>{
      if(!controller.signal.aborted)setError(e instanceof Error?e.message:t.error);
-   });
-   return ()=>controller.abort();
+   }),0);
+   return ()=>{clearTimeout(timer);controller.abort();};
  },[reload,t.error]);
  const visible=useMemo(()=>preview?.permissions.filter(p=>p.capability.toLowerCase().includes(search.toLowerCase()))??[],[preview,search]);
  const existing=preview?.overrides??[];
