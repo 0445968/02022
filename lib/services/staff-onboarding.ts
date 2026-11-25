@@ -6,6 +6,7 @@ import {isDevAuthBypass} from '@/lib/db/supabase-data';
 import {resolveStaffPermissionOnServer} from '@/lib/permissions/server';
 import {INVITE_UUID} from '@/lib/permissions/staff-invite-http';
 import type {StaffOnboardingInput} from '@/lib/permissions/staff-onboarding-input';
+import {ownBylineStatus,type OwnByline} from '@/lib/permissions/staff-profile-contract';
 import type {StaffOnboardingState} from '@/lib/permissions/staff-onboarding-types';
 
 export function staffOnboardingEnabled(){
@@ -59,4 +60,38 @@ export async function saveStaffOnboarding(input:StaffOnboardingInput):Promise<St
     p_acknowledged_version:input.acknowledgedVersion,p_request_id:randomUUID()});
   if(error)rpcError(error.code);
   return state(data);
+}
+
+/** Own profile only: no caller-supplied actor, membership or byline ID.
+ * Reuse the service-only verified membership resolver and approved association.
+ * Do not expose other candidate profiles, actor IDs, private review reasons or author editing.
+ */
+export async function readOwnByline():Promise<OwnByline>{
+ const {actor,db}=await verifiedActor();
+ const {data:member,error:memberError}=await db.rpc('staff_onboarding_actor_membership',{p_actor:actor});
+ if(memberError||typeof member!=='string'||!INVITE_UUID.test(member))throw new StaffOnboardingError(403);
+ const {data:raw,error:stateError}=await db.rpc('staff_read_onboarding',{p_actor:actor});
+ if(stateError)rpcError(stateError.code);
+ const profile=state(raw).profile;
+ if(!profile)throw new StaffOnboardingError(403);
+ const {data:review,error}=await db.from('staff_byline_reviews').select('status,reviewed_profile_revision,editorial_profile_id').eq('membership_id',member).maybeSingle();
+ if(error)rpcError(error.code);
+ let eligible=false,name:unknown=null;
+ if(review?.status==='approved'){
+  if(typeof review.editorial_profile_id!=='string'||!INVITE_UUID.test(review.editorial_profile_id))throw new StaffOnboardingError(503);
+  const {data:allowed,error:allowedError}=await db.rpc('staff_byline_candidate_allowed',{p_member:member,p_byline:review.editorial_profile_id});
+  if(allowedError)rpcError(allowedError.code);
+  eligible=allowed===true;
+  if(eligible){
+   const {data:byline,error:bylineError}=await db.from('editorial_profiles').select('byline_name,account_id').eq('id',review.editorial_profile_id).maybeSingle();
+   if(bylineError)rpcError(bylineError.code);
+   eligible=!!byline&&(byline.account_id===null||byline.account_id===actor);
+   name=eligible?byline?.byline_name:null;
+  }
+ }
+ const {data:current,error:currentError}=await db.rpc('staff_onboarding_actor_membership',{p_actor:actor});
+ if(currentError||current!==member)throw new StaffOnboardingError(403);
+ const {data:check,error:checkError}=await db.from('staff_byline_reviews').select('status,reviewed_profile_revision,editorial_profile_id').eq('membership_id',member).maybeSingle();
+ if(checkError||JSON.stringify(check)!==JSON.stringify(review))throw new StaffOnboardingError(409);
+ return ownBylineStatus(profile.bylineRequested,profile.revision,review,eligible,name);
 }

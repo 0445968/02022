@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import {DashboardActivity} from '@/components/editorial/dashboard/DashboardActivity';
 import {CalendarAlerts} from '@/components/editorial/calendar/CalendarAlerts';
 import {canAccessStoryReview} from '@/lib/services/story-review';
 import {canStartWriterDraft} from '@/lib/services/writer-drafts';
@@ -28,7 +29,7 @@ export default async function ContributorWorkspace({searchParams}:{searchParams:
     {allowed:access.manageBylines,href:'/newsroom/authors',label:dict.newsroom.authors,icon:Users},
     {allowed:access.fullHomepage,href:'/newsroom/page-editor',label:dict.newsroom.pageEditor,icon:Newspaper},
     {allowed:access.viewTeam,href:'/newsroom/team',label:dict.newsroom.team,icon:Users},
-    {allowed:access.onboarding,href:'/newsroom/onboarding',label:es?'Perfil privado del equipo':'Private staff profile',icon:User}
+    {allowed:access.onboarding,href:'/newsroom/profile',label:es?'Perfil privado del equipo':'Private staff profile',icon:User}
   ].filter(link=>link.allowed);
   const statuses:Record<string,string>=es?{draft:'Borrador',in_review:'En revisión',scheduled:'Programado',published:'Publicado',archived:'Archivado'}:{draft:'Draft',in_review:'In review',scheduled:'Scheduled',published:'Published',archived:'Archived'};
   const types:Record<string,string>=es?{author:'Autor',editor:'Editor',reviewer:'Revisor',copy:'Corrección',visual:'Visual'}:{author:'Author',editor:'Editor',reviewer:'Reviewer',copy:'Copy editing',visual:'Visual'};
@@ -41,12 +42,13 @@ export default async function ContributorWorkspace({searchParams}:{searchParams:
     </section>}
     {canCreate&&<Link href="/newsroom/contributor/new" className="inline-flex rounded-md bg-primary px-4 py-2 text-sm font-semibold text-white">{es?'Nuevo borrador':'New draft'}</Link>}
     <CalendarAlerts locale={locale}/>
+    <DashboardActivity locale={locale} includeAssignments={false}/>
     <section className="space-y-3 rounded-lg border border-border bg-white p-5">
       <h2 className="font-headline text-lg font-semibold text-deep">{es?'Mis asignaciones activas':'My active assignments'}</h2>
       {assigned.unavailable?<p role="alert" className="text-sm text-muted-foreground">{es?'No se pudieron cargar sus asignaciones. Actualice esta página.':'Unable to load assignments. Refresh this page.'}</p>:<>
         {!assigned.items.length&&<p className="text-sm text-muted-foreground">{es?'No hay asignaciones accesibles en esta página.':'No accessible assignments on this page.'}</p>}
         <ul className="space-y-2">{assigned.items.map(story=><li key={story.id} className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-border p-3">
-          <div className="min-w-0"><p className="break-words text-sm font-semibold text-deep">{story.headline}</p><p className="mt-1 text-xs text-muted-foreground">{statuses[story.status]??story.status} · {story.assignmentTypes.map(t=>types[t]??t).join(', ')}{story.dueAt?' · '+(es?'Vence ':'Due ')+new Date(story.dueAt).toLocaleString(es?'es-ES':'en-US'):''}</p></div>
+          <div className="min-w-0"><p className="break-words text-sm font-semibold text-deep">{story.headline}</p><p className="mt-1 text-xs text-muted-foreground">{statuses[story.status]??story.status} · {story.assignmentTypes.map(t=>types[t]??t).join(', ')}{story.dueAt?' · '+(es?'Vence ':'Due ')+new Date(story.dueAt).toLocaleString(es?'es-ES':'en-US',{timeZone:'America/Bogota'})+' Bogotá':''}</p></div>
           <div className="flex flex-wrap gap-2">{story.canEditRevision&&<Link href={'/newsroom/contributor/stories/'+story.id+'/revision'} className="rounded-md bg-primary px-3 py-2 text-sm font-semibold text-white">{es?'Revisión no publicada':'Unpublished revision'}</Link>}{story.canEditDraft&&<Link href={'/newsroom/contributor/stories/'+story.id} className="rounded-md bg-primary px-3 py-2 text-sm font-semibold text-white">{es?'Editar borrador':'Edit draft'}</Link>}
           {reviewable.has(story.id)&&<Link href={'/newsroom/stories/'+story.id+'/review?kind=draft'} className="rounded-md border border-border px-3 py-2 text-sm font-medium hover:bg-surface-muted">{es?'Revisión y comentarios':'Review & feedback'}</Link>}
           <Link href={'/newsroom/stories/'+story.id+'/preview'} className="rounded-md border border-border px-3 py-2 text-sm font-medium hover:bg-surface-muted">{es?'Vista previa':'Preview'}</Link></div>

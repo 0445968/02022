@@ -157,6 +157,8 @@ Every batch starts only after reading the current repo HEAD and ledger. Marked P
 - Dashboard: real assignments, recent review events, summary metrics scoped by effective permissions; hide unauthorized actions; replace stage notice only when genuinely complete.
 - Gate: role-scoped user experience, account/byline distinction and no broken profile controls.
 
+**CT10 staged; see CT10_PROFILE_DASHBOARD_REVIEW.md. Full password/security handoff is CT12; optional self-headshot and exhaustive scoped metrics remain review items. Manual browser acceptance deferred to CT15 by user. Limit Vercel deployments to 100/day across team, consolidate pushes and do not manually redeploy intermediate work.**
+
 ### CT-11 — Existing Author, Media, Page Editor and public output audit [P1]
 - Complete missing behavior in already-rendered controls, check front-page drafts/publish/revert/history, media moderation/rights/asset delete, editorial byline management and homepage article previews. Distinguish page-editor destinations actually supported from unimplemented tabs.
 - Gate: all existing visible operations perform real changes with correct privileges and public frontend reflects reviewed updates; no visual change to current UI.
