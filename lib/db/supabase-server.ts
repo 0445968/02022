@@ -5,6 +5,8 @@ import { cookies } from 'next/headers';
 import type { Database } from './database.types';
 
 export function createClient() {
+  // Next 13 returns a store; Next 15/16 return a Promise. Capture it in the
+  // request context and await inside the SDK's supported async callbacks.
   const cookieStore = cookies();
 
   return createServerClient<Database>(
@@ -12,17 +14,18 @@ export function createClient() {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
-        getAll() {
-          return cookieStore.getAll();
+        async getAll() {
+          return (await cookieStore).getAll();
         },
 
-        setAll(
+        async setAll(
           cookiesToSet: Parameters<SetAllCookies>[0]
         ) {
+          const store = await cookieStore;
           try {
             cookiesToSet.forEach(
               ({ name, value, options }) => {
-                cookieStore.set(
+                store.set(
                   name,
                   value,
                   options

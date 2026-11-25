@@ -17,12 +17,11 @@ import {
  *     tool with a single interface language, set per user).
  */
 export async function middleware(request: NextRequest) {
-  const { client, response } = createMiddlewareClient(request);
+  const { client, getResponse } = createMiddlewareClient(request);
 
   // Refresh the session — this also sets updated auth cookies on the response.
-  const {
-    data: { user },
-  } = await client.auth.getUser();
+  await client.auth.getUser();
+  const response = getResponse();
 
   const pathname = request.nextUrl.pathname;
 
