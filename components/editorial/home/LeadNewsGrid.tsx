@@ -375,7 +375,7 @@ export function LeadNewsGrid({
           {/* CENTER — LEAD STORY */}
           {/* ================================================= */}
 
-          <main
+          <div
             className="
               min-w-0
               xl:border-r
@@ -395,7 +395,7 @@ export function LeadNewsGrid({
                 moreCoverage
               }
             />
-          </main>
+          </div>
 
           {/* ================================================= */}
           {/* RIGHT — HIGHLIGHTS */}

@@ -25,7 +25,8 @@ export function LanguageSwitcher({ locale, label }: LanguageSwitcherProps) {
 
   function switchLocale() {
     const rest = stripLocale(pathname);
-    const next = localizedPath(target, rest);
+    // Preserve query filters, paging, and fragment anchors across languages.
+    const next = localizedPath(target, rest) + window.location.search + window.location.hash;
     startTransition(() => {
       router.push(next);
     });

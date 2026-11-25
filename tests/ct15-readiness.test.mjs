@@ -38,3 +38,12 @@ test('mobile header can shrink its masthead without hiding navigation and browse
  assert.match(smoke,/await checkpoint\(\)/);assert.match(smoke,/CT15_VIEWPORT_WIDTH/);
  const ci=f('.github/workflows/ct15-local-browser-smoke.yml');assert.match(ci,/width: \[390, 768, 1440\]/);assert.match(ci,/fail-fast: false/);
 });
+
+test('public homepage owns exactly one main landmark with fallback heading and preserves language navigation state',()=>{
+ const grid=f('components/editorial/home/LeadNewsGrid.tsx'),lead=f('components/editorial/home/LeadStoryColumn.tsx'),shell=f('components/layout/public-shell.tsx');
+ assert.doesNotMatch(grid,/<main\b/);
+ assert.match(lead,/<h1 className="sr-only">/);
+ assert.match(shell,/href="#main"/);assert.match(shell,/id="main"\s+tabIndex=\{-1\}/);
+ assert.match(f('components/navigation/language-switcher.tsx'),/window\.location\.search \+ window\.location\.hash/);
+ const smoke=f('scripts/ct15-local-browser-smoke.mjs');assert.match(smoke,/metrics.main===1&&metrics.headings===1/);assert.match(smoke,/queryAndHashPreserved:true/);
+});

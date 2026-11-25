@@ -56,6 +56,7 @@ export async function PublicShell({
         bg-white
       "
     >
+      <a href="#main" className="sr-only focus:not-sr-only focus:absolute focus:left-3 focus:top-3 focus:z-50 focus:rounded-md focus:bg-white focus:p-3 focus:text-deep focus:ring-2 focus:ring-primary">{locale==='es'?'Ir al contenido':'Skip to content'}</a>
       <Header
         dict={
           dict
@@ -82,6 +83,7 @@ export async function PublicShell({
           flex-1
         "
         id="main"
+        tabIndex={-1}
       >
         {children}
       </main>
