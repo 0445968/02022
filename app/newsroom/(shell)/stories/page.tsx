@@ -37,9 +37,9 @@ export default async function StoriesPage(props: PageProps) {
   const locale = await newsroomLocale(user);
   const dict = getDictionary(locale);
 
-  const page = parseInt(searchParams.page ?? '1', 10) || 1;
-  const sortBy = (searchParams.sort ?? 'updated_desc') as
-    | 'updated_desc' | 'updated_asc' | 'published_desc' | 'headline_asc';
+  const page = Math.min(10000,Math.max(1,parseInt(searchParams.page ?? '1',10)||1));
+  const sorts=['updated_desc','updated_asc','published_desc','headline_asc'] as const;
+  const sortBy=sorts.find(sort=>sort===searchParams.sort)??'updated_desc';
 
   const status = VALID_STATUSES.includes(searchParams.status as StoryStatus)
     ? (searchParams.status as StoryStatus)

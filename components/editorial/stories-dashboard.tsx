@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useState, useMemo } from 'react';
+import { useState } from 'react';
 import { Search, ChevronLeft, ChevronRight, ImageOff } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -38,12 +38,15 @@ interface StoriesDashboardProps {
 const STATUSES: (StoryStatus | 'all')[] = ['all', 'draft', 'in_review', 'scheduled', 'published', 'archived'];
 const LANGUAGES: (StoryLanguage | 'all')[] = ['all', 'en', 'es'];
 const ISLANDS: (IslandScope | 'all')[] = ['all', 'san_andres', 'old_providence', 'saint_catalina', 'archipelago', 'none'];
-const SORTS: StoriesDashboardProps['currentFilters']['sortBy'][] = ['updated_desc', 'updated_asc', 'published_desc', 'headline_asc'];
+const SORT_LABELS = {updated_desc:'sortUpdatedDesc',updated_asc:'sortUpdatedAsc',published_desc:'sortPublishedDesc',headline_asc:'sortHeadlineAsc'} as const;
 
 export function StoriesDashboard({ dict, locale='en', publicationQueue=null, canEdit=true, canCreate=true, stories, page, totalPages, total, categories, authors, currentFilters }: StoriesDashboardProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [searchInput, setSearchInput] = useState(currentFilters.search);
+  const [previousSearch,setPreviousSearch]=useState(currentFilters.search);
+  if(previousSearch!==currentFilters.search){setPreviousSearch(currentFilters.search);setSearchInput(currentFilters.search);}
+  const hasFilters=!!currentFilters.search||[currentFilters.status,currentFilters.language,currentFilters.authorId,currentFilters.categoryId,currentFilters.island].some(v=>v!=='all')||currentFilters.sortBy!=='updated_desc';
   const es=locale==='es';
   const queuePage=publicationQueue&&publicationQueue!=='unavailable'?publicationQueue:null;
   const queues=new Map(queuePage?.items.map(i=>[i.storyId.toLowerCase(),i] as const)??[]);
@@ -75,8 +78,9 @@ export function StoriesDashboard({ dict, locale='en', publicationQueue=null, can
   return (
     <div className="mt-6 min-w-0">
       {/* Filters bar */}
-      <div className="flex flex-col gap-3 border border-border bg-white p-4 lg:flex-row lg:items-center">
-        <form onSubmit={handleSearch} className="relative min-w-0 flex-1">
+      <div className="flex flex-col gap-3 border border-border bg-white p-4 2xl:flex-row 2xl:items-end">
+        <form onSubmit={handleSearch} className="flex min-w-0 flex-1 items-center gap-2">
+          <div className="relative min-w-0 flex-1">
           <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" aria-hidden />
           <input
             type="search"
@@ -86,9 +90,11 @@ export function StoriesDashboard({ dict, locale='en', publicationQueue=null, can
             className="h-9 w-full border border-border bg-white pl-10 pr-3 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             aria-label={dict.common.search}
           />
+          </div>
+          <button type="submit" className="h-9 shrink-0 border border-border bg-white px-3 text-xs font-medium text-foreground hover:bg-surface-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">{dict.common.search}</button>
         </form>
 
-        <div className="flex min-w-0 flex-wrap gap-2">
+        <div className="grid min-w-0 grid-cols-2 gap-2 sm:grid-cols-3 xl:flex xl:flex-wrap xl:items-end">
           <FilterSelect
             label={dict.stories.filterStatus}
             value={currentFilters.status}
@@ -129,8 +135,9 @@ export function StoriesDashboard({ dict, locale='en', publicationQueue=null, can
             label={dict.stories.sortBy}
             value={currentFilters.sortBy}
             onChange={(v) => updateFilter('sort', v)}
-            options={SORTS.map((s) => ({ value: s, label: dict.stories[`sort${s.charAt(0).toUpperCase() + s.slice(1)}` as keyof typeof dict.stories] as string }))}
+            options={Object.entries(SORT_LABELS).map(([value,key])=>({value,label:dict.stories[key]}))}
           />
+          {hasFilters&&<button type="button" onClick={()=>{setSearchInput('');router.push('/newsroom/stories');}} className="h-9 self-end border border-border bg-white px-3 text-xs font-medium text-foreground hover:bg-surface-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">{es?'Limpiar filtros':'Clear filters'}</button>}
         </div>
       </div>
 
@@ -283,13 +290,13 @@ function FilterSelect({
   options: { value: string; label: string }[];
 }) {
   return (
-    <label className="flex min-w-0 max-w-full items-center gap-1.5">
-      <span className="sr-only">{label}</span>
+    <label className="flex min-w-0 max-w-full flex-col gap-1">
+      <span className="text-xs font-medium text-muted-foreground">{label}</span>
       <select
         aria-label={label}
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="h-9 min-w-0 max-w-full border border-border bg-white px-2 text-xs font-medium text-foreground focus:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        className="h-9 w-full min-w-0 max-w-full border border-border bg-white px-2 text-xs font-medium text-foreground focus:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
       >
         {options.map((opt) => (
           <option key={opt.value} value={opt.value}>

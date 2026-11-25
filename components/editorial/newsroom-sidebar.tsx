@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import {useEffect,useRef} from 'react';
 import { usePathname } from 'next/navigation';
 
 import {
@@ -114,6 +115,15 @@ export function NewsroomSidebar({
 }: NewsroomSidebarProps) {
   const pathname =
     usePathname();
+  const navRef=useRef<HTMLElement>(null);
+  useEffect(()=>{
+    const nav=navRef.current;
+    if(!nav||!window.matchMedia('(max-width: 1023px)').matches)return;
+    const active=nav.querySelector<HTMLElement>('[aria-current="page"]');
+    if(!active)return;
+    const bounds=nav.getBoundingClientRect(),item=active.getBoundingClientRect();
+    if(item.left<bounds.left||item.right>bounds.right)nav.scrollLeft+=item.left-bounds.left-(bounds.width-item.width)/2;
+  },[pathname]);
 
   const items=scopedNav?scopedNav.map(key=>key==='contributor'?{key,icon:LayoutDashboard,href:'/newsroom/contributor'}:
     key==='profile'?{key,icon:User,href:'/newsroom/profile'}:key==='reviewInbox'?{key,icon:ClipboardCheck,href:'/newsroom/reviews'}:key==='reports'?{key,icon:Flag,href:'/newsroom/reports'}:NAV.find(item=>item.key===key)!).filter(Boolean):NAV.filter(item=>(item.key!=='team'||showTeamNav)&&item.key!=='comments'&&item.key!=='schedule'&&item.key!=='polls');
@@ -186,6 +196,7 @@ export function NewsroomSidebar({
       </div>
 
       <nav
+        ref={navRef}
         className="
           min-w-0
           flex-1

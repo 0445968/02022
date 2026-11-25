@@ -456,6 +456,27 @@ try{
      await page.keyboard.press('Enter');
      check(role+' '+width+'px keyboard skip link focuses content',await page.locator('#newsroom-main').evaluate(el=>document.activeElement===el));
      await page.screenshot({path:resolve(output,role+'-'+width+'-responsive.png'),fullPage:true,timeout:10000,animations:'disabled'});
+     if(role==='owner'&&width===390){
+      const sort=page.getByRole('combobox',{name:'Sort by',exact:true});
+      check('story sort options have visible labels',await sort.locator('option').evaluateAll(options=>options.length===4&&options.every(o=>!!o.textContent?.trim())));
+      await sort.selectOption('headline_asc');
+      await page.waitForURL(url=>url.searchParams.get('sort')==='headline_asc');
+      await page.locator('tbody tr').first().getByRole('link',{name:'CT15 assigned story',exact:true}).waitFor({state:'visible'});
+      check('mobile story sort changes actual ordering',true);
+      await page.getByRole('combobox',{name:'Status',exact:true}).selectOption('published');
+      await page.waitForURL(url=>url.searchParams.get('status')==='published');
+      await page.locator('tbody tr').first().getByRole('link',{name:'CT15 premium story',exact:true}).waitFor({state:'visible'});
+      check('mobile status filter returns published stories only',await page.locator('tbody tr').count()===3);
+      await page.getByRole('button',{name:'Clear filters',exact:true}).click();
+      await page.waitForURL(url=>url.pathname==='/newsroom/stories'&&!url.search);
+      await page.getByRole('link',{name:'CT15 assigned story',exact:true}).waitFor({state:'visible'});
+      check('mobile clear filters restores full list',await page.locator('tbody tr').count()===5);
+      await page.goto(appOrigin+'/newsroom/team',{waitUntil:'load',timeout:20000});
+      const nav=page.locator('aside nav');
+      await page.waitForFunction(()=>{const n=document.querySelector('aside nav'),a=n?.querySelector('[aria-current=page]');if(!n||!a)return false;const b=n.getBoundingClientRect(),r=a.getBoundingClientRect();return r.left>=b.left-1&&r.right<=b.right+1;});
+      check('mobile active team tab scrolls into view',await nav.locator('[aria-current=page]').count()===1);
+      await page.screenshot({path:resolve(output,'owner-390-team-active.png'),fullPage:true,timeout:10000,animations:'disabled'});
+     }
     }
     await page.setViewportSize({width:1440,height:900});
    }

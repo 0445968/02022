@@ -73,3 +73,11 @@ test('responsive newsroom keeps one scoped navigation and keyboard focusable mai
  assert.match(sidebar,/lg:w-60/);assert.match(sidebar,/overflow-x-auto/);assert.match(sidebar,/lg:min-w-0/);
  assert.match(stories,/statusLabel\(status, locale\)/);assert.match(stories,/islandLabel\(i, locale\)/);assert.match(stories,/aria-label=\{label\}/);
 });
+
+
+test('story sorting uses explicit dictionary keys and readable filter labels',()=>{
+ const source=f('components/editorial/stories-dashboard.tsx');
+ for(const locale of ['en','es']){const dict=JSON.parse(f('messages/'+locale+'.json'));for(const key of ['sortUpdatedDesc','sortUpdatedAsc','sortPublishedDesc','sortHeadlineAsc']){assert.ok(dict.stories[key]);assert.ok(source.includes(key));}}
+ assert.match(source,/Object.entries\(SORT_LABELS\)/);assert.match(source,/Clear filters/);assert.match(source,/type="submit"/);
+ assert.match(f('components/editorial/newsroom-sidebar.tsx'),/nav.scrollLeft\+=/);
+});
