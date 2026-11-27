@@ -291,3 +291,20 @@ export function parseWorkAssignmentPage(raw:unknown,mode:'team'|'personal'):Work
  for(const item of r.history){const h=record(item);if(!isUuid(h.id)||!isDate(h.at)||!['create','edit','status'].includes(String(h.action))||!revision(h.revision)||typeof h.reason!=='string'||typeof h.actor!=='string')throw Error('Invalid assignment history');}
  return r as unknown as WorkAssignmentPage;
 }
+
+export type WorkLookup={kind:'article'|'member';items:WorkMember[];hasMore:boolean};
+export type WorkOverviewRow={id:string;title:string;activity:AssignmentActivity;priority:AssignmentPriority;status:'assigned'|'in_progress'|'blocked';dueAt:string};
+export type WorkOverview={mode:'team'|'personal';asOf:string;counts:{total:number;active:number;blocked:number;completed:number;overdue:number;dueSoon:number};items:WorkOverviewRow[];hasMore:boolean};
+export function parseWorkLookup(raw:unknown,kind:'article'|'member'):WorkLookup{
+ const r=record(raw);if(r.kind!==kind||typeof r.hasMore!=='boolean'||!Array.isArray(r.items)||r.items.length>25)throw Error('Invalid work lookup');
+ for(const item of r.items){const x=record(item);if(!isUuid(x.id)||typeof x.name!=='string'||!x.name.trim()||x.name.length>1000)throw Error('Invalid work option');}
+ return r as unknown as WorkLookup;
+}
+export function parseWorkOverview(raw:unknown,mode:'team'|'personal'):WorkOverview{
+ const r=record(raw),c=record(r.counts);
+ if(r.mode!==mode||!isDate(r.asOf)||typeof r.hasMore!=='boolean'||!Array.isArray(r.items)||r.items.length>50)throw Error('Invalid work overview');
+ for(const k of ['total','active','blocked','completed','overdue','dueSoon'])if(typeof c[k]!=='number'||!Number.isSafeInteger(c[k])||Number(c[k])<0)throw Error('Invalid work count');
+ if(Number(c.active)+Number(c.completed)>Number(c.total)||Number(c.blocked)>Number(c.active)||Number(c.overdue)+Number(c.dueSoon)>Number(c.active))throw Error('Inconsistent work count');
+ for(const item of r.items){const x=record(item);if(!isUuid(x.id)||typeof x.title!=='string'||!allowed(ASSIGNMENT_ACTIVITIES,x.activity)||!allowed(ASSIGNMENT_PRIORITIES,x.priority)||!['assigned','in_progress','blocked'].includes(String(x.status))||!isDate(x.dueAt))throw Error('Invalid work deadline');}
+ return r as unknown as WorkOverview;
+}

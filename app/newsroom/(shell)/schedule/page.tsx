@@ -1,3 +1,7 @@
+import {readWorkOverview,workOverviewEnabled,workAssignmentModes} from '@/lib/services/work-assignments';
+import {resolveGlobalStaffPermissionsOnServer} from '@/lib/permissions/server';
+import {WorkDeadlineList} from '@/components/editorial/WorkDeadlineList';
+import type {WorkOverview} from '@/lib/permissions/standalone-assignment-contract';
 import Link from 'next/link';
 import {ChevronLeft,ChevronRight,RefreshCw} from 'lucide-react';
 import {notFound,redirect} from 'next/navigation';
@@ -14,7 +18,7 @@ import {CancelCalendarSchedule} from '@/components/editorial/calendar/CancelCale
 export const dynamic='force-dynamic';
 export const metadata={robots:{index:false,follow:false},referrer:'no-referrer'};
 export default async function SchedulePage(
- props:{searchParams: Promise<{month?:string;zone?:string;mode?:string;filter?:string;view?:string;page?:string}>}
+ props:{searchParams: Promise<{month?:string;zone?:string;mode?:string;filter?:string;view?:string;page?:string;workPage?:string}>}
 ) {
  const searchParams = await props.searchParams;
  const user=await getCurrentUser();
@@ -29,7 +33,16 @@ export default async function SchedulePage(
  let data:CalendarPage;
  try{data=await readEditorialCalendar({...monthRange(month,zone),mode:mode as CalendarMode,filter:filter as CalendarFilter,page});}
  catch(e){if(e instanceof DraftHttpError&&[403,404].includes(e.status))notFound();return <p role="alert" className="p-6 text-sm text-muted-foreground">{es?'No se pudo cargar el calendario. Actualice la página.':'Unable to load the calendar. Refresh the page.'}</p>;}
- const href=(changes:Record<string,string>={})=>'/newsroom/schedule?'+new URLSearchParams({month,zone,mode,filter,view,page:'0',...changes}).toString();
+ const workPageRaw=searchParams.workPage??'0';
+ if(!/^\d{1,3}$/.test(workPageRaw)||Number(workPageRaw)>100)notFound();
+ const workPage=Number(workPageRaw);
+ let work:WorkOverview|null=null,workError=false;
+ if(workOverviewEnabled()&&filter!=='publications'){
+  const modes=await workAssignmentModes(),calendarGrants=await resolveGlobalStaffPermissionsOnServer(['calendar.view_team']);
+  const workMode=modes.team&&calendarGrants.has('calendar.view_team')?'team':modes.personal?'personal':null;
+  if(workMode)try{work=await readWorkOverview(workMode,mode==='attention'?null:monthRange(month,zone),mode==='attention',workPage);}catch{workError=true;}
+ }
+ const href=(changes:Record<string,string>={})=>'/newsroom/schedule?'+new URLSearchParams({month,zone,mode,filter,view,page:'0',workPage:'0',...changes}).toString();
  const fmt=new Intl.DateTimeFormat(locale,{timeZone:zone,dateStyle:'medium',timeStyle:'short'});
  const title=new Intl.DateTimeFormat(locale,{timeZone:'UTC',month:'long',year:'numeric'}).format(new Date(month+'-01T00:00:00Z'));
  const previous=shiftMonth(month,-1),next=shiftMonth(month,1),scheduling=reviewedSchedulingEnabled();
@@ -83,6 +96,8 @@ export default async function SchedulePage(
     {monthCells(month).map((day,index)=><div key={day??'empty-'+index} className="min-h-[80px] min-w-0 space-y-1 overflow-y-auto bg-white p-1 lg:min-h-0" tabIndex={day&&(dayItems.get(day)?.length??0)>0?0:undefined} aria-label={day??undefined}>{day&&<><p className="px-1 text-xs font-semibold text-muted-foreground">{Number(day.slice(-2))}</p>{(dayItems.get(day)??[]).map(i=>card(i,true))}</>}</div>)}
    </div></div>}
   {(mode==='attention'||view==='agenda')&&<div className="grid gap-2 md:grid-cols-2">{data.items.map(i=>card(i))}</div>}
+  {workError&&<p role="alert" className="text-xs text-muted-foreground">{es?'No se pudieron cargar las entregas de trabajo.':'Work deadlines unavailable.'}</p>}
+  {work&&<section className="rounded-lg border border-border bg-white p-3"><h2 className="text-sm font-semibold text-deep">{es?'Entregas de asignaciones independientes':'Standalone assignment deadlines'} · {work.mode==='team'?(es?'Equipo':'Team'):(es?'Personal':'Personal')}</h2><WorkDeadlineList rows={work.items} locale={locale} mode={work.mode} zone={zone}/><nav className="mt-2 flex gap-3 text-xs" aria-label={es?'Páginas de entregas':'Work deadline pages'}>{workPage>0&&<Link className={control} href={href({page:String(page),workPage:String(workPage-1)})}>{es?'Anterior':'Previous'}</Link>}{work.hasMore&&<Link className={control} href={href({page:String(page),workPage:String(workPage+1)})}>{es?'Siguiente':'Next'}</Link>}</nav></section>}
   <nav aria-label={es?'Páginas del calendario':'Calendar pages'} className="flex gap-3">{page>0&&<Link prefetch={false} className={control} href={href({page:String(page-1)})}>{es?'Página anterior':'Previous page'}</Link>}{data.hasMore&&<Link prefetch={false} className={control} href={href({page:String(page+1)})}>{es?'Página siguiente':'Next page'}</Link>}</nav>
  </section>;
 }

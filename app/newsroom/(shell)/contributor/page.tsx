@@ -1,3 +1,4 @@
+import {WorkAssignmentSummary} from '@/components/editorial/dashboard/WorkAssignmentSummary';
 import Link from 'next/link';
 import {DashboardActivity} from '@/components/editorial/dashboard/DashboardActivity';
 import {CalendarAlerts} from '@/components/editorial/calendar/CalendarAlerts';
@@ -43,6 +44,7 @@ export default async function ContributorWorkspace(props:{searchParams: Promise<
     </section>}
     {canCreate&&<Link href="/newsroom/contributor/new" className="inline-flex rounded-md bg-primary px-4 py-2 text-sm font-semibold text-white">{es?'Nuevo borrador':'New draft'}</Link>}
     <CalendarAlerts locale={locale}/>
+    <WorkAssignmentSummary locale={locale} mode="personal"/>
     <DashboardActivity locale={locale} includeAssignments={false}/>
     <section className="space-y-3 rounded-lg border border-border bg-white p-5">
       <h2 className="font-headline text-lg font-semibold text-deep">{es?'Mis asignaciones activas':'My active assignments'}</h2>

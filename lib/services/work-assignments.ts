@@ -5,7 +5,7 @@ import {createClient} from '@/lib/db/supabase-server';
 import {isDevAuthBypass} from '@/lib/db/supabase-data';
 import {DraftHttpError} from '@/lib/permissions/assigned-draft-http';
 import {DRAFT_UUID} from '@/lib/permissions/assigned-draft-contract';
-import {parseWorkAssignmentPage,ASSIGNMENT_WORK_STATUSES,type StandaloneAssignmentCommand} from '@/lib/permissions/standalone-assignment-contract';
+import {parseWorkLookup,parseWorkOverview,parseWorkAssignmentPage,ASSIGNMENT_WORK_STATUSES,type StandaloneAssignmentCommand} from '@/lib/permissions/standalone-assignment-contract';
 export function workAssignmentsEnabled(){return process.env.CT_WORK_ASSIGNMENTS_ENABLED==='true'&&process.env.CT_STAFF_ACCESS_V2_ENABLED==='true'&&!isDevAuthBypass();}
 async function client(){
  if(!workAssignmentsEnabled())throw new DraftHttpError(404);
@@ -33,4 +33,18 @@ export async function changeWorkAssignment(command:StandaloneAssignmentCommand){
  if(error)fail(error.code);
  if(!data||typeof data.id!=='string'||!DRAFT_UUID.test(data.id)||data.revision!==command.expectedRevision+1||!ASSIGNMENT_WORK_STATUSES.some(([key])=>key===data.status))throw new DraftHttpError(503);
  return {id:data.id,revision:data.revision,status:data.status};
+}
+
+export function workOverviewEnabled(){return workAssignmentsEnabled()&&process.env.CT_WORK_OVERVIEW_ENABLED==='true';}
+export async function lookupWorkAssignmentOptions(kind:'article'|'member',query:string,page=0){
+ if(!workOverviewEnabled())throw new DraftHttpError(404);
+ if(!['article','member'].includes(kind)||query.length>160||!Number.isInteger(page)||page<0||page>100)throw new DraftHttpError(422);
+ const db=await client();const {data,error}=await db.rpc('staff_lookup_work_assignment_options',{p_kind:kind,p_query:query,p_page:page});if(error)fail(error.code);
+ try{return parseWorkLookup(data,kind);}catch{throw new DraftHttpError(503);}
+}
+export async function readWorkOverview(mode:'team'|'personal',range:{start:string;end:string}|null=null,attention=false,page=0){
+ if(!workOverviewEnabled())throw new DraftHttpError(404);
+ if(!['team','personal'].includes(mode)||!Number.isInteger(page)||page<0||page>100||attention&&range)throw new DraftHttpError(422);
+ const db=await client();const {data,error}=await db.rpc('staff_read_work_assignment_overview',{p_mode:mode,p_start:range?.start??null,p_end:range?.end??null,p_attention:attention,p_page:page});if(error)fail(error.code);
+ try{return parseWorkOverview(data,mode);}catch{throw new DraftHttpError(503);}
 }

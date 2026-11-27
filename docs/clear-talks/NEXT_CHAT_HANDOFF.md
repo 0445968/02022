@@ -1,3 +1,9 @@
+# CURRENT — CT16 R2b.4 staged; exact CI pending
+
+## CT16 R2b.4 — scoped pickers and assignment overview candidate
+Exact predecessor f225c2a: cumulative migration 42 passed; quality/rehearsal failed same historical enum-only assertion, corrected registry test to compare original plus forward enum extensions. Remaining browser/local platform CI was still running at start. Staged read-only candidate for authorized paginated article/member search, exact team/personal counts, due/overdue/blocked/next 48h, bounded UTC range/attention deadline projection. No new grants; manager and independent article permission checked on lookup. SQL fixture covers authorized searches, denied assignee lookups/team overview, personal projection, exact totals independent of range. Added typed service/parser, gated searchable picker UI, deep link to assignment detail, dashboard cards (owner mode and contributor personal), calendar deadline section with independent pagination and date/filter/zone, team calendar requires calendar.view_team plus work team access. Kept legacy article calendar separate; month-cell integration and global work list search remain pending. New CT_WORK_OVERVIEW_ENABLED=false, candidate not forward manifest yet; verify before adoption. No hosted SQL/deploy/flags. Next: review predecessor and candidate CI, correct failures, adopt exact generated migration and extend real authenticated UI tests.
+
+---
 # CURRENT — CT16 R2b.3 committed; exact CI pending
 
 ## CT16 R2b.3 — standalone work Assignments workspace
