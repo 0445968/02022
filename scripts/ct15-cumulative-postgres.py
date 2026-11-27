@@ -48,7 +48,7 @@ try:
     manifest = (ROOT / "docs/clear-talks/CT15_FORWARD_MIGRATION_MANIFEST.md").read_text()
     forward = re.findall(r"^\d+\. `(supabase/migrations/202611[^\x60]+\.sql)`$", manifest, re.M)
     actual = sorted(str(p.relative_to(ROOT)) for p in (ROOT / "supabase/migrations").glob("202611*.sql"))
-    assert forward == actual and len(forward) == 38, "Forward manifest mismatch"
+    assert forward == actual and len(forward) == 39, "Forward manifest mismatch"
     apply("tests/fixtures/ct15-local-legacy-platform.sql")
     legacy = sorted(str(p.relative_to(ROOT)) for p in (ROOT / "supabase/migrations").glob("20260*.sql"))
     assert len(legacy) == 23

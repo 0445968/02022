@@ -6,7 +6,7 @@ import type {InboxPage,InboxMode} from '@/lib/permissions/review-inbox-contract'
 import {reviewInboxEnabled} from '@/lib/services/review-inbox';
 import {getDictionary} from '@/lib/i18n/dictionaries';
 const panel='space-y-2 rounded-lg border border-border bg-white p-3';
-export async function DashboardActivity({locale,includeAssignments}:{locale:Locale;includeAssignments:boolean}){
+export async function DashboardActivity({locale,includeAssignments,mode}:{locale:Locale;includeAssignments:boolean;mode?:'team'|'personal'}){
  const es=locale==='es',dict=getDictionary(locale),access=await getWorkspaceAccess();
  if(!access.allowed)return null;
  const data=await readDashboardActivity(includeAssignments);if(!data)return null;
@@ -33,10 +33,10 @@ export async function DashboardActivity({locale,includeAssignments}:{locale:Loca
  }
  return <div className="mt-3 grid min-w-0 gap-3 xl:grid-cols-2">
   {includeAssignments&&<section className={panel}><h2 className="font-headline text-lg font-semibold text-deep">{es?'Herramientas autorizadas':'Authorized tools'}</h2><div className="flex flex-wrap gap-2">{links.map(l=><Link className="rounded-md border border-border px-3 py-2 text-sm font-medium hover:bg-surface-muted" key={l.key} href={l.href}>{l.label}</Link>)}{reviewInboxEnabled()&&<Link className="rounded-md border border-border px-3 py-2 text-sm font-medium" href="/newsroom/reviews">{es?'Bandeja editorial':'Review inbox'}</Link>}</div></section>}
-  {data.assigned&&<section className={panel}><h2 className="font-headline text-lg font-semibold text-deep">{es?'Mis asignaciones activas':'My active assignments'}</h2>
+  {mode!=='team'&&data.assigned&&<section className={panel}><h2 className="font-headline text-lg font-semibold text-deep">{es?'Mis asignaciones activas':'My active assignments'}</h2>
    {data.assigned.unavailable?<p role="alert" className="text-sm text-muted-foreground">{es?'No se pudieron cargar las asignaciones.':'Unable to load assignments.'}</p>:!data.assigned.items.length?<p className="text-sm text-muted-foreground">{es?'No hay asignaciones accesibles en esta página.':'No accessible assignments on this page.'}</p>:<ul className="divide-y divide-border">{data.assigned.items.slice(0,5).map(s=><li key={s.id} className="py-2"><Link className="break-words text-sm font-semibold text-deep underline" href={'/newsroom/stories/'+s.id+'/preview'}>{s.headline}</Link>{s.dueAt&&<p className="text-xs text-muted-foreground">{es?'Vence':'Due'} {date(s.dueAt)} · Bogotá</p>}</li>)}</ul>}
    <Link href="/newsroom/contributor" className="text-sm text-primary underline">{es?'Ver mis asignaciones':'See my assignments'}</Link>
   </section>}
-  <div className="grid min-w-0 gap-3 lg:grid-cols-2 xl:col-span-2">{reviews('pending',data.pending,es?'Solicitudes pendientes':'Pending reviews')}{reviews('feedback',data.feedback,es?'Mis decisiones recientes':'My recent review feedback')}</div>
+  <div className="grid min-w-0 gap-3 lg:grid-cols-2 xl:col-span-2">{mode!=='personal'&&reviews('pending',data.pending,es?'Solicitudes pendientes':'Pending reviews')}{mode!=='team'&&reviews('feedback',data.feedback,es?'Mis decisiones recientes':'My recent review feedback')}</div>
  </div>;
 }

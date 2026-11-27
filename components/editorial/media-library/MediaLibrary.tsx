@@ -1759,7 +1759,7 @@ export function MediaLibrary({
         {/* UPLOAD DRAWER */}
         {/* ================================================= */}
 
-        {privateDraftsEnabled&&<PrivateDraftMediaDialog open={uploadOpen} onOpenChange={setUploadOpen} canReview={canReviewPrivate} locale={locale} trigger={uploadTrigger.current} onChanged={()=>void fetchMedia()}/>}
+        {privateDraftsEnabled&&<PrivateDraftMediaDialog open={uploadOpen} onOpenChange={setUploadOpen} canReview={canReviewPrivate} locale={locale} restoreFocus={()=>{if(uploadTrigger.current?.isConnected)uploadTrigger.current.focus();}} onChanged={()=>void fetchMedia()}/>}
         <MediaUploadDrawer
           open={
             uploadOpen && !privateDraftsEnabled

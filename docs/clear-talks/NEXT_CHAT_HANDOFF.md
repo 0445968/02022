@@ -1,3 +1,10 @@
+# CURRENT — CT16 R1e staged, review migration not applied
+
+
+## CT16 R1e — exact owner dashboard modes and regression coverage
+R1d quality/rehearsal shared obsolete private media panel source assertion; updated test to verify modal and live permission gates, no relaxed access. Added 39th forward migration (CT16 owner dashboard read-only aggregate) and exact ordered manifest checks; current verified active indefinite employee Owner only, current newsroom/story view permission, per-story scoped permission, full authorized team vs authored/created/active assigned personal totals, active assignment count, five recent rows. No arbitrary actor, no write or provider action. Owner switch uses URL mode; personal hides team alerts/review queue, team hides personal assignments/feedback, both compact. Non-owner dashboard retains prior bounded sample. Added real JWT regression cases all roles and invalid mode. Migration NOT yet applied hosted; CI pending. Further calendar/comments/report and R2/R3 changes remain. Production untouched.
+
+---
 # CURRENT — CT16 R1d staged
 
 

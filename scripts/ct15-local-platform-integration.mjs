@@ -89,7 +89,7 @@ try{
  "insert into public.story_revisions(story_id,headline,slug,author_id,created_by) values("+uuid(storyIds.public)+",'CT15 unpublished revision','ct15-public',"+uuid(users.legacy.id)+","+uuid(users.legacy.id)+");");
  const manifest=readFileSync('docs/clear-talks/CT15_FORWARD_MIGRATION_MANIFEST.md','utf8');
  const forward=[...manifest.matchAll(/^\d+\. \x60(supabase\/migrations\/202611[^\x60]+\.sql)\x60$/gm)].map(m=>m[1]);
- assert.deepEqual(forward,readdirSync('supabase/migrations').filter(x=>/^202611.*\.sql$/.test(x)).sort().map(x=>'supabase/migrations/'+x));assert.equal(forward.length,38);
+ assert.deepEqual(forward,readdirSync('supabase/migrations').filter(x=>/^202611.*\.sql$/.test(x)).sort().map(x=>'supabase/migrations/'+x));assert.equal(forward.length,39);
  function grantSql(role){
   const grants=PROPOSED_STAFF_ROLE_GRANTS[role];
   assert.ok(grants?.length);
@@ -138,6 +138,15 @@ try{
  check('freelancer only sees assigned draft',!scoped.error&&JSON.stringify(scoped.data.map(x=>x.slug))==='["ct15-assigned"]');
  const all=await owner.from('stories').select('slug').in('slug',['ct15-assigned','ct15-other']);
  check('owner sees both drafts',!all.error&&all.data.length===2);
+ const teamSummary=await owner.rpc('staff_read_owner_dashboard',{p_mode:'team'});
+ const personalSummary=await owner.rpc('staff_read_owner_dashboard',{p_mode:'personal'});
+ check('owner dashboard complete team story and assignment aggregate',!teamSummary.error&&teamSummary.data.summary.total===5&&teamSummary.data.summary.published===3&&teamSummary.data.summary.drafts===2&&teamSummary.data.summary.assignments===1);
+ check('owner personal aggregate excludes other staff stories and assignments',!personalSummary.error&&personalSummary.data.summary.total===0&&personalSummary.data.summary.assignments===0);
+ for(const role of ['editor','staff_writer','freelancer','moderator','reader','legacy']){
+  const forbidden=await users[role].client.rpc('staff_read_owner_dashboard',{p_mode:'team'});check(role+' cannot read owner dashboard',!!forbidden.error);
+ }
+ const malformedDashboard=await owner.rpc('staff_read_owner_dashboard',{p_mode:'other'});check('invalid dashboard mode denied',!!malformedDashboard.error);
+
  const deny=await reader.rpc('staff_reserve_private_upload',{p_extension:'png'});
  check('reader reservation denied',!!deny.error);
  mark('real Storage API quota and object access');
