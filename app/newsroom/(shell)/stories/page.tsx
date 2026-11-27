@@ -1,3 +1,4 @@
+import {isStoryType,storyTypesEnabled} from '@/lib/permissions/story-types';
 import Link from 'next/link';
 import {canEnterEditorialCalendar,readStoryPublicationQueue} from '@/lib/services/editorial-calendar';
 import type {StoryQueueDisplay} from '@/lib/permissions/story-publication-queue';
@@ -23,6 +24,7 @@ interface PageProps {
     island?: string;
     sort?: string;
     access?: string;
+    storyType?:string;
   }>;
 }
 
@@ -53,6 +55,7 @@ export default async function StoriesPage(props: PageProps) {
     : 'all';
 
   const accessLevel=(['public','registered','subscriber','premium'] as const).find(v=>v===searchParams.access)??'all';
+  const typeEnabled=storyTypesEnabled();const storyType=typeEnabled&&isStoryType(searchParams.storyType)?searchParams.storyType:'all';
   const [storiesResult, categories, authors] = await Promise.all([
     listStories({
       page,
@@ -64,7 +67,7 @@ export default async function StoriesPage(props: PageProps) {
       categoryId: searchParams.category ?? 'all',
       island,
       sortBy,
-      accessLevel,
+      accessLevel,storyType,
     }),
     getCategories({ includeInactive: true }),
     getAuthors(),
@@ -96,6 +99,7 @@ export default async function StoriesPage(props: PageProps) {
 
       <StoriesDashboard
         dict={dict}
+        storyTypesEnabled={typeEnabled}
         locale={locale}
         preferenceKey={user?.id??'local'}
         asOf={new Date().toISOString()}
@@ -116,7 +120,7 @@ export default async function StoriesPage(props: PageProps) {
           categoryId: searchParams.category ?? 'all',
           island,
           sortBy,
-          accessLevel:accessLevel as AccessLevel|'all',
+          accessLevel:accessLevel as AccessLevel|'all',storyType,
         }}
       />
     </div>

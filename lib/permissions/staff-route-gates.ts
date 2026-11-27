@@ -99,13 +99,14 @@ export async function mayEditStoryControlFields(
   user: CurrentUser | null,
   storyId: string,
   fields: {
-    authorId?: unknown; editorId?: unknown; scheduledAt?: unknown;
+    storyType?: unknown; authorId?: unknown; editorId?: unknown; scheduledAt?: unknown;
     originallyPublishedAt?: unknown; slug?: unknown; accessLevel?: unknown;
   }
 ): Promise<boolean> {
   if (!v2Enabled()) return true;
   if (!user) return false;
 
+  if(fields.storyType!==undefined&&!(await resolveStaffPermissionOnServer('story.edit_all',{kind:'story',storyId})).allowed)return false;
   if (fields.authorId !== undefined || fields.editorId !== undefined) {
     if (!(await resolveStaffPermissionOnServer('story.assign', {
       kind: 'story', storyId,

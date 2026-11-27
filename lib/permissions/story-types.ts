@@ -151,3 +151,8 @@ export function storyTypeLabel(value:StoryType,locale:'en'|'es'):string {
  if(!entry)throw new Error('Unknown story type');
  return entry[locale==='es'?2:1];
 }
+
+// New schema + application must be deployed together; never infer readiness from staff access alone.
+export function storyTypesEnabled():boolean {
+ return process.env.CT_STORY_TYPES_ENABLED==='true' && process.env.CT_STAFF_ACCESS_V2_ENABLED==='true';
+}

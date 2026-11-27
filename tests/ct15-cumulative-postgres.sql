@@ -1,4 +1,4 @@
--- Cross-module assertions after all 40 migrations on the SAME synthetic baseline.
+-- Cross-module assertions after all 41 migrations on the SAME synthetic baseline.
 \set ON_ERROR_STOP on
 -- Confirm the synthetic operation contract is fail-closed before quota assertions.
 begin;

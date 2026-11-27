@@ -1,3 +1,9 @@
+# CURRENT — CT16 R2a.2 staged; exact CI pending
+
+## CT16 R2a.2 — story type editor, filter and version integration
+Exact prior cumulative run 46027128387 succeeded with CLI-generated 20261127154150_ct16_story_types.sql; exact candidate bytes adopted as migration 41. Added default-off CT_STORY_TYPES_ENABLED (requires v2) and conditional server projections, validated full-editor writes, preserved existing revision type when omitted and copied live type on new revision, editor autosave/load/select, optional list column and filter, history and restoration mapping. Added disposable owner non-default types and public publication/history assertions. Existing assigned-only metadata controls and independent review stay in force. No hosted migration or flags; migration 39–41 and review reconciliation remain. Exact successor CI, real editor selection/filter/restore interaction and review preview presentation still pending. Existing type labels not yet in comparison layout. R2 assignments/owner exceptions/quota and R3 remain.
+
+---
 # CURRENT — CT16 R2a.1 staged, candidate generation pending
 
 ## CT16 R2a.1 — story type schema and publication contract candidate

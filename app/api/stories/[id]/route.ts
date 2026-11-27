@@ -1,3 +1,4 @@
+import {isStoryType,storyTypesEnabled,type StoryType} from '@/lib/permissions/story-types';
 import { NextResponse } from 'next/server';
 import {reviewedPublicationEnabled} from '@/lib/services/reviewed-publication';
 
@@ -89,6 +90,7 @@ export async function PUT(
 
   let body: {
     headline?: string;
+    storyType?: StoryType;
 
     shortTitle?:
       | string
@@ -200,6 +202,9 @@ export async function PUT(
       }
     );
   }
+
+  if(!body||typeof body!=='object'||Array.isArray(body))return NextResponse.json({error:'Invalid request'},{status:400});
+  if(body.storyType!==undefined&&(!storyTypesEnabled()||!isStoryType(body.storyType)))return NextResponse.json({error:'Invalid or unavailable story type'},{status:422});
 
   if(reviewedPublicationEnabled()&&(body.status==='published'||body.status==='scheduled'||(story.status==='published'&&!(body.workflowOnly===true&&body.status==='archived')))){
     return NextResponse.json({error:'Use the reviewed publication workflow.'},{status:409});
@@ -359,6 +364,7 @@ export async function PUT(
         headline:
           body.headline,
 
+        storyType:body.storyType,
         shortTitle:
           body.shortTitle,
 

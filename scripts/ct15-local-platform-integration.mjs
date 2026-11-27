@@ -89,7 +89,7 @@ try{
  "insert into public.story_revisions(story_id,headline,slug,author_id,created_by) values("+uuid(storyIds.public)+",'CT15 unpublished revision','ct15-public',"+uuid(users.legacy.id)+","+uuid(users.legacy.id)+");");
  const manifest=readFileSync('docs/clear-talks/CT15_FORWARD_MIGRATION_MANIFEST.md','utf8');
  const forward=[...manifest.matchAll(/^\d+\. \x60(supabase\/migrations\/202611[^\x60]+\.sql)\x60$/gm)].map(m=>m[1]);
- assert.deepEqual(forward,readdirSync('supabase/migrations').filter(x=>/^202611.*\.sql$/.test(x)).sort().map(x=>'supabase/migrations/'+x));assert.equal(forward.length,40);
+ assert.deepEqual(forward,readdirSync('supabase/migrations').filter(x=>/^202611.*\.sql$/.test(x)).sort().map(x=>'supabase/migrations/'+x));assert.equal(forward.length,41);
  function grantSql(role){
   const grants=PROPOSED_STAFF_ROLE_GRANTS[role];
   assert.ok(grants?.length);
@@ -168,7 +168,7 @@ try{
  check('freelancer cannot evade quota via public bucket',!!publicUpload.error);
  // No provider sends, cron, payments or destructive jobs. Public poll APP flag is local-only; DB voting stays off until the final disposable poll scenario.
  const flags={
-  DEV_AUTH_BYPASS:'false',CT_STAFF_ACCESS_V2_ENABLED:'true',CT_READER_ACCOUNT_ENABLED:'true',
+  DEV_AUTH_BYPASS:'false',CT_STAFF_ACCESS_V2_ENABLED:'true',CT_STORY_TYPES_ENABLED:'true',CT_READER_ACCOUNT_ENABLED:'true',
   CT_STAFF_ONBOARDING_ENABLED:'true',CT_MEDIA_PRIVATE_DRAFTS_ENABLED:'true',
   CT_COMMENT_MODERATION_ENABLED:'true',CT_COMMENT_REPORTS_ENABLED:'true',
   CT_ASSIGNED_DRAFT_EDITOR_ENABLED:'true',CT_ASSIGNED_REVISION_EDITOR_ENABLED:'true',
@@ -467,6 +467,10 @@ try{
     const freelancerMember=directory.members.find(m=>m.roles.some(r=>r.roleKey==='freelancer'));
     const candidate=(await listing.json()).candidates.find(c=>c.id===freelancerMember.id);
     check('freelancer eligible for author assignment',candidate?.types.includes('author'));
+    const typedDraft=await users.owner.client.from('stories').update({story_type:'analysis'}).eq('id',storyIds.assigned).select('story_type').single();
+    check('owner sets non-default draft story type',!typedDraft.error&&typedDraft.data.story_type==='analysis');
+    const typedRevision=await users.owner.client.from('story_revisions').update({story_type:'interview'}).eq('story_id',storyIds.public).select('story_type').single();
+    check('owner sets private revision story type',!typedRevision.error&&typedRevision.data.story_type==='interview');
     const assign=(data)=>context.request.post(assignments,{headers:{Origin:appOrigin},data});
     const dueAt=new Date(Date.now()+2*86400000).toISOString();
     const command={membershipId:freelancerMember.id,type:'author',action:'create',expectedRevision:0,dueAt,reason:'CT15 assign published story revision',requestId:randomUUID()};
@@ -1018,16 +1022,16 @@ try{
   check('incorrect publication fingerprint rejected',(await post(storyIds.assigned,{...draftToken,fingerprint:'0'.repeat(64)})).status()===409);
   const published=await post(storyIds.assigned,draftToken);
   check('approved draft actually publishes (HTTP '+published.status()+')',published.status()===200&&(await published.json()).status==='published');
-  const visible=await anonymous.from('stories').select('headline,status').eq('id',storyIds.assigned).single();
-  check('published draft now visible to public REST',!visible.error&&visible.data.status==='published'&&visible.data.headline==='CT15 assigned story edited');
+  const visible=await anonymous.from('stories').select('headline,status,story_type').eq('id',storyIds.assigned).single();
+  check('published draft now visible to public REST',!visible.error&&visible.data.status==='published'&&visible.data.headline==='CT15 assigned story edited'&&visible.data.story_type==='analysis');
   const repeated=await post(storyIds.assigned,draftToken);
   check('repeat publication cannot publish twice',repeated.status()===409);
   const revisionPublished=await post(storyIds.public,revisionToken);
   check('approved revision actually publishes (HTTP '+revisionPublished.status()+')',revisionPublished.status()===200&&(await revisionPublished.json()).status==='published');
-  const after=await anonymous.from('stories').select('headline,published_at').eq('id',storyIds.public).single();
-  check('published revision updates headline but preserves original publication timestamp',!after.error&&after.data.headline==='CT15 reviewed public revision'&&after.data.published_at===before.data.published_at);
-  const history=await service.from('story_versions').select('story_id,headline').in('story_id',[storyIds.public,storyIds.assigned]);
-  check('publication versions retain prior live copy and initial draft',!history.error&&history.data.some(v=>v.story_id===storyIds.public&&v.headline==='CT15 public story')&&history.data.some(v=>v.story_id===storyIds.assigned&&v.headline==='CT15 assigned story edited'));
+  const after=await anonymous.from('stories').select('headline,published_at,story_type').eq('id',storyIds.public).single();
+  check('published revision updates headline but preserves original publication timestamp',!after.error&&after.data.headline==='CT15 reviewed public revision'&&after.data.published_at===before.data.published_at&&after.data.story_type==='interview');
+  const history=await service.from('story_versions').select('story_id,headline,story_type').in('story_id',[storyIds.public,storyIds.assigned]);
+  check('publication versions retain prior live copy and initial draft',!history.error&&history.data.some(v=>v.story_id===storyIds.public&&v.headline==='CT15 public story'&&v.story_type==='news_report')&&history.data.some(v=>v.story_id===storyIds.assigned&&v.headline==='CT15 assigned story edited'&&v.story_type==='analysis'));
   check('published revision consumed and exact publication audit recorded',sql('publication audit',['-At','-f','-'],"select ((select count(*) from newsroom_private.publication_events where story_id in ("+uuid(storyIds.public)+","+uuid(storyIds.assigned)+"))=2 and not exists(select 1 from public.story_revisions where story_id="+uuid(storyIds.public)+") and not exists(select 1 from newsroom_private.publication_permits))::text")==='true');
   await publicationPage.goto(appOrigin+'/en/article/ct15-public',{waitUntil:'load',timeout:20000});
   await publicationPage.getByRole('heading',{name:'CT15 reviewed public revision',exact:true}).waitFor({state:'visible'});

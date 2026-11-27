@@ -1,3 +1,4 @@
+import {isStoryType,storyTypesEnabled,type StoryType} from '@/lib/permissions/story-types';
 import {
   NextResponse,
 } from 'next/server';
@@ -36,6 +37,7 @@ interface RouteContext {
 
 interface RevisionRequestBody {
   headline?: string;
+    storyType?: StoryType;
 
   shortTitle?:
     | string
@@ -300,6 +302,9 @@ export async function PUT(request: Request, props: RouteContext) {
     );
   }
 
+  if(!body||typeof body!=='object'||Array.isArray(body))return NextResponse.json({error:'Invalid request'},{status:400});
+  if(body.storyType!==undefined&&(!storyTypesEnabled()||!isStoryType(body.storyType)))return NextResponse.json({error:'Invalid or unavailable story type'},{status:422});
+
   // CT-02d: an assigned contributor can edit article copy, not
   // change author/editor ownership, live slug, access tier or schedule.
   if (!(await mayEditStoryControlFields(user, params.id, body))) {
@@ -440,6 +445,7 @@ export async function PUT(request: Request, props: RouteContext) {
         {
           headline,
 
+          storyType:body.storyType,
           shortTitle,
 
           subheadline:

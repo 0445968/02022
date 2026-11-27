@@ -1,3 +1,4 @@
+import {isStoryType,storyTypesEnabled,type StoryType} from '@/lib/permissions/story-types';
 import {createDataClient} from '@/lib/db/supabase-data';
 import {readPublicBylines,safePublishedBody} from '@/lib/services/public-editorial-media';
 import { getDataClient } from '@/lib/db/supabase-data-access';
@@ -72,6 +73,7 @@ created_by,
 ` as const;
 
 interface StoryRow {
+  story_type?: StoryType;
   id: string;
   slug: string;
   headline: string;
@@ -241,7 +243,7 @@ export async function getPublishedStoryBySlug(
   let query = supabase
     .from('stories')
     .select(
-      STORY_SELECT
+      storyTypesEnabled()?`${STORY_SELECT},story_type` as const:STORY_SELECT
     )
     .eq(
       'slug',
@@ -260,7 +262,7 @@ export async function getPublishedStoryBySlug(
   let {data:story,error}=await query.maybeSingle();
   if(restricted&&!error&&!story){
    const {createClient}=await import('@/lib/db/supabase-server');const db=createClient();const {data:{user},error:authError}=await db.auth.getUser();
-   if(!authError&&user&&!user.is_anonymous&&user.email_confirmed_at){const result=await db.from('stories').select(STORY_SELECT).eq('slug',slug).eq('status','published').eq('access_level','registered').lte('published_at',new Date().toISOString()).maybeSingle();story=result.data;error=result.error;}
+   if(!authError&&user&&!user.is_anonymous&&user.email_confirmed_at){const result=await db.from('stories').select(storyTypesEnabled()?`${STORY_SELECT},story_type` as const:STORY_SELECT).eq('slug',slug).eq('status','published').eq('access_level','registered').lte('published_at',new Date().toISOString()).maybeSingle();story=result.data;error=result.error;}
   }
 
   if (error) {
@@ -308,7 +310,7 @@ export async function getStoryBySlugForPreview(
   } = await supabase
     .from('stories')
     .select(
-      STORY_SELECT
+      storyTypesEnabled()?`${STORY_SELECT},story_type` as const:STORY_SELECT
     )
     .eq(
       'slug',
@@ -341,7 +343,7 @@ export async function getStoryForEditing(
   } = await supabase
     .from('stories')
     .select(
-      STORY_SELECT
+      storyTypesEnabled()?`${STORY_SELECT},story_type` as const:STORY_SELECT
     )
     .eq(
       'id',
@@ -734,6 +736,7 @@ const editorialProfiles=publicPage&&securePublicMediaEnabled()?await readPublicB
     slug:
       story.slug,
 
+    storyType: storyTypesEnabled()&&isStoryType(story.story_type)?story.story_type:undefined,
     shortTitle:
       story.short_title,
 
@@ -804,6 +807,7 @@ const editorialProfiles=publicPage&&securePublicMediaEnabled()?await readPublicB
 // --------------------------------------------------
 
 export interface ListStoriesParams {
+  storyType?: StoryType|'all';
   accessLevel?: AccessLevel|'all';
   page?: number;
   perPage?: number;
@@ -884,6 +888,7 @@ export async function listStories(
           slug,
           headline,
           short_title,
+          ${storyTypesEnabled()?'story_type,':''}
           language,
           status,
           access_level,
@@ -915,6 +920,7 @@ export async function listStories(
   // Search text, not PostgREST filter grammar. Preserve Unicode letters/numbers.
   const term=params.search?.normalize('NFC').slice(0,160).replace(/[^\p{L}\p{N}\p{M}\s'\-]/gu,' ').replace(/\s+/g,' ').trim();
   if(term)query=query.or(`headline.ilike.%${term}%,summary.ilike.%${term}%,slug.ilike.%${term}%`);
+  if(storyTypesEnabled()&&isStoryType(params.storyType))query=query.eq('story_type',params.storyType);
   if(params.accessLevel&&params.accessLevel!=='all')query=query.eq('access_level',params.accessLevel);
   if (
     params.status &&
@@ -1101,6 +1107,7 @@ export async function listStories(
           headline:
             r.headline as string,
 
+          storyType:storyTypesEnabled()&&isStoryType(r.story_type)?r.story_type:undefined,
           shortTitle:
             (r.short_title as
               | string
@@ -2030,6 +2037,7 @@ export async function createStory(
 }
 
 export interface UpdateStoryInput {
+  storyType?: StoryType;
   headline?: string;
 
   shortTitle?:
@@ -2134,6 +2142,8 @@ export async function updateStory(
     update.headline =
       input.headline;
   }
+
+  if(input.storyType!==undefined){if(!storyTypesEnabled()||!isStoryType(input.storyType))throw Error('Invalid story type');update.story_type=input.storyType;}
 
   if (
     input.shortTitle !==
@@ -2453,6 +2463,7 @@ if (
             (story.headline as string) ??
             '',
 
+          ...(storyTypesEnabled()?{story_type:story.story_type as StoryType}:{}),
           short_title:
             (story.short_title as
               | string
@@ -2737,6 +2748,7 @@ export async function getStoryVersions(
         story_id,
         headline,
         short_title,
+        ${storyTypesEnabled()?'story_type,':''}
         subheadline,
         summary,
         body,
@@ -2850,6 +2862,7 @@ export async function getStoryVersions(
         headline:
           item.headline as string,
 
+        storyType:storyTypesEnabled()&&isStoryType(item.story_type)?item.story_type:undefined,
         shortTitle:
           (item.short_title as
             | string
@@ -2953,6 +2966,7 @@ export async function restoreStoryVersion(
       .story_id as string;
 
   const restoredContent = {
+    ...(storyTypesEnabled()&&isStoryType(savedVersion.story_type)?{story_type:savedVersion.story_type}:{}),
     headline:
       (savedVersion.headline as string) ??
       '',
@@ -3000,7 +3014,7 @@ export async function restoreStoryVersion(
     .from('stories')
     .update(restoredContent)
     .eq('id', storyId)
-    .select('headline, short_title, subheadline, summary, body, language, author_id, editor_id, primary_category_id')
+    .select('*')
     .maybeSingle();
 
   if (restoreError || !restoredRow) {
@@ -3030,6 +3044,7 @@ export async function restoreStoryVersion(
       story_id: storyId,
       headline: restoredRow.headline,
       short_title: restoredRow.short_title,
+      ...(storyTypesEnabled()?{story_type:restoredRow.story_type}:{}),
       subheadline: restoredRow.subheadline,
       summary: restoredRow.summary,
       body: restoredRow.body,

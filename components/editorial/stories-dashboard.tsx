@@ -1,4 +1,5 @@
 'use client';
+import {STORY_TYPES,storyTypeLabel,type StoryType} from '@/lib/permissions/story-types';
 
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useRef, useState, useTransition } from 'react';
@@ -26,7 +27,9 @@ interface StoriesDashboardProps {
   total: number;
   categories: Category[];
   authors: StaffOption[];
+  storyTypesEnabled?:boolean;
   currentFilters: {
+    storyType?:StoryType|'all';
     search: string;
     accessLevel?:AccessLevel|'all';
     status: StoryStatus | 'all';
@@ -43,8 +46,8 @@ const LANGUAGES: (StoryLanguage | 'all')[] = ['all', 'en', 'es'];
 const ISLANDS: (IslandScope | 'all')[] = ['all', 'san_andres', 'old_providence', 'saint_catalina', 'archipelago', 'none'];
 const SORT_LABELS = {updated_desc:'sortUpdatedDesc',updated_asc:'sortUpdatedAsc',published_desc:'sortPublishedDesc',headline_asc:'sortHeadlineAsc'} as const;
 
-type ColumnKey='headline'|'status'|'draft'|'queue'|'language'|'author'|'editor'|'category'|'updated'|'published'|'access'|'island'|'slug'|'short'|'actions';
-const ALL_COLUMNS:ColumnKey[]=['headline','status','draft','queue','language','author','editor','category','updated','published','access','island','slug','short','actions'];
+type ColumnKey='headline'|'status'|'draft'|'queue'|'language'|'author'|'editor'|'category'|'updated'|'published'|'access'|'island'|'slug'|'short'|'type'|'actions';
+const ALL_COLUMNS:ColumnKey[]=['headline','status','draft','queue','language','author','editor','category','updated','published','access','island','slug','short','type','actions'];
 type ColumnPrefs={order:ColumnKey[];hidden:ColumnKey[]};
 const DEFAULT_PREFS:ColumnPrefs={order:ALL_COLUMNS,hidden:['published','access','island','slug','short']};
 function parsePrefs(value:unknown):ColumnPrefs{
@@ -54,7 +57,7 @@ function parsePrefs(value:unknown):ColumnPrefs{
  const hidden=Array.isArray(v.hidden)?v.hidden.filter(k=>ALL_COLUMNS.includes(k)&&k!=='headline'&&k!=='actions'):DEFAULT_PREFS.hidden;
  return {order:[...new Set([...order,...ALL_COLUMNS])],hidden:[...new Set(hidden)]};
 }
-export function StoriesDashboard({ dict, locale='en', publicationQueue=null, canEdit=true, canCreate=true, preferenceKey='local', asOf, stories, page, totalPages, total, categories, authors, currentFilters }: StoriesDashboardProps) {
+export function StoriesDashboard({ storyTypesEnabled=false, dict, locale='en', publicationQueue=null, canEdit=true, canCreate=true, preferenceKey='local', asOf, stories, page, totalPages, total, categories, authors, currentFilters }: StoriesDashboardProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [searchInput, setSearchInput] = useState(currentFilters.search);
@@ -67,15 +70,15 @@ export function StoriesDashboard({ dict, locale='en', publicationQueue=null, can
   useEffect(()=>{const handle=setTimeout(()=>{try{const raw=localStorage.getItem(prefStorage);setPrefs(raw?parsePrefs(JSON.parse(raw)):DEFAULT_PREFS);}catch{setPrefs(DEFAULT_PREFS);}},0);return()=>clearTimeout(handle);},[prefStorage]);
   useEffect(()=>()=>{if(timer.current)clearTimeout(timer.current);},[]);
   function savePrefs(next:ColumnPrefs){setPrefs(next);try{localStorage.setItem(prefStorage,JSON.stringify(next));}catch{/* current session */}}
-  const hasFilters=!!currentFilters.search||[currentFilters.status,currentFilters.language,currentFilters.authorId,currentFilters.categoryId,currentFilters.island,currentFilters.accessLevel??'all'].some(v=>v!=='all')||currentFilters.sortBy!=='updated_desc';
+  const hasFilters=!!currentFilters.search||[currentFilters.status,currentFilters.language,currentFilters.authorId,currentFilters.categoryId,currentFilters.island,currentFilters.accessLevel??'all',currentFilters.storyType??'all'].some(v=>v!=='all')||currentFilters.sortBy!=='updated_desc';
   const es=locale==='es';
   const queuePage=publicationQueue&&publicationQueue!=='unavailable'?publicationQueue:null;
   const queues=new Map(queuePage?.items.map(i=>[i.storyId.toLowerCase(),i] as const)??[]);
   const queueLabels={legacy:es?'Programación anterior sin verificar':'Unverified legacy schedule',blocked:es?'Publicación bloqueada':'Publication blocked',stale:es?'Revisión desactualizada':'Review out of date',due:es?'Pendiente de ejecución':'Due / awaiting execution',queued:es?'Programado (en cola)':'Scheduled (queued)'};
   const queueDate=new Intl.DateTimeFormat(locale,{timeZone:'America/Bogota',dateStyle:'medium',timeStyle:'short'});
 
-  const columns=prefs.order.filter(k=>!prefs.hidden.includes(k)&&(k!=='queue'||publicationQueue!==null));
-  const labels:Record<ColumnKey,string>={headline:dict.stories.columns.headline,status:dict.stories.columns.status,draft:dict.stories.columns.unpublishedChanges,queue:es?'Cola de publicación':'Publication queue',language:dict.stories.columns.language,author:dict.stories.columns.author,editor:dict.stories.columns.editor,category:dict.stories.columns.category,updated:dict.stories.columns.updated,published:es?'Publicado':'Published',access:es?'Acceso':'Access',island:dict.stories.filterIsland,slug:'Slug',short:es?'Título corto':'Short title',actions:es?'Acciones':'Actions'};
+  const columns=prefs.order.filter(k=>!prefs.hidden.includes(k)&&(k!=='queue'||publicationQueue!==null)&&(k!=='type'||storyTypesEnabled));
+  const labels:Record<ColumnKey,string>={headline:dict.stories.columns.headline,status:dict.stories.columns.status,draft:dict.stories.columns.unpublishedChanges,queue:es?'Cola de publicación':'Publication queue',language:dict.stories.columns.language,author:dict.stories.columns.author,editor:dict.stories.columns.editor,category:dict.stories.columns.category,updated:dict.stories.columns.updated,published:es?'Publicado':'Published',access:es?'Acceso':'Access',island:dict.stories.filterIsland,slug:'Slug',short:es?'Título corto':'Short title',type:es?'Tipo de artículo':'Story type',actions:es?'Acciones':'Actions'};
   function updateFilter(key:string,value:string,replace=false){
     if(timer.current){clearTimeout(timer.current);timer.current=null;}
     const params=new URLSearchParams(searchParams.toString());
@@ -113,6 +116,7 @@ export function StoriesDashboard({ dict, locale='en', publicationQueue=null, can
     case 'island':return islandLabel(story.island,locale);
     case 'slug':return story.slug;
     case 'short':return story.shortTitle??'—';
+    case 'type':return story.storyType?storyTypeLabel(story.storyType,locale):'—';
     case 'actions':{const path=livePath(story);return <div className="flex items-center gap-1">{path&&<><Link href={path} target="_blank" rel="noopener noreferrer" title={es?'Abrir artículo publicado':'Open live article'} aria-label={es?'Abrir artículo publicado':'Open live article'} className={iconButton}><ExternalLink size={15}/></Link><button type="button" onClick={()=>void share(story)} title={es?'Compartir':'Share article'} aria-label={es?'Compartir artículo':'Share article'} className={iconButton}><Share2 size={15}/></button></>}{canEdit&&<Link href={'/newsroom/stories/'+story.id+'/edit'} title={es?'Editar':'Edit article'} aria-label={es?'Editar artículo':'Edit article'} className={iconButton}><Pencil size={15}/></Link>}<Link href={'/newsroom/stories/'+story.id+'/preview'} title={es?'Vista previa':'Preview'} aria-label={es?'Vista previa':'Preview'} className={iconButton}><Eye size={15}/></Link></div>;}
    }
   }
@@ -186,6 +190,7 @@ export function StoriesDashboard({ dict, locale='en', publicationQueue=null, can
             options={Object.entries(SORT_LABELS).map(([value,key])=>({value,label:dict.stories[key]}))}
           />
           <FilterSelect label={es?'Acceso':'Access'} value={currentFilters.accessLevel??'all'} onChange={v=>updateFilter('access',v)} options={[{value:'all',label:dict.common.all},...(['public','registered','subscriber','premium'] as const).map(v=>({value:v,label:accessLabel(v,locale)}))]}/>
+          {storyTypesEnabled&&<FilterSelect label={es?'Tipo de artículo':'Story type'} value={currentFilters.storyType??'all'} onChange={v=>updateFilter('storyType',v)} options={[{value:'all',label:dict.common.all},...STORY_TYPES.map(([value,en,spanish])=>({value,label:es?spanish:en}))]}/>}
           <button type="button" onClick={()=>setSettingsOpen(v=>!v)} aria-expanded={settingsOpen} className="inline-flex h-9 items-center gap-2 self-end rounded-md border border-border px-3 text-xs font-medium"><Settings2 size={15}/>{es?'Columnas':'Columns'}</button>
           {hasFilters&&<button type="button" onClick={()=>{if(timer.current)clearTimeout(timer.current);setSearchInput('');router.push('/newsroom/stories');}} className="h-9 self-end border border-border bg-white px-3 text-xs font-medium text-foreground hover:bg-surface-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">{es?'Limpiar filtros':'Clear filters'}</button>}
         </div>
@@ -193,7 +198,7 @@ export function StoriesDashboard({ dict, locale='en', publicationQueue=null, can
 
       {publicationQueue!==null&&<p className="mt-3 text-xs text-muted-foreground">{es?'El filtro de estado usa el estado guardado del artículo. La cola se muestra por separado según sus permisos; un guion no confirma que no haya una programación.':'The status filter uses the stored article status. Queue information is shown separately according to your permissions; a dash does not confirm that no schedule exists.'} {es?'La cola no garantiza la publicación automática.':'A queue does not guarantee automatic publication.'} · America/Bogota</p>}
       {publicationQueue==='unavailable'&&<p role="alert" className="mt-2 text-xs text-muted-foreground">{es?'No se pudo verificar la cola. Actualice la página.':'Unable to verify the publication queue. Refresh the page.'}</p>}
-      {settingsOpen&&<section className="mt-3 rounded-xl border border-border bg-white p-3" aria-label={es?'Configuración de columnas':'Column settings'}><div className="flex items-center justify-between gap-2"><h2 className="text-sm font-semibold">{es?'Organizar columnas':'Organize columns'}</h2><button type="button" className="text-xs text-primary underline" onClick={()=>savePrefs(DEFAULT_PREFS)}>{es?'Restablecer':'Reset defaults'}</button></div><div className="mt-2 grid gap-1 sm:grid-cols-2 xl:grid-cols-3">{prefs.order.filter(k=>k!=='queue'||publicationQueue!==null).map(k=><div key={k} className="flex min-w-0 items-center gap-2 rounded-md border border-border px-2 py-1"><label className="flex min-w-0 flex-1 items-center gap-2 text-xs"><input type="checkbox" checked={!prefs.hidden.includes(k)} disabled={k==='headline'||k==='actions'} onChange={e=>savePrefs({...prefs,hidden:e.target.checked?prefs.hidden.filter(v=>v!==k):[...prefs.hidden,k]})}/>{labels[k]}</label><button type="button" className={iconButton} disabled={prefs.order.indexOf(k)===0} aria-label={(es?'Subir ':'Move up ')+labels[k]} onClick={()=>moveColumn(k,-1)}><ChevronUp size={14}/></button><button type="button" className={iconButton} disabled={prefs.order.indexOf(k)===prefs.order.length-1} aria-label={(es?'Bajar ':'Move down ')+labels[k]} onClick={()=>moveColumn(k,1)}><ChevronDown size={14}/></button></div>)}</div><p className="mt-2 text-xs text-muted-foreground">{es?'Las preferencias se guardan en este navegador.':'Preferences are saved in this browser.'}</p></section>}
+      {settingsOpen&&<section className="mt-3 rounded-xl border border-border bg-white p-3" aria-label={es?'Configuración de columnas':'Column settings'}><div className="flex items-center justify-between gap-2"><h2 className="text-sm font-semibold">{es?'Organizar columnas':'Organize columns'}</h2><button type="button" className="text-xs text-primary underline" onClick={()=>savePrefs(DEFAULT_PREFS)}>{es?'Restablecer':'Reset defaults'}</button></div><div className="mt-2 grid gap-1 sm:grid-cols-2 xl:grid-cols-3">{prefs.order.filter(k=>(k!=='queue'||publicationQueue!==null)&&(k!=='type'||storyTypesEnabled)).map(k=><div key={k} className="flex min-w-0 items-center gap-2 rounded-md border border-border px-2 py-1"><label className="flex min-w-0 flex-1 items-center gap-2 text-xs"><input type="checkbox" checked={!prefs.hidden.includes(k)} disabled={k==='headline'||k==='actions'} onChange={e=>savePrefs({...prefs,hidden:e.target.checked?prefs.hidden.filter(v=>v!==k):[...prefs.hidden,k]})}/>{labels[k]}</label><button type="button" className={iconButton} disabled={prefs.order.indexOf(k)===0} aria-label={(es?'Subir ':'Move up ')+labels[k]} onClick={()=>moveColumn(k,-1)}><ChevronUp size={14}/></button><button type="button" className={iconButton} disabled={prefs.order.indexOf(k)===prefs.order.length-1} aria-label={(es?'Bajar ':'Move down ')+labels[k]} onClick={()=>moveColumn(k,1)}><ChevronDown size={14}/></button></div>)}</div><p className="mt-2 text-xs text-muted-foreground">{es?'Las preferencias se guardan en este navegador.':'Preferences are saved in this browser.'}</p></section>}
       <p role="status" className="text-xs text-muted-foreground">{notice|| (pending?(es?'Buscando…':'Updating results…'):'')}</p>
       <div role="region" aria-label={es?'Lista de artículos':'Story list'} tabIndex={0} className="mt-3 max-w-full overflow-x-auto rounded-xl border border-border bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
        <table className="w-full text-sm"><thead><tr className="border-b border-border bg-surface-muted text-left">{columns.map(k=><th key={k} scope="col" className="whitespace-nowrap px-3 py-2.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">{labels[k]}</th>)}</tr></thead>

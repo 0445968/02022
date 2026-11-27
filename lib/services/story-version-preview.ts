@@ -1,3 +1,4 @@
+import {isStoryType,storyTypesEnabled} from '@/lib/permissions/story-types';
 import {
     getDataClient,
   } from '@/lib/db/supabase-data-access';
@@ -60,6 +61,7 @@ import {
           story_id,
           headline,
           short_title,
+          ${storyTypesEnabled()?'story_type,':''}
           subheadline,
           summary,
           body,
@@ -367,6 +369,7 @@ resolveHistoricalIdentity(
   
     return {
       ...story,
+      storyType:storyTypesEnabled()&&isStoryType((version as unknown as Record<string,unknown>).story_type)?(version as unknown as {story_type:NonNullable<StoryWithRelations['storyType']>}).story_type:undefined,
   
       headline:
         version.headline,

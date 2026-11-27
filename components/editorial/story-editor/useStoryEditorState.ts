@@ -1,4 +1,5 @@
 'use client';
+import type {StoryType} from '@/lib/permissions/story-types';
 
 import {
   useMemo,
@@ -56,6 +57,7 @@ export function useStoryEditorState({
   // Headline
   // ==================================================
 
+  const [storyType,setStoryType]=useState<StoryType|undefined>(story.storyType);
   const [
     headline,
     setHeadline,
@@ -301,6 +303,7 @@ export function useStoryEditorState({
       StorySavePayload
     >(
       () => ({
+        storyType,
         headline,
 
         shortTitle:
@@ -385,6 +388,7 @@ export function useStoryEditorState({
         seoDescription,
         seoTitle,
         shortTitle,
+        storyType,
         slug,
         status,
         subheadline,
@@ -398,6 +402,7 @@ export function useStoryEditorState({
   // ==================================================
 
   return {
+    storyType,setStoryType,
     headline,
     setHeadline,
 

@@ -1,3 +1,4 @@
+import type {StoryType} from '@/lib/permissions/story-types';
 /**
  * Database type surface for West Island Times.
  *
@@ -485,6 +486,7 @@ export interface Database {
 
       stories: {
         Row: {
+          story_type: StoryType;
           id: string;
           slug: string;
           headline: string;
@@ -541,6 +543,7 @@ export interface Database {
         };
 
         Insert: {
+          story_type?: StoryType;
           id?: string;
           slug: string;
           headline?: string;
@@ -603,6 +606,7 @@ export interface Database {
         };
 
         Update: {
+          story_type?: StoryType;
           slug?: string;
           headline?: string;        
           short_title?:
@@ -712,6 +716,7 @@ export interface Database {
 
       story_revisions: {
         Row: {
+          story_type: StoryType;
           id: string;
 
           story_id: string;
@@ -809,6 +814,7 @@ export interface Database {
         };
 
         Insert: {
+          story_type?: StoryType;
           id?: string;
 
           story_id: string;
@@ -902,6 +908,7 @@ export interface Database {
         };
 
         Update: {
+          story_type?: StoryType;
           story_id?: string;
 
           headline?: string;
@@ -1043,6 +1050,7 @@ export interface Database {
 
       story_versions: {
         Row: {
+          story_type: StoryType;
           id: string;
           story_id: string;
           headline: string;
@@ -1074,6 +1082,7 @@ export interface Database {
         };
 
         Insert: {
+          story_type?: StoryType;
           id?: string;
           story_id: string;
           headline?: string;

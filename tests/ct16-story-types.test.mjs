@@ -8,7 +8,7 @@ test('story types are unique, bilingual and reject unknown values',()=>{
  for(const invalid of [null,undefined,{},'','News report','news_report ','unknown'])assert.equal(isStoryType(invalid),false);
 });
 test('staged SQL allowlists equal the typed catalog',()=>{
- const sql=readFileSync(new URL('../supabase/staged/ct16_story_types.sql',import.meta.url),'utf8');
+ const sql=readFileSync(new URL('../supabase/migrations/20261127154150_ct16_story_types.sql',import.meta.url),'utf8');
  const checks=[...sql.matchAll(/check\(story_type in \(([^)]+)\)\)/g)];assert.equal(checks.length,3);
  for(const [,values] of checks)assert.deepEqual([...values.matchAll(/'([^']+)'/g)].map(m=>m[1]),STORY_TYPES.map(r=>r[0]));
  assert.match(sql,/s\.story_type is not distinct from new\.story_type/);

@@ -226,6 +226,7 @@ export function StoryEditor({
         setHeadline:
           editor.setHeadline,
 
+        setStoryType:editor.setStoryType,
         setShortTitle:
           editor.setShortTitle,
 
@@ -271,6 +272,7 @@ export function StoryEditor({
       }),
       [
         editor.setHeadline,
+        editor.setStoryType,
         editor.setShortTitle,
         editor.setSubheadline,
         editor.setSummary,
@@ -445,6 +447,7 @@ export function StoryEditor({
   /* ======================================================= */
 
   const settingsProps = {
+    storyType:editor.storyType,setStoryType:editor.setStoryType,
     reviewedPublication,
     dict,
 

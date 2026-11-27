@@ -1,4 +1,5 @@
 'use client';
+import type {StoryType} from '@/lib/permissions/story-types';
 
 import {
   useCallback,
@@ -21,6 +22,7 @@ import type {
 } from '@/lib/db/database.types';
 
 interface StoryRevisionData {
+  storyType?:StoryType;
   id: string;
 
   storyId: string;
@@ -103,6 +105,7 @@ interface StoryRevisionData {
 }
 
 interface RevisionStateSetters {
+  setStoryType:(value:StoryType|undefined)=>void;
   setHeadline:
     (value: string) => void;
 
@@ -371,6 +374,7 @@ export function useStoryRevision({
             nextRevision.headline
           );
 
+          state.setStoryType(nextRevision.storyType);
           state.setShortTitle(
             nextRevision.shortTitle ??
               ''
