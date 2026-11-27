@@ -1,3 +1,9 @@
+# CURRENT — CT16 R2a.1 staged, candidate generation pending
+
+## CT16 R2a.1 — story type schema and publication contract candidate
+R1h exact 2b1695f verified 43/43 workflows and 502 real local PASS lines, mobile Team tabs and Calendar scope included (run 46025439005). Story types: 28 stable bilingual keys, News report default independent of categories/status/language. Staged SQL adds checked non-null columns to story/revision/version, preserves assigned contributor metadata on creation, copies type through immediate/scheduled reviewed publication and validates direct version snapshots. Existing full-row fingerprint includes the field; existing approvals/schedules require explicit reconciliation/re-review because hashes change. CLI unavailable in chat container; cumulative disposable CI generates the migration with pinned CLI, verifies bytes and applies after 40 baseline migrations, runs rollback-only SQL checks. Candidate is NOT yet in ordered manifest, UI/API persistence/filtering/history/restore and genuine authenticated non-default round-trip remain to implement together before adoption. No hosted SQL or production changes. No new permissions or provider actions.
+
+---
 # CURRENT — CT16 R1h staged; exact CI pending
 
 ## CT16 R1h — mobile Team sizing and calendar regression alignment
