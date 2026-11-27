@@ -44,5 +44,6 @@ Baseline: restored Clear Talks project `yqqzohrlhiitctwacdad`, empty hosted migr
 40. `supabase/migrations/20261127053000_ct16_comment_article_groups.sql`
 41. `supabase/migrations/20261127154150_ct16_story_types.sql`
 42. `supabase/migrations/20261127173913_ct16_work_assignments.sql`
+43. `supabase/migrations/20261127204156_ct16_work_overview.sql`
 
 Before each migration verify expected preconditions, record success/rollback boundary, recheck permissions and aggregate counts. Do not use fixture SQL or seed accounts on hosted production. After rehearsal confirm the migration registry and schema accurately reflect the approved baseline. Pause scheduler, public voting and mail gates. First Owner bootstrap requires approved verified identity and audited role/capability grant; never infer from legacy flags. Reconcile media rights and existing public URLs before enabling new public projection. No hosted execution performed.

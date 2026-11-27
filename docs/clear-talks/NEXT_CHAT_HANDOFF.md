@@ -1,3 +1,9 @@
+# CURRENT — CT16 R2b.5 committed; exact CI pending
+
+## CT16 R2b.5 — adopt verified overview and complete calendar cells
+Predecessor 742ca9d: 41/43 successful; cumulative rehearsal run 46065339745 generated exact 20261127204156_ct16_work_overview.sql and SQL scope/range/count tests passed. Quality and framework rehearsal failed React ref access in picker; replaced with immutable name-map state, no render-time ref. Adopted identical bytes as migration 43, retained staged source as provenance, regular cumulative test. Calendar work deadlines rendered in month cells and accessible linked detail, retained independent pagination and agenda/attention list, no duplicate list in month. Assignment workspace avoids nested main. Added actual disposable Supabase Auth/PostgREST tests for owner and freelancer, read denial for readers/anonymous, independent story link redaction, idempotency, exact counts and own status updates; authenticated mobile detail/picker/API checks. CT_WORK_OVERVIEW_ENABLED enabled in disposable test only; remains false by default. Global work search still current-page only; permission inspector owner capability parity and full interactive create/edit/cancel testing remain. Predecessor earlier 41/43 with legacy enum test now corrected. Exact successor CI pending. No hosted database, production deployment, provider or cron changes. Next: inspect exact CI, repair any issues, complete global assignment search/filter and owner policy UI parity, then Owner review bypass/self-byline/quota work.
+
+---
 # CURRENT — CT16 R2b.4 staged; exact CI pending
 
 ## CT16 R2b.4 — scoped pickers and assignment overview candidate

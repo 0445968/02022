@@ -48,7 +48,7 @@ export function WorkAssignmentsWorkspace({locale,initial,detail,personalAllowed,
  }
  const options=(catalog:readonly (readonly [string,string,string])[])=>catalog.map(([key,en,sp])=><option key={key} value={key}>{es?sp:en}</option>);
  const close=()=>{setSelected(null);setForm(null);setStatus(null);pending.current=null;};
- return <main className="w-full min-w-0 px-3 py-4 sm:px-5">
+ return <section className="w-full min-w-0 px-3 py-4 sm:px-5">
   <header className="flex flex-wrap items-center justify-between gap-3 border-b border-border pb-3"><div><h1 className="font-headline text-2xl font-bold text-deep">{t('Assignments','Asignaciones')}</h1><p className="text-sm text-muted-foreground">{t('Editorial work, with or without an article.','Trabajo editorial, con o sin artículo.')}</p></div>
   <div className="flex flex-wrap gap-2">{data.canViewTeam&&<button className={data.mode==='team'?primary:button} disabled={busy} onClick={()=>browse('team')}>{t('Team','Equipo')}</button>}{personalAllowed&&<button className={data.mode==='personal'?primary:button} disabled={busy} onClick={()=>browse('personal')}>{t('My assignments','Mis asignaciones')}</button>}<button className={button} disabled={busy} onClick={()=>browse(data.mode,page)} aria-label={t('Refresh assignments','Actualizar asignaciones')}><RefreshCw size={16}/></button>{data.canManage&&<button className={primary} disabled={busy} onClick={()=>start(null)}><Plus size={16}/>{t('New assignment','Nueva asignación')}</button>}</div></header>
   {error&&<p role="alert" className="mt-3 rounded-lg border border-red-300 p-3 text-sm text-red-700">{error}</p>}{notice&&<p role="status" className="mt-3 text-sm text-primary">{notice}</p>}
@@ -68,5 +68,5 @@ export function WorkAssignmentsWorkspace({locale,initial,detail,personalAllowed,
   <label className="text-sm sm:col-span-2">{t('Notes','Notas')}<textarea className={field} rows={4} maxLength={10000} value={form.notes} onChange={e=>change('notes',e.target.value)}/></label></>}
   <label className="text-sm sm:col-span-2">{t('Reason for change','Motivo del cambio')}<textarea className={field} required minLength={12} maxLength={500} rows={2} value={reason} onChange={e=>{pending.current=null;setReason(e.target.value);}}/></label></fieldset><div className="flex gap-2"><button className={primary} type="submit" disabled={busy||!!form&&!form.assigneeIds.length}>{busy?t('Saving…','Guardando…'):t('Save assignment','Guardar asignación')}</button><button className={button} type="button" disabled={busy} onClick={close}>{t('Cancel','Cancelar')}</button></div></form>}
   {!form&&selected&&data.history.length>0&&<div className="mt-4 border-t border-border pt-3"><h3 className="text-sm font-semibold">{t('Change history','Historial de cambios')}</h3>{data.history.map(h=><p key={h.id} className="mt-2 text-xs"><strong>{h.actor} · {date(h.at)} · #{h.revision}</strong><span className="block text-muted-foreground">{h.reason}</span></p>)}</div>}</section>}
- </main>;
+ </section>;
 }

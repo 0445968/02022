@@ -89,7 +89,7 @@ try{
  "insert into public.story_revisions(story_id,headline,slug,author_id,created_by) values("+uuid(storyIds.public)+",'CT15 unpublished revision','ct15-public',"+uuid(users.legacy.id)+","+uuid(users.legacy.id)+");");
  const manifest=readFileSync('docs/clear-talks/CT15_FORWARD_MIGRATION_MANIFEST.md','utf8');
  const forward=[...manifest.matchAll(/^\d+\. \x60(supabase\/migrations\/202611[^\x60]+\.sql)\x60$/gm)].map(m=>m[1]);
- assert.deepEqual(forward,readdirSync('supabase/migrations').filter(x=>/^202611.*\.sql$/.test(x)).sort().map(x=>'supabase/migrations/'+x));assert.equal(forward.length,42);
+ assert.deepEqual(forward,readdirSync('supabase/migrations').filter(x=>/^202611.*\.sql$/.test(x)).sort().map(x=>'supabase/migrations/'+x));assert.equal(forward.length,43);
  function grantSql(role){
   const grants=PROPOSED_STAFF_ROLE_GRANTS[role];
   assert.ok(grants?.length);
@@ -147,6 +147,34 @@ try{
  }
  const malformedDashboard=await owner.rpc('staff_read_owner_dashboard',{p_mode:'other'});check('invalid dashboard mode denied',!!malformedDashboard.error);
 
+ mark('standalone work real Auth and PostgREST');
+ const candidates=await owner.rpc('staff_lookup_work_assignment_options',{p_kind:'member',p_query:'',p_page:0});
+ check('owner can load eligible work members',!candidates.error&&candidates.data.items.length===5);
+ const freeMembership=await free.from('staff_memberships').select('id').eq('auth_user_id',users.freelancer.id).single();
+ check('freelancer verified membership',!freeMembership.error);
+ const workDue=new Date(Date.now()+86400000).toISOString();
+ const workCommand={action:'create',assignmentId:null,expectedRevision:0,requestId:randomUUID(),reason:'CT16 synthetic assignment rehearsal',details:{title:'CT16 synthetic research',activity:'research',coverage:'community',storyId:storyIds.other,assigneeIds:[freeMembership.data.id],priority:'high',dueAt:workDue,notes:'Synthetic work only'}};
+ const workCreate=await owner.rpc('staff_change_work_assignment',{p_command:workCommand});
+ check('owner creates independent work through actual RPC',!workCreate.error&&workCreate.data.revision===1);
+ const workId=workCreate.data.id;
+ const replay=await owner.rpc('staff_change_work_assignment',{p_command:workCommand});
+ check('actual work mutation replay is idempotent',!replay.error&&JSON.stringify(replay.data)===JSON.stringify(workCreate.data));
+ const workMine=await free.rpc('staff_read_work_assignments',{p_mode:'personal',p_page:0,p_id:workId});
+ check('freelancer sees work but linked private story redacted',!workMine.error&&workMine.data.items[0].id===workId&&workMine.data.items[0].storyId===null&&workMine.data.items[0].storyHeadline===null);
+ const workTeam=await free.rpc('staff_read_work_assignments',{p_mode:'team',p_page:0,p_id:null});
+ check('freelancer denied team work',!!workTeam.error);
+ const workOverview=await owner.rpc('staff_read_work_assignment_overview',{p_mode:'team',p_start:null,p_end:null,p_attention:true,p_page:0});
+ check('exact real team work overview',!workOverview.error&&workOverview.data.counts.active===1&&workOverview.data.counts.dueSoon===1&&workOverview.data.items[0].id===workId);
+ const workPersonal=await owner.rpc('staff_read_work_assignment_overview',{p_mode:'personal',p_start:null,p_end:null,p_attention:false,p_page:0});
+ check('owner personal overview excludes other assignee',!workPersonal.error&&workPersonal.data.counts.total===0);
+ const privateOptions=await free.rpc('staff_lookup_work_assignment_options',{p_kind:'article',p_query:'',p_page:0});
+ check('freelancer denied article picker',!!privateOptions.error);
+ const readerWork=await reader.rpc('staff_read_work_assignments',{p_mode:'personal',p_page:0,p_id:null});
+ check('reader denied work RPC',!!readerWork.error);
+ const anonWork=await anonymous.rpc('staff_read_work_assignments',{p_mode:'personal',p_page:0,p_id:null});
+ check('anonymous denied work RPC',!!anonWork.error);
+ const progress=await free.rpc('staff_change_work_assignment',{p_command:{action:'status',assignmentId:workId,expectedRevision:1,requestId:randomUUID(),reason:'CT16 synthetic progress update',status:'in_progress'}});
+ check('freelancer progresses own standalone work',!progress.error&&progress.data.revision===2&&progress.data.status==='in_progress');
  const deny=await reader.rpc('staff_reserve_private_upload',{p_extension:'png'});
  check('reader reservation denied',!!deny.error);
  mark('real Storage API quota and object access');
@@ -168,7 +196,7 @@ try{
  check('freelancer cannot evade quota via public bucket',!!publicUpload.error);
  // No provider sends, cron, payments or destructive jobs. Public poll APP flag is local-only; DB voting stays off until the final disposable poll scenario.
  const flags={
-  DEV_AUTH_BYPASS:'false',CT_STAFF_ACCESS_V2_ENABLED:'true',CT_STORY_TYPES_ENABLED:'true',CT_WORK_ASSIGNMENTS_ENABLED:'true',CT_READER_ACCOUNT_ENABLED:'true',
+  DEV_AUTH_BYPASS:'false',CT_STAFF_ACCESS_V2_ENABLED:'true',CT_STORY_TYPES_ENABLED:'true',CT_WORK_ASSIGNMENTS_ENABLED:'true',CT_WORK_OVERVIEW_ENABLED:'true',CT_READER_ACCOUNT_ENABLED:'true',
   CT_STAFF_ONBOARDING_ENABLED:'true',CT_MEDIA_PRIVATE_DRAFTS_ENABLED:'true',
   CT_COMMENT_MODERATION_ENABLED:'true',CT_COMMENT_REPORTS_ENABLED:'true',
   CT_ASSIGNED_DRAFT_EDITOR_ENABLED:'true',CT_ASSIGNED_REVISION_EDITOR_ENABLED:'true',
@@ -366,6 +394,25 @@ try{
     const optOut=await post('/api/account/newsletters',{action:'unsubscribe',topic:'latest'});
     check('reader can unsubscribe even with delivery disabled',optOut.status()===200&&(await optOut.json()).topics.some(t=>t.topic==='latest'&&t.status==='unsubscribed'));
     check('unsupported newsletter topic rejected',(await post('/api/account/newsletters',{action:'unsubscribe',topic:'forged'})).status()===422);
+   }
+   const workResponse=await context.request.get(appOrigin+'/api/newsroom/assignments?mode='+(role==='owner'||role==='editor'?'team':'personal'));
+   check(role+' assignment API access',workResponse.status()===(['reader','legacy'].includes(role)?403:200));
+   if(role==='owner'||role==='freelancer'){
+    const workMode=role==='owner'?'team':'personal';
+    await page.setViewportSize({width:390,height:844});
+    await page.goto(appOrigin+'/newsroom/assignments?mode='+workMode+'&id='+workId,{waitUntil:'load',timeout:20000});
+    await page.getByRole('heading',{name:'CT16 synthetic research',exact:true}).waitFor({state:'visible'});
+    check(role+' actual assignment detail and private scope',await page.getByRole('heading',{name:'CT16 synthetic research',exact:true}).count()===1);
+    check(role+' responsive assignment workspace',await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth+1));
+    if(role==='owner'){
+      await page.getByRole('button',{name:'New assignment',exact:true}).click();
+      await page.getByLabel('Linked article (optional)',{exact:true}).fill('CT15');
+      await page.getByLabel('Linked article (optional)',{exact:true}).locator('..').waitFor();
+      await page.getByText('CT15 assigned story',{exact:true}).last().waitFor({state:'visible'});
+      check('actual article lookup picker',true);
+      await page.getByRole('button',{name:'Cancel',exact:true}).click();
+    }
+    await page.setViewportSize({width:1440,height:900});
    }
    const team=await context.request.get(appOrigin+'/api/newsroom/team');
    check(role+' team route authorization (HTTP '+team.status()+')',team.status()===(role==='owner'?200:404));
