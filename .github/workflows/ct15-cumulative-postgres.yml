@@ -8,6 +8,8 @@ on:
       - 'tests/ct16-poll-placements-postgres.sql'
       - 'supabase/staged/ct16_story_translations.sql'
       - 'tests/ct16-story-translations-postgres.sql'
+      - 'supabase/staged/ct16_poll_translations.sql'
+      - 'tests/ct16-poll-translations-postgres.sql'
       - 'tests/ct16-editorial-privileges-postgres.sql'
       - 'tests/ct16-work-overview-postgres.sql'
       - 'tests/ct16-work-assignments-postgres.sql'
@@ -49,17 +51,17 @@ jobs:
             sudo apt-get install -y -qq postgresql-client
           fi
           python3 -m py_compile scripts/ct15-cumulative-postgres.py
-      - name: Generate homepage visibility candidate with pinned CLI
+      - name: Generate story translations candidate with pinned CLI
         run: |
           npm install --prefix "$RUNNER_TEMP/ct16-cli" --no-save supabase@3.2.0
           CLI="$RUNNER_TEMP/ct16-cli/node_modules/.bin/supabase"
           "$CLI" --version
           "$CLI" migration new --help
-          "$CLI" migration new ct16_homepage_visibility
-          candidate=$(find supabase/migrations -maxdepth 1 -name '*_ct16_homepage_visibility.sql')
+          "$CLI" migration new ct16_story_translations
+          candidate=$(find supabase/migrations -maxdepth 1 -name '*_ct16_story_translations.sql')
           test -n "$candidate" && test "$(printf '%s\n' "$candidate" | wc -l)" -eq 1
-          cp supabase/staged/ct16_homepage_visibility.sql "$candidate"
-          printf 'CT16_HOMEPAGE_VISIBILITY_CANDIDATE=%s\n' "$candidate" >> "$GITHUB_ENV"
+          cp supabase/staged/ct16_story_translations.sql "$candidate"
+          printf 'CT16_STORY_TRANSLATIONS_CANDIDATE=%s\n' "$candidate" >> "$GITHUB_ENV"
           mkdir -p ct15-cumulative-evidence/generated
           cp "$candidate" ct15-cumulative-evidence/generated/
           sha256sum "$candidate" > ct15-cumulative-evidence/generated/sha256.txt

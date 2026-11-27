@@ -27,6 +27,7 @@ import {
 
 import {
   localizedPath,
+  isLocale,
 } from '@/lib/i18n/config';
 
 import type {
@@ -190,11 +191,9 @@ export function SignInForm({
         return;
       }
 
-      const fallback =
-        localizedPath(
-          locale,
-          '/'
-        );
+      let preferred=locale;
+      try{const response=await fetch('/api/account/language',{cache:'no-store'});if(response.ok){const data=await response.json();if(isLocale(data.locale))preferred=data.locale;}}catch{/* optional synchronization */}
+      const fallback=localizedPath(preferred,'/');
 
       const destination =
         resolveSafeNextPath(

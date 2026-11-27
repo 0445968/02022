@@ -89,7 +89,7 @@ try{
  "insert into public.story_revisions(story_id,headline,slug,author_id,created_by) values("+uuid(storyIds.public)+",'CT15 unpublished revision','ct15-public',"+uuid(users.legacy.id)+","+uuid(users.legacy.id)+");");
  const manifest=readFileSync('docs/clear-talks/CT15_FORWARD_MIGRATION_MANIFEST.md','utf8');
  const forward=[...manifest.matchAll(/^\d+\. \x60(supabase\/migrations\/202611[^\x60]+\.sql)\x60$/gm)].map(m=>m[1]);
- assert.deepEqual(forward,readdirSync('supabase/migrations').filter(x=>/^202611.*\.sql$/.test(x)).sort().map(x=>'supabase/migrations/'+x));assert.equal(forward.length,44);
+ assert.deepEqual(forward,readdirSync('supabase/migrations').filter(x=>/^202611.*\.sql$/.test(x)).sort().map(x=>'supabase/migrations/'+x));assert.equal(forward.length,45);
  function grantSql(role){
   const grants=PROPOSED_STAFF_ROLE_GRANTS[role];
   assert.ok(grants?.length);
@@ -106,8 +106,8 @@ try{
   apply(path);
  }
  // Apply staged candidate ONLY inside the disposable local platform, before role fixtures.
- mark('CT16 staged visibility and placement rehearsal');
- apply('supabase/staged/ct16_homepage_visibility.sql');
+ mark('CT16 staged linked translation rehearsal');
+ apply('supabase/staged/ct16_story_translations.sql');
  mark('explicit disposable staff fixtures');
  const staff=roles.filter(x=>x!=='reader'&&x!=='legacy');
  const inserts=staff.map(role=>{
@@ -206,7 +206,7 @@ try{
   CT_WRITER_DRAFT_CREATION_ENABLED:'true',CT_STORY_REVIEW_ENABLED:'true',
   CT_STAFF_ADMIN_MUTATIONS_ENABLED:'true',CT_READER_COMMUNICATIONS_ENABLED:'true',
   CT_EDITORIAL_CALENDAR_ENABLED:'true',CT_POLLS_ENABLED:'true',CT_PUBLIC_POLLS_ENABLED:'true',CT_REVIEW_INBOX_ENABLED:'true',CT_STORY_ASSIGNMENTS_ENABLED:'true',
-  CT_HOMEPAGE_HISTORY_ENABLED:'true',CT_HOMEPAGE_VISIBILITY_ENABLED:'true',CT_POLL_PLACEMENTS_ENABLED:'true',CT_READER_REPORTING_ENABLED:'true',
+  CT_HOMEPAGE_HISTORY_ENABLED:'true',CT_HOMEPAGE_VISIBILITY_ENABLED:'true',CT_POLL_PLACEMENTS_ENABLED:'true',CT_STORY_TRANSLATIONS_ENABLED:'true',CT_READER_LANGUAGE_SYNC_ENABLED:'true',CT_READER_REPORTING_ENABLED:'true',
   CT_REVIEWED_PUBLICATION_ENABLED:'true',CT_REVIEWED_SCHEDULING_ENABLED:'true',CT_STAFF_INVITATIONS_ENABLED:'true',CT_STAFF_PRESET_MUTATIONS_ENABLED:'true',CT_STAFF_OVERRIDE_MUTATIONS_ENABLED:'true',CT_STAFF_BYLINE_REVIEW_ENABLED:'true'
  };
  const appEnv={...process.env,...flags,NEXT_PUBLIC_SUPABASE_URL:apiOrigin,NEXT_PUBLIC_SUPABASE_ANON_KEY:values.ANON_KEY,SUPABASE_SERVICE_ROLE_KEY:values.SERVICE_ROLE_KEY};
@@ -280,6 +280,11 @@ try{
     const retained=await context.request.get(appOrigin+'/api/account/profile');
     const persisted=await retained.json();
     check('reader saved identity retained',retained.status()===200&&persisted.displayName===payload.displayName&&persisted.locale==='es'&&persisted.image==='/avatars/reader-ocean.svg');
+    const language=await context.request.get(appOrigin+'/api/account/language');
+    check('saved account language synchronization returns locale only',language.status()===200&&JSON.stringify(await language.json())===JSON.stringify({locale:'es'}));
+    const localeRedirect=await context.request.get(appOrigin+'/latest',{maxRedirects:0});
+    check('saved account language reaches unprefixed public route',localeRedirect.status()===307&&new URL(localeRedirect.headers().location,appOrigin).pathname==='/es/latest');
+
     await page.reload({waitUntil:'load'});
     await page.locator('#account-main form[aria-busy="false"]').waitFor({state:'visible',timeout:10000});
     check('reader reloaded form reflects all saved preferences',await page.getByLabel('Nombre visible',{exact:true}).inputValue()===payload.displayName&&await page.getByLabel('Idioma de la cuenta',{exact:true}).inputValue()==='es'&&await page.locator('#account-main form img[src="/avatars/reader-ocean.svg"]').count()===1);

@@ -25,7 +25,7 @@ export async function middleware(request: NextRequest) {
   const { client, getResponse } = createMiddlewareClient(request);
 
   // Refresh the session — this also sets updated auth cookies on the response.
-  await client.auth.getUser();
+  const {data:{user},error:authError}=await client.auth.getUser();
   const response = getResponse();
 
   const pathname = request.nextUrl.pathname;
@@ -65,7 +65,11 @@ const isInternal =
       // No locale in the URL — pick one and redirect.
       const cookieLocale = request.cookies.get(LOCALE_COOKIE)?.value;
       // First visit is English regardless of Accept-Language; an explicit URL always wins.
-      const locale = resolvePublicLocale(cookieLocale);
+      let accountLocale:string|null=null;
+      if(!isLocale(cookieLocale)&&process.env.CT_READER_LANGUAGE_SYNC_ENABLED==='true'&&process.env.CT_READER_ACCOUNT_ENABLED==='true'&&process.env.DEV_AUTH_BYPASS!=='true'&&!authError&&user&&!user.is_anonymous&&user.email_confirmed_at){
+        try{const {data,error}=await client.from('profiles').select('preferred_locale').eq('id',user.id).maybeSingle();if(!error&&isLocale(data?.preferred_locale))accountLocale=data.preferred_locale;}catch{/* use English if preference unavailable */}
+      }
+      const locale = resolvePublicLocale(cookieLocale,accountLocale);
 
       const rest = stripLocale(pathname);
       const url = request.nextUrl.clone();

@@ -34,4 +34,4 @@ export function localizedPath(locale: Locale, pathname: string): string {
 }
 
 /** Browser Accept-Language never overrides the English first-visit default. */
-export function resolvePublicLocale(saved: string | null | undefined):Locale{return isLocale(saved)?saved:defaultLocale;}
+export function resolvePublicLocale(saved: string | null | undefined,account?:string|null):Locale{return isLocale(saved)?saved:isLocale(account)?account:defaultLocale;}
