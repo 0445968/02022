@@ -6,10 +6,11 @@ import {ReviewedSchedulePanel} from './ReviewedSchedulePanel';
 import type {ReviewedSchedule} from '@/lib/permissions/reviewed-schedule-contract';
 import {parseReviewState,type ReviewState,type ReviewAction} from '@/lib/permissions/story-review-contract';
 const btn='rounded-md border border-border bg-white px-3 py-2 text-sm font-medium hover:bg-surface-muted disabled:opacity-50';
-export function StoryReviewPanel({initial,locale,backHref,canEdit,canPublish=false,scheduling=false,schedule=null,canSchedule=false}:{initial:ReviewState;locale:Locale;backHref:string;canEdit:boolean;canPublish?:boolean;scheduling?:boolean;schedule?:ReviewedSchedule|null;canSchedule?:boolean}){
+export function StoryReviewPanel({initial,locale,backHref,canEdit,canPublish=false,canSelfPublish=false,scheduling=false,schedule=null,canSchedule=false}:{initial:ReviewState;locale:Locale;backHref:string;canEdit:boolean;canPublish?:boolean;canSelfPublish?:boolean;scheduling?:boolean;schedule?:ReviewedSchedule|null;canSchedule?:boolean}){
  const es=locale==='es';
  const [state,setState]=useState(initial),[note,setNote]=useState(''),[action,setAction]=useState<ReviewAction>('approve');
  const [confirmed,setConfirmed]=useState(false),[opened,setOpened]=useState(false),[busy,setBusy]=useState(false),[blocked,setBlocked]=useState(false);
+ const [bypass,setBypass]=useState(canSelfPublish),[bypassReason,setBypassReason]=useState('');
  const [error,setError]=useState(''),[notice,setNotice]=useState('');
  const inFlight=useRef(false);
  const url='/api/newsroom/stories/'+state.storyId+'/review';
@@ -44,6 +45,16 @@ export function StoryReviewPanel({initial,locale,backHref,canEdit,canPublish=fal
   }catch{setBlocked(true);setError(es?'Resultado incierto. Actualice antes de reintentar.':'Uncertain result. Refresh before retrying.');}
   finally{inFlight.current=false;setBusy(false);}
  }
+ async function selfPublish(){
+  if(inFlight.current||busy||blocked||!canSelfPublish||!bypass||!opened||schedule||state.status!=='draft'||bypassReason.trim().length<12)return;
+  if(!window.confirm(es?'¿Publicar esta versión guardada sin revisión independiente?':'Publish this saved version without independent review?'))return;
+  inFlight.current=true;setBusy(true);setError('');
+  try{const requestId=crypto.randomUUID(),res=await fetch('/api/newsroom/stories/'+state.storyId+'/publish-own',{method:'POST',cache:'no-store',headers:{'Content-Type':'application/json'},body:JSON.stringify({kind:state.kind,requestId,fingerprint:state.fingerprint,reason:bypassReason})});
+   if(!res.ok){setBlocked(true);setError(es?'No se pudo confirmar la publicación. Actualice y compruebe la copia y los derechos.':'Publication unavailable. Refresh and verify the saved copy and media rights.');return;}
+   const result=await res.json();if(result.storyId!==state.storyId||result.requestId!==requestId||result.method!=='self_publication'||result.status!=='published')throw Error();
+   window.location.assign('/newsroom/stories/'+state.storyId+'/preview');
+  }catch{setBlocked(true);setError(es?'Resultado incierto. Compruebe el artículo antes de reintentar.':'Uncertain result. Check the article before retrying.');}finally{inFlight.current=false;setBusy(false);}
+ }
  async function publish(){
   if(inFlight.current||busy||blocked||!canPublish||schedule||!state.current||state.decision!=='approved'||!state.requestId)return;
   if(!window.confirm(es?'¿Publicar exactamente esta versión aprobada?':'Publish this exact approved version?'))return;
@@ -77,8 +88,9 @@ export function StoryReviewPanel({initial,locale,backHref,canEdit,canPublish=fal
    <p className="text-sm text-muted-foreground">{es?'Se comprobará la aprobación vigente y los derechos de las imágenes antes de publicar.':'Current approval and image rights will be checked before publication.'}</p>
    <button type="button" className="rounded-md bg-primary px-4 py-2 text-sm font-semibold text-white disabled:opacity-50" disabled={busy||blocked} onClick={()=>void publish()}>{es?'Publicar':'Publish'}</button>
   </section>}
+  {canSelfPublish&&state.status==='draft'&&!schedule&&<section className="space-y-3 rounded-lg border border-border bg-white p-4"><h2 className="font-semibold">{es?'Publicación de artículo propio':'Own-article publication'}</h2><label className="flex gap-2 text-sm"><input type="checkbox" checked={bypass} disabled={busy||blocked} onChange={e=>setBypass(e.target.checked)}/>{es?'Publicar sin revisión independiente':'Publish without independent review'}</label><p className="text-xs text-muted-foreground">{es?'La excepción se registra con motivo y versión exacta; no es una aprobación independiente. Desmarque para solicitar revisión normal.':'The exception is logged with reason and exact saved version; it is not independent approval. Uncheck for the normal review workflow.'}</p>{bypass&&<><label className="block text-sm">{es?'Motivo de la excepción':'Reason for exception'}<textarea className="mt-1 w-full rounded-md border border-border p-2" value={bypassReason} onChange={e=>setBypassReason(e.target.value)} maxLength={1000} disabled={busy||blocked}/></label><button type="button" className="rounded-md bg-primary px-4 py-2 text-sm font-semibold text-white disabled:opacity-50" disabled={busy||blocked||!opened||bypassReason.trim().length<12} onClick={()=>void selfPublish()}>{es?'Publicar versión propia':'Publish own version'}</button></>}</section>}
   {scheduling&&<ReviewedSchedulePanel state={state} schedule={schedule} canManage={canSchedule} locale={locale}/>}
-  {(state.canRequest||state.canDecide)&&<section className="space-y-3 rounded-lg border border-border bg-white p-4">
+  {(state.canRequest||state.canDecide)&&!(canSelfPublish&&bypass&&state.status==='draft'&&!schedule)&&<section className="space-y-3 rounded-lg border border-border bg-white p-4">
    <h2 className="font-semibold">{state.canRequest?(es?'Solicitar revisión':'Request review'):(es?'Decisión editorial':'Editorial decision')}</h2>
    {state.canRequest?<p className="text-sm text-muted-foreground">{es?'Se solicitará la revisión de la copia guardada. Los cambios posteriores invalidarán la solicitud.':'Review will be requested for the saved copy. Later changes will invalidate the request.'}</p>:
     <><label className="block text-sm">{es?'Decisión':'Decision'}<select value={action} onChange={e=>{setAction(e.target.value as ReviewAction);setConfirmed(false);}} disabled={busy||blocked} className="mt-1 w-full rounded-md border border-border px-3 py-2">

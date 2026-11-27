@@ -48,3 +48,11 @@ export async function readWorkOverview(mode:'team'|'personal',range:{start:strin
  const db=await client();const {data,error}=await db.rpc('staff_read_work_assignment_overview',{p_mode:mode,p_start:range?.start??null,p_end:range?.end??null,p_attention:attention,p_page:page});if(error)fail(error.code);
  try{return parseWorkOverview(data,mode);}catch{throw new DraftHttpError(503);}
 }
+
+export function workSearchEnabled(){return workAssignmentsEnabled()&&process.env.CT_WORK_SEARCH_ENABLED==='true';}
+export async function searchWorkAssignments(mode:'team'|'personal',page:number,id:string|null,query:string,status:string|null,priority:string|null){
+ if(!workSearchEnabled())throw new DraftHttpError(404);
+ if(!['team','personal'].includes(mode)||!Number.isInteger(page)||page<0||page>100||(id!==null&&(!DRAFT_UUID.test(id)||page!==0))||query.length>160||/[\u0000-\u001f\u007f]/.test(query)||(status!==null&&!ASSIGNMENT_WORK_STATUSES.some(([key])=>key===status))||(priority!==null&&!['low','normal','high','urgent'].includes(priority)))throw new DraftHttpError(422);
+ const db=await client();const {data,error}=await db.rpc('staff_search_work_assignments',{p_mode:mode,p_page:page,p_id:id,p_query:query,p_status:status,p_priority:priority});if(error)fail(error.code);
+ try{return parseWorkAssignmentPage(data,mode);}catch{throw new DraftHttpError(503);}
+}

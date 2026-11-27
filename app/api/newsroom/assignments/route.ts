@@ -1,5 +1,5 @@
 import {NextResponse} from 'next/server';
-import {workAssignmentsEnabled,readWorkAssignments,changeWorkAssignment} from '@/lib/services/work-assignments';
+import {workAssignmentsEnabled,workSearchEnabled,searchWorkAssignments,readWorkAssignments,changeWorkAssignment} from '@/lib/services/work-assignments';
 import {DraftHttpError,readDraftRequest} from '@/lib/permissions/assigned-draft-http';
 import {validateStandaloneAssignmentCommand} from '@/lib/permissions/standalone-assignment-contract';
 export const dynamic='force-dynamic';
@@ -9,7 +9,7 @@ export async function GET(request:Request){
  if(!workAssignmentsEnabled())return reply({error:'Not found'},404);
  const q=new URL(request.url).searchParams,mode=q.get('mode')??'personal',page=q.get('page')??'0';
  if((mode!=='team'&&mode!=='personal')||!/^\d{1,3}$/.test(page))return reply({error:'Invalid query'},422);
- try{return reply(await readWorkAssignments(mode,Number(page),q.get('id')));}catch(e){return denied(e);}
+ try{return reply(await (workSearchEnabled()&&(q.has('q')||q.has('status')||q.has('priority'))?searchWorkAssignments(mode,Number(page),q.get('id'),q.get('q')??'',q.get('status'),q.get('priority')):readWorkAssignments(mode,Number(page),q.get('id'))));}catch(e){return denied(e);}
 }
 export async function POST(request:Request){
  if(!workAssignmentsEnabled())return reply({error:'Not found'},404);

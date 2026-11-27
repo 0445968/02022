@@ -9,6 +9,9 @@ test('CT05b4b strict quota and path response validation',()=>{
  const valid={usedSlots:3,maxSlots:25,remainingSlots:22,maxFileBytes:10485760,maxReservedBytes:262144000};
  assert.deepEqual(parsePrivateUploadQuota(valid),valid);
  for(const p of [{usedSlots:26},{remainingSlots:23},{maxSlots:30},{maxReservedBytes:1}])assert.throws(()=>parsePrivateUploadQuota({...valid,...p}));
+ assert.deepEqual(parsePrivateUploadQuota({usedSlots:26,maxSlots:null,remainingSlots:null,maxFileBytes:10485760,maxReservedBytes:null}),{usedSlots:26,maxSlots:null,remainingSlots:null,maxFileBytes:10485760,maxReservedBytes:null});
+ assert.equal(parsePrivateUploadQuota({...valid,usedSlots:26,remainingSlots:0}).remainingSlots,0);
+ assert.throws(()=>parsePrivateUploadQuota({...valid,maxSlots:null}));
  const user='00000000-0000-0000-0000-000000000003';
  const path='drafts/'+user+'/60000000-0000-0000-0000-000000000001.jpg';
  assert.equal(validPrivateReservation(path,user,'jpg'),true);

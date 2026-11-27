@@ -1,3 +1,4 @@
+import {canSelfPublish} from '@/lib/services/editorial-privileges';
 import {notFound,redirect} from 'next/navigation';
 import {getCurrentUser} from '@/lib/auth/session';
 import {newsroomLocale,mayMountFullStoryEditor} from '@/lib/services/newsroom-workspace';
@@ -37,5 +38,5 @@ export default async function StoryReviewPage(props:{params: Promise<{id:string}
   try{schedule=await readReviewedSchedule(params.id,state.kind);}
   catch{return <p role="alert" className="p-6 text-sm text-muted-foreground">{locale==='es'?'No se pudo verificar la programación. Actualice la página.':'Unable to verify scheduling. Refresh the page.'}</p>;}
  }
- return <StoryReviewPanel key={state.storyId+state.kind} initial={state} locale={locale} backHref={backHref} canEdit={canEdit} canPublish={await canPublishReviewed(params.id,state.kind)} scheduling={scheduling} schedule={schedule} canSchedule={scheduling&&(await canManageReviewedSchedule(params.id,state.kind))}/>;
+ return <StoryReviewPanel key={state.storyId+state.kind} initial={state} locale={locale} backHref={backHref} canEdit={canEdit} canPublish={await canPublishReviewed(params.id,state.kind)} canSelfPublish={!schedule&&await canSelfPublish(params.id,state.kind)} scheduling={scheduling} schedule={schedule} canSchedule={scheduling&&(await canManageReviewedSchedule(params.id,state.kind))}/>;
 }

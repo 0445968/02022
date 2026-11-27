@@ -106,9 +106,9 @@ export function PrivateDraftMediaPanel({canReview,locale='en',onBusyChange,onCha
       </button>
     </div>
     {quota&&<div className="mb-4 rounded-lg border border-border p-3 text-sm">
-      <div className="flex flex-wrap justify-between gap-2"><strong>{es?'Cupo de cargas privadas':'Private upload allowance'}</strong><span>{quota.usedSlots} / {quota.maxSlots}</span></div>
-      <div className="mt-2 h-2 overflow-hidden rounded-full bg-surface-muted"><div className="h-full bg-primary" style={{width:(quota.usedSlots/quota.maxSlots*100)+'%'}}/></div>
-      <p className="mt-2 text-xs text-muted-foreground">{es?`${quota.remainingSlots} cargas disponibles. Máximo 10 MiB por archivo. Las reservas y los originales retenidos cuentan para el cupo.`:`${quota.remainingSlots} uploads remaining. Maximum 10 MiB per file. Reserved paths and retained originals count toward the allowance.`}</p>
+      <div className="flex flex-wrap justify-between gap-2"><strong>{es?'Cupo de cargas privadas':'Private upload allowance'}</strong><span>{quota.usedSlots}{quota.maxSlots===null?(es?' · Sin cupo acumulado':' · No cumulative cap'):' / '+quota.maxSlots}</span></div>
+      {quota.maxSlots!==null&&<div className="mt-2 h-2 overflow-hidden rounded-full bg-surface-muted"><div className="h-full bg-primary" style={{width:Math.min(100,quota.usedSlots/quota.maxSlots*100)+'%'}}/></div>}
+      <p className="mt-2 text-xs text-muted-foreground">{quota.maxSlots===null?(es?'Sin límite editorial acumulado. Máximo 10 MiB por archivo; siguen vigentes las verificaciones y los límites del proveedor.':'No cumulative editorial cap. Maximum 10 MiB per file; validation and provider limits still apply.'):es?`${quota.remainingSlots} cargas disponibles. Máximo 10 MiB por archivo. Las reservas y los originales retenidos cuentan para el cupo.`:`${quota.remainingSlots} uploads remaining. Maximum 10 MiB per file. Reserved paths and retained originals count toward the allowance.`}</p>
       {quota.remainingSlots===0&&<p role="status" className="mt-2 text-xs">{es?'Cupo agotado. Solicite una revisión del almacenamiento.':'Allowance exhausted. Request a storage review.'}</p>}
     </div>}
     <div className="mb-4 flex flex-wrap items-center gap-3">
