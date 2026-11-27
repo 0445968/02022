@@ -115,7 +115,7 @@ export async function readStaffTeamDirectory(
     presetIds.length ? db.from('staff_role_capabilities')
       .select('role_preset_id,capability_key,scope')
       .in('role_preset_id',presetIds).limit(1000) : Promise.resolve({data:[],error:null}),
-    userIds.length ? db.from('profiles').select('id,name')
+    userIds.length ? db.from('profiles').select('id,name,avatar_url')
       .in('id',userIds).limit(MAX_MEMBERS) : Promise.resolve({data:[],error:null}),
     access.canViewAudit ? (() => {
       let query=db.from('staff_access_audit')
@@ -132,13 +132,21 @@ export async function readStaffTeamDirectory(
   const profiles=requireSuccess(profilesResult,'profile names') as RawRow[];
   const audits=requireSuccess(auditResult,'access audit') as RawRow[];
   const names=new Map(profiles.map(p=>[p.id as string,safeName(p.name,'Staff member')]));
+  const avatars=new Map(profiles.map(p=>{
+    let avatar:string|null=null;
+    if(typeof p.avatar_url==='string'&&p.avatar_url.length<=2048)try{
+      const image=new URL(p.avatar_url);
+      if(image.origin===new URL(url).origin&&image.pathname.startsWith('/storage/v1/object/public/')&&!image.search&&!image.hash&&!image.username&&!image.password)avatar=image.href;
+    }catch{/* fallback initials */}
+    return [p.id as string,avatar] as const;
+  }));
   // Auditors see only the actor's display name if the account is in the
   // authorized roster; never a raw Auth UUID or private email.
   const presetKeys=new Map(presetsRaw.filter(p=>roleKey(p.role_key))
     .map(p=>[p.id as string,p.role_key as StaffRoleKey]));
 
   const members:TeamMember[]=membersRaw.map(m=>({
-    id:m.id,name:names.get(m.auth_user_id)??'Staff member',
+    id:m.id,name:names.get(m.auth_user_id)??'Staff member',avatarUrl:avatars.get(m.auth_user_id)??null,
     memberType:m.member_type,status:m.status,
     expiresAt:m.expires_at,joinedAt:m.created_at,
     isSelf:m.auth_user_id===access.userId,

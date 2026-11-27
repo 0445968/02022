@@ -859,20 +859,14 @@ try{
       await page.screenshot({path:resolve(output,key+'-audit.png'),fullPage:true,timeout:10000,animations:'disabled'});
       check(role+' page audit '+path+' '+width+'px',ok);
       if(path==='/newsroom/team'&&width===390){
-       const disclosure=page.locator('details[data-team-disclosure="invitations"]');
-       check('team administration starts with compact invitation disclosure',await disclosure.count()===1&&!(await disclosure.evaluate(el=>el.open)));
-       await disclosure.locator('summary').focus();await page.keyboard.press('Enter');
-       check('team invitations open by keyboard',await disclosure.evaluate(el=>el.open));
-       await page.keyboard.press('Enter');
-       check('team invitations close by keyboard',!(await disclosure.evaluate(el=>el.open)));
-       const extra=page.locator('details[data-team-disclosure="presets"],details[data-team-disclosure="audit"]');
-       check('team presets and audit start collapsed',await extra.count()===2&&await extra.evaluateAll(els=>els.every(el=>!el.open)));
-       for(const section of await extra.all()){
-        await section.locator('summary').focus();await page.keyboard.press('Enter');
-        check('team secondary management group opens with keyboard',await section.evaluate(el=>el.open));
-        await page.keyboard.press('Enter');
+       const tabs=page.locator('[data-team-tab]');
+       check('team starts in members tab',await page.locator('[data-team-tab="members"]').getAttribute('aria-pressed')==='true'&&await page.locator('#ct-team-members').isVisible());
+       check('all five owner team sections reachable',await tabs.count()===5);
+       for(const key of ['invitations','bylines','presets','audit','members']){
+        const tab=page.locator('[data-team-tab="'+key+'"]');await tab.focus();await page.keyboard.press('Enter');
+        check('team tab '+key+' opens by keyboard',await tab.getAttribute('aria-pressed')==='true'&&await page.locator('#ct-team-'+key).isVisible());
+        check('team tab '+key+' exclusive panel',await page.locator('[id^="ct-team-"]').evaluateAll((els,k)=>els.filter(e=>['ct-team-members','ct-team-invitations','ct-team-bylines','ct-team-presets','ct-team-audit'].includes(e.id)&&!e.hidden).map(e=>e.id).join(',')==='ct-team-'+k,key));
        }
-       check('all team management disclosures remain reachable and compact',await extra.evaluateAll(els=>els.every(el=>!el.open)));
       }
       if(path==='/newsroom/page-editor'&&width===390){
        const sections=page.locator('details[data-front-page-section]');

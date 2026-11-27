@@ -1,3 +1,10 @@
+# CURRENT — CT16 R1c staged
+
+
+## CT16 R1c — Team tabs and Stories regression correction
+R1b 41/43 CI success; both failures shared source assertion on renamed Stories variable. Restored story variable without altering status/draft logic. Team sections now sticky mutually exclusive Members/Invitations/Bylines/Role presets/Audit controls; browser regression updated for keyboard and panel exclusivity. Avatar projection restricted to current project's public storage (initials otherwise), no private account data. Full-width Team. Staged; CI pending. Owner dashboard accurate modes, editor/media/calendar/comments/workflow changes remain. No production changes.
+
+---
 # CURRENT — CT16 R1b staged
 
 

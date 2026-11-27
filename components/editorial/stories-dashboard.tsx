@@ -94,25 +94,25 @@ export function StoriesDashboard({ dict, locale='en', publicationQueue=null, can
   function livePath(s:StoryListItem){return s.status==='published'&&s.publishedAt&&Date.parse(s.publishedAt)<=Date.now()?'/'+s.language+'/article/'+encodeURIComponent(s.slug):null;}
   async function share(s:StoryListItem){const path=livePath(s);if(!path)return;const url=new URL(path,window.location.origin).href;try{if(navigator.share)await navigator.share({title:s.headline,url});else{await navigator.clipboard.writeText(url);setNotice(es?'Enlace copiado.':'Link copied.');}}catch(e){if(!(e instanceof DOMException&&e.name==='AbortError'))setNotice(es?'No se pudo compartir.':'Unable to share.');}}
   const iconButton='inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-border bg-white text-muted-foreground hover:text-primary hover:bg-surface-muted focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-40';
-  function cell(k:ColumnKey,s:StoryListItem){
-   const queue=queues.get(s.id.toLowerCase()),state=queue&&queuePage?queuePresentation(queue,queuePage.asOf):null;
+  function cell(k:ColumnKey,story:StoryListItem){
+   const queue=queues.get(story.id.toLowerCase()),state=queue&&queuePage?queuePresentation(queue,queuePage.asOf):null;
    const date=(v:string|null)=>v?new Date(v).toLocaleDateString(locale,{month:'short',day:'numeric',year:'numeric'}):'—';
    switch(k){
-    case 'headline':return <div className="flex min-w-[12rem] items-center gap-2">{s.featuredImageUrl?<Image src={s.featuredImageUrl} alt={s.featuredImageAlt||s.headline||dict.stories.imageFallbackAlt} width={56} height={40} unoptimized loading="lazy" className="h-10 w-14 shrink-0 rounded-md border border-border object-cover"/>:<span className="flex h-10 w-14 shrink-0 items-center justify-center rounded-md border border-border bg-surface-muted" title={dict.stories.noFeaturedImage}><ImageOff className="h-4 w-4 text-muted-foreground" aria-hidden/><span className="sr-only">{dict.stories.noFeaturedImage}</span></span>}<Link href={'/newsroom/stories/'+s.id+(canEdit?'/edit':'/preview')} className="font-medium text-deep hover:text-primary focus-visible:underline">{s.headline||'(untitled)'}</Link></div>;
-    case 'status':return <StatusBadge status={s.status} locale={locale}/>;
-    case 'draft':return s.hasUnpublishedChanges?<span className="inline-flex rounded-md border border-primary/30 bg-primary/10 px-2 py-0.5 text-xs font-semibold text-primary" title={s.unpublishedChangesUpdatedAt?new Date(s.unpublishedChangesUpdatedAt).toLocaleString():undefined}>{dict.stories.activeDraft}</span>:<span className="text-xs text-muted-foreground">{dict.stories.noUnpublishedChanges}</span>;
+    case 'headline':return <div className="flex min-w-[12rem] items-center gap-2">{story.featuredImageUrl?<Image src={story.featuredImageUrl} alt={story.featuredImageAlt||story.headline||dict.stories.imageFallbackAlt} width={56} height={40} unoptimized loading="lazy" className="h-10 w-14 shrink-0 rounded-md border border-border object-cover"/>:<span className="flex h-10 w-14 shrink-0 items-center justify-center rounded-md border border-border bg-surface-muted" title={dict.stories.noFeaturedImage}><ImageOff className="h-4 w-4 text-muted-foreground" aria-hidden/><span className="sr-only">{dict.stories.noFeaturedImage}</span></span>}<Link href={'/newsroom/stories/'+story.id+(canEdit?'/edit':'/preview')} className="font-medium text-deep hover:text-primary focus-visible:underline">{story.headline||'(untitled)'}</Link></div>;
+    case 'status':return <StatusBadge status={story.status} locale={locale}/>;
+    case 'draft':return story.hasUnpublishedChanges?<span className="inline-flex rounded-md border border-primary/30 bg-primary/10 px-2 py-0.5 text-xs font-semibold text-primary" title={story.unpublishedChangesUpdatedAt?new Date(story.unpublishedChangesUpdatedAt).toLocaleString():undefined}>{dict.stories.activeDraft}</span>:<span className="text-xs text-muted-foreground">{dict.stories.noUnpublishedChanges}</span>;
     case 'queue':return queue&&state?<div className="space-y-1"><span className="inline-flex rounded-md border border-border bg-surface-muted px-2 py-0.5 text-xs font-semibold text-deep">{queue.source==='revision'?(es?'Cambios: ':'Revision: '):''}{queueLabels[state]}</span>{queue.dueAt&&<p className="text-xs text-muted-foreground">{queueDate.format(new Date(queue.dueAt))}</p>}{queue.snapshotCurrent===false&&state==='blocked'&&<p className="text-xs text-muted-foreground">{queueLabels.stale}</p>}</div>:<span className="text-xs text-muted-foreground">{publicationQueue==='unavailable'?(es?'Sin verificar':'Unverified'):'—'}</span>;
-    case 'language':return <span className="font-semibold uppercase text-muted-foreground">{s.language}</span>;
-    case 'author':return s.authorName??'—';
-    case 'editor':return s.editorName??'—';
-    case 'category':return (es?s.primaryCategoryNameEs:s.primaryCategoryNameEn)??'—';
-    case 'updated':return date(s.updatedAt);
-    case 'published':return date(s.publishedAt);
-    case 'access':return accessLabel(s.accessLevel,locale);
-    case 'island':return islandLabel(s.island,locale);
-    case 'slug':return s.slug;
-    case 'short':return s.shortTitle??'—';
-    case 'actions':{const path=livePath(s);return <div className="flex items-center gap-1">{path&&<><Link href={path} target="_blank" rel="noopener noreferrer" title={es?'Abrir artículo publicado':'Open live article'} aria-label={es?'Abrir artículo publicado':'Open live article'} className={iconButton}><ExternalLink size={15}/></Link><button type="button" onClick={()=>void share(s)} title={es?'Compartir':'Share article'} aria-label={es?'Compartir artículo':'Share article'} className={iconButton}><Share2 size={15}/></button></>}{canEdit&&<Link href={'/newsroom/stories/'+s.id+'/edit'} title={es?'Editar':'Edit article'} aria-label={es?'Editar artículo':'Edit article'} className={iconButton}><Pencil size={15}/></Link>}<Link href={'/newsroom/stories/'+s.id+'/preview'} title={es?'Vista previa':'Preview'} aria-label={es?'Vista previa':'Preview'} className={iconButton}><Eye size={15}/></Link></div>;}
+    case 'language':return <span className="font-semibold uppercase text-muted-foreground">{story.language}</span>;
+    case 'author':return story.authorName??'—';
+    case 'editor':return story.editorName??'—';
+    case 'category':return (es?story.primaryCategoryNameEs:story.primaryCategoryNameEn)??'—';
+    case 'updated':return date(story.updatedAt);
+    case 'published':return date(story.publishedAt);
+    case 'access':return accessLabel(story.accessLevel,locale);
+    case 'island':return islandLabel(story.island,locale);
+    case 'slug':return story.slug;
+    case 'short':return story.shortTitle??'—';
+    case 'actions':{const path=livePath(story);return <div className="flex items-center gap-1">{path&&<><Link href={path} target="_blank" rel="noopener noreferrer" title={es?'Abrir artículo publicado':'Open live article'} aria-label={es?'Abrir artículo publicado':'Open live article'} className={iconButton}><ExternalLink size={15}/></Link><button type="button" onClick={()=>void share(story)} title={es?'Compartir':'Share article'} aria-label={es?'Compartir artículo':'Share article'} className={iconButton}><Share2 size={15}/></button></>}{canEdit&&<Link href={'/newsroom/stories/'+story.id+'/edit'} title={es?'Editar':'Edit article'} aria-label={es?'Editar artículo':'Edit article'} className={iconButton}><Pencil size={15}/></Link>}<Link href={'/newsroom/stories/'+story.id+'/preview'} title={es?'Vista previa':'Preview'} aria-label={es?'Vista previa':'Preview'} className={iconButton}><Eye size={15}/></Link></div>;}
    }
   }
   function goToPage(p: number) {

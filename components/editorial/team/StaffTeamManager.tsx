@@ -93,6 +93,7 @@ export function StaffTeamManager({locale,showInvitations=false,showBylines=false
   const [reason,setReason]=useState('');
   const [confirmed,setConfirmed]=useState(false);
   const [saving,setSaving]=useState(false);
+  const [activeTab,setActiveTab]=useState<'members'|'invitations'|'bylines'|'presets'|'audit'>('members');
 
   const refresh=useCallback(async(signal?:AbortSignal)=>{
     if(signal?.aborted)return;
@@ -162,8 +163,8 @@ export function StaffTeamManager({locale,showInvitations=false,showBylines=false
     finally{setSaving(false);}
   }
 
-  return <div id="ct-team-directory" aria-busy={loading} className="mx-auto min-w-0 max-w-7xl space-y-6 px-4 py-6 sm:px-6 sm:py-8">
-    <header className="flex flex-wrap items-center justify-between gap-4 border-b border-border pb-5">
+  return <div id="ct-team-directory" aria-busy={loading} className="w-full min-w-0 space-y-3 px-3 py-4 sm:px-5">
+    <header className="flex flex-wrap items-center justify-between gap-4 border-b border-border pb-3">
       <div>
         <h1 className="font-headline text-2xl font-bold text-deep">{t.title}</h1>
         <p className="mt-1 text-sm text-muted-foreground">{t.desc}</p>
@@ -177,6 +178,10 @@ export function StaffTeamManager({locale,showInvitations=false,showBylines=false
       <CheckCircle2 className="h-4 w-4"/>{success}</p>}
     {loading&&!data&&<p role="status" className="text-sm text-muted-foreground">{t.loading}</p>}
     {data&&<>
+      <nav aria-label={locale==='es'?'Secciones del equipo':'Team sections'} className="sticky top-0 z-20 flex min-w-0 gap-1 overflow-x-auto rounded-lg border border-border bg-white p-1 shadow-sm">
+        {([{key:'members',label:t.directory,show:true},{key:'invitations',label:locale==='es'?'Invitaciones del equipo':'Staff invitations',show:showInvitations},{key:'bylines',label:locale==='es'?'Solicitudes de firma':'Byline requests',show:showBylines},{key:'presets',label:t.roles,show:true},{key:'audit',label:t.audit,show:data.canViewAudit}] as const).filter(v=>v.show).map(v=><button type="button" key={v.key} data-team-tab={v.key} aria-pressed={activeTab===v.key} aria-controls={'ct-team-'+v.key} disabled={saving} onClick={()=>setActiveTab(v.key)} className={'shrink-0 rounded-md px-3 py-2 text-sm font-semibold focus-visible:ring-2 focus-visible:ring-primary '+(activeTab===v.key?'bg-deep text-white':'text-muted-foreground hover:bg-surface-muted')}>{v.label}</button>)}
+      </nav>
+      <div id="ct-team-members" hidden={activeTab!=='members'} className={activeTab==='members'?'space-y-3':'hidden'}>
       <div className="grid gap-3 sm:grid-cols-3">
         <div className={row+' p-4'}><p className="text-xs text-muted-foreground">{t.directory}</p>
           <p className="mt-1 text-2xl font-bold text-deep">{data.totalMembers}</p></div>
@@ -212,13 +217,14 @@ export function StaffTeamManager({locale,showInvitations=false,showBylines=false
               <button type="button" onClick={()=>pick(member)} aria-pressed={current?.id===member.id}
                 className={'flex w-full items-center justify-between gap-3 rounded-lg border p-3 text-left transition-colors '
                   +(current?.id===member.id?'border-deep bg-surface-muted':'border-border hover:bg-surface-muted')}>
-                <div className="min-w-0">
-                  <p className="truncate text-sm font-semibold text-deep">{member.name}
+                <div className="flex min-w-0 flex-1 items-center gap-2">
+                  <span className="relative flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full bg-surface-muted text-xs font-semibold text-deep" aria-hidden>{member.name.split(/\s+/).slice(0,2).map(n=>n[0]?.toUpperCase()).join('')}{member.avatarUrl&&<img src={member.avatarUrl} alt="" referrerPolicy="no-referrer" loading="lazy" className="absolute inset-0 h-full w-full rounded-full object-cover" onError={e=>{e.currentTarget.style.display='none';}}/>}</span>
+                  <div className="min-w-0"><p className="truncate text-sm font-semibold text-deep">{member.name}
                     {member.isSelf&&<span className="ml-2 font-normal text-muted-foreground">({t.self})</span>}
                   </p>
                   <p className="mt-1 text-xs text-muted-foreground">
                     {member.roles.length?member.roles.map(r=>r.roleKey.replaceAll('_',' ')).join(' · '):t.noRoles}
-                  </p>
+                  </p></div>
                 </div>
                 <span className="flex shrink-0 items-center gap-1 text-xs text-muted-foreground">
                   {t[member.status]}<ChevronRight className="h-4 w-4"/>
@@ -306,18 +312,11 @@ export function StaffTeamManager({locale,showInvitations=false,showBylines=false
               onSaved={refresh}/>}
           </>}
         </section>
-      </div>
-      {showInvitations&&<details className={row+' group'} data-team-disclosure="invitations">
-        <summary className="cursor-pointer rounded-lg p-4 font-semibold text-deep focus-visible:ring-2 focus-visible:ring-primary">{locale==='es'?'Invitaciones del equipo':'Staff invitations'}</summary>
-        <div className="px-3 pb-3"><StaffInvitationManager locale={locale} presets={data.presets}/></div>
-      </details>}
-      {showBylines&&<details className={row+' group'} data-team-disclosure="bylines">
-        <summary className="cursor-pointer rounded-lg p-4 font-semibold text-deep focus-visible:ring-2 focus-visible:ring-primary">{locale==='es'?'Solicitudes de firma':'Byline requests'}</summary>
-        <div className="px-3 pb-3"><StaffBylineReviewManager locale={locale}/></div>
-      </details>}
-      <details className={row} data-team-disclosure="presets">
-        <summary className="cursor-pointer rounded-lg p-4 font-semibold text-deep focus-visible:ring-2 focus-visible:ring-primary">{t.roles}</summary>
-        <section className="p-4 pt-0">
+      </div></div>
+      {showInvitations&&<div id="ct-team-invitations" hidden={activeTab!=='invitations'} className={activeTab==='invitations'?row+' p-3':'hidden'}><StaffInvitationManager locale={locale} presets={data.presets}/></div>}
+      {showBylines&&<div id="ct-team-bylines" hidden={activeTab!=='bylines'} className={activeTab==='bylines'?row+' p-3':'hidden'}><StaffBylineReviewManager locale={locale}/></div>}
+      <div id="ct-team-presets" hidden={activeTab!=='presets'} className={activeTab==='presets'?row:'hidden'}>
+        <section className="p-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div><h2 className="text-base font-semibold text-deep">{t.roles}</h2>
             <p className="mt-1 text-sm text-muted-foreground">{t.review}</p></div>
@@ -355,10 +354,9 @@ export function StaffTeamManager({locale,showInvitations=false,showBylines=false
           canEdit={data.presetMutationsEnabled && selectedRole.key!=='owner'}
           onSaved={refresh}/>}
       </section>
-      </details>
-      {data.canViewAudit&&<details className={row} data-team-disclosure="audit">
-        <summary className="cursor-pointer rounded-lg p-4 font-semibold text-deep focus-visible:ring-2 focus-visible:ring-primary">{t.audit}</summary>
-        <section className="p-4 pt-0" aria-label={t.audit}>
+      </div>
+      {data.canViewAudit&&<div id="ct-team-audit" hidden={activeTab!=='audit'} className={activeTab==='audit'?row:'hidden'}>
+        <section className="p-4" aria-label={t.audit}>
         <div className="flex flex-wrap items-center justify-between gap-3">
           <h2 className="text-base font-semibold text-deep">{t.audit}</h2>
           <label className="text-xs text-muted-foreground">
@@ -388,7 +386,7 @@ export function StaffTeamManager({locale,showInvitations=false,showBylines=false
           <button type="button" className={button} disabled={loading||!data.hasMoreAudit}
             onClick={()=>setAuditPage(value=>value+1)}>{t.next}</button>
         </div>
-      </section></details>}
+      </section></div>}
     </>}
   </div>;
 }

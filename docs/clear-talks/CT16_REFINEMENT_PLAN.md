@@ -33,3 +33,7 @@ Branding foundation staged: original SVGs, Style 1 active, Style 2 retained, hea
 
 ## R1b — Stories and dashboard density
 Staged full-width rounded Stories workspace, debounced server-backed search, access filter, 15 column keys (including optional published date/access/island/slug/short title), browser-local per-user reorder/hide/reset settings, live-link/edit/share/preview icon actions. Dashboard uses full width and denser widgets; accurate owner Team/Personal mode not yet implemented. No permission expansion or production changes. CI and actual hosted review pending; further R1/R2/R3 tasks remain.
+
+
+## CT16 R1c — Team tabs and Stories regression correction
+R1b 41/43 CI success; both failures shared source assertion on renamed Stories variable. Restored story variable without altering status/draft logic. Team sections now sticky mutually exclusive Members/Invitations/Bylines/Role presets/Audit controls; browser regression updated for keyboard and panel exclusivity. Avatar projection restricted to current project's public storage (initials otherwise), no private account data. Full-width Team. Staged; CI pending. Owner dashboard accurate modes, editor/media/calendar/comments/workflow changes remain. No production changes.
