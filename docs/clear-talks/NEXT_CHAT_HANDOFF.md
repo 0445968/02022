@@ -1,3 +1,9 @@
+# CURRENT — CT16 R2b.2 staged; candidate CI pending
+
+## CT16 R2b.2 — standalone assignment database candidate
+Prior exact 79f0a05 all 43 workflows green. Candidate adds separate private work/assignee/event tables, no automatic grants, four capabilities (team view/manage and assigned view/status), verified indefinite Owner fallback without modifying immutable Owner preset, deny-first scoped grants, role ceilings, linked story redaction, bounded list/history/candidates, optimistic revision and actor-bound idempotency, shared assignment status, audited mutations, no article grant side effects. Exposed invoker wrappers; private definer checks verified current user/membership. Candidate remains outside 41 forward migrations until CLI generation and disposable SQL verification. Fixture tests reader denial, assigned/team scope, multiple assignees, linked/unlinked work, article redaction, replay/conflict/stale status and audit. Capability TypeScript catalog/role editor integration, API/UI/dashboard/calendar, candidate pagination beyond 100, real authenticated role/expiry/revocation tests and review remain. Shared status and 25-assignee cap are provisional defaults. No production, hosted SQL or flags.
+
+---
 # CURRENT — CT16 R2a.3 / R2b.1; exact CI pending
 
 ## CT16 R2a.3 / R2b.1 — repair typed projections and standalone assignment contract
