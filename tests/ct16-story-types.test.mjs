@@ -15,3 +15,12 @@ test('staged SQL allowlists equal the typed catalog',()=>{
  assert.match(sql,/story_type = v_revision\.story_type/);
  assert.match(sql,/s\.short_title,s\.story_type,s\.subheadline/);
 });
+
+test('story type projections preserve flag-off compatibility and typed snapshot fields',()=>{
+ const src=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8');
+ for(const p of ['lib/services/stories.ts','lib/services/story-revisions.ts','lib/services/story-version-preview.ts']){
+  assert.match(src(p),/\.select<string,/);assert.match(src(p),/storyTypesEnabled\(\)/);
+ }
+ assert.match(src('lib/services/stories.ts'),/story_type:restoredRow.story_type/);
+ assert.match(src('.env.example'),/CT_STORY_TYPES_ENABLED=false/);
+});

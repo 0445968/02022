@@ -1,3 +1,9 @@
+# CURRENT — CT16 R2a.3 / R2b.1; exact CI pending
+
+## CT16 R2a.3 / R2b.1 — repair typed projections and standalone assignment contract
+Exact 73839c1: 39/43 workflows green, including cumulative migration 41; two unit/source regressions and Supabase TS parser inference errors blocked the four application jobs. Preserve explicit flag-dependent projection strings, type result shapes explicitly, keep restoration projection narrow and preserve legacy scheduling contract. Add CT_STORY_TYPES_ENABLED=false to env example and projection regression tests. No weakening publication gates or existing snapshot guard. Standalone assignment groundwork: 16 activity and 17 coverage keys with EN/ES labels, five proposed work statuses, four priorities, exact create/edit/status command validation, optional article, 1–25 unique members, nullable deadline, notes, optimistic revision/request id and reason; lifecycle transitions explicitly separate assignee vs manager. This is a contract, not authorization or a functional assignments page. Next build separate private assignment tables and RPCs, independent scoped capabilities, audit/revision and idempotency, optional-story visibility check and no implicit story authorization; add route/UI/calendar/dashboard and role denial tests. Proposed statuses/limits are implementation defaults, not explicit user requirements. No hosted SQL, flags, deployment or production changes. Successor exact CI pending.
+
+---
 # CURRENT — CT16 R2a.2 staged; exact CI pending
 
 ## CT16 R2a.2 — story type editor, filter and version integration

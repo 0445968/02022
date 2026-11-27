@@ -7,6 +7,7 @@ import {
     AccessLevel,
     IslandScope,
     StoryLanguage,
+    Database,
     StoryStatus,
   } from '@/lib/db/database.types';
   
@@ -687,7 +688,7 @@ import {
       .from(
         'story_versions'
       )
-      .select(
+      .select<string, Pick<Database['public']['Tables']['story_versions']['Row'],'id'|'story_id'|'headline'|'short_title'|'subheadline'|'summary'|'body'|'language'|'author_id'|'editor_id'|'primary_category_id'|'created_at'> & {story_type?: Database['public']['Tables']['story_versions']['Row']['story_type']}>(
         `
           id,
           story_id,
@@ -928,7 +929,7 @@ import {
         headline:
           version.headline,
 
-        storyType:storyTypesEnabled()&&isStoryType((version as unknown as Record<string,unknown>).story_type)?(version as unknown as {story_type:StoryType}).story_type:undefined,
+        storyType:storyTypesEnabled()&&isStoryType(version.story_type)?version.story_type:undefined,
         shortTitle:
           currentStory.short_title ?? null,
   

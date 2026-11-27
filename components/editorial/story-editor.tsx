@@ -447,8 +447,8 @@ export function StoryEditor({
   /* ======================================================= */
 
   const settingsProps = {
-    storyType:editor.storyType,setStoryType:editor.setStoryType,
     reviewedPublication,
+    storyType:editor.storyType,setStoryType:editor.setStoryType,
     dict,
 
     locale,

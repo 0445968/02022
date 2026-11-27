@@ -242,8 +242,8 @@ export async function getPublishedStoryBySlug(
   const restricted=process.env.CT_STAFF_ACCESS_V2_ENABLED==='true'&&process.env.CT_READER_COMMUNICATIONS_ENABLED==='true';
   let query = supabase
     .from('stories')
-    .select(
-      storyTypesEnabled()?`${STORY_SELECT},story_type` as const:STORY_SELECT
+    .select<string,StoryRow>(
+      storyTypesEnabled()?`${STORY_SELECT},story_type`:STORY_SELECT
     )
     .eq(
       'slug',
@@ -262,7 +262,7 @@ export async function getPublishedStoryBySlug(
   let {data:story,error}=await query.maybeSingle();
   if(restricted&&!error&&!story){
    const {createClient}=await import('@/lib/db/supabase-server');const db=createClient();const {data:{user},error:authError}=await db.auth.getUser();
-   if(!authError&&user&&!user.is_anonymous&&user.email_confirmed_at){const result=await db.from('stories').select(storyTypesEnabled()?`${STORY_SELECT},story_type` as const:STORY_SELECT).eq('slug',slug).eq('status','published').eq('access_level','registered').lte('published_at',new Date().toISOString()).maybeSingle();story=result.data;error=result.error;}
+   if(!authError&&user&&!user.is_anonymous&&user.email_confirmed_at){const result=await db.from('stories').select<string,StoryRow>(storyTypesEnabled()?`${STORY_SELECT},story_type`:STORY_SELECT).eq('slug',slug).eq('status','published').eq('access_level','registered').lte('published_at',new Date().toISOString()).maybeSingle();story=result.data;error=result.error;}
   }
 
   if (error) {
@@ -309,8 +309,8 @@ export async function getStoryBySlugForPreview(
     data: story,
   } = await supabase
     .from('stories')
-    .select(
-      storyTypesEnabled()?`${STORY_SELECT},story_type` as const:STORY_SELECT
+    .select<string,StoryRow>(
+      storyTypesEnabled()?`${STORY_SELECT},story_type`:STORY_SELECT
     )
     .eq(
       'slug',
@@ -342,8 +342,8 @@ export async function getStoryForEditing(
     data: story,
   } = await supabase
     .from('stories')
-    .select(
-      storyTypesEnabled()?`${STORY_SELECT},story_type` as const:STORY_SELECT
+    .select<string,StoryRow>(
+      storyTypesEnabled()?`${STORY_SELECT},story_type`:STORY_SELECT
     )
     .eq(
       'id',
@@ -882,7 +882,7 @@ export async function listStories(
   let query =
     supabase
       .from('stories')
-      .select(
+      .select<string,Record<string,unknown>>(
         `
           id,
           slug,
@@ -2742,7 +2742,7 @@ export async function getStoryVersions(
     .from(
       'story_versions'
     )
-    .select(
+    .select<string,Record<string,unknown>>(
       `
         id,
         story_id,
@@ -3014,7 +3014,8 @@ export async function restoreStoryVersion(
     .from('stories')
     .update(restoredContent)
     .eq('id', storyId)
-    .select('*')
+    .select<string, Pick<StoryRow,'headline'|'short_title'|'subheadline'|'summary'|'body'|'language'|'author_id'|'editor_id'|'primary_category_id'|'story_type'>>(
+      'headline, short_title, subheadline, summary, body, language, author_id, editor_id, primary_category_id'+(storyTypesEnabled()?', story_type':''))
     .maybeSingle();
 
   if (restoreError || !restoredRow) {
