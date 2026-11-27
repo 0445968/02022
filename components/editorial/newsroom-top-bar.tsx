@@ -1,3 +1,4 @@
+import {BRAND_NAME,BRAND_LOGO,BRAND_LOGO_WIDTH,BRAND_LOGO_HEIGHT} from '@/lib/brand';
 import Image from 'next/image';
 import Link from 'next/link';
 
@@ -55,13 +56,13 @@ export function NewsroomTopBar({
             focus-visible:ring-2
             focus-visible:ring-ring
           "
-          aria-label="West Island Times"
+          aria-label={BRAND_NAME}
         >
           <Image
-            src="/images/logo-10.png"
-            alt="West Island Times"
-            width={140}
-            height={36}
+            src={BRAND_LOGO} unoptimized
+            alt={BRAND_NAME}
+            width={BRAND_LOGO_WIDTH}
+            height={BRAND_LOGO_HEIGHT}
             priority
             className="
               h-auto

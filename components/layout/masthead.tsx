@@ -1,3 +1,4 @@
+import {BRAND_NAME,BRAND_LOGO,BRAND_LOGO_WIDTH,BRAND_LOGO_HEIGHT} from '@/lib/brand';
 import Image from 'next/image';
 import Link from 'next/link';
 
@@ -34,21 +35,12 @@ export function Masthead({
         focus-visible:ring-2
         focus-visible:ring-ring
       "
-      aria-label="Simply Raizal"
+      aria-label={BRAND_NAME}
     >
       <Image
-        src="/images/logo-11.png"
-        alt="Simply Raizal"
-        width={
-          compact
-            ? 150
-            : 260
-        }
-        height={
-          compact
-            ? 40
-            : 72
-        }
+        src={BRAND_LOGO} unoptimized
+        alt={BRAND_NAME}
+        width={BRAND_LOGO_WIDTH} height={BRAND_LOGO_HEIGHT}
         priority
         className={
           compact

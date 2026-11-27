@@ -1,3 +1,10 @@
+# CURRENT — CT16 refinement in progress
+
+
+## CT16 — user refinement findings
+See CT16_REFINEMENT_PLAN.md for all requests and acceptance gates. R1a stages original logo/icon assets, Style 1, shared branding and metadata; no permission/workflow changes, no production edits. CI pending; remaining refinement work tracked explicitly.
+
+---
 # CURRENT HANDOFF — isolated review data prepared; manual preview configuration next
 Nov 26 hosted review accounts confirmed: exact seven disposable users, seven trigger-created profiles, all email confirmed. Bootstrapped only isolated ct15-owner with explicit audit reason, used versioned staff_save_preset_grants for eight non-owner templates (managing_editor team.view omitted because reviewed DB ceiling prohibits it), 129 total capability grants, 5 active staff memberships, reader/legacy no current staff role, legacy historical editor/author flags intentionally true. First SQL bootstrap attempt rolled back due wrong enum type name, corrected with literals. Seeded 11 synthetic stories (8 published via owner submission/independent editor approval/owner publication RPC with transaction-local simulated claims, 3 drafts), 1 unpublished revision, 2 assignments, 2 test bylines, 149 audit rows, 8 publication events, zero surviving permits, no actual production content or image bytes. Hosted SQL role impersonation read checks passed: anon 6 public articles; owner/editor 8 published/3 drafts/1 revision; staff_writer only own assigned draft, freelancer only assigned draft; moderator/reader/legacy 7 published (including registered) and no drafts/revisions/premium. Anonymous raw profile rows 0, public projection 7 rows with only id/display_name/avatar_url; media projection empty (rights/storage cases still need actual hosted uploads). These are real hosted database RLS checks, NOT verified JWT login/browser tests. Two security-definer view advisories remain; no changes to production. Manual branch-specific Vercel setup documented; protected review URL and actual authenticated browser verification pending. No Vercel access through connector, no secrets retrieved.
 
