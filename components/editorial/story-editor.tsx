@@ -73,6 +73,7 @@ export function StoryEditor({
   editors,
   versions,
   assignmentHref,
+  pollPlacementHref,
   reviewHref,
   reviewedPublication=false,
 }: StoryEditorProps) {
@@ -673,6 +674,7 @@ export function StoryEditor({
 
       <StoryEditorHeader
         assignmentHref={assignmentHref}
+        pollPlacementHref={pollPlacementHref}
         reviewEnabled={Boolean(reviewHref)}
         reviewedPublication={reviewedPublication}
         onOpenReview={()=>{if(reviewHref)void (async()=>{if(await autosave.flushSave())router.push(reviewHref);})();}}

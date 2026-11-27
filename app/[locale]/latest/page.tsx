@@ -1,3 +1,4 @@
+import {PlacedPolls} from '@/components/polls/PlacedPolls';
 import { notFound } from 'next/navigation';
 import { getDictionary } from '@/lib/i18n/dictionaries';
 import { isLocale, localizedPath } from '@/lib/i18n/config';
@@ -65,6 +66,7 @@ export default async function LatestPage(props: PageProps) {
           </>
         )}
       </section>
+      {page===1&&<PlacedPolls locale={locale} kind="latest" returnPath={localizedPath(locale,'/latest')}/>}
     </div>
   );
 }

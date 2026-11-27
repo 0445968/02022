@@ -77,6 +77,7 @@ try:
         assert (ROOT / candidate).read_bytes() == (ROOT / "supabase/staged/ct16_homepage_visibility.sql").read_bytes()
         apply(candidate)
         apply("tests/ct16-homepage-visibility-postgres.sql")
+        apply("tests/ct16-poll-placements-postgres.sql")
     results["success"] = True
 finally:
     checkpoint()

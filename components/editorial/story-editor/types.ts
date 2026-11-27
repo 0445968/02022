@@ -48,6 +48,7 @@ export interface StoryEditorUser {
 export interface StoryEditorProps {
   dict: Dictionary;
   assignmentHref?:string;
+  pollPlacementHref?:string;
   reviewHref?:string;
   reviewedPublication?:boolean;
 

@@ -1,3 +1,4 @@
+import {PlacedPolls} from '@/components/polls/PlacedPolls';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { getDictionary } from '@/lib/i18n/dictionaries';
@@ -85,6 +86,7 @@ export default async function CategoryPage(props: PageProps) {
           </>
         )}
       </section>
+      {page===1&&<PlacedPolls locale={locale} kind="category" target={params.slug} returnPath={localizedPath(locale,'/category/'+params.slug)}/>}
     </div>
   );
 }

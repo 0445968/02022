@@ -1,3 +1,4 @@
+import {PlacedPolls} from '@/components/polls/PlacedPolls';
 import { notFound } from 'next/navigation';
 import { getDictionary } from '@/lib/i18n/dictionaries';
 import { isLocale, localizedPath } from '@/lib/i18n/config';
@@ -33,6 +34,7 @@ export default async function OldProvidencePage(props: PageProps) {
   const islandName = islandLabel(ISLAND, locale);
 
   return (
+    <>
     <IslandPageContent
       islandName={islandName}
       result={result}
@@ -42,5 +44,7 @@ export default async function OldProvidencePage(props: PageProps) {
       emptyTitle={dict.island.noStories}
       emptyDesc={dict.island.noStoriesDesc}
     />
+    {page===1&&<PlacedPolls locale={locale} kind="old-providence" returnPath={localizedPath(locale,'/old-providence')}/>}
+    </>
   );
 }

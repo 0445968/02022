@@ -1,3 +1,4 @@
+import {PlacedPolls} from '@/components/polls/PlacedPolls';
 import {readerReportingEnabled} from '@/lib/services/reader-reports';
 import type {
   Metadata,
@@ -336,6 +337,7 @@ export default async function ArticlePage(props: PageProps) {
         }
       />
 
+      {story.accessLevel==='public'&&<PlacedPolls locale={locale} kind="article" target={story.id} returnPath={articlePath}/>}
       <StoryComments
         reportingEnabled={readerReportingEnabled()}
         viewerId={reader?.id??null}

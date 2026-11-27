@@ -1,3 +1,5 @@
+import {pollPlacementsEnabled} from '@/lib/services/poll-placements';
+import {canEnterPolls} from '@/lib/services/polls';
 import {reviewedPublicationEnabled} from '@/lib/services/reviewed-publication';
 import {canAccessStoryReview} from '@/lib/services/story-review';
 import {canManageStoryAssignments} from '@/lib/services/story-assignments';
@@ -52,6 +54,7 @@ export default async function EditStoryPage(props: PageProps) {
   return (
     <StoryEditor
       dict={dict}
+      pollPlacementHref={pollPlacementsEnabled()&&story.status==='published'&&story.accessLevel==='public'&&await canEnterPolls()?'/newsroom/polls?kind=article&target='+params.id:undefined}
       reviewedPublication={reviewedPublicationEnabled()}
       reviewHref={(await canAccessStoryReview(params.id,story.status==='published'?'revision':'draft'))?'/newsroom/stories/'+params.id+'/review?kind='+(story.status==='published'?'revision':'draft'):undefined}
       assignmentHref={(await canManageStoryAssignments(params.id))?'/newsroom/stories/'+params.id+'/assignments':undefined}

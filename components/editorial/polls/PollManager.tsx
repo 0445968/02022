@@ -1,4 +1,6 @@
 'use client';
+import Link from 'next/link';
+import type {PlacementKind} from '@/lib/permissions/poll-placement-contract';
 import {useState,useRef,useEffect} from 'react';
 import type {Locale} from '@/types';
 import type {StaffPoll,StaffPollPage,PollCopy,PollAction,PollCommand} from '@/lib/permissions/polls-contract';
@@ -27,7 +29,7 @@ function PollForm({poll,locale,disabled,send}:{poll?:StaffPoll;locale:Locale;dis
   <button type="submit" disabled={disabled} className={button}>{poll?(es?'Guardar borrador':'Save draft'):(es?'Crear borrador':'Create draft')}</button>
  </form>;
 }
-export function PollManager({data,locale,initialNow}:{data:StaffPollPage;locale:Locale;initialNow:number}){
+export function PollManager({data,locale,initialNow,placementsEnabled=false,placementContext=null}:{data:StaffPollPage;locale:Locale;initialNow:number;placementsEnabled?:boolean;placementContext?:{kind:PlacementKind;target:string}|null}){
  const es=locale==='es',lang=es?1:0;
  const [busy,setBusy]=useState(false),[locked,setLocked]=useState(false),[error,setError]=useState(''),[editing,setEditing]=useState<string|null>(null),[creating,setCreating]=useState(false);
  const inFlight=useRef(false);
@@ -58,6 +60,7 @@ export function PollManager({data,locale,initialNow}:{data:StaffPollPage;locale:
    <ol className="space-y-1 text-sm">{p.options.map((o,i)=><li key={i} className="flex justify-between gap-3"><span>{i+1}. {o}</span>{p.counts&&<span>{p.counts[i]} {es?'votos':'votes'}</span>}</li>)}</ol>
    {p.resultsReleased&&<p className="text-xs text-muted-foreground">{es?'Resultados autorizados para publicación (mínimo cinco respuestas).':'Results authorized for public release (minimum five responses).'}</p>}
    <div className="flex flex-wrap gap-2">
+    {placementsEnabled&&<Link className={button} href={'/newsroom/polls/'+p.id+'/placements'+(placementContext?'?'+new URLSearchParams(placementContext).toString():'')}>{es?'Ubicaciones':'Placements'}</Link>}
     {data.canEdit&&p.status==='draft'&&<><button type="button" className={button} disabled={disabled} onClick={()=>setEditing(editing===p.id?null:p.id)}>{es?'Editar':'Edit'}</button>{act(p,'submit',es?'Enviar a revisión':'Submit for review')}</>}
     {data.canEdit&&['in_review','approved'].includes(p.status)&&act(p,'withdraw',es?'Volver a borrador':'Withdraw to draft')}
     {data.canPublish&&p.status==='in_review'&&<>{p.canApprove&&act(p,'approve',es?'Aprobar':'Approve')}{act(p,'return',es?'Devolver':'Return to draft')}</>}

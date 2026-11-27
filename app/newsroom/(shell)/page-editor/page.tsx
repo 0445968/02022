@@ -1,3 +1,5 @@
+import {pollPlacementsEnabled} from '@/lib/services/poll-placements';
+import {canEnterPolls} from '@/lib/services/polls';
 import {homepageHistoryEnabled,readVersionedHomepage} from '@/lib/services/homepage-history';
 import {requireWorkspacePage,newsroomLocale} from '@/lib/services/newsroom-workspace';
 import {
@@ -62,6 +64,7 @@ import {
           locale
         }
         versioned={versioned}
+        pollPlacementHref={pollPlacementsEnabled()&&await canEnterPolls()?'/newsroom/polls?kind=homepage':undefined}
         placements={
           placements
         }

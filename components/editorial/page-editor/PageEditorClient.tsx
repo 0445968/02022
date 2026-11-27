@@ -1,4 +1,5 @@
 'use client';
+import Link from 'next/link';
 
 import {
   useCallback,
@@ -33,6 +34,7 @@ import {
 } from './front-page/FrontPageController';
 
 interface PageEditorClientProps {
+  pollPlacementHref?:string;
   versioned?:VersionedLayout|null;
   locale: Locale;
 
@@ -67,6 +69,7 @@ const EMPTY_FRONT_PAGE_STATE:
 export function PageEditorClient({
   locale,
   versioned=null,
+  pollPlacementHref,
   placements,
   layoutDraft,
   breakingNews,
@@ -130,6 +133,7 @@ export function PageEditorClient({
 
   return (
     <>
+      {pollPlacementHref&&<div className="flex justify-end border-b border-border px-4 py-2"><Link target="_blank" rel="noopener noreferrer" className="rounded-md border border-border px-3 py-1 text-xs font-medium hover:bg-surface-muted" href={pollPlacementHref}>{locale==='es'?'Ubicaciones de encuestas':'Poll placements'}</Link></div>}
       <PageEditor
         locale={
           locale

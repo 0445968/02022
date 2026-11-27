@@ -1,3 +1,4 @@
+import {PlacedPolls} from '@/components/polls/PlacedPolls';
 import {readPublicHomepageVisibility} from '@/lib/services/public-homepage-visibility';
 import {
   HomePage,
@@ -63,6 +64,7 @@ export default async function Page(props: PageProps) {
   ]);
 
   return (
+    <>
     <HomePage
       dict={dict}
       visibility={visibility}
@@ -83,5 +85,7 @@ export default async function Page(props: PageProps) {
         acrossTheIslands
       }
     />
+    <PlacedPolls locale={locale} kind="homepage" returnPath={'/'+locale}/>
+    </>
   );
 }

@@ -5,6 +5,7 @@ on:
       - 'supabase/migrations/**'
       - 'supabase/staged/ct16_homepage_visibility.sql'
       - 'tests/ct16-homepage-visibility-postgres.sql'
+      - 'tests/ct16-poll-placements-postgres.sql'
       - 'tests/ct16-editorial-privileges-postgres.sql'
       - 'tests/ct16-work-overview-postgres.sql'
       - 'tests/ct16-work-assignments-postgres.sql'
