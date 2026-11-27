@@ -10,7 +10,7 @@ import { listStories } from '@/lib/services/stories';
 import { getCategories } from '@/lib/services/taxonomy';
 import { getAuthors } from '@/lib/services/staff';
 import { StoriesDashboard } from '@/components/editorial/stories-dashboard';
-import type { StoryStatus, StoryLanguage, IslandScope } from '@/lib/db/database.types';
+import type { StoryStatus, StoryLanguage, IslandScope, AccessLevel } from '@/lib/db/database.types';
 
 interface PageProps {
   searchParams: Promise<{
@@ -22,6 +22,7 @@ interface PageProps {
     category?: string;
     island?: string;
     sort?: string;
+    access?: string;
   }>;
 }
 
@@ -51,6 +52,7 @@ export default async function StoriesPage(props: PageProps) {
     ? (searchParams.island as IslandScope)
     : 'all';
 
+  const accessLevel=(['public','registered','subscriber','premium'] as const).find(v=>v===searchParams.access)??'all';
   const [storiesResult, categories, authors] = await Promise.all([
     listStories({
       page,
@@ -62,6 +64,7 @@ export default async function StoriesPage(props: PageProps) {
       categoryId: searchParams.category ?? 'all',
       island,
       sortBy,
+      accessLevel,
     }),
     getCategories({ includeInactive: true }),
     getAuthors(),
@@ -74,8 +77,8 @@ export default async function StoriesPage(props: PageProps) {
   }
 
   return (
-    <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 sm:py-8">
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border pb-5">
+    <div className="w-full min-w-0 px-3 py-4 sm:px-5">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border pb-3">
         <div>
           <h1 className="font-headline text-2xl font-bold text-deep">{dict.stories.title}</h1>
           <p className="mt-1 text-sm text-muted-foreground">
@@ -84,7 +87,7 @@ export default async function StoriesPage(props: PageProps) {
         </div>
         {(!access||access.createStory)&&<Link
           href="/newsroom/stories/new"
-          className="inline-flex h-9 items-center gap-1.5 bg-primary px-4 text-sm font-semibold text-white transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          className="inline-flex h-9 items-center gap-1.5 rounded-md bg-primary px-4 text-sm font-semibold text-white transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >
           <Plus className="h-4 w-4" aria-hidden />
           {dict.stories.newStory}
@@ -94,6 +97,7 @@ export default async function StoriesPage(props: PageProps) {
       <StoriesDashboard
         dict={dict}
         locale={locale}
+        preferenceKey={user?.id??'local'}
         publicationQueue={publicationQueue}
         canEdit={!access||access.fullEditor}
         canCreate={!access||access.createStory}
@@ -111,6 +115,7 @@ export default async function StoriesPage(props: PageProps) {
           categoryId: searchParams.category ?? 'all',
           island,
           sortBy,
+          accessLevel:accessLevel as AccessLevel|'all',
         }}
       />
     </div>

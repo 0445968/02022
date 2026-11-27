@@ -37,8 +37,8 @@ export default async function NewsroomDashboard() {
   ];
 
   return (
-    <div className="mx-auto max-w-5xl px-6 py-8">
-      <div className="flex items-center justify-between border-b border-border pb-5">
+    <div className="w-full min-w-0 px-3 py-4 sm:px-5">
+      <div className="flex items-center justify-between border-b border-border pb-3">
         <div>
           <h1 className="font-headline text-2xl font-bold text-deep">
             {dict.newsroom.dashboardTitle}
@@ -57,18 +57,18 @@ export default async function NewsroomDashboard() {
 
       {access&&<p className="mt-4 text-xs text-muted-foreground">{sample?.unavailable?(locale==='es'?'Resumen no disponible.':'Story summary unavailable.'):(locale==='es'?'Resumen de hasta 25 historias recientes con acceso editorial verificado; no son totales de toda la redacción.':'Summary of up to 25 recent stories with verified editorial access; not newsroom-wide totals.')}</p>}
       {/* Stats grid */}
-      <div className="mt-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
+      <div className="mt-3 grid grid-cols-2 gap-3 lg:grid-cols-4">
         {stats.map((stat) => {
           const Icon = stat.icon;
           return (
-            <div key={stat.key} className="rounded-xl border border-border bg-white p-5">
+            <div key={stat.key} className="rounded-xl border border-border bg-white p-3">
               <div className="flex items-center justify-between">
                 <Icon className="h-5 w-5 text-muted-foreground" aria-hidden />
                 <span className="text-[0.6875rem] font-semibold uppercase tracking-wide text-muted-foreground">
                   {dict.newsroom[stat.key as keyof typeof dict.newsroom]}
                 </span>
               </div>
-              <p className="mt-3 font-headline text-3xl font-bold text-deep">
+              <p className="mt-1 font-headline text-2xl font-bold text-deep">
                 {stat.value??'—'}
               </p>
             </div>
@@ -79,9 +79,9 @@ export default async function NewsroomDashboard() {
       {staffOnboardingEnabled()&&<Link href="/newsroom/profile" className="mt-4 inline-flex text-sm font-medium text-primary underline">{locale==='es'?'Perfil privado del equipo':'Private staff profile'}</Link>}
       <CalendarAlerts locale={locale}/>
       {access&&<DashboardActivity locale={locale} includeAssignments={true}/>}
-      {sample?.items.length?<section className="mt-6 space-y-3 rounded-lg border border-border bg-white p-5"><h2 className="font-headline text-lg font-semibold text-deep">{locale==='es'?'Historias recientes accesibles':'Recent accessible stories'}</h2><ul className="divide-y divide-border">{sample.items.slice(0,5).map(s=><li key={s.id} className="py-2"><Link className="break-words text-sm font-semibold text-deep underline" href={'/newsroom/stories/'+s.id+'/preview'}>{s.headline}</Link></li>)}</ul><Link href="/newsroom/stories" className="text-sm text-primary underline">{dict.newsroom.stories}</Link></section>:null}
+      {sample?.items.length?<section className="mt-3 space-y-2 rounded-lg border border-border bg-white p-3"><h2 className="font-headline text-lg font-semibold text-deep">{locale==='es'?'Historias recientes accesibles':'Recent accessible stories'}</h2><ul className="divide-y divide-border">{sample.items.slice(0,5).map(s=><li key={s.id} className="py-2"><Link className="break-words text-sm font-semibold text-deep underline" href={'/newsroom/stories/'+s.id+'/preview'}>{s.headline}</Link></li>)}</ul><Link href="/newsroom/stories" className="text-sm text-primary underline">{dict.newsroom.stories}</Link></section>:null}
       {/* Profile summary */}
-      <div className="mt-8 rounded-xl border border-border bg-white p-6">
+      <div className="mt-3 rounded-xl border border-border bg-white p-3">
         <h2 className="font-headline text-lg font-semibold text-deep">
           {dict.account.profile}
         </h2>

@@ -692,3 +692,7 @@ Nov 26 hosted review accounts confirmed: exact seven disposable users, seven tri
 
 ## CT16 — user refinement findings
 See CT16_REFINEMENT_PLAN.md for all requests and acceptance gates. R1a stages original logo/icon assets, Style 1, shared branding and metadata; no permission/workflow changes, no production edits. CI pending; remaining refinement work tracked explicitly.
+
+
+## R1b — Stories and dashboard density
+Staged full-width rounded Stories workspace, debounced server-backed search, access filter, 15 column keys (including optional published date/access/island/slug/short title), browser-local per-user reorder/hide/reset settings, live-link/edit/share/preview icon actions. Dashboard uses full width and denser widgets; accurate owner Team/Personal mode not yet implemented. No permission expansion or production changes. CI and actual hosted review pending; further R1/R2/R3 tasks remain.

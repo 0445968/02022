@@ -1,8 +1,8 @@
 'use client';
 
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useState } from 'react';
-import { Search, ChevronLeft, ChevronRight, ImageOff } from 'lucide-react';
+import { useEffect, useRef, useState, useTransition } from 'react';
+import { Search, ChevronLeft, ChevronRight, ImageOff, ExternalLink, Pencil, Share2, Eye, Settings2, ChevronUp, ChevronDown } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import type { Dictionary } from '@/lib/i18n/dictionaries';
@@ -18,6 +18,7 @@ interface StoriesDashboardProps {
   publicationQueue?:StoryQueueDisplay;
   canEdit?:boolean;
   canCreate?:boolean;
+  preferenceKey?:string;
   stories: StoryListItem[];
   page: number;
   totalPages: number;
@@ -26,6 +27,7 @@ interface StoriesDashboardProps {
   authors: StaffOption[];
   currentFilters: {
     search: string;
+    accessLevel?:AccessLevel|'all';
     status: StoryStatus | 'all';
     language: StoryLanguage | 'all';
     authorId: string | 'all';
@@ -40,35 +42,79 @@ const LANGUAGES: (StoryLanguage | 'all')[] = ['all', 'en', 'es'];
 const ISLANDS: (IslandScope | 'all')[] = ['all', 'san_andres', 'old_providence', 'saint_catalina', 'archipelago', 'none'];
 const SORT_LABELS = {updated_desc:'sortUpdatedDesc',updated_asc:'sortUpdatedAsc',published_desc:'sortPublishedDesc',headline_asc:'sortHeadlineAsc'} as const;
 
-export function StoriesDashboard({ dict, locale='en', publicationQueue=null, canEdit=true, canCreate=true, stories, page, totalPages, total, categories, authors, currentFilters }: StoriesDashboardProps) {
+type ColumnKey='headline'|'status'|'draft'|'queue'|'language'|'author'|'editor'|'category'|'updated'|'published'|'access'|'island'|'slug'|'short'|'actions';
+const ALL_COLUMNS:ColumnKey[]=['headline','status','draft','queue','language','author','editor','category','updated','published','access','island','slug','short','actions'];
+type ColumnPrefs={order:ColumnKey[];hidden:ColumnKey[]};
+const DEFAULT_PREFS:ColumnPrefs={order:ALL_COLUMNS,hidden:['published','access','island','slug','short']};
+function parsePrefs(value:unknown):ColumnPrefs{
+ if(!value||typeof value!=='object')return DEFAULT_PREFS;
+ const v=value as Partial<ColumnPrefs>;
+ const order=Array.isArray(v.order)?v.order.filter(k=>ALL_COLUMNS.includes(k)):ALL_COLUMNS;
+ const hidden=Array.isArray(v.hidden)?v.hidden.filter(k=>ALL_COLUMNS.includes(k)&&k!=='headline'&&k!=='actions'):DEFAULT_PREFS.hidden;
+ return {order:[...new Set([...order,...ALL_COLUMNS])],hidden:[...new Set(hidden)]};
+}
+export function StoriesDashboard({ dict, locale='en', publicationQueue=null, canEdit=true, canCreate=true, preferenceKey='local', stories, page, totalPages, total, categories, authors, currentFilters }: StoriesDashboardProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [searchInput, setSearchInput] = useState(currentFilters.search);
-  const [previousSearch,setPreviousSearch]=useState(currentFilters.search);
-  if(previousSearch!==currentFilters.search){setPreviousSearch(currentFilters.search);setSearchInput(currentFilters.search);}
-  const hasFilters=!!currentFilters.search||[currentFilters.status,currentFilters.language,currentFilters.authorId,currentFilters.categoryId,currentFilters.island].some(v=>v!=='all')||currentFilters.sortBy!=='updated_desc';
+  const [pending,startTransition]=useTransition();
+  const timer=useRef<ReturnType<typeof setTimeout>|null>(null);
+  const [settingsOpen,setSettingsOpen]=useState(false);
+  const [notice,setNotice]=useState('');
+  const [prefs,setPrefs]=useState<ColumnPrefs>(DEFAULT_PREFS);
+  const prefStorage='ct-stories-columns-v1:'+preferenceKey;
+  useEffect(()=>{try{const raw=localStorage.getItem(prefStorage);if(raw)setPrefs(parsePrefs(JSON.parse(raw)));}catch{/* defaults */}},[prefStorage]);
+  useEffect(()=>()=>{if(timer.current)clearTimeout(timer.current);},[]);
+  function savePrefs(next:ColumnPrefs){setPrefs(next);try{localStorage.setItem(prefStorage,JSON.stringify(next));}catch{/* current session */}}
+  const hasFilters=!!currentFilters.search||[currentFilters.status,currentFilters.language,currentFilters.authorId,currentFilters.categoryId,currentFilters.island,currentFilters.accessLevel??'all'].some(v=>v!=='all')||currentFilters.sortBy!=='updated_desc';
   const es=locale==='es';
   const queuePage=publicationQueue&&publicationQueue!=='unavailable'?publicationQueue:null;
   const queues=new Map(queuePage?.items.map(i=>[i.storyId.toLowerCase(),i] as const)??[]);
   const queueLabels={legacy:es?'Programación anterior sin verificar':'Unverified legacy schedule',blocked:es?'Publicación bloqueada':'Publication blocked',stale:es?'Revisión desactualizada':'Review out of date',due:es?'Pendiente de ejecución':'Due / awaiting execution',queued:es?'Programado (en cola)':'Scheduled (queued)'};
   const queueDate=new Intl.DateTimeFormat(locale,{timeZone:'America/Bogota',dateStyle:'medium',timeStyle:'short'});
 
-  function updateFilter(key: string, value: string) {
-    const params = new URLSearchParams(searchParams.toString());
-    if (value === 'all' || !value) {
-      params.delete(key);
-    } else {
-      params.set(key, value);
-    }
-    if (key !== 'page') params.delete('page');
-    router.push(`/newsroom/stories?${params.toString()}`);
+  const columns=prefs.order.filter(k=>!prefs.hidden.includes(k)&&(k!=='queue'||publicationQueue!==null));
+  const labels:Record<ColumnKey,string>={headline:dict.stories.columns.headline,status:dict.stories.columns.status,draft:dict.stories.columns.unpublishedChanges,queue:es?'Cola de publicación':'Publication queue',language:dict.stories.columns.language,author:dict.stories.columns.author,editor:dict.stories.columns.editor,category:dict.stories.columns.category,updated:dict.stories.columns.updated,published:es?'Publicado':'Published',access:es?'Acceso':'Access',island:dict.stories.filterIsland,slug:'Slug',short:es?'Título corto':'Short title',actions:es?'Acciones':'Actions'};
+  function updateFilter(key:string,value:string,replace=false){
+    if(timer.current){clearTimeout(timer.current);timer.current=null;}
+    const params=new URLSearchParams(searchParams.toString());
+    if(key!=='search'&&searchInput!==currentFilters.search){if(searchInput.trim())params.set('search',searchInput.trim());else params.delete('search');}
+    if(value==='all'||!value)params.delete(key);else params.set(key,value);
+    if(key!=='page')params.delete('page');
+    const url='/newsroom/stories?'+params.toString();
+    startTransition(()=>{if(replace)router.replace(url,{scroll:false});else router.push(url,{scroll:false});});
   }
-
-  function handleSearch(e: React.FormEvent) {
-    e.preventDefault();
-    updateFilter('search', searchInput);
+  function handleSearch(e:React.FormEvent){e.preventDefault();updateFilter('search',searchInput.trim(),true);}
+  function changeSearch(value:string){
+    setSearchInput(value);
+    if(timer.current)clearTimeout(timer.current);
+    timer.current=setTimeout(()=>updateFilter('search',value.trim(),true),300);
   }
-
+  function moveColumn(k:ColumnKey,delta:number){const order=[...prefs.order],at=order.indexOf(k),to=at+delta;if(to<0||to>=order.length)return;[order[at],order[to]]=[order[to],order[at]];savePrefs({...prefs,order});}
+  function livePath(s:StoryListItem){return s.status==='published'&&s.publishedAt&&Date.parse(s.publishedAt)<=Date.now()?'/'+s.language+'/article/'+encodeURIComponent(s.slug):null;}
+  async function share(s:StoryListItem){const path=livePath(s);if(!path)return;const url=new URL(path,window.location.origin).href;try{if(navigator.share)await navigator.share({title:s.headline,url});else{await navigator.clipboard.writeText(url);setNotice(es?'Enlace copiado.':'Link copied.');}}catch(e){if(!(e instanceof DOMException&&e.name==='AbortError'))setNotice(es?'No se pudo compartir.':'Unable to share.');}}
+  const iconButton='inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-border bg-white text-muted-foreground hover:text-primary hover:bg-surface-muted focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-40';
+  function cell(k:ColumnKey,s:StoryListItem){
+   const queue=queues.get(s.id.toLowerCase()),state=queue&&queuePage?queuePresentation(queue,queuePage.asOf):null;
+   const date=(v:string|null)=>v?new Date(v).toLocaleDateString(locale,{month:'short',day:'numeric',year:'numeric'}):'—';
+   switch(k){
+    case 'headline':return <div className="flex min-w-[12rem] items-center gap-2">{s.featuredImageUrl?<Image src={s.featuredImageUrl} alt={s.featuredImageAlt||s.headline||dict.stories.imageFallbackAlt} width={56} height={40} unoptimized loading="lazy" className="h-10 w-14 shrink-0 rounded-md border border-border object-cover"/>:<span className="flex h-10 w-14 shrink-0 items-center justify-center rounded-md border border-border bg-surface-muted" title={dict.stories.noFeaturedImage}><ImageOff className="h-4 w-4 text-muted-foreground" aria-hidden/><span className="sr-only">{dict.stories.noFeaturedImage}</span></span>}<Link href={'/newsroom/stories/'+s.id+(canEdit?'/edit':'/preview')} className="font-medium text-deep hover:text-primary focus-visible:underline">{s.headline||'(untitled)'}</Link></div>;
+    case 'status':return <StatusBadge status={s.status} locale={locale}/>;
+    case 'draft':return s.hasUnpublishedChanges?<span className="inline-flex rounded-md border border-primary/30 bg-primary/10 px-2 py-0.5 text-xs font-semibold text-primary" title={s.unpublishedChangesUpdatedAt?new Date(s.unpublishedChangesUpdatedAt).toLocaleString():undefined}>{dict.stories.activeDraft}</span>:<span className="text-xs text-muted-foreground">{dict.stories.noUnpublishedChanges}</span>;
+    case 'queue':return queue&&state?<div className="space-y-1"><span className="inline-flex rounded-md border border-border bg-surface-muted px-2 py-0.5 text-xs font-semibold text-deep">{queue.source==='revision'?(es?'Cambios: ':'Revision: '):''}{queueLabels[state]}</span>{queue.dueAt&&<p className="text-xs text-muted-foreground">{queueDate.format(new Date(queue.dueAt))}</p>}{queue.snapshotCurrent===false&&state==='blocked'&&<p className="text-xs text-muted-foreground">{queueLabels.stale}</p>}</div>:<span className="text-xs text-muted-foreground">{publicationQueue==='unavailable'?(es?'Sin verificar':'Unverified'):'—'}</span>;
+    case 'language':return <span className="font-semibold uppercase text-muted-foreground">{s.language}</span>;
+    case 'author':return s.authorName??'—';
+    case 'editor':return s.editorName??'—';
+    case 'category':return (es?s.primaryCategoryNameEs:s.primaryCategoryNameEn)??'—';
+    case 'updated':return date(s.updatedAt);
+    case 'published':return date(s.publishedAt);
+    case 'access':return accessLabel(s.accessLevel,locale);
+    case 'island':return islandLabel(s.island,locale);
+    case 'slug':return s.slug;
+    case 'short':return s.shortTitle??'—';
+    case 'actions':{const path=livePath(s);return <div className="flex items-center gap-1">{path&&<><Link href={path} target="_blank" rel="noopener noreferrer" title={es?'Abrir artículo publicado':'Open live article'} aria-label={es?'Abrir artículo publicado':'Open live article'} className={iconButton}><ExternalLink size={15}/></Link><button type="button" onClick={()=>void share(s)} title={es?'Compartir':'Share article'} aria-label={es?'Compartir artículo':'Share article'} className={iconButton}><Share2 size={15}/></button></>}{canEdit&&<Link href={'/newsroom/stories/'+s.id+'/edit'} title={es?'Editar':'Edit article'} aria-label={es?'Editar artículo':'Edit article'} className={iconButton}><Pencil size={15}/></Link>}<Link href={'/newsroom/stories/'+s.id+'/preview'} title={es?'Vista previa':'Preview'} aria-label={es?'Vista previa':'Preview'} className={iconButton}><Eye size={15}/></Link></div>;}
+   }
+  }
   function goToPage(p: number) {
     const params = new URLSearchParams(searchParams.toString());
     params.set('page', String(p));
@@ -76,22 +122,23 @@ export function StoriesDashboard({ dict, locale='en', publicationQueue=null, can
   }
 
   return (
-    <div className="mt-6 min-w-0">
+    <div className="mt-3 min-w-0" aria-busy={pending}>
       {/* Filters bar */}
-      <div className="flex flex-col gap-3 border border-border bg-white p-4 2xl:flex-row 2xl:items-end">
+      <div className="flex flex-col gap-2 rounded-xl border border-border bg-white p-3 2xl:flex-row 2xl:items-end">
         <form onSubmit={handleSearch} className="flex min-w-0 flex-1 items-center gap-2">
           <div className="relative min-w-0 flex-1">
           <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" aria-hidden />
           <input
             type="search"
             value={searchInput}
-            onChange={(e) => setSearchInput(e.target.value)}
+            onChange={(e) => changeSearch(e.target.value)}
+            maxLength={160}
             placeholder={dict.stories.searchPlaceholder}
-            className="h-9 w-full border border-border bg-white pl-10 pr-3 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            className="h-9 w-full rounded-md border border-border bg-white pl-10 pr-3 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             aria-label={dict.common.search}
           />
           </div>
-          <button type="submit" className="h-9 shrink-0 border border-border bg-white px-3 text-xs font-medium text-foreground hover:bg-surface-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">{dict.common.search}</button>
+          <button type="submit" className="h-9 shrink-0 rounded-md border border-border bg-white px-3 text-xs font-medium text-foreground hover:bg-surface-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">{dict.common.search}</button>
         </form>
 
         <div className="grid min-w-0 grid-cols-2 gap-2 sm:grid-cols-3 xl:flex xl:flex-wrap xl:items-end">
@@ -137,113 +184,19 @@ export function StoriesDashboard({ dict, locale='en', publicationQueue=null, can
             onChange={(v) => updateFilter('sort', v)}
             options={Object.entries(SORT_LABELS).map(([value,key])=>({value,label:dict.stories[key]}))}
           />
-          {hasFilters&&<button type="button" onClick={()=>{setSearchInput('');router.push('/newsroom/stories');}} className="h-9 self-end border border-border bg-white px-3 text-xs font-medium text-foreground hover:bg-surface-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">{es?'Limpiar filtros':'Clear filters'}</button>}
+          <FilterSelect label={es?'Acceso':'Access'} value={currentFilters.accessLevel??'all'} onChange={v=>updateFilter('access',v)} options={[{value:'all',label:dict.common.all},...(['public','registered','subscriber','premium'] as const).map(v=>({value:v,label:accessLabel(v,locale)}))]}/>
+          <button type="button" onClick={()=>setSettingsOpen(v=>!v)} aria-expanded={settingsOpen} className="inline-flex h-9 items-center gap-2 self-end rounded-md border border-border px-3 text-xs font-medium"><Settings2 size={15}/>{es?'Columnas':'Columns'}</button>
+          {hasFilters&&<button type="button" onClick={()=>{if(timer.current)clearTimeout(timer.current);setSearchInput('');router.push('/newsroom/stories');}} className="h-9 self-end border border-border bg-white px-3 text-xs font-medium text-foreground hover:bg-surface-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">{es?'Limpiar filtros':'Clear filters'}</button>}
         </div>
       </div>
 
       {publicationQueue!==null&&<p className="mt-3 text-xs text-muted-foreground">{es?'El filtro de estado usa el estado guardado del artículo. La cola se muestra por separado según sus permisos; un guion no confirma que no haya una programación.':'The status filter uses the stored article status. Queue information is shown separately according to your permissions; a dash does not confirm that no schedule exists.'} {es?'La cola no garantiza la publicación automática.':'A queue does not guarantee automatic publication.'} · America/Bogota</p>}
       {publicationQueue==='unavailable'&&<p role="alert" className="mt-2 text-xs text-muted-foreground">{es?'No se pudo verificar la cola. Actualice la página.':'Unable to verify the publication queue. Refresh the page.'}</p>}
-      {/* Table */}
-      <div role="region" aria-label={es?'Lista de artículos':'Story list'} tabIndex={0} className="mt-4 max-w-full overflow-x-auto border border-border bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b border-border bg-surface-muted text-left">
-              <th className="px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">{dict.stories.columns.headline}</th>
-              <th className="px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">{dict.stories.columns.status}</th>
-              <th className="px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">{dict.stories.columns.unpublishedChanges}</th>
-              {publicationQueue!==null&&<th className="px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">{es?'Cola de publicación':'Publication queue'}</th>}
-              <th className="hidden px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground md:table-cell">{dict.stories.columns.language}</th>
-              <th className="hidden px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground lg:table-cell">{dict.stories.columns.author}</th>
-              <th className="hidden px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground lg:table-cell">{dict.stories.columns.editor}</th>
-              <th className="hidden px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground xl:table-cell">{dict.stories.columns.category}</th>
-              <th className="px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">{dict.stories.columns.updated}</th>
-            </tr>
-          </thead>
-          <tbody>
-            {stories.length === 0 ? (
-              <tr>
-                <td colSpan={publicationQueue===null?8:9} className="px-4 py-12 text-center">
-                  <p className="font-headline text-lg font-semibold text-deep">{dict.stories.noStories}</p>
-                  {canCreate&&<><p className="mt-1 text-sm text-muted-foreground">{dict.stories.noStoriesDesc}</p>
-                  <Link
-                    href="/newsroom/stories/new"
-                    className="mt-4 inline-flex h-9 items-center bg-primary px-4 text-sm font-semibold text-white transition-colors hover:bg-primary/90"
-                  >
-                    {dict.stories.createFirst}
-                  </Link></>}
-                </td>
-              </tr>
-            ) : (
-              stories.map((story) => {
-                const queue=queues.get(story.id.toLowerCase());
-                const state=queue&&queuePage?queuePresentation(queue,queuePage.asOf):null;
-                return (
-                <tr key={story.id} className="border-b border-border/60 transition-colors hover:bg-surface-muted/50">
-                  <td className="px-4 py-3">
-                    <div className="flex min-w-[12rem] items-center gap-3">
-                      {story.featuredImageUrl ? (
-                        <Image
-                          src={story.featuredImageUrl}
-                          alt={story.featuredImageAlt || story.headline || dict.stories.imageFallbackAlt}
-                          width={56}
-                          height={40}
-                          unoptimized
-                          loading="lazy"
-                          className="h-10 w-14 shrink-0 border border-border object-cover"
-                        />
-                      ) : (
-                        <span className="flex h-10 w-14 shrink-0 items-center justify-center border border-border bg-surface-muted" title={dict.stories.noFeaturedImage}>
-                          <ImageOff className="h-4 w-4 text-muted-foreground" aria-hidden />
-                          <span className="sr-only">{dict.stories.noFeaturedImage}</span>
-                        </span>
-                      )}
-                      <Link
-                        href={canEdit?`/newsroom/stories/${story.id}/edit`:`/newsroom/stories/${story.id}/preview`}
-                        className="font-medium text-deep hover:text-primary focus-visible:outline-none focus-visible:underline"
-                      >
-                        {story.headline || '(untitled)'}
-                      </Link>
-                    </div>
-                  </td>
-                  <td className="px-4 py-3">
-                    <StatusBadge status={story.status} locale={locale} />
-                  </td>
-                  <td className="px-4 py-3">
-                    {story.hasUnpublishedChanges ? (
-                      <span
-                        className="inline-flex items-center border border-primary/30 bg-primary/10 px-2 py-0.5 text-xs font-semibold text-primary"
-                        title={story.unpublishedChangesUpdatedAt ? new Date(story.unpublishedChangesUpdatedAt).toLocaleString() : undefined}
-                      >
-                        {dict.stories.activeDraft}
-                      </span>
-                    ) : (
-                      <span className="text-xs text-muted-foreground">{dict.stories.noUnpublishedChanges}</span>
-                    )}
-                  </td>
-                  {publicationQueue!==null&&<td className="px-4 py-3">
-                    {queue&&state?<div className="space-y-1">
-                      <span className="inline-flex border border-border bg-surface-muted px-2 py-0.5 text-xs font-semibold text-deep">{queue.source==='revision'?(es?'Cambios: ':'Revision: '):''}{queueLabels[state]}</span>
-                      {queue.dueAt&&<p className="text-xs text-muted-foreground">{queueDate.format(new Date(queue.dueAt))}</p>}
-                      {queue.snapshotCurrent===false&&state==='blocked'&&<p className="text-xs text-muted-foreground">{queueLabels.stale}</p>}
-                    </div>:<span className="text-xs text-muted-foreground">{publicationQueue==='unavailable'?(es?'Sin verificar':'Unverified'):'—'}</span>}
-                  </td>}
-                  <td className="hidden px-4 py-3 md:table-cell">
-                    <span className="font-semibold uppercase tracking-wide text-muted-foreground">{story.language}</span>
-                  </td>
-                  <td className="hidden px-4 py-3 text-muted-foreground lg:table-cell">{story.authorName ?? '—'}</td>
-                  <td className="hidden px-4 py-3 text-muted-foreground lg:table-cell">{story.editorName ?? '—'}</td>
-                  <td className="hidden px-4 py-3 text-muted-foreground xl:table-cell">
-                    {(es?story.primaryCategoryNameEs:story.primaryCategoryNameEn) ?? '—'}
-                  </td>
-                  <td className="px-4 py-3 text-xs text-muted-foreground">
-                    {new Date(story.updatedAt).toLocaleDateString(locale, { month: 'short', day: 'numeric', year: 'numeric' })}
-                  </td>
-                </tr>
-                );
-              })
-            )}
-          </tbody>
-        </table>
+      {settingsOpen&&<section className="mt-3 rounded-xl border border-border bg-white p-3" aria-label={es?'Configuración de columnas':'Column settings'}><div className="flex items-center justify-between gap-2"><h2 className="text-sm font-semibold">{es?'Organizar columnas':'Organize columns'}</h2><button type="button" className="text-xs text-primary underline" onClick={()=>savePrefs(DEFAULT_PREFS)}>{es?'Restablecer':'Reset defaults'}</button></div><div className="mt-2 grid gap-1 sm:grid-cols-2 xl:grid-cols-3">{prefs.order.filter(k=>k!=='queue'||publicationQueue!==null).map(k=><div key={k} className="flex min-w-0 items-center gap-2 rounded-md border border-border px-2 py-1"><label className="flex min-w-0 flex-1 items-center gap-2 text-xs"><input type="checkbox" checked={!prefs.hidden.includes(k)} disabled={k==='headline'||k==='actions'} onChange={e=>savePrefs({...prefs,hidden:e.target.checked?prefs.hidden.filter(v=>v!==k):[...prefs.hidden,k]})}/>{labels[k]}</label><button type="button" className={iconButton} disabled={prefs.order.indexOf(k)===0} aria-label={(es?'Subir ':'Move up ')+labels[k]} onClick={()=>moveColumn(k,-1)}><ChevronUp size={14}/></button><button type="button" className={iconButton} disabled={prefs.order.indexOf(k)===prefs.order.length-1} aria-label={(es?'Bajar ':'Move down ')+labels[k]} onClick={()=>moveColumn(k,1)}><ChevronDown size={14}/></button></div>)}</div><p className="mt-2 text-xs text-muted-foreground">{es?'Las preferencias se guardan en este navegador.':'Preferences are saved in this browser.'}</p></section>}
+      <p role="status" className="text-xs text-muted-foreground">{notice|| (pending?(es?'Buscando…':'Updating results…'):'')}</p>
+      <div role="region" aria-label={es?'Lista de artículos':'Story list'} tabIndex={0} className="mt-3 max-w-full overflow-x-auto rounded-xl border border-border bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+       <table className="w-full text-sm"><thead><tr className="border-b border-border bg-surface-muted text-left">{columns.map(k=><th key={k} scope="col" className="whitespace-nowrap px-3 py-2.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">{labels[k]}</th>)}</tr></thead>
+       <tbody>{stories.length===0?<tr><td colSpan={columns.length} className="px-4 py-10 text-center"><p className="font-headline text-lg font-semibold text-deep">{dict.stories.noStories}</p>{canCreate&&<><p className="mt-1 text-sm text-muted-foreground">{dict.stories.noStoriesDesc}</p><Link href="/newsroom/stories/new" className="mt-4 inline-flex h-9 items-center rounded-md bg-primary px-4 text-sm font-semibold text-white">{dict.stories.createFirst}</Link></>}</td></tr>:stories.map(s=><tr key={s.id} className="border-b border-border/60 hover:bg-surface-muted/50">{columns.map(k=><td key={k} className={'px-3 py-2 '+(k==='headline'?'':'text-xs text-muted-foreground whitespace-nowrap')}>{cell(k,s)}</td>)}</tr>)}</tbody></table>
       </div>
 
       {/* Pagination */}
@@ -257,7 +210,7 @@ export function StoriesDashboard({ dict, locale='en', publicationQueue=null, can
               type="button"
               onClick={() => goToPage(page - 1)}
               disabled={page <= 1}
-              className="inline-flex h-8 items-center gap-1 border border-border bg-white px-3 text-xs font-medium text-foreground transition-colors hover:bg-surface-muted disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              className="inline-flex h-8 items-center gap-1 rounded-md border border-border bg-white px-3 text-xs font-medium text-foreground transition-colors hover:bg-surface-muted disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
               <ChevronLeft className="h-3.5 w-3.5" aria-hidden />
               {dict.pagination.previous}
@@ -266,7 +219,7 @@ export function StoriesDashboard({ dict, locale='en', publicationQueue=null, can
               type="button"
               onClick={() => goToPage(page + 1)}
               disabled={page >= totalPages}
-              className="inline-flex h-8 items-center gap-1 border border-border bg-white px-3 text-xs font-medium text-foreground transition-colors hover:bg-surface-muted disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              className="inline-flex h-8 items-center gap-1 rounded-md border border-border bg-white px-3 text-xs font-medium text-foreground transition-colors hover:bg-surface-muted disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
               {dict.pagination.next}
               <ChevronRight className="h-3.5 w-3.5" aria-hidden />
@@ -296,7 +249,7 @@ function FilterSelect({
         aria-label={label}
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="h-9 w-full min-w-0 max-w-full border border-border bg-white px-2 text-xs font-medium text-foreground focus:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        className="h-9 w-full min-w-0 max-w-full rounded-md border border-border bg-white pl-2 pr-8 text-xs font-medium text-foreground focus:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
       >
         {options.map((opt) => (
           <option key={opt.value} value={opt.value}>
@@ -317,7 +270,7 @@ function StatusBadge({ status, locale }: { status: StoryStatus; locale: Locale }
     archived: 'bg-surface-subtle text-muted-foreground border-border',
   };
   return (
-    <span className={`inline-flex items-center border px-2 py-0.5 text-xs font-semibold uppercase tracking-wide ${colors[status]}`}>
+    <span className={`inline-flex items-center rounded-md border px-2 py-0.5 text-xs font-semibold uppercase tracking-wide ${colors[status]}`}>
       {statusLabel(status, locale)}
     </span>
   );

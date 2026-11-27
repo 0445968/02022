@@ -804,6 +804,7 @@ const editorialProfiles=publicPage&&securePublicMediaEnabled()?await readPublicB
 // --------------------------------------------------
 
 export interface ListStoriesParams {
+  accessLevel?: AccessLevel|'all';
   page?: number;
   perPage?: number;
 
@@ -911,15 +912,10 @@ export async function listStories(
         }
       );
 
-  if (
-    params.search
-  ) {
-    query =
-      query.or(
-        `headline.ilike.%${params.search}%,summary.ilike.%${params.search}%`
-      );
-  }
-
+  // Search text, not PostgREST filter grammar. Preserve Unicode letters/numbers.
+  const term=params.search?.normalize('NFC').slice(0,160).replace(/[^\p{L}\p{N}\p{M}\s'\-]/gu,' ').replace(/\s+/g,' ').trim();
+  if(term)query=query.or(`headline.ilike.%${term}%,summary.ilike.%${term}%,slug.ilike.%${term}%`);
+  if(params.accessLevel&&params.accessLevel!=='all')query=query.eq('access_level',params.accessLevel);
   if (
     params.status &&
     params.status !==

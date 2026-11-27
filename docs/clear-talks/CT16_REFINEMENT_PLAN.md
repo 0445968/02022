@@ -29,3 +29,7 @@ Exact HEAD, automated CI and protected Preview checks, isolated migrations only 
 
 ## Batch R1a
 Branding foundation staged: original SVGs, Style 1 active, Style 2 retained, header/footer/newsroom/dictionary/root metadata/favicon. CI and hosted verification pending. Stories/dashboard/team/editor/calendar/comments/media changes NOT yet implemented; remaining work above.
+
+
+## R1b — Stories and dashboard density
+Staged full-width rounded Stories workspace, debounced server-backed search, access filter, 15 column keys (including optional published date/access/island/slug/short title), browser-local per-user reorder/hide/reset settings, live-link/edit/share/preview icon actions. Dashboard uses full width and denser widgets; accurate owner Team/Personal mode not yet implemented. No permission expansion or production changes. CI and actual hosted review pending; further R1/R2/R3 tasks remain.

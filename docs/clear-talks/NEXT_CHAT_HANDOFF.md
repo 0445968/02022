@@ -1,3 +1,10 @@
+# CURRENT — CT16 R1b staged
+
+
+## R1b — Stories and dashboard density
+Staged full-width rounded Stories workspace, debounced server-backed search, access filter, 15 column keys (including optional published date/access/island/slug/short title), browser-local per-user reorder/hide/reset settings, live-link/edit/share/preview icon actions. Dashboard uses full width and denser widgets; accurate owner Team/Personal mode not yet implemented. No permission expansion or production changes. CI and actual hosted review pending; further R1/R2/R3 tasks remain.
+
+---
 # CURRENT — CT16 refinement in progress
 
 
