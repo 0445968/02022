@@ -19,6 +19,7 @@ interface StoriesDashboardProps {
   canEdit?:boolean;
   canCreate?:boolean;
   preferenceKey?:string;
+  asOf:string;
   stories: StoryListItem[];
   page: number;
   totalPages: number;
@@ -53,7 +54,7 @@ function parsePrefs(value:unknown):ColumnPrefs{
  const hidden=Array.isArray(v.hidden)?v.hidden.filter(k=>ALL_COLUMNS.includes(k)&&k!=='headline'&&k!=='actions'):DEFAULT_PREFS.hidden;
  return {order:[...new Set([...order,...ALL_COLUMNS])],hidden:[...new Set(hidden)]};
 }
-export function StoriesDashboard({ dict, locale='en', publicationQueue=null, canEdit=true, canCreate=true, preferenceKey='local', stories, page, totalPages, total, categories, authors, currentFilters }: StoriesDashboardProps) {
+export function StoriesDashboard({ dict, locale='en', publicationQueue=null, canEdit=true, canCreate=true, preferenceKey='local', asOf, stories, page, totalPages, total, categories, authors, currentFilters }: StoriesDashboardProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [searchInput, setSearchInput] = useState(currentFilters.search);
@@ -63,7 +64,7 @@ export function StoriesDashboard({ dict, locale='en', publicationQueue=null, can
   const [notice,setNotice]=useState('');
   const [prefs,setPrefs]=useState<ColumnPrefs>(DEFAULT_PREFS);
   const prefStorage='ct-stories-columns-v1:'+preferenceKey;
-  useEffect(()=>{try{const raw=localStorage.getItem(prefStorage);if(raw)setPrefs(parsePrefs(JSON.parse(raw)));}catch{/* defaults */}},[prefStorage]);
+  useEffect(()=>{const handle=setTimeout(()=>{try{const raw=localStorage.getItem(prefStorage);setPrefs(raw?parsePrefs(JSON.parse(raw)):DEFAULT_PREFS);}catch{setPrefs(DEFAULT_PREFS);}},0);return()=>clearTimeout(handle);},[prefStorage]);
   useEffect(()=>()=>{if(timer.current)clearTimeout(timer.current);},[]);
   function savePrefs(next:ColumnPrefs){setPrefs(next);try{localStorage.setItem(prefStorage,JSON.stringify(next));}catch{/* current session */}}
   const hasFilters=!!currentFilters.search||[currentFilters.status,currentFilters.language,currentFilters.authorId,currentFilters.categoryId,currentFilters.island,currentFilters.accessLevel??'all'].some(v=>v!=='all')||currentFilters.sortBy!=='updated_desc';
@@ -91,7 +92,7 @@ export function StoriesDashboard({ dict, locale='en', publicationQueue=null, can
     timer.current=setTimeout(()=>updateFilter('search',value.trim(),true),300);
   }
   function moveColumn(k:ColumnKey,delta:number){const order=[...prefs.order],at=order.indexOf(k),to=at+delta;if(to<0||to>=order.length)return;[order[at],order[to]]=[order[to],order[at]];savePrefs({...prefs,order});}
-  function livePath(s:StoryListItem){return s.status==='published'&&s.publishedAt&&Date.parse(s.publishedAt)<=Date.now()?'/'+s.language+'/article/'+encodeURIComponent(s.slug):null;}
+  function livePath(s:StoryListItem){return s.status==='published'&&s.publishedAt&&Date.parse(s.publishedAt)<=Date.parse(asOf)?'/'+s.language+'/article/'+encodeURIComponent(s.slug):null;}
   async function share(s:StoryListItem){const path=livePath(s);if(!path)return;const url=new URL(path,window.location.origin).href;try{if(navigator.share)await navigator.share({title:s.headline,url});else{await navigator.clipboard.writeText(url);setNotice(es?'Enlace copiado.':'Link copied.');}}catch(e){if(!(e instanceof DOMException&&e.name==='AbortError'))setNotice(es?'No se pudo compartir.':'Unable to share.');}}
   const iconButton='inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-border bg-white text-muted-foreground hover:text-primary hover:bg-surface-muted focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-40';
   function cell(k:ColumnKey,story:StoryListItem){

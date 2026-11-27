@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import {ChevronLeft,ChevronRight,RefreshCw} from 'lucide-react';
 import {notFound,redirect} from 'next/navigation';
 import {getCurrentUser} from '@/lib/auth/session';
 import {newsroomLocale} from '@/lib/services/newsroom-workspace';
@@ -55,34 +56,31 @@ export default async function SchedulePage(
   {conflicts.has(i.kind+':'+i.id)&&<p className="text-xs font-semibold text-deep">{es?'Posible conflicto: entrega al momento de publicación o después.':'Potential conflict: assignment due at or after queued publication.'}</p>}
   {i.kind==='publication'&&i.canCancel&&scheduling&&<CancelCalendarSchedule item={i} locale={locale}/>}
  </article>;
- const control="rounded-[6px] border border-border bg-white px-3 py-2 text-sm hover:bg-surface-muted";
- return <section className="space-y-4 p-4 md:p-6">
+ const control="h-8 min-w-0 rounded-md border border-border bg-white px-2 text-xs hover:bg-surface-muted focus-visible:ring-2 focus-visible:ring-primary";
+ return <section className="flex min-h-full min-w-0 flex-col gap-2 px-3 py-3 sm:px-5">
   <header><h1 className="font-headline text-2xl font-bold text-deep">{es?'Calendario editorial':'Editorial calendar'}</h1><p className="mt-1 text-sm text-muted-foreground">{es?'Entregas y publicaciones dentro de su acceso. Estar en cola no garantiza la ejecución automática.':'Deadlines and publication queues within your access. A queued item does not guarantee automatic execution.'}</p></header>
-  <SchedulerHealthNotice locale={locale}/>
-  <form method="get" action="/newsroom/schedule" className="flex flex-wrap items-end gap-3 rounded-[6px] border border-border bg-white p-3">
-   <label className="text-sm">{es?'Mes':'Month'}<input className={'mt-1 block '+control} type="month" name="month" min="2000-01" max="2100-12" defaultValue={month} required/></label>
-   <label className="text-sm">{es?'Zona horaria':'Time zone'}<select className={'mt-1 block '+control} name="zone" defaultValue={zone}>{CALENDAR_ZONES.map(z=><option key={z} value={z}>{z}</option>)}</select></label>
-   <label className="text-sm">{es?'Tipo':'Type'}<select className={'mt-1 block '+control} name="filter" defaultValue={filter}><option value="all">{es?'Todo':'All'}</option><option value="assignments">{es?'Asignaciones':'Assignments'}</option><option value="publications">{es?'Publicaciones':'Publications'}</option></select></label>
-   <label className="text-sm">{es?'Modo':'Mode'}<select className={'mt-1 block '+control} name="mode" defaultValue={mode}><option value="range">{es?'Mes elegido':'Selected month'}</option><option value="attention">{es?'Requiere atención (todas las fechas)':'Needs attention (all dates)'}</option></select></label>
-   <label className="text-sm">{es?'Vista':'View'}<select className={'mt-1 block '+control} name="view" defaultValue={view}><option value="month">{es?'Calendario':'Calendar'}</option><option value="agenda">{es?'Agenda':'Agenda'}</option></select></label>
-   <button className="rounded-[6px] bg-deep px-4 py-2 text-sm font-semibold text-white" type="submit">{es?'Aplicar':'Apply'}</button>
+  <SchedulerHealthNotice locale={locale} compact/>
+  <form method="get" action="/newsroom/schedule" aria-label={es?'Controles del calendario':'Calendar controls'} className="sticky top-0 z-10 flex min-w-0 flex-wrap items-center gap-1.5 rounded-lg border border-border bg-white p-2 lg:flex-nowrap">
+   <div className="flex shrink-0 items-center gap-1">
+    {mode==='range'&&calendarMonth(previous)&&<Link prefetch={false} className={control+' inline-flex items-center'} href={href({month:previous})} aria-label={es?'Mes anterior':'Previous month'} title={es?'Mes anterior':'Previous month'}><ChevronLeft size={16}/></Link>}
+    <h2 className="text-sm font-semibold capitalize text-deep">{mode==='range'?title:(es?'Requiere atención':'Needs attention')}</h2>
+    {mode==='range'&&calendarMonth(next)&&<Link prefetch={false} className={control+' inline-flex items-center'} href={href({month:next})} aria-label={es?'Mes siguiente':'Next month'} title={es?'Mes siguiente':'Next month'}><ChevronRight size={16}/></Link>}
+   </div>
+   <label className="min-w-0"><span className="sr-only">{es?'Mes':'Month'}</span><input className={control+' max-w-[9rem]'} type="month" name="month" min="2000-01" max="2100-12" defaultValue={month} required/></label>
+   <label className="min-w-0"><span className="sr-only">{es?'Zona horaria':'Time zone'}</span><select className={control+' max-w-[9rem] pr-6'} name="zone" defaultValue={zone}>{CALENDAR_ZONES.map(z=><option key={z} value={z}>{z}</option>)}</select></label>
+   <label><span className="sr-only">{es?'Tipo':'Type'}</span><select className={control+' pr-6'} name="filter" defaultValue={filter}><option value="all">{es?'Todo':'All'}</option><option value="assignments">{es?'Asignaciones':'Assignments'}</option><option value="publications">{es?'Publicaciones':'Publications'}</option></select></label>
+   <label><span className="sr-only">{es?'Modo':'Mode'}</span><select className={control+' max-w-[9rem] pr-6'} name="mode" defaultValue={mode}><option value="range">{es?'Mes elegido':'Selected month'}</option><option value="attention">{es?'Requiere atención':'Needs attention'}</option></select></label>
+   <label><span className="sr-only">{es?'Vista':'View'}</span><select className={control+' pr-6'} name="view" defaultValue={view}><option value="month">{es?'Calendario':'Calendar'}</option><option value="agenda">Agenda</option></select></label>
+   <button className="h-8 rounded-md bg-deep px-3 text-xs font-semibold text-white" type="submit">{es?'Aplicar':'Apply'}</button>
+   <Link prefetch={false} className={control+' inline-flex shrink-0 items-center'} href={href({page:String(page)})} aria-label={es?'Actualizar':'Refresh'} title={es?'Actualizar':'Refresh'}><RefreshCw size={14}/></Link>
   </form>
-  <div className="flex flex-wrap items-center gap-3">
-   {mode==='range'&&calendarMonth(previous)&&<Link prefetch={false} className={control} href={href({month:previous})}>{es?'Anterior':'Previous month'}</Link>}
-   <h2 className="text-lg font-semibold text-deep capitalize">{mode==='range'?title:(es?'Requiere atención':'Needs attention')}</h2>
-   {mode==='range'&&calendarMonth(next)&&<Link prefetch={false} className={control} href={href({month:next})}>{es?'Siguiente':'Next month'}</Link>}
-   <Link prefetch={false} className={control} href={href({page:String(page)})}>{es?'Actualizar':'Refresh'}</Link>
-  </div>
   <p className="text-xs text-muted-foreground">{zone} · {es?'Datos al':'As of'} {fmt.format(new Date(data.asOf))}. {es?'Página':'Page'} {page+1}{data.hasMore?(es?' · Hay más resultados':' · More results available'):''}. {es?'Solo se muestran los elementos de esta página.':'Only items on this page are displayed.'}</p>
   {conflicts.size>0&&<p role="status" className="rounded-[6px] border border-border bg-white p-3 text-xs text-deep">{es?'Se comprobaron las entregas y publicaciones accesibles del mismo artículo, incluso fuera de esta página o intervalo. Es un aviso, no una comprobación de todas las dependencias.':'Accessible same-story deadlines and publication queues were checked, including outside this page or date range. This is advisory, not a check of all dependencies.'}</p>}
-  {data.items.length===0&&<p className="rounded-[6px] border border-border p-4 text-sm text-muted-foreground">{es?'No hay elementos en esta página.':'No items on this page.'}</p>}
-  {mode==='range'&&<nav aria-label={es?'Vista del calendario':'Calendar view'} className="flex flex-wrap items-center gap-2">
-    {(['month','agenda'] as const).map(v=><Link key={v} prefetch={false} href={href({view:v,page:String(page)})} aria-current={view===v?'page':undefined} className={view===v?'rounded-[6px] bg-deep px-3 py-2 text-sm font-semibold text-white':control}>{v==='month'?(es?'Mes':'Month'):(es?'Agenda':'Agenda')}</Link>)}
-    {view==='month'&&<p className="text-xs text-muted-foreground lg:hidden">{es?'Deslice el calendario o abra Agenda para ver las entregas en una lista.':'Scroll the calendar sideways or open Agenda for a list of deadlines.'}</p>}
-  </nav>}
-  {mode==='range'&&view==='month'&&<div role="region" aria-label={es?'Calendario mensual':'Monthly calendar'} tabIndex={0} className="max-w-full overflow-x-auto focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"><div className="grid min-w-[900px] grid-cols-7 gap-px rounded-[6px] border border-border bg-border">
+  {data.items.length===0&&<p className="px-1 text-xs text-muted-foreground">{es?'No hay elementos en esta página.':'No items on this page.'}</p>}
+  {mode==='range'&&view==='month'&&<p className="text-xs text-muted-foreground lg:hidden">{es?'Deslice el calendario o seleccione Agenda.':'Scroll the calendar sideways or select Agenda.'}</p>}
+  {mode==='range'&&view==='month'&&<div role="region" aria-label={es?'Calendario mensual':'Monthly calendar'} tabIndex={0} className="min-h-0 max-w-full flex-1 overflow-x-auto focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"><div style={{gridTemplateRows:"auto repeat("+monthCells(month).length/7+", minmax(0,1fr))"}} className="grid min-w-[840px] grid-cols-7 gap-px rounded-lg border border-border bg-border lg:h-[max(400px,calc(100dvh-240px))]">
     {Array.from({length:7},(_,d)=>new Intl.DateTimeFormat(locale,{weekday:'short',timeZone:'UTC'}).format(new Date(Date.UTC(2026,0,5+d)))).map(d=><div key={d} className="bg-surface-muted p-2 text-xs font-semibold">{d}</div>)}
-    {monthCells(month).map((day,index)=><div key={day??'empty-'+index} className="min-h-[96px] space-y-1 bg-white p-1.5">{day&&<><p className="px-1 text-xs font-semibold text-muted-foreground">{Number(day.slice(-2))}</p>{(dayItems.get(day)??[]).map(i=>card(i,true))}</>}</div>)}
+    {monthCells(month).map((day,index)=><div key={day??'empty-'+index} className="min-h-[80px] min-w-0 space-y-1 overflow-y-auto bg-white p-1 lg:min-h-0" tabIndex={day&&(dayItems.get(day)?.length??0)>0?0:undefined} aria-label={day??undefined}>{day&&<><p className="px-1 text-xs font-semibold text-muted-foreground">{Number(day.slice(-2))}</p>{(dayItems.get(day)??[]).map(i=>card(i,true))}</>}</div>)}
    </div></div>}
   {(mode==='attention'||view==='agenda')&&<div className="grid gap-2 md:grid-cols-2">{data.items.map(i=>card(i))}</div>}
   <nav aria-label={es?'Páginas del calendario':'Calendar pages'} className="flex gap-3">{page>0&&<Link prefetch={false} className={control} href={href({page:String(page-1)})}>{es?'Página anterior':'Previous page'}</Link>}{data.hasMore&&<Link prefetch={false} className={control} href={href({page:String(page+1)})}>{es?'Página siguiente':'Next page'}</Link>}</nav>

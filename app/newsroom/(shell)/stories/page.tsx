@@ -98,6 +98,7 @@ export default async function StoriesPage(props: PageProps) {
         dict={dict}
         locale={locale}
         preferenceKey={user?.id??'local'}
+        asOf={new Date().toISOString()}
         publicationQueue={publicationQueue}
         canEdit={!access||access.fullEditor}
         canCreate={!access||access.createStory}

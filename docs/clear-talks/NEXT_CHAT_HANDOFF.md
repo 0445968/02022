@@ -1,3 +1,10 @@
+# CURRENT — CT16 R1f staged
+
+
+## CT16 R1f — CI corrections, calendar and report navigation
+R1e 40/43 workflows: React lint rejected synchronous effect update and render-time Date.now; changed preferences to deferred cancellable read and live links to server request asOf. Real platform Team 503 traced to selecting non-existent profiles.avatar_url; corrected to actual image/display_name columns, allowlisted local preset avatars plus same-project public storage only. Downstream role failures require rerun. Calendar consolidated to one compact sticky controls form with month arrows, view/filter/zone/mode, refresh; flexible desktop month height with scrollable day cells, small health banner and mobile wrap; all warnings and access/cancellation rules retained. Reports full width, explanatory purpose, article links select report detail and article filter, header opens exact authorized comment when selected; not yet proven root cause of every reported navigation issue. No new migration or hosted deployment. CI pending; article grouping and additional workflow work remain.
+
+---
 # CURRENT — CT16 R1e staged, review migration not applied
 
 
