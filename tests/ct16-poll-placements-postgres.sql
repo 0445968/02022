@@ -9,7 +9,7 @@ insert into public.staff_member_roles(membership_id,role_preset_id)
 -- Disposable Owner bootstrap only.
 alter table public.staff_role_capabilities disable trigger ct03c_preset_grant_guard;
 insert into public.staff_role_capabilities(role_preset_id,capability_key,scope)
- select p.id,k::public.staff_capability_key,'all' from public.staff_role_presets p cross join unnest(array['newsroom.access','poll.view_manage','poll.edit','poll.publish','story.view_all']) k where p.role_key='owner'
+ select p.id,k::public.staff_capability_key,'all' from public.staff_role_presets p cross join unnest(array['newsroom.access','poll.view_manage','poll.edit','poll.publish','story.view_all','byline.manage']) k where p.role_key='owner'
  union all select p.id,k::public.staff_capability_key,'all' from public.staff_role_presets p cross join unnest(array['newsroom.access','poll.view_manage','poll.edit','poll.publish','story.view_all']) k where p.role_key='managing_editor';
 alter table public.staff_role_capabilities enable trigger ct03c_preset_grant_guard;
 -- Ordinary byline rejection uses service_role, not JWT-authenticated self RPC.

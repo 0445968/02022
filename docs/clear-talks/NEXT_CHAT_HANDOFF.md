@@ -1,4 +1,9 @@
 
+## CT16 R3b.3 — fix disposable Owner fixture and page placement UUID branch
+6972e51 41/43 passed; cumulative applied candidate 45 and homepage assertions, failed synthetic service-role byline review because fixture lacked byline.manage (real local byline rejection now passes). Added missing fixture-only grant; changed article authorization to explicit PL/pgSQL branch rather than relying on SQL AND evaluation order for empty page target. Real local poll save failed without error detail; added safe SQLSTATE/message diagnostics for synthetic placement save/publish. Exact CI pending; no hosted changes.
+
+---
+
 ## CT16 R3b.2 follow-up — candidate transaction repair
 Exact 878d457 cumulative run 46072586970 failed after its first COMMIT: older replacement inserted two duplicate suffixes after the complete transaction. Truncated at the verified first transaction boundary (360 lines, one BEGIN/COMMIT), retained corrected literal timestamp check, added source regression test for unique function definitions and a single transaction. Candidate remains staged; real local platform and app CI must pass before adoption or rollout. No hosted changes.
 

@@ -1228,9 +1228,9 @@ try{
   pollState=await published.json();
   const placements=[{kind:'homepage',target:'',startsAt:null,endsAt:null},{kind:'article',target:storyIds.public,startsAt:null,endsAt:null}];
   const stagedPlacement=await owner.rpc('staff_change_poll_placements',{p_id:pollState.id,p_expected:0,p_action:'save',p_copy:placements,p_reason:'CT16 synthetic locations for approved poll'});
-  check('real owner saves private placement draft',!stagedPlacement.error&&stagedPlacement.data.revision===1&&stagedPlacement.data.published.length===0);
+  check('real owner saves private placement draft'+(stagedPlacement.error?' (SQLSTATE '+stagedPlacement.error.code+': '+stagedPlacement.error.message.slice(0,180)+')':''),!stagedPlacement.error&&stagedPlacement.data.revision===1&&stagedPlacement.data.published.length===0);
   const publishPlacement=await owner.rpc('staff_change_poll_placements',{p_id:pollState.id,p_expected:1,p_action:'publish',p_copy:null,p_reason:'CT16 publish independently reviewed poll placements'});
-  check('real owner publishes saved locations',!publishPlacement.error&&publishPlacement.data.revision===2&&publishPlacement.data.published.length===2);
+  check('real owner publishes saved locations'+(publishPlacement.error?' (SQLSTATE '+publishPlacement.error.code+': '+publishPlacement.error.message.slice(0,180)+')':''),!publishPlacement.error&&publishPlacement.data.revision===2&&publishPlacement.data.published.length===2);
   const deniedPlacement=await free.rpc('staff_read_poll_placements',{p_id:pollState.id});
   check('freelancer denied placement manager',!!deniedPlacement.error);
   const hiddenPlaced=await anonymous.rpc('public_placed_polls',{p_language:'en',p_kind:'homepage',p_target:''});
