@@ -1,3 +1,4 @@
+import {readPublicHomepageVisibility} from '@/lib/services/public-homepage-visibility';
 import {getWorkspaceAccess,scopedNewsroomEnabled} from '@/lib/services/newsroom-workspace';
 import {
   Footer,
@@ -38,8 +39,7 @@ export async function PublicShell({
   children,
 }: PublicShellProps) {
   const canOpenNewsroom=scopedNewsroomEnabled()?!!user&&await getWorkspaceAccess().then(a=>a.allowed).catch(()=>false):undefined;
-  const homepageSlots =
-    await getPublicHomepageSlots();
+  const [homepageSlots,visibility]=await Promise.all([getPublicHomepageSlots(),readPublicHomepageVisibility()]);
 
   const headlineBarPlacements =
     homepageSlots.filter(
@@ -72,14 +72,14 @@ export async function PublicShell({
         }
       />
 
-      <HeadlineBar
+{visibility.headline_bar&&(<HeadlineBar
         locale={
           locale
         }
         placements={
           headlineBarPlacements
         }
-      />
+      />)}
 
       <main
         className="

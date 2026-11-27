@@ -48,6 +48,10 @@ try:
     manifest = (ROOT / "docs/clear-talks/CT15_FORWARD_MIGRATION_MANIFEST.md").read_text()
     forward = re.findall(r"^\d+\. `(supabase/migrations/202611[^\x60]+\.sql)`$", manifest, re.M)
     actual = sorted(str(p.relative_to(ROOT)) for p in (ROOT / "supabase/migrations").glob("202611*.sql"))
+    candidate = os.environ.get("CT16_HOMEPAGE_VISIBILITY_CANDIDATE")
+    if candidate:
+        assert re.fullmatch(r"supabase/migrations/[0-9]{14}_ct16_homepage_visibility\.sql", candidate) and actual[-1] == candidate
+        actual = actual[:-1]
     assert forward == actual and len(forward) == 44, "Forward manifest mismatch"
     apply("tests/fixtures/ct15-local-legacy-platform.sql")
     legacy = sorted(str(p.relative_to(ROOT)) for p in (ROOT / "supabase/migrations").glob("20260*.sql"))
@@ -69,6 +73,10 @@ try:
     apply("tests/ct16-work-assignments-postgres.sql")
     apply("tests/ct16-work-overview-postgres.sql")
     apply("tests/ct16-editorial-privileges-postgres.sql")
+    if candidate:
+        assert (ROOT / candidate).read_bytes() == (ROOT / "supabase/staged/ct16_homepage_visibility.sql").read_bytes()
+        apply(candidate)
+        apply("tests/ct16-homepage-visibility-postgres.sql")
     results["success"] = True
 finally:
     checkpoint()

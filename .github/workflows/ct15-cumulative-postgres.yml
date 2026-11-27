@@ -3,6 +3,8 @@ on:
   pull_request:
     paths:
       - 'supabase/migrations/**'
+      - 'supabase/staged/ct16_homepage_visibility.sql'
+      - 'tests/ct16-homepage-visibility-postgres.sql'
       - 'tests/ct16-editorial-privileges-postgres.sql'
       - 'tests/ct16-work-overview-postgres.sql'
       - 'tests/ct16-work-assignments-postgres.sql'
@@ -44,6 +46,20 @@ jobs:
             sudo apt-get install -y -qq postgresql-client
           fi
           python3 -m py_compile scripts/ct15-cumulative-postgres.py
+      - name: Generate homepage visibility candidate with pinned CLI
+        run: |
+          npm install --prefix "$RUNNER_TEMP/ct16-cli" --no-save supabase@3.2.0
+          CLI="$RUNNER_TEMP/ct16-cli/node_modules/.bin/supabase"
+          "$CLI" --version
+          "$CLI" migration new --help
+          "$CLI" migration new ct16_homepage_visibility
+          candidate=$(find supabase/migrations -maxdepth 1 -name '*_ct16_homepage_visibility.sql')
+          test -n "$candidate" && test "$(printf '%s\n' "$candidate" | wc -l)" -eq 1
+          cp supabase/staged/ct16_homepage_visibility.sql "$candidate"
+          printf 'CT16_HOMEPAGE_VISIBILITY_CANDIDATE=%s\n' "$candidate" >> "$GITHUB_ENV"
+          mkdir -p ct15-cumulative-evidence/generated
+          cp "$candidate" ct15-cumulative-evidence/generated/
+          sha256sum "$candidate" > ct15-cumulative-evidence/generated/sha256.txt
       - name: Apply historical synthetic baseline and ordered forward manifest
         run: python3 scripts/ct15-cumulative-postgres.py
       - name: Preserve migration evidence including first failing stage

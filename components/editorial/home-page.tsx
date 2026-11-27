@@ -1,3 +1,4 @@
+import {defaultHomeVisibility,type HomeVisibility} from '@/lib/permissions/homepage-visibility';
 import Image from 'next/image';
 
 import {
@@ -58,6 +59,7 @@ import {
 } from './home/PodcastBlock';
 
 interface HomePageProps {
+  visibility?:HomeVisibility;
   dict: Dictionary;
   locale: Locale;
 
@@ -386,9 +388,10 @@ export function HomePage({
   locale,
   placements,
   breakingNews,
+  visibility=defaultHomeVisibility(),
 }: HomePageProps) {
   const uniqueBreakingNews =
-    breakingNews.filter(
+    (visibility.breaking_news?breakingNews:[]).filter(
       (
         item,
         index,
@@ -710,14 +713,14 @@ export function HomePage({
       {/* BREAKING NEWS */}
       {/* ======================================================= */}
 
-      <BreakingNewsBar
+      {visibility.breaking_news&&(<BreakingNewsBar
         locale={
           locale
         }
         items={
           uniqueBreakingNews
         }
-      />
+      />)}
 
       {/* ======================================================= */}
       {/* LEAD NEWS GRID */}
@@ -736,7 +739,7 @@ export function HomePage({
       {/* LATEST NEWS */}
       {/* ======================================================= */}
 
-      <LatestNewsRail
+      {visibility.latest_news&&(<LatestNewsRail
         locale={
           locale
         }
@@ -744,13 +747,13 @@ export function HomePage({
           latestNewsStories
         }
         limit={8}
-      />
+      />)}
 
       {/* ======================================================= */}
       {/* EDITORS' PICKS */}
       {/* ======================================================= */}
 
-      <section
+      {visibility.editors_picks&&<section
         className="
           border-b
           border-border
@@ -820,19 +823,19 @@ export function HomePage({
             )}
           </div>
         </div>
-      </section>
+      </section>}
 
-      <PodcastBlock
+      {visibility.podcast&&(<PodcastBlock
         locale={
           locale
         }
-      />
+      />)}
 
       {/* ======================================================= */}
       {/* FEATURED CONTENT */}
       {/* ======================================================= */}
 
-      <section
+      {visibility.featured_content&&<section
         className="
           border-b
           border-border
@@ -860,32 +863,32 @@ export function HomePage({
             }
           />
         </div>
-      </section>
+      </section>}
 
       {/* ======================================================= */}
       {/* WATCH + LIVE */}
       {/* ======================================================= */}
 
-      <WatchLiveBlock
+      {visibility.watch_live&&(<WatchLiveBlock
         locale={
           locale
         }
         feature={
           videoFeature
         }
-      />
+      />)}
 
-      <ShortsBlock
+      {visibility.shorts&&(<ShortsBlock
         locale={
           locale
         }
-      />
+      />)}
 
       {/* ======================================================= */}
       {/* SECTION FEATURES */}
       {/* ======================================================= */}
 
-      {sectionFeatures.length >
+      {visibility.section_features&&sectionFeatures.length >
         0 && (
         <section
           className="
@@ -1011,7 +1014,7 @@ export function HomePage({
       {/* Manually curated island story positions */}
       {/* ======================================================= */}
 
-      <AcrossTheIslands
+      {visibility.across_the_islands&&(<AcrossTheIslands
         locale={
           locale
         }
@@ -1027,17 +1030,17 @@ export function HomePage({
           uniqueAcrossTheIslands
             .saintCatalina
         }
-      />
+      />)}
 
       {/* ======================================================= */}
       {/* LISTEN / RADIO */}
       {/* ======================================================= */}
 
-      <RadioBlock
+      {visibility.radio&&(<RadioBlock
         locale={
           locale
         }
-      />
+      />)}
     </div>
   );
 }

@@ -1,3 +1,4 @@
+import {readPublicHomepageVisibility} from '@/lib/services/public-homepage-visibility';
 import {
   HomePage,
 } from '@/components/editorial/home-page';
@@ -41,6 +42,7 @@ export default async function Page(props: PageProps) {
     latestStories,
     worldStories,
     acrossTheIslands,
+    visibility,
   ] = await Promise.all([
     getPublicHomepageSlots(),
 
@@ -57,11 +59,13 @@ export default async function Page(props: PageProps) {
     ),
 
     getAcrossTheIslands(),
+    readPublicHomepageVisibility(),
   ]);
 
   return (
     <HomePage
       dict={dict}
+      visibility={visibility}
       locale={locale}
       placements={
         placements

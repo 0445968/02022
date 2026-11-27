@@ -44,6 +44,8 @@ export function validateOverrideChange(input:unknown,nowMs=Date.now()):ValidOver
     throw Error('Invalid override fields');
   }
   if(operation==='set'&&EDITORIAL_OWN_PRIVILEGES.has(capability)&&scope!=='own')throw Error('Editorial privileges require own scope');
+  if(operation==='set'&&['assignment.view_team','assignment.manage'].includes(capability)&&scope!=='all')throw Error('Team work permissions require all scope');
+  if(operation==='set'&&['assignment.view_assigned','assignment.update_assigned'].includes(capability)&&scope==='own')throw Error('Assigned work permissions require assigned or all scope');
   if(operation==='remove'){
     if(effect!==undefined&&effect!==null)throw Error('Remove cannot change effect');
     if(expiresAt!==undefined&&expiresAt!==null)throw Error('Remove cannot set expiry');
