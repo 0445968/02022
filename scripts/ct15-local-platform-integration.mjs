@@ -89,7 +89,7 @@ try{
  "insert into public.story_revisions(story_id,headline,slug,author_id,created_by) values("+uuid(storyIds.public)+",'CT15 unpublished revision','ct15-public',"+uuid(users.legacy.id)+","+uuid(users.legacy.id)+");");
  const manifest=readFileSync('docs/clear-talks/CT15_FORWARD_MIGRATION_MANIFEST.md','utf8');
  const forward=[...manifest.matchAll(/^\d+\. \x60(supabase\/migrations\/202611[^\x60]+\.sql)\x60$/gm)].map(m=>m[1]);
- assert.deepEqual(forward,readdirSync('supabase/migrations').filter(x=>/^202611.*\.sql$/.test(x)).sort().map(x=>'supabase/migrations/'+x));assert.equal(forward.length,39);
+ assert.deepEqual(forward,readdirSync('supabase/migrations').filter(x=>/^202611.*\.sql$/.test(x)).sort().map(x=>'supabase/migrations/'+x));assert.equal(forward.length,40);
  function grantSql(role){
   const grants=PROPOSED_STAFF_ROLE_GRANTS[role];
   assert.ok(grants?.length);
@@ -745,6 +745,17 @@ try{
     check('moderator reports workspace available',true);
     const moderation=appOrigin+'/api/newsroom/comments',reports=moderation+'/reports';
     assert.ok(submittedCommentId&&submittedReportId,'reader scenario must have created comment and report');
+    const grouped=await users.moderator.client.rpc('staff_read_comment_article_groups',{p_status:'all',p_search:'',p_page:0,p_story:null});
+    check('moderator article groups include actual pending comment',!grouped.error&&grouped.data.items.some(a=>a.storyId===storyIds.public&&a.pending>=1&&a.total>=a.pending));
+    const blockedGroups=await reader.rpc('staff_read_comment_article_groups',{p_status:'all',p_search:'',p_page:0,p_story:null});
+    check('reader cannot query staff comment article groups',!!blockedGroups.error);
+    await page.goto(appOrigin+'/newsroom/comments',{waitUntil:'domcontentloaded',timeout:20000});
+    await page.getByRole('region',{name:'Articles with comments',exact:true}).waitFor({state:'visible'});
+    const articleLink=page.locator('a[href*="storyId='+storyIds.public+'"][href*="view=article"]').first();
+    await articleLink.click();await page.waitForURL(url=>url.searchParams.get('storyId')===storyIds.public);
+    await page.getByRole('heading',{name:'CT15 public story',exact:true}).waitFor({state:'visible'});
+    check('article grouped navigation opens selected article comments',true);
+
     const modPost=(url,data)=>context.request.post(url,{headers:{Origin:appOrigin},data});
     const queue=await context.request.get(moderation+'?status=pending&storyId='+storyIds.public);
     check('moderator queue includes submitted pending comment',queue.status()===200&&(await queue.json()).items.some(c=>c.id===submittedCommentId&&c.canModerate));

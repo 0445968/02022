@@ -1,3 +1,10 @@
+# CURRENT — CT16 R1g staged, migrations 39–40 not hosted
+
+
+## CT16 R1g — article-grouped moderation
+Added 40th forward migration: permission-checked grouped comment counts across authorized articles, exact total/pending/published counts, bounded article pagination and search; no private report data or restricted body/summary exposed. Article view default with status filters, click to selected article's full paginated comment queue, current comment view retained, explicit view preserved on filters and navigation. Article mini preview shows authorized headline/date/language/counts and public link only when public; detail card includes article link to its comments. No thumbnail yet; full image preview and visual fit need review. Added genuine role checks and browser navigation regression. Existing comment/reports mutation contracts and independent permissions unchanged. CI and isolated migration execution pending; no hosted or production changes. R2/R3 remain.
+
+---
 # CURRENT — CT16 R1f staged
 
 

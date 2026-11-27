@@ -1,4 +1,4 @@
--- Cross-module assertions after all 39 migrations on the SAME synthetic baseline.
+-- Cross-module assertions after all 40 migrations on the SAME synthetic baseline.
 \set ON_ERROR_STOP on
 -- Confirm the synthetic operation contract is fail-closed before quota assertions.
 begin;
@@ -18,7 +18,8 @@ do $$begin
  then raise exception 'Legacy profile flags automatically granted staff access';end if;
  if exists(select 1 from pg_policies where policyname ilike 'dev bypass%')
  then raise exception 'Historical dev bypass policy survived';end if;
- if has_function_privilege('anon','public.staff_read_owner_dashboard(text)','EXECUTE')
+ if has_function_privilege('anon','public.staff_read_comment_article_groups(text,text,integer,uuid)','EXECUTE')
+ or has_function_privilege('anon','public.staff_read_owner_dashboard(text)','EXECUTE')
  or has_table_privilege('anon','public.media_assets','SELECT')
  or has_table_privilege('authenticated','newsroom_private.reader_privacy_requests','SELECT')
  or has_function_privilege('anon','public.reader_export_snapshot()','EXECUTE')
