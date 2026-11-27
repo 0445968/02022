@@ -1,3 +1,8 @@
+
+## CT16 R3b.2 follow-up — candidate transaction repair
+Exact 878d457 cumulative run 46072586970 failed after its first COMMIT: older replacement inserted two duplicate suffixes after the complete transaction. Truncated at the verified first transaction boundary (360 lines, one BEGIN/COMMIT), retained corrected literal timestamp check, added source regression test for unique function definitions and a single transaction. Candidate remains staged; real local platform and app CI must pass before adoption or rollout. No hosted changes.
+
+---
 # CURRENT — CT16 R3b.2 / R3c.1 fixes and bilingual foundation; exact CI pending
 
 ## CT16 R3b.2 / R3c.1 — stabilize candidate 45 and begin bilingual foundation
