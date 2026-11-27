@@ -1,3 +1,9 @@
+# CURRENT — CT16 R1h staged; exact CI pending
+
+## CT16 R1h — mobile Team sizing and calendar regression alignment
+Exact R1g 854016c: 40/43 workflows succeeded; cumulative SQL passed with 40 forward migrations. Real platform recorded 410 PASS lines, including owner aggregate/role denials and grouped moderation access/navigation. Both application suites failed one obsolete calendar link assertion; browser calendar similarly targeted removed navigation. Test actual labeled View select and Apply submission with scope preservation. Mobile Team audit failed before tab interactions; constrain nav and member grid to available width with explicit min-zero tracks and wrapping, add safe numeric audit diagnostics for any remaining failures. Mobile overflow is a hypothesis until exact rerun. No permission, migration, provider, hosted or production changes. R2/R3 and actual hosted acceptance remain outstanding; migrations 39–40 are not hosted.
+
+---
 # CURRENT — CT16 R1g staged, migrations 39–40 not hosted
 
 

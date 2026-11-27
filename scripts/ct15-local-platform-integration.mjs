@@ -877,6 +877,7 @@ try{
       const ok=response?.status()===200&&new URL(page.url()).pathname===path&&metrics.root<=width+1&&metrics.scroll<=metrics.main+1&&metrics.mains===1&&metrics.headings===1&&metrics.mainHeadings===1&&metrics.lang===(role==='reader'?'es':'en')&&errors.length===0&&metrics.alerts.length===0;
       report.pageAudits??=[];report.pageAudits.push({role,path,width,status:response?.status(),metrics,errors,ok});checkpoint();
       await page.screenshot({path:resolve(output,key+'-audit.png'),fullPage:true,timeout:10000,animations:'disabled'});
+      if(!ok) console.log('PAGE AUDIT METRICS',JSON.stringify({role,path,width,status:response?.status(),root:metrics.root,scroll:metrics.scroll,main:metrics.main,mains:metrics.mains,headings:metrics.headings,mainHeadings:metrics.mainHeadings,lang:metrics.lang,alertCount:metrics.alerts.length,errorCount:errors.length}));
       check(role+' page audit '+path+' '+width+'px',ok);
       if(path==='/newsroom/team'&&width===390){
        const tabs=page.locator('[data-team-tab]');
@@ -927,8 +928,12 @@ try{
       if(path==='/newsroom/schedule'&&width===390){
        const month=page.getByRole('region',{name:'Monthly calendar',exact:true});
        await month.focus();check('monthly calendar scroll region keyboard focusable',await month.evaluate(el=>document.activeElement===el));
-       await page.getByRole('navigation',{name:'Calendar view',exact:true}).getByRole('link',{name:'Agenda',exact:true}).click();
-       await page.waitForURL(url=>url.searchParams.get('view')==='agenda');
+       const controls=page.getByRole('form',{name:'Calendar controls',exact:true});
+       const original=new URL(page.url());
+       await controls.getByRole('combobox',{name:'View',exact:true}).selectOption('agenda');
+       await Promise.all([page.waitForURL(url=>url.searchParams.get('view')==='agenda'),controls.getByRole('button',{name:'Apply',exact:true}).click()]);
+       const current=new URL(page.url());
+       check('agenda submission preserves calendar scope and month', ['month','zone','mode','filter'].every(k=>current.searchParams.has(k)&&(!original.searchParams.has(k)||current.searchParams.get(k)===original.searchParams.get(k))));
        check('mobile calendar agenda switch keeps same calendar route',new URL(page.url()).pathname===path&&await month.count()===0);
        await page.screenshot({path:resolve(output,'newsroom-schedule-390-agenda.png'),fullPage:true,timeout:10000,animations:'disabled'});
       }

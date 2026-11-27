@@ -178,11 +178,11 @@ export function StaffTeamManager({locale,showInvitations=false,showBylines=false
       <CheckCircle2 className="h-4 w-4"/>{success}</p>}
     {loading&&!data&&<p role="status" className="text-sm text-muted-foreground">{t.loading}</p>}
     {data&&<>
-      <nav aria-label={locale==='es'?'Secciones del equipo':'Team sections'} className="sticky top-0 z-20 flex min-w-0 gap-1 overflow-x-auto rounded-lg border border-border bg-white p-1 shadow-sm">
+      <nav aria-label={locale==='es'?'Secciones del equipo':'Team sections'} className="sticky top-0 z-20 flex w-full max-w-full min-w-0 gap-1 overflow-x-auto rounded-lg border border-border bg-white p-1 shadow-sm">
         {([{key:'members',label:t.directory,show:true},{key:'invitations',label:locale==='es'?'Invitaciones del equipo':'Staff invitations',show:showInvitations},{key:'bylines',label:locale==='es'?'Solicitudes de firma':'Byline requests',show:showBylines},{key:'presets',label:t.roles,show:true},{key:'audit',label:t.audit,show:data.canViewAudit}] as const).filter(v=>v.show).map(v=><button type="button" key={v.key} data-team-tab={v.key} aria-pressed={activeTab===v.key} aria-controls={'ct-team-'+v.key} disabled={saving} onClick={()=>setActiveTab(v.key)} className={'shrink-0 rounded-md px-3 py-2 text-sm font-semibold focus-visible:ring-2 focus-visible:ring-primary '+(activeTab===v.key?'bg-deep text-white':'text-muted-foreground hover:bg-surface-muted')}>{v.label}</button>)}
       </nav>
-      <div id="ct-team-members" hidden={activeTab!=='members'} className={activeTab==='members'?'space-y-3':'hidden'}>
-      <div className="grid gap-3 sm:grid-cols-3">
+      <div id="ct-team-members" hidden={activeTab!=='members'} className={activeTab==='members'?'min-w-0 space-y-3':'hidden'}>
+      <div className="grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-3">
         <div className={row+' p-4'}><p className="text-xs text-muted-foreground">{t.directory}</p>
           <p className="mt-1 text-2xl font-bold text-deep">{data.totalMembers}</p></div>
         <div className={row+' p-4'}><p className="text-xs text-muted-foreground">{t.activePage}</p>
@@ -190,11 +190,11 @@ export function StaffTeamManager({locale,showInvitations=false,showBylines=false
         <div className={row+' p-4'}><p className="text-xs text-muted-foreground">{t.roles}</p>
           <p className="mt-1 text-2xl font-bold text-deep">{data.presets.length}</p></div>
       </div>
-      <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)]">
-        <section className={row+' p-4'} aria-label={t.directory}>
+      <div className="grid min-w-0 grid-cols-1 items-start gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)]">
+        <section className={row+' min-w-0 p-4'} aria-label={t.directory}>
           <div className="mb-4 flex items-center gap-2"><Users className="h-4 w-4 text-primary"/>
             <h2 className="text-base font-semibold text-deep">{t.directory}</h2></div>
-          <div className="mb-3 grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto]">
+          <div className="mb-3 grid min-w-0 grid-cols-1 gap-2 sm:grid-cols-[minmax(0,1fr)_auto]">
             <label className="relative">
               <span className="sr-only">{t.search}</span>
               <Search className="pointer-events-none absolute left-3 top-2.5 h-4 w-4 text-muted-foreground"/>
@@ -222,7 +222,7 @@ export function StaffTeamManager({locale,showInvitations=false,showBylines=false
                   <div className="min-w-0"><p className="truncate text-sm font-semibold text-deep">{member.name}
                     {member.isSelf&&<span className="ml-2 font-normal text-muted-foreground">({t.self})</span>}
                   </p>
-                  <p className="mt-1 text-xs text-muted-foreground">
+                  <p className="mt-1 break-words text-xs text-muted-foreground">
                     {member.roles.length?member.roles.map(r=>r.roleKey.replaceAll('_',' ')).join(' · '):t.noRoles}
                   </p></div>
                 </div>
@@ -249,7 +249,7 @@ export function StaffTeamManager({locale,showInvitations=false,showBylines=false
             </div>
           </div>
         </section>
-        <section className={row+' p-4'} aria-label={t.manage}>
+        <section className={row+' min-w-0 break-words p-4'} aria-label={t.manage}>
           {!current?<p className="text-sm text-muted-foreground">{t.select}</p>:<>
             <div className="flex items-start justify-between gap-3 border-b border-border pb-4">
               <div><h2 className="font-headline text-lg font-semibold text-deep">{current.name}</h2>

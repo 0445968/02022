@@ -102,8 +102,8 @@ test('header sign-out checks provider result, blocks duplicate submissions and c
 });
 
 
-test('calendar offers an accessible scroll region and explicit agenda link; loaded-state markers are available',()=>{
- const calendar=f('app/newsroom/(shell)/schedule/page.tsx');assert.match(calendar,/Calendar view/);assert.match(calendar,/Monthly calendar/);assert.match(calendar,/tabIndex=\{0\}/);
+test('calendar offers an accessible scroll region and explicit agenda selection; loaded-state markers are available',()=>{
+ const calendar=f('app/newsroom/(shell)/schedule/page.tsx');assert.match(calendar,/Calendar controls/);assert.match(calendar,/name="view"/);assert.match(calendar,/<option value="agenda">Agenda<\/option>/);assert.match(calendar,/type="submit"/);assert.match(calendar,/Monthly calendar/);assert.match(calendar,/tabIndex=\{0\}/);
  for(const [path,id] of [['components/editorial/team/StaffTeamManager.tsx','ct-team-directory'],['components/editorial/media-library/MediaLibrary.tsx','ct-media-library']]){const source=f(path);assert.ok(source.includes('id="'+id+'"'));assert.match(source,/aria-busy=\{loading\}/);}
  assert.match(f('components/editorial/media-library/MediaErrorState.tsx'),/role="alert"/);
  const menu=f('components/navigation/account-button.tsx');assert.match(menu,/aria-expanded=\{open\}/);assert.match(menu,/hidden=\{!open\}/);assert.match(menu,/event.key==='Escape'/);
