@@ -48,11 +48,7 @@ try:
     manifest = (ROOT / "docs/clear-talks/CT15_FORWARD_MIGRATION_MANIFEST.md").read_text()
     forward = re.findall(r"^\d+\. `(supabase/migrations/202611[^\x60]+\.sql)`$", manifest, re.M)
     actual = sorted(str(p.relative_to(ROOT)) for p in (ROOT / "supabase/migrations").glob("202611*.sql"))
-    candidate = os.environ.get("CT16_WORK_ASSIGNMENTS_CANDIDATE")
-    if candidate:
-        assert re.fullmatch(r"supabase/migrations/[0-9]{14}_ct16_work_assignments\.sql", candidate) and actual[-1] == candidate
-        actual = actual[:-1]
-    assert forward == actual and len(forward) == 41, "Forward manifest mismatch"
+    assert forward == actual and len(forward) == 42, "Forward manifest mismatch"
     apply("tests/fixtures/ct15-local-legacy-platform.sql")
     legacy = sorted(str(p.relative_to(ROOT)) for p in (ROOT / "supabase/migrations").glob("20260*.sql"))
     assert len(legacy) == 23
@@ -70,10 +66,7 @@ try:
         apply(path)
     apply("tests/ct15-cumulative-postgres.sql")
     apply("tests/ct16-story-types-postgres.sql")
-    if candidate:
-        assert (ROOT / candidate).read_bytes() == (ROOT / "supabase/staged/ct16_work_assignments.sql").read_bytes()
-        apply(candidate)
-        apply("tests/ct16-work-assignments-postgres.sql")
+    apply("tests/ct16-work-assignments-postgres.sql")
     results["success"] = True
 finally:
     checkpoint()

@@ -274,3 +274,20 @@ export function assignmentTransitionAllowed(from:AssignmentWorkStatus,to:Assignm
  if(from==='completed'||from==='cancelled'||to==='cancelled'||to==='assigned')return false;
  return to==='in_progress'||to==='blocked'||to==='completed';
 }
+
+export type WorkMember={id:string;name:string};
+export type WorkAssignmentRow={id:string;title:string;activity:AssignmentActivity;coverage:AssignmentCoverage|null;storyId:string|null;storyHeadline:string|null;priority:AssignmentPriority;status:AssignmentWorkStatus;dueAt:string|null;notes:string;revision:number;updatedAt:string;assignees:WorkMember[];canEdit:boolean;canUpdateStatus:boolean};
+export type WorkAssignmentHistory={id:string;at:string;action:'create'|'edit'|'status';revision:number;reason:string;actor:string};
+export type WorkAssignmentPage={mode:'team'|'personal';canManage:boolean;canViewTeam:boolean;items:WorkAssignmentRow[];hasMore:boolean;candidates:WorkMember[];history:WorkAssignmentHistory[]};
+export function parseWorkAssignmentPage(raw:unknown,mode:'team'|'personal'):WorkAssignmentPage{
+ const r=record(raw);
+ const bool=(v:unknown)=>typeof v==='boolean';
+ const revision=(v:unknown)=>typeof v==='number'&&Number.isSafeInteger(v)&&v>0;
+ const member=(v:unknown)=>{const m=record(v);return isUuid(m.id)&&typeof m.name==='string'&&m.name.length<=160;};
+ if(r.mode!==mode||!bool(r.canManage)||!bool(r.canViewTeam)||!bool(r.hasMore)||!Array.isArray(r.items)||r.items.length>25||!Array.isArray(r.candidates)||r.candidates.length>100||!r.candidates.every(member)||!Array.isArray(r.history)||r.history.length>25)throw Error('Invalid assignments page');
+ for(const item of r.items){const a=record(item);
+  if(!isUuid(a.id)||typeof a.title!=='string'||!allowed(ASSIGNMENT_ACTIVITIES,a.activity)||(a.coverage!==null&&!allowed(ASSIGNMENT_COVERAGE,a.coverage))||(a.storyId!==null&&!isUuid(a.storyId))||(a.storyHeadline!==null&&typeof a.storyHeadline!=='string')||(a.storyId===null&&a.storyHeadline!==null)||!allowed(ASSIGNMENT_PRIORITIES,a.priority)||!allowed(ASSIGNMENT_WORK_STATUSES,a.status)||(a.dueAt!==null&&!isDate(a.dueAt))||typeof a.notes!=='string'||!revision(a.revision)||!isDate(a.updatedAt)||!Array.isArray(a.assignees)||a.assignees.length<1||a.assignees.length>25||!a.assignees.every(member)||!bool(a.canEdit)||!bool(a.canUpdateStatus))throw Error('Invalid assignment row');
+ }
+ for(const item of r.history){const h=record(item);if(!isUuid(h.id)||!isDate(h.at)||!['create','edit','status'].includes(String(h.action))||!revision(h.revision)||typeof h.reason!=='string'||typeof h.actor!=='string')throw Error('Invalid assignment history');}
+ return r as unknown as WorkAssignmentPage;
+}

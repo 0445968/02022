@@ -1,3 +1,9 @@
+# CURRENT — CT16 R2b.3 committed; exact CI pending
+
+## CT16 R2b.3 — standalone work Assignments workspace
+Prior exact f94678d 43/43 green, cumulative run 46043446750 generated and passed 20261127173913_ct16_work_assignments.sql. Adopt identical bytes as forward migration 42 (retain staged source as rehearsal provenance); run rollback-only candidate tests in regular cumulative CI. Added server-only verified cookie/RPC service, strict response parser, same-origin mutation endpoint, authorized nav and bilingual full-width assignment workspace with team/personal modes, current-page search/pagination, create/edit/status, multi-select assignees, optional linked article UUID, deadlines, history, conflict and retry feedback. Add capabilities and non-owner proposed preset ceilings, no grant seed or automatic hosted activation. Owner verified policy remains separate from immutable preset. Actual non-owner grants require reviewed role preset changes; old hosted schema 38 cannot use features 39–42. CT_WORK_ASSIGNMENTS_ENABLED false by default. Known UI limits: search only current page, article link UUID entry (picker pending), candidate list capped at 100, deadline local browser zone; no dashboard/calendar yet. Exact successor CI, authenticated browser interaction and permission inspector Owner policy verification pending. No production, hosted SQL or flags changed. Next: fix any regressions; complete scoped role management, searchable article and assignee pickers and calendar/dashboard integration.
+
+---
 # CURRENT — CT16 R2b.2 staged; candidate CI pending
 
 ## CT16 R2b.2 — standalone assignment database candidate

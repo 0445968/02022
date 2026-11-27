@@ -89,7 +89,7 @@ export async function loadEffectiveMemberPermissions(targetId:string):Promise<Me
       rules.some(p=>p.scope!=='all')
       ||denial.some(p=>p.scope!=='all')
       ||['story.view_assigned','story.edit_assigned',
-        'revision.edit_assigned','calendar.view_assigned',
+        'revision.edit_assigned','calendar.view_assigned','assignment.view_assigned','assignment.update_assigned',
         'media.edit_own'].includes(capability)
     );
     let state:'allowed'|'denied'|'conditional'='denied';

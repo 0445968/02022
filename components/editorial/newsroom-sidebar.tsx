@@ -91,6 +91,7 @@ const NAV = [
     icon: BarChart3,
     href: '/newsroom/polls',
   },
+  {key:'workAssignments',icon:ClipboardCheck,href:'/newsroom/assignments'},
   {
     key: 'schedule',
     icon: Calendar,
@@ -126,7 +127,7 @@ export function NewsroomSidebar({
   },[pathname]);
 
   const items=scopedNav?scopedNav.map(key=>key==='contributor'?{key,icon:LayoutDashboard,href:'/newsroom/contributor'}:
-    key==='contributorNew'?{key,icon:PlusCircle,href:'/newsroom/contributor/new'}:key==='profile'?{key,icon:User,href:'/newsroom/profile'}:key==='reviewInbox'?{key,icon:ClipboardCheck,href:'/newsroom/reviews'}:key==='reports'?{key,icon:Flag,href:'/newsroom/reports'}:NAV.find(item=>item.key===key)!).filter(Boolean):NAV.filter(item=>(item.key!=='team'||showTeamNav)&&item.key!=='comments'&&item.key!=='schedule'&&item.key!=='polls');
+    key==='contributorNew'?{key,icon:PlusCircle,href:'/newsroom/contributor/new'}:key==='profile'?{key,icon:User,href:'/newsroom/profile'}:key==='reviewInbox'?{key,icon:ClipboardCheck,href:'/newsroom/reviews'}:key==='reports'?{key,icon:Flag,href:'/newsroom/reports'}:NAV.find(item=>item.key===key)!).filter(Boolean):NAV.filter(item=>(item.key!=='team'||showTeamNav)&&item.key!=='comments'&&item.key!=='schedule'&&item.key!=='polls'&&item.key!=='workAssignments');
   const activeHref=items.filter(item=>pathname===item.href||(item.href!=='/newsroom'&&pathname.startsWith(item.href+'/'))).sort((a,b)=>b.href.length-a.href.length)[0]?.href;
   return (
     <aside
@@ -233,7 +234,7 @@ export function NewsroomSidebar({
                * dictionary values next.
                */
               const label =
-  item.key==='contributorNew'?(locale==='es'?'Nuevo borrador':'New draft'):item.key==='contributor'?(locale==='es'?'Mi espacio de trabajo':'My workspace'):item.key==='reviewInbox'?(locale==='es'?'Bandeja editorial':'Review inbox'):item.key==='reports'?(locale==='es'?'Denuncias':'Reports'):dict.newsroom[item.key as keyof typeof dict.newsroom];
+  item.key==='workAssignments'?(locale==='es'?'Asignaciones':'Assignments'):item.key==='contributorNew'?(locale==='es'?'Nuevo borrador':'New draft'):item.key==='contributor'?(locale==='es'?'Mi espacio de trabajo':'My workspace'):item.key==='reviewInbox'?(locale==='es'?'Bandeja editorial':'Review inbox'):item.key==='reports'?(locale==='es'?'Denuncias':'Reports'):dict.newsroom[item.key as keyof typeof dict.newsroom];
 
               return (
                 <li

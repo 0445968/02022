@@ -35,6 +35,8 @@ export const PROPOSED_STAFF_ROLE_GRANTS: ProposedRoleGrants = {
     ),
   ],
   managing_editor: [
+    ...grants('assigned','assignment.view_assigned','assignment.update_assigned'),
+    ...grants('all','assignment.view_team','assignment.manage'),
     ...grants('all',
       'newsroom.access', 'story.view_all', 'story.create', 'story.edit_all',
       'story.submit_review', 'story.review', 'story.publish', 'story.schedule',
@@ -48,6 +50,8 @@ export const PROPOSED_STAFF_ROLE_GRANTS: ProposedRoleGrants = {
     ),
   ],
   editor: [
+    ...grants('assigned','assignment.view_assigned','assignment.update_assigned'),
+    ...grants('all','assignment.view_team','assignment.manage'),
     ...grants('all',
       'newsroom.access', 'story.view_all', 'story.create', 'story.edit_all',
       'story.submit_review', 'story.review', 'story.publish', 'story.schedule',
@@ -58,31 +62,37 @@ export const PROPOSED_STAFF_ROLE_GRANTS: ProposedRoleGrants = {
     ),
   ],
   staff_writer: [
+    ...grants('assigned','assignment.view_assigned','assignment.update_assigned'),
     ...grants('all', 'newsroom.access', 'story.create', 'media.upload'),
     ...grants('assigned', 'story.view_assigned', 'story.edit_assigned',
       'story.submit_review', 'revision.view', 'revision.edit_assigned'),
     ...grants('own', 'media.edit_own'),
   ],
   copy_editor: [
+    ...grants('assigned','assignment.view_assigned','assignment.update_assigned'),
     ...grants('all', 'newsroom.access'),
     ...grants('assigned', 'story.view_assigned', 'story.edit_assigned',
       'story.review', 'revision.view', 'revision.edit_assigned'),
   ],
   media_editor: [
+    ...grants('assigned','assignment.view_assigned','assignment.update_assigned'),
     ...grants('all', 'newsroom.access', 'media.view_all', 'media.upload',
       'media.edit_all', 'media.approve', 'media.delete'),
     ...grants('assigned', 'story.view_assigned', 'revision.view',
       'revision.edit_assigned'),
   ],
   moderator: [
+    ...grants('assigned','assignment.view_assigned','assignment.update_assigned'),
     ...grants('all', 'newsroom.access', 'comment.view_queue',
       'comment.moderate', 'comment.manage_reports'),
   ],
   audience_staff: [
+    ...grants('assigned','assignment.view_assigned','assignment.update_assigned'),
     ...grants('all', 'newsroom.access', 'audience.view',
       'audience.notify', 'newsletter.manage'),
   ],
   freelancer: [
+    ...grants('assigned','assignment.view_assigned','assignment.update_assigned'),
     // Freelancers cannot create unassigned stories. An editor must first
     // create an assignment that the DB can verify.
     ...grants('all', 'newsroom.access', 'media.upload'),
