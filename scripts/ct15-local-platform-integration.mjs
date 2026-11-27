@@ -89,7 +89,7 @@ try{
  "insert into public.story_revisions(story_id,headline,slug,author_id,created_by) values("+uuid(storyIds.public)+",'CT15 unpublished revision','ct15-public',"+uuid(users.legacy.id)+","+uuid(users.legacy.id)+");");
  const manifest=readFileSync('docs/clear-talks/CT15_FORWARD_MIGRATION_MANIFEST.md','utf8');
  const forward=[...manifest.matchAll(/^\d+\. \x60(supabase\/migrations\/202611[^\x60]+\.sql)\x60$/gm)].map(m=>m[1]);
- assert.deepEqual(forward,readdirSync('supabase/migrations').filter(x=>/^202611.*\.sql$/.test(x)).sort().map(x=>'supabase/migrations/'+x));assert.equal(forward.length,43);
+ assert.deepEqual(forward,readdirSync('supabase/migrations').filter(x=>/^202611.*\.sql$/.test(x)).sort().map(x=>'supabase/migrations/'+x));assert.equal(forward.length,44);
  function grantSql(role){
   const grants=PROPOSED_STAFF_ROLE_GRANTS[role];
   assert.ok(grants?.length);
@@ -196,7 +196,7 @@ try{
  check('freelancer cannot evade quota via public bucket',!!publicUpload.error);
  // No provider sends, cron, payments or destructive jobs. Public poll APP flag is local-only; DB voting stays off until the final disposable poll scenario.
  const flags={
-  DEV_AUTH_BYPASS:'false',CT_STAFF_ACCESS_V2_ENABLED:'true',CT_STORY_TYPES_ENABLED:'true',CT_WORK_ASSIGNMENTS_ENABLED:'true',CT_WORK_OVERVIEW_ENABLED:'true',CT_READER_ACCOUNT_ENABLED:'true',
+  DEV_AUTH_BYPASS:'false',CT_STAFF_ACCESS_V2_ENABLED:'true',CT_STORY_TYPES_ENABLED:'true',CT_WORK_ASSIGNMENTS_ENABLED:'true',CT_WORK_OVERVIEW_ENABLED:'true',CT_WORK_SEARCH_ENABLED:'true',CT_READER_ACCOUNT_ENABLED:'true',
   CT_STAFF_ONBOARDING_ENABLED:'true',CT_MEDIA_PRIVATE_DRAFTS_ENABLED:'true',
   CT_COMMENT_MODERATION_ENABLED:'true',CT_COMMENT_REPORTS_ENABLED:'true',
   CT_ASSIGNED_DRAFT_EDITOR_ENABLED:'true',CT_ASSIGNED_REVISION_EDITOR_ENABLED:'true',

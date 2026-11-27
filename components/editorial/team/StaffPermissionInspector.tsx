@@ -3,7 +3,7 @@
 import {useCallback,useEffect,useMemo,useState,type FormEvent} from 'react';
 import {AlertTriangle,CheckCircle2,RefreshCw,ShieldCheck} from 'lucide-react';
 import type {Locale} from '@/types';
-import {CAPABILITY_KEYS,type AccessScope,type Capability} from '@/lib/permissions/capabilities';
+import {CAPABILITY_KEYS,EDITORIAL_OWN_PRIVILEGES,type AccessScope,type Capability} from '@/lib/permissions/capabilities';
 import {canOverrideCapability,type OverrideEffect,type OverrideOperation} from '@/lib/permissions/staff-override-input';
 import type {TeamMember} from '@/lib/permissions/staff-team-types';
 import type {MemberEffectiveAccess,MemberOverride} from '@/lib/permissions/staff-effective-types';
@@ -197,13 +197,13 @@ export function StaffPermissionInspector({
     </label>:<>
       <label className="block text-sm font-medium">{t.cap}
         <select className={field+' mt-1'} value={capability}
-          onChange={e=>setCapability(e.target.value as Capability)}>
+          onChange={e=>{const cap=e.target.value as Capability;setCapability(cap);if(EDITORIAL_OWN_PRIVILEGES.has(cap))setScope('own');setConfirmed(false);}}> 
           {choices.map(c=><option key={c} value={c}>{c}</option>)}
         </select>
       </label>
       <div className="grid gap-2 sm:grid-cols-2">
         <label className="block text-sm font-medium">{t.scope}
-          <select className={field+' mt-1'} value={scope}
+          <select className={field+' mt-1'} value={scope} disabled={EDITORIAL_OWN_PRIVILEGES.has(capability)}
             onChange={e=>setScope(e.target.value as AccessScope)}>
             <option value="all">{t.scopeAll}</option>
             <option value="assigned">{t.scopeAssigned}</option>

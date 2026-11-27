@@ -1,5 +1,6 @@
-import {DRAFT_UUID} from './assigned-draft-contract';
-import {reviewKind,type ReviewKind} from './story-review-contract';
+const DRAFT_UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+import type {ReviewKind} from './story-review-contract';
+const reviewKind=(v:unknown):v is ReviewKind=>v==='draft'||v==='revision';
 export type SelfPublicationCommand={kind:ReviewKind;requestId:string;fingerprint:string;reason:string};
 export type SelfBylineCommand={bylineId:string;profileRevision:number;reviewRevision:number;reason:string;requestId:string};
 export type SelfBylineOptions={profileRevision:number;reviewRevision:number;approved:boolean;items:{id:string;name:string}[]};

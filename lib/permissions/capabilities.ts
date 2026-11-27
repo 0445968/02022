@@ -61,9 +61,13 @@ export const CAPABILITY_KEYS = [
   'assignment.manage',
   'assignment.view_assigned',
   'assignment.update_assigned',
+  'story.publish_own_without_review',
+  'byline.self_service',
+  'media.quota_exempt',
 ] as const;
 
 export type Capability = (typeof CAPABILITY_KEYS)[number];
+export const EDITORIAL_OWN_PRIVILEGES:ReadonlySet<string>=new Set(['story.publish_own_without_review','byline.self_service','media.quota_exempt']);
 export type AccessScope = 'all' | 'assigned' | 'own';
 export type MembershipStatus = 'invited' | 'active' | 'suspended' | 'revoked';
 
@@ -214,6 +218,7 @@ export function resolveEffectivePermission(
       (!resource || !scopeCovers('assigned', resource, membership.id))) {
     return deny('missing_resource_scope');
   }
+  if (EDITORIAL_OWN_PRIVILEGES.has(capability)) return deny('missing_resource_scope'); // dedicated database gate; generic resource checks cannot authorize
   if (OWN_ONLY_CAPABILITIES.has(capability) &&
       (!resource || !scopeCovers('own', resource, membership.id))) {
     return deny('missing_resource_scope');

@@ -1,4 +1,4 @@
-import {isCapability,type AccessScope,type Capability} from '@/lib/permissions/capabilities';
+import {EDITORIAL_OWN_PRIVILEGES,isCapability,type AccessScope,type Capability} from '@/lib/permissions/capabilities';
 
 export type OverrideEffect='allow'|'deny';
 export type OverrideOperation='set'|'remove';
@@ -43,6 +43,7 @@ export function validateOverrideChange(input:unknown,nowMs=Date.now()):ValidOver
     ||typeof reason!=='string'||reason.trim().length<12||reason.length>500){
     throw Error('Invalid override fields');
   }
+  if(operation==='set'&&EDITORIAL_OWN_PRIVILEGES.has(capability)&&scope!=='own')throw Error('Editorial privileges require own scope');
   if(operation==='remove'){
     if(effect!==undefined&&effect!==null)throw Error('Remove cannot change effect');
     if(expiresAt!==undefined&&expiresAt!==null)throw Error('Remove cannot set expiry');

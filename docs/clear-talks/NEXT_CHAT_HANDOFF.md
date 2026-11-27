@@ -1,3 +1,9 @@
+# CURRENT — CT16 R2c.2 adopted migration 44; CI pending
+
+## CT16 R2c.2 — adopt exact privilege candidate and register individual controls
+7eb5f55 verified 43/43; 745fc27 41/43 (same Node ESM extensionless test import failure); cumulative run 46066781934 verified candidate SQL and rollback fixtures, exact CLI filename 20261127205525_ct16_editorial_privileges.sql. Adopted as migration 44, default database setting OFF, no hosted execution. Corrected ESM contract import (type-only import, local UUID/kind predicates), added 3 capability registry keys, own-only individual override UI/validation, backend refuses set until feature flag, generic resolver cannot authorize dedicated privilege; preset grants unchanged, effective inspector conditional/denied not authoritative. Real-platform integration manifest now 44 and enables work search only. No privilege activation. Security hardening candidate follows; review exact successor CI, owner default and browser paths still pending.
+
+---
 # CURRENT — consolidated CT16 R2b.6 / R2c.1 staged; exact CI pending
 
 ## CT16 R2b.6 / R2c.1 — consolidated assignment search and own-editorial controls
