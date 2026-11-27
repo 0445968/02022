@@ -105,6 +105,9 @@ try{
   }
   apply(path);
  }
+ // Apply staged candidate ONLY inside the disposable local platform, before role fixtures.
+ mark('CT16 staged visibility and placement rehearsal');
+ apply('supabase/staged/ct16_homepage_visibility.sql');
  mark('explicit disposable staff fixtures');
  const staff=roles.filter(x=>x!=='reader'&&x!=='legacy');
  const inserts=staff.map(role=>{
@@ -203,7 +206,7 @@ try{
   CT_WRITER_DRAFT_CREATION_ENABLED:'true',CT_STORY_REVIEW_ENABLED:'true',
   CT_STAFF_ADMIN_MUTATIONS_ENABLED:'true',CT_READER_COMMUNICATIONS_ENABLED:'true',
   CT_EDITORIAL_CALENDAR_ENABLED:'true',CT_POLLS_ENABLED:'true',CT_PUBLIC_POLLS_ENABLED:'true',CT_REVIEW_INBOX_ENABLED:'true',CT_STORY_ASSIGNMENTS_ENABLED:'true',
-  CT_HOMEPAGE_HISTORY_ENABLED:'true',CT_READER_REPORTING_ENABLED:'true',
+  CT_HOMEPAGE_HISTORY_ENABLED:'true',CT_HOMEPAGE_VISIBILITY_ENABLED:'true',CT_POLL_PLACEMENTS_ENABLED:'true',CT_READER_REPORTING_ENABLED:'true',
   CT_REVIEWED_PUBLICATION_ENABLED:'true',CT_REVIEWED_SCHEDULING_ENABLED:'true',CT_STAFF_INVITATIONS_ENABLED:'true',CT_STAFF_PRESET_MUTATIONS_ENABLED:'true',CT_STAFF_OVERRIDE_MUTATIONS_ENABLED:'true',CT_STAFF_BYLINE_REVIEW_ENABLED:'true'
  };
  const appEnv={...process.env,...flags,NEXT_PUBLIC_SUPABASE_URL:apiOrigin,NEXT_PUBLIC_SUPABASE_ANON_KEY:values.ANON_KEY,SUPABASE_SERVICE_ROLE_KEY:values.SERVICE_ROLE_KEY};
@@ -1223,6 +1226,15 @@ try{
   const published=await pollPost({action:'publish',id:pollState.id,version:pollState.version,copy:null});
   check('independently approved poll publishes',published.status()===200);
   pollState=await published.json();
+  const placements=[{kind:'homepage',target:'',startsAt:null,endsAt:null},{kind:'article',target:storyIds.public,startsAt:null,endsAt:null}];
+  const stagedPlacement=await owner.rpc('staff_change_poll_placements',{p_id:pollState.id,p_expected:0,p_action:'save',p_copy:placements,p_reason:'CT16 synthetic locations for approved poll'});
+  check('real owner saves private placement draft',!stagedPlacement.error&&stagedPlacement.data.revision===1&&stagedPlacement.data.published.length===0);
+  const publishPlacement=await owner.rpc('staff_change_poll_placements',{p_id:pollState.id,p_expected:1,p_action:'publish',p_copy:null,p_reason:'CT16 publish independently reviewed poll placements'});
+  check('real owner publishes saved locations',!publishPlacement.error&&publishPlacement.data.revision===2&&publishPlacement.data.published.length===2);
+  const deniedPlacement=await free.rpc('staff_read_poll_placements',{p_id:pollState.id});
+  check('freelancer denied placement manager',!!deniedPlacement.error);
+  const hiddenPlaced=await anonymous.rpc('public_placed_polls',{p_language:'en',p_kind:'homepage',p_target:''});
+  check('placement cannot bypass poll activation',!hiddenPlaced.error&&hiddenPlaced.data.enabled===false);
   const hidden=await anonymous.rpc('public_list_polls',{p_language:'en',p_page:0});
   check('published poll remains hidden until database activation',!hidden.error&&hidden.data.enabled===false&&hidden.data.items.length===0);
  }finally{await pollEditor.close();}
@@ -1236,6 +1248,10 @@ try{
   const publicPolls=await anonymous.rpc('public_list_polls',{p_language:'en',p_page:0});
   const publicPoll=publicPolls.data?.items.find(p=>p.id===pollState.id);
   check('anonymous poll projection excludes identity and open counts',!publicPolls.error&&publicPoll?.open===true&&publicPoll.ownChoice===null&&publicPoll.counts===null);
+  const homePolls=await anonymous.rpc('public_placed_polls',{p_language:'en',p_kind:'homepage',p_target:''});
+  const articlePolls=await anonymous.rpc('public_placed_polls',{p_language:'en',p_kind:'article',p_target:storyIds.public});
+  const wrongLangPolls=await anonymous.rpc('public_placed_polls',{p_language:'es',p_kind:'homepage',p_target:''});
+  check('same poll visible on homepage and article with locale isolation',!homePolls.error&&!articlePolls.error&&!wrongLangPolls.error&&homePolls.data.items.some(p=>p.id===pollState.id)&&articlePolls.data.items.some(p=>p.id===pollState.id)&&wrongLangPolls.data.items.length===0);
   const votePath='/api/polls/'+pollState.id+'/vote';
   const anonymousContext=await browser.newContext();
   try{
@@ -1249,6 +1265,8 @@ try{
   check('changing recorded vote denied',(await post(votePath,{choice:1})).status()===409);
   const own=await users.reader.client.rpc('public_list_polls',{p_language:'en',p_page:0});
   const ownPoll=own.data?.items.find(p=>p.id===pollState.id);
+  const placedOwn=await users.reader.client.rpc('public_placed_polls',{p_language:'en',p_kind:'article',p_target:storyIds.public});
+  check('placed poll shares the original vote pool',!placedOwn.error&&placedOwn.data.items.find(p=>p.id===pollState.id)?.ownChoice===0);
   check('reader sees own choice but not aggregate counts',!own.error&&ownPoll?.ownChoice===0&&ownPoll.counts===null);
   const other=await users.legacy.client.rpc('public_list_polls',{p_language:'en',p_page:0});
   check('unrelated verified account sees no other choice',!other.error&&other.data.items.find(p=>p.id===pollState.id)?.ownChoice===null);

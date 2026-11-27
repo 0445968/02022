@@ -351,8 +351,9 @@ export const FrontPageController =
       const [visibility,setVisibility]=useState<HomeVisibility|null>(versioned?.visibility??null);
       const [publishedVisibility,setPublishedVisibility]=useState<HomeVisibility|null>(versioned?.publishedVisibility??null);
       const visibilityRef=useRef<HomeVisibility|null>(versioned?.visibility??null);
-      function toggleSection(key:HomeSection,visible:boolean){if(!visibilityRef.current||mutationLock.current)return;const next={...visibilityRef.current,[key]:visible};visibilityRef.current=next;setVisibility(next);}
       const mutationLock=useRef(false);
+      const setMutationLocked=useCallback((locked:boolean)=>{mutationLock.current=locked;},[]);
+      const toggleSection=useCallback((key:HomeSection,visible:boolean)=>{if(!visibilityRef.current||mutationLock.current)return;const next={...visibilityRef.current,[key]:visible};visibilityRef.current=next;setVisibility(next);},[]);
       const versionRef=useRef(versioned?.revision??null);
       const uncertain=useRef(false);
       const versionCommand=useCallback(async(action:LayoutCommand['action'],copy:HomepageLayoutSelection[]|null,restoreRevision:number|null)=>{
@@ -948,7 +949,7 @@ export const FrontPageController =
               return;
             }
 
-            mutationLock.current=true;
+            setMutationLocked(true);
             setBusy(true);
 
             setError(
@@ -1056,7 +1057,7 @@ export const FrontPageController =
                     : 'Unable to publish the Front Page.'
               );
             } finally {
-              mutationLock.current=false;
+              setMutationLocked(false);
               setBusy(
                 false
               );
@@ -1069,6 +1070,7 @@ export const FrontPageController =
             saveDraft,
             selections,
             versionCommand,
+            setMutationLocked,
           ]
         );
 
@@ -1079,7 +1081,7 @@ export const FrontPageController =
               return;
             }
 
-            mutationLock.current=true;
+            setMutationLocked(true);
             setBusy(true);
 
             setError(
@@ -1121,7 +1123,7 @@ export const FrontPageController =
                     : 'Unable to revert Front Page changes.'
               );
             } finally {
-              mutationLock.current=false;
+              setMutationLocked(false);
               setBusy(
                 false
               );
@@ -1138,12 +1140,12 @@ export const FrontPageController =
 
       const restoreVersion=useCallback(async(revision:number)=>{
        if(mutationLock.current||uncertain.current||versionRef.current===null)throw Error('Reload before changing the layout.');
-       mutationLock.current=true;setBusy(true);setError(null);
+       setMutationLocked(true);setBusy(true);setError(null);
        try{if(autosaveTimeout.current!==null){window.clearTimeout(autosaveTimeout.current);autosaveTimeout.current=null;}await autosaveTail.current.catch(()=>undefined);
         const state=await versionCommand('restore',null,revision);initialAutosave.current=true;setSelections(state.selections);setSaveStatus('saved');setSuccessMessage(locale==='es'?'Versión restaurada como borrador.':'Version restored as draft.');
        }catch(e){setError(locale==='es'?'No se pudo restaurar. Recargue.':'Unable to restore. Reload before retrying.');throw e;}
-       finally{mutationLock.current=false;setBusy(false);}
-      },[versionCommand,locale]);
+       finally{setMutationLocked(false);setBusy(false);}
+      },[versionCommand,locale,setMutationLocked]);
 
       useImperativeHandle(
         ref,

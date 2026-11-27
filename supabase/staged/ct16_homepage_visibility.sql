@@ -265,7 +265,8 @@ begin
   k:=x->>'kind'; target:=x->>'target';
   if length(target)>120 or not newsroom_private.poll_placement_target_valid(k,target) then raise exception 'Placement target unavailable' using errcode='22023';end if;
   if k='article' and not (newsroom_private.publication_actor_permission(auth.uid(),'story.view_all',target::uuid) or newsroom_private.publication_actor_permission(auth.uid(),'story.view_assigned',target::uuid)) then raise exception 'Article access denied' using errcode='42501';end if;
-  if (x->>'startsAt' is not null and x->>'startsAt' !~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}([.][0-9]+)?(Z|[+-][0-9]{2}:[0-9]{2})
+  if (x->>'startsAt' is not null and x->>'startsAt' !~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}([.][0-9]+)?(Z|[+-][0-9]{2}:[0-9]{2})$') or (x->>'endsAt' is not null and x->>'endsAt' !~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}([.][0-9]+)?(Z|[+-][0-9]{2}:[0-9]{2})$') then raise exception 'Explicit timestamp required' using errcode='22023';end if;
+  begin a:=(x->>'startsAt')::timestamptz;b:=(x->>'endsAt')::timestamptz;
   exception when invalid_datetime_format or datetime_field_overflow then raise exception 'Invalid window' using errcode='22023';end;
   if (a is not null and not isfinite(a)) or (b is not null and not isfinite(b)) or (a is not null and b is not null and b<=a) then raise exception 'Invalid window' using errcode='22023';end if;
  end loop;

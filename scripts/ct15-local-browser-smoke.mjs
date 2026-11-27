@@ -71,7 +71,10 @@ try{
  const localeRedirect=await http('/latest?fixture=1',{redirect:'manual',headers:{'Accept-Language':'es-CO'}});
  check([301,302,303,307,308].includes(localeRedirect.status),'Unprefixed locale redirect missing');
  const redirect=new URL(localeRedirect.headers.get('location')||'/',base);
- check(redirect.origin===base&&redirect.pathname==='/es/latest'&&redirect.search==='?fixture=1','Locale redirect changed origin, language or query');
+ const savedLocaleRedirect=await http('/latest?fixture=1',{redirect:'manual',headers:{Cookie:'sr_locale=es','Accept-Language':'en-US'}});
+ const savedTarget=new URL(savedLocaleRedirect.headers.get('location')||'/',base);
+ check(savedTarget.origin===base&&savedTarget.pathname==='/es/latest'&&savedTarget.search==='?fixture=1','Saved locale preference was not honored');
+ check(redirect.origin===base&&redirect.pathname==='/en/latest'&&redirect.search==='?fixture=1','English first-visit redirect changed origin, language or query');
  for(const [path,status] of [['/api/newsroom/team',404],['/api/account/profile',403]]){
   const r=await http(path,{redirect:'manual'});
   await record({path,status:r.status,expected:status});
