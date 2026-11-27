@@ -4,7 +4,7 @@ import { getCurrentUser } from '@/lib/auth/session';
 import { getDictionary } from '@/lib/i18n/dictionaries';
 import { defaultLocale } from '@/lib/i18n/config';
 import { MediaLibrary } from '@/components/editorial/media-library';
-import { PrivateDraftMediaPanel } from '@/components/editorial/media-library/PrivateDraftMediaPanel';
+import { PrivateMediaWorkspace } from '@/components/editorial/media-library/PrivateDraftMediaDialog';
 import { privateDraftMediaEnabled } from '@/lib/permissions/private-draft-media';
 import { resolveStaffPermissionOnServer } from '@/lib/permissions/server';
 
@@ -26,8 +26,7 @@ export default async function MediaPage() {
   );
   return (
     <>
-      {privateDraftsEnabled && (!access||access.privateMedia) && <PrivateDraftMediaPanel canReview={canReview} locale={locale}/>}
-      {(!access||access.fullMedia)&&<MediaLibrary dict={dict} userId={user.id} privateDraftsEnabled={privateDraftsEnabled}/>}
+      {(!access||access.fullMedia)?<MediaLibrary dict={dict} userId={user.id} privateDraftsEnabled={privateDraftsEnabled} canReviewPrivate={canReview} locale={locale}/>:privateDraftsEnabled&&access.privateMedia?<PrivateMediaWorkspace canReview={canReview} locale={locale}/>:null}
     </>
   );
 }

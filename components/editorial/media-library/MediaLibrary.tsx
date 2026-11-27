@@ -4,9 +4,12 @@ import {
   useCallback,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from 'react';
 
+import {PrivateDraftMediaDialog} from './PrivateDraftMediaDialog';
+import type {Locale} from '@/types';
 import type { Dictionary } from '@/lib/i18n/dictionaries';
 
 import type {
@@ -121,6 +124,8 @@ interface MediaLibraryProps {
   dict: Dictionary;
   userId: string;
   privateDraftsEnabled?: boolean;
+  canReviewPrivate?:boolean;
+  locale?:Locale;
 }
 
 type BulkAction =
@@ -210,7 +215,10 @@ export function MediaLibrary({
   dict,
   userId,
   privateDraftsEnabled = false,
+  canReviewPrivate=false,locale='en',
 }: MediaLibraryProps) {
+  const uploadTrigger=useRef<HTMLElement|null>(null);
+  function openUpload(){uploadTrigger.current=document.activeElement instanceof HTMLElement?document.activeElement:null;setUploadOpen(true);}
   /* ======================================================= */
   /* DATA */
   /* ======================================================= */
@@ -1545,11 +1553,10 @@ export function MediaLibrary({
         className="
           mx-auto
           w-full
-          max-w-[1600px]
-          px-5
-          py-6
-          sm:px-6
-          lg:px-8
+          min-w-0
+          px-3
+          py-4
+          sm:px-5
         "
       >
         {/* ================================================= */}
@@ -1575,11 +1582,7 @@ export function MediaLibrary({
           onViewModeChange={
             handleViewModeChange
           }
-          onUpload={() => {
-            if (privateDraftsEnabled) {
-              document.getElementById('ct-private-draft-panel')?.scrollIntoView({ behavior: 'smooth' });
-            } else { setUploadOpen(true); }
-          }}
+          onUpload={openUpload}
         />
 
         {/* ================================================= */}
@@ -1644,11 +1647,7 @@ export function MediaLibrary({
             onClearFilters={
               resetFilters
             }
-            onUpload={() => {
-              if (privateDraftsEnabled) {
-                document.getElementById('ct-private-draft-panel')?.scrollIntoView({ behavior: 'smooth' });
-              } else { setUploadOpen(true); }
-            }}
+            onUpload={openUpload}
           />
         ) : (
           <>
@@ -1760,6 +1759,7 @@ export function MediaLibrary({
         {/* UPLOAD DRAWER */}
         {/* ================================================= */}
 
+        {privateDraftsEnabled&&<PrivateDraftMediaDialog open={uploadOpen} onOpenChange={setUploadOpen} canReview={canReviewPrivate} locale={locale} trigger={uploadTrigger.current} onChanged={()=>void fetchMedia()}/>}
         <MediaUploadDrawer
           open={
             uploadOpen && !privateDraftsEnabled

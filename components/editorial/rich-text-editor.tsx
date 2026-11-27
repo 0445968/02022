@@ -11,6 +11,7 @@ import {
   useEditor,
 } from '@tiptap/react';
 
+import {Dialog,DialogContent,DialogTitle,DialogDescription} from '@/components/ui/dialog';
 import StarterKit from '@tiptap/starter-kit';
 import Link from '@tiptap/extension-link';
 import Underline from '@tiptap/extension-underline';
@@ -92,6 +93,11 @@ export function RichTextEditor({
   dict,
   userId,allowMedia=true,editable=true,assignedMedia,
 }: RichTextEditorProps) {
+  const [linkOpen,setLinkOpen]=useState(false);
+  const [linkUrl,setLinkUrl]=useState('');
+  const [linkError,setLinkError]=useState('');
+  const linkSelection=useRef<{from:number;to:number;doc:unknown}|null>(null);
+  const linkTrigger=useRef<HTMLElement|null>(null);
   const [
     mediaPickerOpen,
     setMediaPickerOpen,
@@ -289,54 +295,22 @@ export function RichTextEditor({
   /* LINKS */
   /* ======================================================= */
 
-  function setLink() {
-    const previousUrl =
-      ed.getAttributes(
-        'link'
-      ).href as
-      | string
-      | undefined;
-
-    const url =
-      window.prompt(
-        'URL',
-        previousUrl ??
-        'https://'
-      );
-
-    if (
-      url === null
-    ) {
-      return;
-    }
-
-    if (
-      url === ''
-    ) {
-      ed
-        .chain()
-        .focus()
-        .extendMarkRange(
-          'link'
-        )
-        .unsetLink()
-        .run();
-
-      return;
-    }
-
-    ed
-      .chain()
-      .focus()
-      .extendMarkRange(
-        'link'
-      )
-      .setLink({
-        href: url,
-      })
-      .run();
+  function setLink(){
+    if(!editable)return;
+    linkTrigger.current=document.activeElement instanceof HTMLElement?document.activeElement:null;
+    linkSelection.current={from:ed.state.selection.from,to:ed.state.selection.to,doc:ed.state.doc};
+    setLinkUrl(ed.getAttributes('link').href??'https://');
+    setLinkError('');setLinkOpen(true);
   }
-
+  function applyLink(remove=false){
+    const selected=linkSelection.current;
+    if(!editable||!selected||selected.doc!==ed.state.doc){setLinkError('The article changed. Close and select the text again.');return;}
+    const href=linkUrl.trim();
+    if(!remove){try{const parsed=new URL(href);if(!['https:','http:','mailto:','tel:'].includes(parsed.protocol)||parsed.username||parsed.password)throw Error();}catch{setLinkError('Enter a valid HTTP, HTTPS, email or telephone link.');return;}}
+    const chain=ed.chain().setTextSelection({from:selected.from,to:selected.to}).extendMarkRange('link');
+    if(!(remove?chain.unsetLink().run():chain.setLink({href}).run())){setLinkError('The link could not be applied. Select the text again.');return;}
+    linkSelection.current=null;setLinkOpen(false);
+  }
   /* ======================================================= */
   /* OPEN MEDIA LIBRARY */
   /* ======================================================= */
@@ -511,6 +485,17 @@ export function RichTextEditor({
 
   return (
     <>
+      <Dialog open={linkOpen} onOpenChange={setLinkOpen}>
+        <DialogContent className="w-[calc(100%-2rem)] rounded-lg bg-white" onCloseAutoFocus={e=>{e.preventDefault();if(linkTrigger.current?.isConnected)linkTrigger.current.focus();else ed.commands.focus();}}>
+          <DialogTitle>Insert or edit link</DialogTitle>
+          <DialogDescription>Choose a destination for the selected text. Remove link clears the link without deleting the text.</DialogDescription>
+          <form className="space-y-3" onSubmit={e=>{e.preventDefault();applyLink();}}>
+            <label className="block text-sm font-medium">URL<input autoFocus value={linkUrl} onChange={e=>{setLinkUrl(e.target.value);setLinkError('');}} className="mt-1 h-10 w-full rounded-lg border border-border px-3" aria-invalid={!!linkError}/></label>
+            {linkError&&<p role="alert" className="text-sm text-breaking">{linkError}</p>}
+            <div className="flex flex-wrap justify-end gap-2"><button type="button" onClick={()=>applyLink(true)} className="rounded-md border border-border px-3 py-2 text-sm">Remove link</button><button type="button" onClick={()=>setLinkOpen(false)} className="rounded-md border border-border px-3 py-2 text-sm">{dict.common.cancel}</button><button type="submit" className="rounded-md bg-primary px-3 py-2 text-sm font-semibold text-white">Apply link</button></div>
+          </form>
+        </DialogContent>
+      </Dialog>
       <div
         className="relative w-full bg-white"
       >

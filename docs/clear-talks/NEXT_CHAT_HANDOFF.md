@@ -1,3 +1,10 @@
+# CURRENT — CT16 R1d staged
+
+
+## CT16 R1d — editor and media dialog
+Staged themed editor link dialog with captured document selection, safe URL protocols, explicit remove and cancel, stale-doc guard, and focus restore; replaced zero-size color input with full clickable row. Media upload opens a modal instead of persistent top panel for full library and private-only roles; in-flight actions block dismissal, approved assets refresh library without forced reload. Full-width compact media layout. Existing quota, rights checks, private upload routes and access boundaries unchanged. Real browser/color picker and upload tests pending; Spanish strings not complete in rich-text and legacy media panel. No production changes.
+
+---
 # CURRENT — CT16 R1c staged
 
 

@@ -700,3 +700,7 @@ Staged full-width rounded Stories workspace, debounced server-backed search, acc
 
 ## CT16 R1c — Team tabs and Stories regression correction
 R1b 41/43 CI success; both failures shared source assertion on renamed Stories variable. Restored story variable without altering status/draft logic. Team sections now sticky mutually exclusive Members/Invitations/Bylines/Role presets/Audit controls; browser regression updated for keyboard and panel exclusivity. Avatar projection restricted to current project's public storage (initials otherwise), no private account data. Full-width Team. Staged; CI pending. Owner dashboard accurate modes, editor/media/calendar/comments/workflow changes remain. No production changes.
+
+
+## CT16 R1d — editor and media dialog
+Staged themed editor link dialog with captured document selection, safe URL protocols, explicit remove and cancel, stale-doc guard, and focus restore; replaced zero-size color input with full clickable row. Media upload opens a modal instead of persistent top panel for full library and private-only roles; in-flight actions block dismissal, approved assets refresh library without forced reload. Full-width compact media layout. Existing quota, rights checks, private upload routes and access boundaries unchanged. Real browser/color picker and upload tests pending; Spanish strings not complete in rich-text and legacy media panel. No production changes.
