@@ -39,6 +39,7 @@ interface StoryEditorHeaderProps {
   dict: Dictionary;
   assignmentHref?:string;
   pollPlacementHref?:string;
+  translationHref?:string;
   reviewEnabled?:boolean;
   reviewedPublication?:boolean;
   onOpenReview?:()=>void;
@@ -108,6 +109,7 @@ export function StoryEditorHeader({
   dict,
   assignmentHref,
   pollPlacementHref,
+  translationHref,
   reviewEnabled=false,
   reviewedPublication=false,
   onOpenReview,
@@ -326,6 +328,7 @@ export function StoryEditorHeader({
             }
           </span>
 
+          {translationHref&&<Link href={translationHref} target="_blank" rel="noopener noreferrer" className="inline-flex h-8 items-center rounded-lg border border-border bg-white px-2 text-xs font-semibold hover:bg-surface-muted">{locale==='es'?'Traducciones':'Translations'}</Link>}
           {pollPlacementHref&&<Link href={pollPlacementHref} target="_blank" rel="noopener noreferrer" className="inline-flex h-8 items-center rounded-lg border border-border bg-white px-2 text-xs font-semibold hover:bg-surface-muted">{locale==='es'?'Encuestas':'Polls'}</Link>}
           {assignmentHref&&<Link href={assignmentHref} target="_blank" rel="noopener noreferrer" className="inline-flex h-8 items-center rounded-lg border border-border bg-white px-2 text-xs font-semibold hover:bg-surface-muted">{locale==='es'?'Asignaciones':'Assignments'}</Link>}
           {reviewEnabled&&onOpenReview&&(!isPublishedStory||hasPendingRevision||saveState==='unsaved')&&<button type="button" onClick={onOpenReview} disabled={isSaving} className="inline-flex h-8 items-center rounded-lg border border-border bg-white px-2 text-xs font-semibold hover:bg-surface-muted disabled:opacity-50">{locale==='es'?'Revisión y comentarios':'Review & feedback'}</button>}

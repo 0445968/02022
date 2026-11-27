@@ -78,6 +78,9 @@ try:
         apply(candidate)
         apply("tests/ct16-homepage-visibility-postgres.sql")
         apply("tests/ct16-poll-placements-postgres.sql")
+        # Separate staged translation candidate, not part of migration 45.
+        apply("supabase/staged/ct16_story_translations.sql")
+        apply("tests/ct16-story-translations-postgres.sql")
     results["success"] = True
 finally:
     checkpoint()

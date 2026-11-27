@@ -30,7 +30,7 @@ test('author changes require exact version and allowed fields',()=>{
  assert.match(route,/await mayManageByline\(user\)/);assert.match(route,/\.eq\('updated_at',existing\.updated_at\)/);assert.match(route,/usableHeadshot/);
 });
 test('public shell uses public projection and Page Editor top actions reach confirmation, unsafe permanent delete blocked',()=>{
- assert.match(file('components/layout/public-shell.tsx'),/getPublicHomepageSlots\(\)/);
+ assert.match(file('components/layout/public-shell.tsx'),/getPublicHomepageSlots\(locale\)/);
  const front=file('lib/services/front-page.ts');for(const s of ['currentPublicWindow(row.active','isPublicStory(story.status','media_public_assets','safeExternalAlertUrl(row.external_url)','created_by:null,updated_by:null'])assert.ok(front.includes(s),s);
  const client=file('components/editorial/page-editor/PageEditorClient.tsx');assert.match(client,/controller.current\?\.publish\(\)/);assert.match(client,/controller.current\?\.revert\(\)/);assert.match(client,/ref=\{controller\}/);
  const controller=file('components/editorial/page-editor/front-page/FrontPageController.tsx');assert.match(controller,/await autosaveTail.current/);assert.match(controller,/setConfirmAction\('publish'\)/);

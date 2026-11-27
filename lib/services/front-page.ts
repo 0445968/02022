@@ -1,3 +1,4 @@
+import {getPublicTranslationPairs,storyTranslationsEnabled} from '@/lib/services/story-translations';
 import {securePublicMedia,publicImageSelection,hydratePublicEditorialImages} from '@/lib/services/public-editorial-media';
 import {createDataClient} from '@/lib/db/supabase-data';
 import type {SupabaseClient} from '@supabase/supabase-js';
@@ -785,7 +786,7 @@ export async function getHomepageSlot(
  * This makes development-bypass rendering behave like production
  * even while anonymous CRUD is temporarily enabled.
  */
-export async function getPublicHomepageSlots(): Promise<HomepagePlacement[]> {
+export async function getPublicHomepageSlots(locale?:'en'|'es'): Promise<HomepagePlacement[]> {
  const now=Date.now(),db=createDataClient() as unknown as SupabaseClient;
  const secure=process.env.CT_STAFF_ACCESS_V2_ENABLED==='true';
  const imageSelect=secure?'featured_image_id':'featured_image:media_assets!stories_featured_image_id_fkey(id,url,alt_text)';
@@ -796,7 +797,18 @@ export async function getPublicHomepageSlots(): Promise<HomepagePlacement[]> {
  `).eq('active',true).order('slot').order('position');
  if(error)throw Error('Unable to load public homepage placements');
  const rows=(data??[]) as unknown as RawHomepagePlacement[];
- const eligible=rows.filter(row=>{const story=firstRelation(row.story);return currentPublicWindow(row.active,row.starts_at,row.ends_at,now)&&!!story&&isPublicStory(story.status,story.published_at,now);});
+ let eligible=rows.filter(row=>{const story=firstRelation(row.story);return currentPublicWindow(row.active,row.starts_at,row.ends_at,now)&&!!story&&isPublicStory(story.status,story.published_at,now);});
+ // Replace only explicitly selected stories with a current, independently reviewed
+ // public language counterpart. Keep original slot order and fallback if unavailable.
+ if(locale&&storyTranslationsEnabled()){
+  const wrong=eligible.map(row=>firstRelation(row.story)).filter((story):story is RawStory=>!!story&&story.language!==locale);
+  const pairs=await getPublicTranslationPairs(wrong.map(story=>story.id));
+  const replacements=new Map(pairs.filter(pair=>pair.counterpart?.language===locale).map(pair=>[pair.storyId,pair.counterpart!.id]));
+  if(replacements.size){
+   const {data:translated,error:translationError}=await db.from('stories').select(`id,slug,headline,short_title,language,status,published_at,primary_category:categories!stories_primary_category_id_fkey(id,slug,name_en,name_es),${imageSelect}`).in('id',[...new Set(replacements.values())]).eq('status','published').eq('access_level','public').eq('language',locale).lte('published_at',new Date(now).toISOString());
+   if(!translationError){const byId=new Map((translated??[] as unknown[]) .map(item=>{const row=item as unknown as RawStory;return [row.id,row] as const;}));eligible=eligible.map(row=>{const original=firstRelation(row.story);const replacement=original&&byId.get(replacements.get(original.id)??'');return replacement?{...row,story:replacement}:row;});}
+  }
+ }
  const media=new Map<string,{id:string;url:string;alt_text:string}>();
  if(secure){
   const ids=[...new Set(eligible.map(r=>firstRelation(r.story)?.featured_image_id).filter((id):id is string=>typeof id==='string'))];

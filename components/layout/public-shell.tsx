@@ -39,7 +39,7 @@ export async function PublicShell({
   children,
 }: PublicShellProps) {
   const canOpenNewsroom=scopedNewsroomEnabled()?!!user&&await getWorkspaceAccess().then(a=>a.allowed).catch(()=>false):undefined;
-  const [homepageSlots,visibility]=await Promise.all([getPublicHomepageSlots(),readPublicHomepageVisibility()]);
+  const [homepageSlots,visibility]=await Promise.all([getPublicHomepageSlots(locale),readPublicHomepageVisibility()]);
 
   const headlineBarPlacements =
     homepageSlots.filter(

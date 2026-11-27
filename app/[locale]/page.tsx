@@ -45,7 +45,7 @@ export default async function Page(props: PageProps) {
     acrossTheIslands,
     visibility,
   ] = await Promise.all([
-    getPublicHomepageSlots(),
+    getPublicHomepageSlots(locale),
 
     getPublicBreakingNews(),
 

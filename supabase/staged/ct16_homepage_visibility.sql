@@ -273,7 +273,7 @@ begin
   exception when invalid_datetime_format or datetime_field_overflow then raise exception 'Invalid window' using errcode='22023';end;
   if (a is not null and not isfinite(a)) or (b is not null and not isfinite(b)) or (a is not null and b is not null and b<=a) then raise exception 'Invalid window' using errcode='22023';end if;
  end loop;
- if exists(select 1 from jsonb_array_elements(p_copy) x group by x->>'kind',x->>'target' having count(*)>1) then raise exception 'Duplicate placement' using errcode='22023';end if;
+ if exists(select 1 from jsonb_array_elements(p_copy) as item(value) group by item.value->>'kind',item.value->>'target' having count(*)>1) then raise exception 'Duplicate placement' using errcode='22023';end if;
 end;$fn$;
 create function newsroom_private.read_poll_placements(p_id uuid)
 returns jsonb language plpgsql stable security definer set search_path='' set timezone='UTC' as $fn$

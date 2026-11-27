@@ -1,3 +1,5 @@
+import Link from 'next/link';
+import {getPublicStoryTranslation,storyTranslationsEnabled} from '@/lib/services/story-translations';
 import {PlacedPolls} from '@/components/polls/PlacedPolls';
 import {readerReportingEnabled} from '@/lib/services/reader-reports';
 import type {
@@ -6,6 +8,7 @@ import type {
 
 import {
   notFound,
+  redirect,
 } from 'next/navigation';
 
 import {
@@ -82,6 +85,8 @@ export async function generateMetadata(props: PageProps): Promise<Metadata> {
   }
 
   if(story.accessLevel!=='public')return {title:locale==='es'?'Contenido registrado':'Registered content',robots:{index:false,follow:false},referrer:'no-referrer'};
+  const pair=await getPublicStoryTranslation(story.id);
+  const alternateLanguages=storyTranslationsEnabled()?{[story.language]:localizedPath(story.language,'/article/'+story.slug),...(pair?.counterpart?{[pair.counterpart.language]:localizedPath(pair.counterpart.language,'/article/'+pair.counterpart.slug)}:{})}:{en:'/en/article/'+story.slug,es:'/es/article/'+story.slug};
   const title =
     story.seoTitle ||
     story.headline;
@@ -124,15 +129,8 @@ export async function generateMetadata(props: PageProps): Promise<Metadata> {
           : [],
     },
 
-    alternates: {
-      languages: {
-        en:
-          `/en/article/${story.slug}`,
+    alternates: {languages:alternateLanguages},
 
-        es:
-          `/es/article/${story.slug}`,
-      },
-    },
   };
 }
 
@@ -174,6 +172,10 @@ export default async function ArticlePage(props: PageProps) {
       </div>
     );
   }
+
+  const translation=story.accessLevel==='public'?await getPublicStoryTranslation(story.id):null;
+  if(translation?.counterpart?.language===locale&&story.language!==locale)redirect(localizedPath(locale,'/article/'+translation.counterpart.slug));
+  const discussionId=translation?.sourceId??story.id;
 
   /*
    * The editorial bypass is not a real reader session.
@@ -221,7 +223,7 @@ export default async function ArticlePage(props: PageProps) {
       : false,
 
     getPublicCommentsForStory(
-      story.id,
+      discussionId,
       {
         limit: 200,
       }
@@ -338,11 +340,12 @@ export default async function ArticlePage(props: PageProps) {
       />
 
       {story.accessLevel==='public'&&<PlacedPolls locale={locale} kind="article" target={story.id} returnPath={articlePath}/>}
+      {translation?.counterpart&&<div className="container-wide py-3"><Link className="text-sm text-primary underline" href={localizedPath(translation.counterpart.language,'/article/'+translation.counterpart.slug)}>{translation.counterpart.language==='es'?'Leer en español':'Read in English'}</Link></div>}
       <StoryComments
         reportingEnabled={readerReportingEnabled()}
         viewerId={reader?.id??null}
         storyId={
-          story.id
+          discussionId
         }
         locale={
           locale
