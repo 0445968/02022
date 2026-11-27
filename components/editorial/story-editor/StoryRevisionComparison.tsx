@@ -1,4 +1,5 @@
 'use client';
+import {storyTypeLabel} from '@/lib/permissions/story-types';
 
 import Image from 'next/image';
 
@@ -1226,6 +1227,7 @@ export function StoryRevisionComparison({
           }
         />
 
+        {(publishedStory.storyType||revisionStory.storyType)&&<MetadataField label={locale==='es'?'Tipo de artículo':'Story type'} publishedValue={publishedStory.storyType?storyTypeLabel(publishedStory.storyType,locale):'—'} revisionValue={revisionStory.storyType?storyTypeLabel(revisionStory.storyType,locale):'—'}/>}
         <MetadataField
           label="Image description"
           publishedValue={

@@ -467,7 +467,12 @@ try{
     const freelancerMember=directory.members.find(m=>m.roles.some(r=>r.roleKey==='freelancer'));
     const candidate=(await listing.json()).candidates.find(c=>c.id===freelancerMember.id);
     check('freelancer eligible for author assignment',candidate?.types.includes('author'));
-    const typedDraft=await users.owner.client.from('stories').update({story_type:'analysis'}).eq('id',storyIds.assigned).select('story_type').single();
+    const typedUrl=appOrigin+'/api/stories/'+storyIds.assigned;
+    const invalidType=await context.request.put(typedUrl,{headers:{Origin:appOrigin},data:{storyType:'not_a_type'}});
+    check('story type API rejects unknown classification',invalidType.status()===422);
+    const typeSave=await context.request.put(typedUrl,{headers:{Origin:appOrigin},data:{storyType:'analysis'}});
+    check('full editor API saves story type (HTTP '+typeSave.status()+')',typeSave.status()===200);
+    const typedDraft=await users.owner.client.from('stories').select('story_type').eq('id',storyIds.assigned).single();
     check('owner sets non-default draft story type',!typedDraft.error&&typedDraft.data.story_type==='analysis');
     const typedRevision=await users.owner.client.from('story_revisions').update({story_type:'interview'}).eq('story_id',storyIds.public).select('story_type').single();
     check('owner sets private revision story type',!typedRevision.error&&typedRevision.data.story_type==='interview');
@@ -840,6 +845,13 @@ try{
       await page.waitForURL(url=>url.pathname==='/newsroom/stories'&&!url.search);
       await page.getByRole('link',{name:'CT15 assigned story',exact:true}).waitFor({state:'visible'});
       check('mobile clear filters restores full list',await page.locator('tbody tr').count()===5);
+      const typeFilter=page.getByRole('combobox',{name:'Story type',exact:true});
+      check('story type filter exposes 28 choices plus all',await typeFilter.locator('option').count()===29);
+      await typeFilter.selectOption('analysis');await page.waitForURL(url=>url.searchParams.get('storyType')==='analysis');
+      await page.getByRole('link',{name:'CT15 assigned story',exact:true}).waitFor({state:'visible'});
+      await page.waitForFunction(()=>document.querySelectorAll('tbody tr').length===1);
+      check('story type filter returns actual matching row',await page.locator('tbody tr').count()===1&&await page.locator('tbody tr').getByText('Analysis',{exact:true}).count()===1);
+      await page.getByRole('button',{name:'Clear filters',exact:true}).click();await page.waitForURL(url=>url.pathname==='/newsroom/stories'&&!url.search);
       await page.goto(appOrigin+'/newsroom/team',{waitUntil:'load',timeout:20000});
       const nav=page.locator('aside nav');
       await page.waitForFunction(()=>{const n=document.querySelector('aside nav'),a=n?.querySelector('[aria-current=page]');if(!n||!a)return false;const b=n.getBoundingClientRect(),r=a.getBoundingClientRect();return r.left>=b.left-1&&r.right<=b.right+1;});
