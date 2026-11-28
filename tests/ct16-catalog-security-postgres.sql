@@ -19,6 +19,10 @@ begin
   f:=to_regprocedure(sig);
   if f is null or not has_function_privilege('anon',f,'EXECUTE') or exists(select 1 from pg_proc p where p.oid=f and p.prosecdef) then raise exception 'Unsafe public projection: %',sig;end if;
  end loop;
+ foreach sig in array array['newsroom_private.read_poll_translation(uuid)','newsroom_private.change_poll_translation(uuid,integer,text,text,jsonb,text)'] loop
+  f:=to_regprocedure(sig);
+  if f is null or has_function_privilege('anon',f,'EXECUTE') or has_function_privilege('service_role',f,'EXECUTE') or not has_function_privilege('authenticated',f,'EXECUTE') or not exists(select 1 from pg_proc p where p.oid=f and p.prosecdef and exists(select 1 from unnest(p.proconfig) cfg where split_part(cfg,'=',1)='search_path' and trim(both '"' from split_part(cfg,'=',2))='')) then raise exception 'Unsafe private poll translation RPC: %',sig;end if;
+ end loop;
  if exists(select 1 from newsroom_private.editorial_privilege_settings where enabled) or exists(select 1 from newsroom_private.poll_settings where public_enabled) or exists(select 1 from newsroom_private.poll_translation_settings where public_enabled) or exists(select 1 from newsroom_private.newsletter_settings where delivery_enabled) then raise exception 'Unexpected activated provider/publication gate';end if;
 end;$fn$;
 select 'CT16 catalog security boundaries and default-off activation gates passed' as result;

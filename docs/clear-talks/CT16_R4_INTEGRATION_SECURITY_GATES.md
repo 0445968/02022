@@ -44,3 +44,9 @@ Implementation gates after approval: server-only pinned provider adapter; allowl
 
 ## F. Release / UAT
 After integration gates pass, finish UI refinement without changing typography/established visual style. Deliver one coherent UAT checklist and test all expected modules at once (owner/team/personal, Stories, permissions, staff/freelancer, editor, calendar, media/authors, Page Editor, comments/reports, polls, account, public pages, responsive bilingual). Record observed defects, repair, repeat exact checks. Only explicit owner approval authorizes merge, production migration, deployment or provider activation.
+
+## R4b verification checkpoint
+
+## CT16 R4b — tracked bilingual poll migration and release regression gates
+
+Exact predecessor 9fea77057edb542565a2d5e95cc09ffdb5f616c2 verified all 43 workflows, cumulative run 46090769031 (CLI-generated supabase/migrations/20261128005941_ct16_poll_translations.sql, candidate byte equality, linked article/poll fixtures and catalog security checks), real local platform run 46090769021 (565 recorded PASS lines, real Auth, bilingual publication, shared vote and identical results). Adopt identical staged blob as migration 47; keep staged source as provenance, remove temporary CLI generation and duplicate staged application, both regular rehearsals require exact ordered 47-file manifest. Extend authenticated platform verification to poll retirement in both languages and homepage placements, and verify translation gate reset. Add specific private bilingual poll function search-path and execute-grant catalog checks. Exact successor CI pending. No hosted SQL, provider connection, production merge/deployment or feature activation. Automatic provider translation, linked restricted access/unlink flow, translated-article placement parity, actual restored environment, ownership reconciliation and final UI/UAT remain outstanding.

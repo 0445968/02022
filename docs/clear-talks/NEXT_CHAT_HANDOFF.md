@@ -1,3 +1,10 @@
+# CURRENT — CT16 R4b; exact successor CI pending
+
+## CT16 R4b — tracked bilingual poll migration and release regression gates
+
+Exact predecessor 9fea77057edb542565a2d5e95cc09ffdb5f616c2 verified all 43 workflows, cumulative run 46090769031 (CLI-generated supabase/migrations/20261128005941_ct16_poll_translations.sql, candidate byte equality, linked article/poll fixtures and catalog security checks), real local platform run 46090769021 (565 recorded PASS lines, real Auth, bilingual publication, shared vote and identical results). Adopt identical staged blob as migration 47; keep staged source as provenance, remove temporary CLI generation and duplicate staged application, both regular rehearsals require exact ordered 47-file manifest. Extend authenticated platform verification to poll retirement in both languages and homepage placements, and verify translation gate reset. Add specific private bilingual poll function search-path and execute-grant catalog checks. Exact successor CI pending. No hosted SQL, provider connection, production merge/deployment or feature activation. Automatic provider translation, linked restricted access/unlink flow, translated-article placement parity, actual restored environment, ownership reconciliation and final UI/UAT remain outstanding.
+
+---
 # CURRENT — CT16 R3c.4 / R4a; exact CI pending
 
 ## CT16 R3c.4 / R4a — adopt 46, repair middleware and expand bilingual real-platform verification

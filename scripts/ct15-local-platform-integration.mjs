@@ -89,7 +89,7 @@ try{
  "insert into public.story_revisions(story_id,headline,slug,author_id,created_by) values("+uuid(storyIds.public)+",'CT15 unpublished revision','ct15-public',"+uuid(users.legacy.id)+","+uuid(users.legacy.id)+");");
  const manifest=readFileSync('docs/clear-talks/CT15_FORWARD_MIGRATION_MANIFEST.md','utf8');
  const forward=[...manifest.matchAll(/^\d+\. \x60(supabase\/migrations\/202611[^\x60]+\.sql)\x60$/gm)].map(m=>m[1]);
- assert.deepEqual(forward,readdirSync('supabase/migrations').filter(x=>/^202611.*\.sql$/.test(x)).sort().map(x=>'supabase/migrations/'+x));assert.equal(forward.length,46);
+ assert.deepEqual(forward,readdirSync('supabase/migrations').filter(x=>/^202611.*\.sql$/.test(x)).sort().map(x=>'supabase/migrations/'+x));assert.equal(forward.length,47);
  function grantSql(role){
   const grants=PROPOSED_STAFF_ROLE_GRANTS[role];
   assert.ok(grants?.length);
@@ -105,9 +105,6 @@ try{
   }
   apply(path);
  }
- // Apply staged candidate ONLY inside the disposable local platform, before role fixtures.
- mark('CT16 staged bilingual poll rehearsal');
- apply('supabase/staged/ct16_poll_translations.sql');
  mark('explicit disposable staff fixtures');
  const staff=roles.filter(x=>x!=='reader'&&x!=='legacy');
  const inserts=staff.map(role=>{
@@ -1395,6 +1392,12 @@ try{
   check('owner retires poll',retired.status()===200&&(await retired.json()).status==='retired');
   const retiredPublic=await anonymous.rpc('public_list_polls',{p_language:'en',p_page:0});
   check('retired poll no longer appears publicly',!retiredPublic.error&&!retiredPublic.data.items.some(p=>p.id===pollState.id));
+  const retiredSpanish=await anonymous.rpc('public_list_polls',{p_language:'es',p_page:0});
+  check('retired poll also disappears from Spanish list',!retiredSpanish.error&&!retiredSpanish.data.items.some(p=>p.id===pollState.id));
+  for(const language of ['en','es']){
+   const retiredPlacement=await anonymous.rpc('public_placed_polls',{p_language:language,p_kind:'homepage',p_target:''});
+   check('retired poll disappears from '+language+' homepage placements',!retiredPlacement.error&&!retiredPlacement.data.items.some(p=>p.id===pollState.id));
+  }
   const team=await (await finishOwner.request.get(appOrigin+'/api/newsroom/team')).json();
   const editor=team.members.find(m=>m.roles.some(r=>r.roleKey==='editor'));
   for(const capability of ['poll.view_manage','poll.publish']){
@@ -1402,7 +1405,7 @@ try{
    check('temporary poll reviewer grant removed '+capability,remove.status()===200);
   }
  }finally{await finishOwner.close();sql('local poll gate off',['-f','-'],'update newsroom_private.poll_settings set public_enabled=false where singleton;update newsroom_private.poll_translation_settings set public_enabled=false where singleton;');}
- check('local poll gate reset and external newsletter delivery remains off',sql('provider gates',['-At','-f','-'],"select (not (select public_enabled from newsroom_private.poll_settings where singleton) and not (select delivery_enabled from newsroom_private.newsletter_settings where singleton))::text;")==='true');
+ check('local poll gate reset and external newsletter delivery remains off',sql('provider gates',['-At','-f','-'],"select (not (select public_enabled from newsroom_private.poll_settings where singleton) and not (select public_enabled from newsroom_private.poll_translation_settings where singleton) and not (select delivery_enabled from newsroom_private.newsletter_settings where singleton))::text;")==='true');
 
  report.success=true;
 }catch(e){report.error=redact(e instanceof Error?e.message:String(e)).slice(0,500);throw new Error(report.error);}

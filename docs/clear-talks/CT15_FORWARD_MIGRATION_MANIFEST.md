@@ -1,6 +1,6 @@
 # CT15 — forward migration manifest (review only)
 
-Baseline: restored Clear Talks project `yqqzohrlhiitctwacdad`, empty hosted migration registry observed November 24, 2026 (Chicago). 23 historical repository migrations excluded from this manifest; do not replay them. This list contains the original 38 staged forward migrations plus CT16 refinement migrations, in order (46 total). They are candidates for a **separate restored rehearsal**, not a command to run on production. Each migration requires schema/policy drift review, backup/restore evidence and final exact CI. Never run bulk db push/reset/repair on the restored live project.
+Baseline: restored Clear Talks project `yqqzohrlhiitctwacdad`, empty hosted migration registry observed November 24, 2026 (Chicago). 23 historical repository migrations excluded from this manifest; do not replay them. This list contains the original 38 staged forward migrations plus CT16 refinement migrations, in order (47 total). They are candidates for a **separate restored rehearsal**, not a command to run on production. Each migration requires schema/policy drift review, backup/restore evidence and final exact CI. Never run bulk db push/reset/repair on the restored live project.
 
 1. `supabase/migrations/20261123222804_ct02b_staff_access.sql`
 2. `supabase/migrations/20261123230955_ct02c_owner_guard_and_audit.sql`
@@ -48,5 +48,6 @@ Baseline: restored Clear Talks project `yqqzohrlhiitctwacdad`, empty hosted migr
 44. `supabase/migrations/20261127205525_ct16_editorial_privileges.sql`
 45. `supabase/migrations/20261127221612_ct16_homepage_visibility.sql`
 46. `supabase/migrations/20261127223151_ct16_story_translations.sql`
+47. `supabase/migrations/20261128005941_ct16_poll_translations.sql`
 
 Before each migration verify expected preconditions, record success/rollback boundary, recheck permissions and aggregate counts. Do not use fixture SQL or seed accounts on hosted production. After rehearsal confirm the migration registry and schema accurately reflect the approved baseline. Pause scheduler, public voting and mail gates. First Owner bootstrap requires approved verified identity and audited role/capability grant; never infer from legacy flags. Reconcile media rights and existing public URLs before enabling new public projection. No hosted execution performed.
