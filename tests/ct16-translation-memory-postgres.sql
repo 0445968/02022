@@ -26,7 +26,25 @@ begin
  begin perform newsroom_private.append_translation_terminology(owner_id,0,entries,'Stale terminology revision rejected');raise exception 'Stale glossary accepted';exception when serialization_failure then null;end;
  begin perform newsroom_private.append_translation_terminology(owner_id,1,entries||entries,'Reject duplicate glossary entries');raise exception 'Duplicate glossary accepted';exception when invalid_parameter_value then null;end;
  begin perform newsroom_private.append_translation_terminology(owner_id,1,'[{"term":"Clear Talks","preferred":"Changed","kind":"protected","note":""}]','Reject protected name alteration');raise exception 'Protected name altered';exception when invalid_parameter_value then null;end;
- if newsroom_private.append_translation_terminology(owner_id,1,'[]','Remove all current terminology entries')<>2 or (select count(*) from newsroom_private.translation_terminology_versions)<>2 or (select v.entries from newsroom_private.translation_terminology_versions v where revision=1) is distinct from entries then raise exception 'Terminology history overwritten';end if;
+ if newsroom_private.append_translation_terminology(owner_id,1,'[]','Remove all current terminology entries')<>2 then raise exception 'Glossary revision did not advance';end if;
+ if (select count(*) from newsroom_private.translation_terminology_versions)<>2 or (select v.entries from newsroom_private.translation_terminology_versions v where revision=1) is distinct from entries then raise exception 'Terminology history overwritten';end if;
+end;$fn$;
+set local role authenticated;
+set local request.jwt.claim.sub='a1500000-0000-4000-8000-000000000001';
+do $fn$declare result jsonb;begin
+ result:=public.staff_read_translation_terminology();
+ if result is distinct from '{"revision":2,"entries":[]}'::jsonb then raise exception 'Owner glossary read incorrect';end if;
+ result:=public.staff_save_translation_terminology(2,'[{"term":"computer","preferred":"computador","kind":"preferred","note":""}]','Add Colombian preferred vocabulary');
+ if result->>'revision' is distinct from '3' then raise exception 'Owner glossary save incorrect';end if;
+end;$fn$;
+set local request.jwt.claim.sub='a1500000-0000-4000-8000-000000000002';
+do $fn$begin
+ begin perform public.staff_read_translation_terminology();raise exception 'Editor read accepted';exception when insufficient_privilege then null;end;
+ begin perform public.staff_save_translation_terminology(3,'[]','Unauthorized terminology revision');raise exception 'Editor write accepted';exception when insufficient_privilege then null;end;
+end;$fn$;
+reset role;
+do $fn$begin
+ if has_function_privilege('anon','public.staff_read_translation_terminology()','EXECUTE') or has_function_privilege('service_role','public.staff_save_translation_terminology(integer,jsonb,text)','EXECUTE') then raise exception 'Glossary RPC ACL violation';end if;
 end;$fn$;
 rollback;
 select 'CT16 private glossary ACL, version history and validation passed' as result;

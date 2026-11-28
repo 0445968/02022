@@ -1,3 +1,10 @@
+# CURRENT — CT16 R4o; CI repairs and staged Owner glossary UI
+
+## CT16 R4o — repair CI and staged Owner glossary UI
+
+Exact predecessor 358d0547fc20788f0787bfae32f7b18a84b323eb 38/43. Cumulative 46105900669 reached glossary history assertion after baseline capture passed; split volatile append and subsequent count/read into sequential statements. Fix TS2367 unreachable retire confirm and TS1501 ES2017 dotAll regex without changing target. Staged 51 adds owner-only read/save wrappers (private security definer derives auth.uid(), reuses validated optimistic append, public invoker, anon/service denied), rollback role tests, strict client/server parser, same-origin bounded API, gated bilingual Owner Team dashboard link and settings editor (protected/preferred terms, reason, version, add/remove/discard, uncertain save locks). CT_TRANSLATION_TERMINOLOGY_ENABLED false; no provider effects. Add offline exact one-to-one plain-text alignment verifier and character preview (unresolved reviews block), tests; no durable alignment writer, rich-text reconstruction, article preview UI or provider connection yet. Migrations 49–51 staged; no adoption until actual CI passes. No hosted changes.
+
+---
 # CURRENT — CT16 R4n; staged private translation memory and glossary
 
 ## CT16 R4n — staged private translation memory and versioned terminology

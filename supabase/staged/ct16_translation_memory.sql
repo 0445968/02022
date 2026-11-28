@@ -96,4 +96,27 @@ begin
  return rev+1;
 end;$fn$;
 revoke all on function newsroom_private.append_translation_terminology(uuid,integer,jsonb,text) from public,anon,authenticated,service_role;
+-- Explicit owner-only access; private trusted append still has no grants.
+create function newsroom_private.read_translation_terminology()
+returns jsonb language plpgsql stable security definer set search_path='' as $fn$
+declare actor uuid:=auth.uid(); result jsonb;
+begin
+ if not coalesce(public.staff_invite_verified_identity(actor),false) or not newsroom_private.publication_actor_permission(actor,'newsroom.access')
+ or not exists(select 1 from public.staff_memberships m join public.staff_member_roles mr on mr.membership_id=m.id join public.staff_role_presets p on p.id=mr.role_preset_id where m.auth_user_id=actor and m.status='active' and m.member_type='employee' and m.expires_at is null and mr.expires_at is null and p.role_key='owner')
+ then raise exception 'Terminology settings unavailable' using errcode='42501';end if;
+ select jsonb_build_object('revision',revision,'entries',entries) into result from newsroom_private.translation_terminology_versions order by revision desc limit 1;
+ return coalesce(result,jsonb_build_object('revision',0,'entries','[]'::jsonb));
+end;$fn$;
+create function newsroom_private.save_translation_terminology(p_expected integer,p_entries jsonb,p_reason text)
+returns jsonb language plpgsql security definer set search_path='' as $fn$
+begin
+ perform newsroom_private.append_translation_terminology(auth.uid(),p_expected,p_entries,p_reason);
+ return newsroom_private.read_translation_terminology();
+end;$fn$;
+create function public.staff_read_translation_terminology()
+returns jsonb language sql stable security invoker set search_path='' RETURN newsroom_private.read_translation_terminology();
+create function public.staff_save_translation_terminology(p_expected integer,p_entries jsonb,p_reason text)
+returns jsonb language sql security invoker set search_path='' RETURN newsroom_private.save_translation_terminology(p_expected,p_entries,p_reason);
+revoke all on function newsroom_private.read_translation_terminology(),newsroom_private.save_translation_terminology(integer,jsonb,text),public.staff_read_translation_terminology(),public.staff_save_translation_terminology(integer,jsonb,text) from public,anon,authenticated,service_role;
+grant execute on function newsroom_private.read_translation_terminology(),newsroom_private.save_translation_terminology(integer,jsonb,text),public.staff_read_translation_terminology(),public.staff_save_translation_terminology(integer,jsonb,text) to authenticated;
 commit;

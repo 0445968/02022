@@ -16,7 +16,7 @@ export function splitEditorialSentences(text:string,locale:EditorialLocale){
  if(!validText(text)||(locale!=='en'&&locale!=='es-CO'))throw Error('Invalid sentence input');
  const output:{source:string;separator:string}[]=[];
  for(const s of new Intl.Segmenter(locale,{granularity:'sentence'}).segment(text)){
-  const match=s.segment.match(/^(.*?)(\s*)$/su);
+  const match=s.segment.match(/^([\s\S]*?)(\s*)$/u);
   if(!match||!match[1].trim()){if(output.length)output[output.length-1].separator+=s.segment;else throw Error('Unsupported empty block');continue;}
   output.push({source:match[1],separator:match[2]});
  }
