@@ -22,6 +22,11 @@ do $fn$
 declare source uuid:='b1500000-0000-4000-8000-000000000001'; state jsonb; target uuid; f text; rq uuid:='d1600000-0000-4000-8000-000000000021';review jsonb;
 begin
  state:=public.staff_read_story_translation(source);f:=state->>'sourceFingerprint';
+ if to_regprocedure('public.staff_read_translation_preview(uuid,text)') is not null then
+  if public.staff_read_translation_preview(source,f)#>>'{copy,headline}' is distinct from 'Synthetic public story' then raise exception 'Saved source preview incorrect';end if;
+  begin perform public.staff_read_translation_preview(source,repeat('0',64));raise exception 'Stale preview accepted';exception when serialization_failure then null;end;
+  if has_function_privilege('anon','public.staff_read_translation_preview(uuid,text)','EXECUTE') or has_function_privilege('service_role','public.staff_read_translation_preview(uuid,text)','EXECUTE') then raise exception 'Preview RPC ACL violation';end if;
+ end if;
  if state->>'canCreate'<>'true' then raise exception 'Missing creation eligibility';end if;
  begin perform public.staff_create_story_translation(source,repeat('0',64),'Titular',gen_random_uuid(),'Attempt stale translation copy');raise exception 'Stale source accepted';exception when serialization_failure then null;end;
  state:=public.staff_create_story_translation(source,f,'Noticias sintéticas',rq,'Create manually translated article draft');target:=(state->>'targetId')::uuid;

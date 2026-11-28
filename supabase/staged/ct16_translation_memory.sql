@@ -119,4 +119,26 @@ create function public.staff_save_translation_terminology(p_expected integer,p_e
 returns jsonb language sql security invoker set search_path='' RETURN newsroom_private.save_translation_terminology(p_expected,p_entries,p_reason);
 revoke all on function newsroom_private.read_translation_terminology(),newsroom_private.save_translation_terminology(integer,jsonb,text),public.staff_read_translation_terminology(),public.staff_save_translation_terminology(integer,jsonb,text) from public,anon,authenticated,service_role;
 grant execute on function newsroom_private.read_translation_terminology(),newsroom_private.save_translation_terminology(integer,jsonb,text),public.staff_read_translation_terminology(),public.staff_save_translation_terminology(integer,jsonb,text) to authenticated;
+-- Read-only source for a translation estimate. Never returns target draft or
+-- cross-story memory. Scope is exactly the current editor's linked source.
+create function newsroom_private.read_translation_preview(p_source uuid,p_expected text)
+returns jsonb language plpgsql stable security definer set search_path='' as $fn$
+declare s public.stories%rowtype; l newsroom_private.story_translation_links%rowtype; fp text;
+begin
+ if p_source is null or p_expected is null or p_expected!~'^[a-f0-9]{64}$' then raise exception 'Invalid preview' using errcode='22023';end if;
+ if not newsroom_private.translation_editor_allowed(p_source) then raise exception 'Translation preview unavailable' using errcode='42501';end if;
+ select * into s from public.stories where id=p_source;
+ if not found or s.status not in('draft','published') or s.access_level not in('public','registered') then raise exception 'Translation preview unavailable' using errcode='42501';end if;
+ select * into l from newsroom_private.story_translation_links where source_id=p_source or target_id=p_source;
+ if found then
+  if l.source_id<>p_source or l.retired_at is not null or not newsroom_private.translation_editor_allowed(l.target_id) then raise exception 'Translation preview unavailable' using errcode='42501';end if;
+ elsif not newsroom_private.publication_actor_permission(auth.uid(),'story.create') then raise exception 'Translation preview unavailable' using errcode='42501';end if;
+ fp:=newsroom_private.translation_source_fingerprint(p_source);
+ if fp is distinct from p_expected then raise exception 'Saved source changed' using errcode='40001';end if;
+ return jsonb_build_object('sourceFingerprint',fp,'sourceLocale',s.language,'copy',jsonb_build_object('headline',s.headline,'shortTitle',s.short_title,'subheadline',s.subheadline,'summary',s.summary,'seoTitle',s.seo_title,'seoDescription',s.seo_description,'imageCaption',s.image_caption,'body',s.body));
+end;$fn$;
+create function public.staff_read_translation_preview(p_source uuid,p_expected text)
+returns jsonb language sql stable security invoker set search_path='' RETURN newsroom_private.read_translation_preview(p_source,p_expected);
+revoke all on function newsroom_private.read_translation_preview(uuid,text),public.staff_read_translation_preview(uuid,text) from public,anon,authenticated,service_role;
+grant execute on function newsroom_private.read_translation_preview(uuid,text),public.staff_read_translation_preview(uuid,text) to authenticated;
 commit;

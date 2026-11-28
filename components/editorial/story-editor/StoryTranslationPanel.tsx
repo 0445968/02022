@@ -7,6 +7,7 @@ const serverReady=()=>false;
 import {parseTranslationState,type TranslationState,type TranslationCommand} from '@/lib/permissions/translation-workflow-contract';
 const button='rounded-md border border-border px-3 py-2 text-sm font-semibold disabled:opacity-50';
 const field='mt-1 w-full rounded-md border border-border px-3 py-2 text-sm';
+function requestId(){const bytes=globalThis.crypto.getRandomValues(new Uint8Array(16));bytes[6]=(bytes[6]&15)|64;bytes[8]=(bytes[8]&63)|128;const h=Array.from(bytes,b=>b.toString(16).padStart(2,'0')).join('');return h.slice(0,8)+'-'+h.slice(8,12)+'-'+h.slice(12,16)+'-'+h.slice(16,20)+'-'+h.slice(20);}
 export function StoryTranslationPanel({initial,locale}:{initial:TranslationState;locale:'en'|'es'}){
  const ready=useSyncExternalStore(subscribe,clientReady,serverReady);
  const es=locale==='es',t=(en:string,sp:string)=>es?sp:en;
@@ -22,12 +23,14 @@ export function StoryTranslationPanel({initial,locale}:{initial:TranslationState
   if(action==='access'&&(!state.linked||!state.canChangeAccess||!state.targetUpdatedAt||(state.accessLevel!=='public'&&state.accessLevel!=='registered')))return;
   if(action==='retire'&&!confirmed){setConfirmRetire(true);return;}
   if(action!=='retire'&&!window.confirm(action==='access'?t('Change the audience of both unpublished articles? Neither article will publish. A fresh independent review is required.','¿Cambiar el acceso de ambos artículos no publicados? Ninguno se publicará. Se requiere una nueva revisión independiente.'):action==='create'?t('Create a separate manual translation draft?','¿Crear borrador de traducción manual separado?'):t('Confirm the saved translation has been checked against the current source? This requires a fresh independent review.','¿Confirmar que la traducción guardada se ha comprobado con el original vigente? Requiere nueva revisión independiente.')))return;
+  running.current=true;setBusy(true);setError('');
+  try{
   setConfirmRetire(false);
-  const base={sourceId:state.sourceId,sourceFingerprint:state.sourceFingerprint,requestId:crypto.randomUUID(),reason};
+  const base={sourceId:state.sourceId,sourceFingerprint:state.sourceFingerprint,requestId:requestId(),reason};
   const version={revision:state.linked?state.revision:0,targetUpdatedAt:state.linked?state.targetUpdatedAt??'':''};
   const command:TranslationCommand=action==='create'?{...base,action,headline:headline.trim()}:action==='access'?{...base,...version,action,accessLevel:state.linked&&state.accessLevel==='public'?'registered':'public'}:{...base,...version,action};
-  pending.current=command;running.current=true;setBusy(true);setError('');
-  try{const r=await fetch('/api/newsroom/stories/'+state.sourceId+'/translation',{method:'POST',cache:'no-store',headers:{'Content-Type':'application/json'},body:JSON.stringify(command)});if(!r.ok){if(r.status!==422)setLocked(true);throw Error();}const next=parseTranslationState(await r.json(),state.sourceId);if(action==='retire'?(next.linked||next.retired!==true):!next.linked)throw Error();setState(next);setReason('');pending.current=null;}catch{setLocked(true);setError(t('Unable to confirm the saved change. Refresh and check the linked draft before retrying.','No se pudo confirmar el cambio guardado. Actualice y compruebe el borrador vinculado antes de reintentar.'));}finally{running.current=false;setBusy(false);}
+  pending.current=command;
+  const r=await fetch('/api/newsroom/stories/'+state.sourceId+'/translation',{method:'POST',cache:'no-store',headers:{'Content-Type':'application/json'},body:JSON.stringify(command)});if(!r.ok){if(r.status!==422)setLocked(true);throw Error();}const next=parseTranslationState(await r.json(),state.sourceId);if(action==='retire'?(next.linked||next.retired!==true):!next.linked)throw Error();setState(next);setReason('');pending.current=null;}catch{setLocked(true);setError(t('Unable to confirm the saved change. Refresh and check the linked draft before retrying.','No se pudo confirmar el cambio guardado. Actualice y compruebe el borrador vinculado antes de reintentar.'));}finally{running.current=false;setBusy(false);}
  }
  return <div className="space-y-4"><p className="text-sm text-muted-foreground">{t('Each language has an independent draft, review, version history and publication. Automatic translation is not enabled; no article content is sent to a provider.','Cada idioma tiene borrador, revisión, historial y publicación independientes. La traducción automática no está habilitada; no se envía contenido a un proveedor.')}</p>
  {error&&<p role="alert" className="text-sm text-breaking">{error}</p>}

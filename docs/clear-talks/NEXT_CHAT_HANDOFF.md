@@ -1,3 +1,10 @@
+# CURRENT — CT16 R4p; saved-source scope preview and unlink API isolation
+
+## CT16 R4p — saved-source scope preview and unlink API isolation
+
+Exact predecessor 56e4cab6276f572b660b98c99e9f83c60fd1dd95: 42/43, cumulative 46110776839 passed including private glossary/usage/baselines; generated 20261128050937_ct16_translation_retirement.sql. Real 46110776939 browser confirmed first unlink click and displayed explicit confirmation, then timed out waiting for POST. Add cryptographic UUID generation from getRandomValues inside caught submission block (no weak fallback); capture browser request failures/console/alerts and add separate synthetic authenticated successful API retirement + replay fixture before browser gate. Still no adoption until exact CI. Staged 51 adds permission-bound read-only source preview, current fingerprint and both linked permissions, no target/old memory exposure, auth-derived private definer/public invoker. Feature CT_TRANSLATION_PREVIEW_ENABLED off. Bilingual scope selector estimates actual saved full article translatable source, selected plain paragraph/sentence; excludes code, does not flatten links/marks, warns when unsupported. Changed-sentence default explicitly unavailable until independently verified durable alignment; no sends/saves. Unit and rollback preview tests. No production or Azure activation. Next exact verification, migration adoption, durable validated alignment writer + reuse; still no user action.
+
+---
 # CURRENT — CT16 R4o; CI repairs and staged Owner glossary UI
 
 ## CT16 R4o — repair CI and staged Owner glossary UI
