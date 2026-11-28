@@ -105,6 +105,8 @@ try{
   }
   apply(path);
  }
+ mark('CT16 staged translation retirement rehearsal');
+ apply('supabase/staged/ct16_translation_retirement.sql');
  mark('explicit disposable staff fixtures');
  const staff=roles.filter(x=>x!=='reader'&&x!=='legacy');
  const inserts=staff.map(role=>{

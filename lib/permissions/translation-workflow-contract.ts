@@ -1,5 +1,5 @@
 export type TranslationLanguage='en'|'es';
-export type TranslationUnlinked={linked:false;sourceId:string;sourceLanguage:TranslationLanguage;sourceFingerprint:string;canCreate:boolean};
+export type TranslationUnlinked={linked:false;sourceId:string;sourceLanguage:TranslationLanguage;sourceFingerprint:string;canCreate:boolean;retired?:true};
 export type TranslationLinked={linked:true;sourceId:string;sourceLanguage:TranslationLanguage;sourceHeadline:string;sourceFingerprint:string;targetId:string;targetLanguage:TranslationLanguage;targetHeadline:string;targetStatus:string;revision:number;draftStale:boolean;publishedStale:boolean;canRefresh:boolean;targetUpdatedAt:string|null};
 export type TranslationState=TranslationUnlinked|TranslationLinked;
 export type TranslationCommand={action:'create';sourceId:string;sourceFingerprint:string;headline:string;requestId:string;reason:string}|{action:'refresh';sourceId:string;sourceFingerprint:string;revision:number;targetUpdatedAt:string;requestId:string;reason:string};
@@ -23,7 +23,7 @@ export function parseTranslationCommand(raw:unknown):TranslationCommand{
 export function parseTranslationState(raw:unknown,id:string):TranslationState{
  const c=obj(raw),base=['linked','sourceId','sourceLanguage','sourceFingerprint'];
  if(!uuid(c.sourceId)||!lang(c.sourceLanguage)||!hash(c.sourceFingerprint))throw Error('Invalid source');
- if(c.linked===false){if(!exact(c,[...base,'canCreate'])||c.sourceId!==id||typeof c.canCreate!=='boolean')throw Error('Invalid unlinked source');}
+ if(c.linked===false){if(!(exact(c,[...base,'canCreate'])||(exact(c,[...base,'canCreate','retired'])&&c.retired===true&&c.canCreate===false))||c.sourceId!==id||typeof c.canCreate!=='boolean')throw Error('Invalid unlinked source');}
  else if(c.linked===true){if(!exact(c,[...base,'sourceHeadline','targetId','targetLanguage','targetHeadline','targetStatus','revision','draftStale','publishedStale','canRefresh','targetUpdatedAt'])||!uuid(c.targetId)||c.targetId===c.sourceId||(id!==c.sourceId&&id!==c.targetId)||!lang(c.targetLanguage)||c.targetLanguage===c.sourceLanguage||typeof c.sourceHeadline!=='string'||typeof c.targetHeadline!=='string'||typeof c.targetStatus!=='string'||!rev(c.revision)||typeof c.draftStale!=='boolean'||typeof c.publishedStale!=='boolean'||typeof c.canRefresh!=='boolean'||(c.targetUpdatedAt!==null&&!timestamp(c.targetUpdatedAt)))throw Error('Invalid linked translation');}
  else throw Error('Invalid linked state');return c as unknown as TranslationState;
 }

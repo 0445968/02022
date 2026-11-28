@@ -137,6 +137,34 @@ do $fn$begin
 end;$fn$;
 reset role;
 select 'CT16 linked article ordered archival and access guard passed' as result;
+-- Existing working revision must block permanent retirement.
+set local role authenticated;
+set local request.jwt.claim.sub='a1500000-0000-4000-8000-000000000001';
+do $fn$
+declare source uuid:='b1500000-0000-4000-8000-000000000001';state jsonb;
+begin
+ state:=public.staff_read_story_translation(source);
+ begin perform public.staff_retire_story_translation(source,state->>'sourceFingerprint',(state->>'revision')::integer,(state->>'targetUpdatedAt')::timestamptz,gen_random_uuid(),'Attempt retirement with working revision');raise exception 'Working revision retirement allowed';exception when serialization_failure then null;end;
+end;$fn$;
+reset role;
+-- Disposable fixture cleanup only; actual UI must use authorized revision discard.
+delete from public.story_revisions where story_id='b1500000-0000-4000-8000-000000000001';
+set local role authenticated;
+set local request.jwt.claim.sub='a1500000-0000-4000-8000-000000000001';
+do $fn$
+declare source uuid:='b1500000-0000-4000-8000-000000000001';target uuid:=current_setting('test.translation_target')::uuid;state jsonb;result jsonb;cmd uuid:=gen_random_uuid();
+begin
+ state:=public.staff_read_story_translation(source);
+ begin perform public.staff_retire_story_translation(source,state->>'sourceFingerprint',(state->>'revision')::integer+1,(state->>'targetUpdatedAt')::timestamptz,gen_random_uuid(),'Attempt stale relationship retirement');raise exception 'Stale retirement accepted';exception when serialization_failure then null;end;
+ result:=public.staff_retire_story_translation(source,state->>'sourceFingerprint',(state->>'revision')::integer,(state->>'targetUpdatedAt')::timestamptz,cmd,'Retire archived discussion-free relationship');
+ if result->>'retired' is distinct from 'true' or result->>'linked' is distinct from 'false' or result->>'canCreate' is distinct from 'false' or result is distinct from public.staff_retire_story_translation(source,state->>'sourceFingerprint',(state->>'revision')::integer,(state->>'targetUpdatedAt')::timestamptz,cmd,'Retire archived discussion-free relationship') then raise exception 'Retirement or exact replay failed';end if;
+ if public.staff_read_story_translation(target)->>'retired' is distinct from 'true' or (select status from public.stories where id=source)<>'archived' or (select status from public.stories where id=target)<>'archived' then raise exception 'Retirement changed story state';end if;
+end;$fn$;
+reset role;
+do $fn$begin
+ if has_function_privilege('anon','public.staff_retire_story_translation(uuid,text,integer,timestamptz,uuid,text)','EXECUTE') or not exists(select 1 from newsroom_private.story_translation_links where source_id='b1500000-0000-4000-8000-000000000001' and retired_at is not null) or (select count(*) from newsroom_private.story_translation_events where action='retire')<>1 then raise exception 'Retirement ACL or audit failure';end if;
+end;$fn$;
+select 'CT16 archived relationship retirement, working-copy denial, stale replay and audit passed' as result;
 
 rollback;
 select 'CT16 linked draft, independent publication, public pair and stale source refresh passed' as result;

@@ -1,3 +1,10 @@
+# CURRENT — CT16 R4f; retirement candidate 49 and exact successor CI pending
+
+## CT16 R4f — archived translation retirement candidate 49
+
+Predecessor 073c618ed0f5efc3fd3ed8a076a00ececc1f65e2 at inspection cumulative 46101331309 passed; 40/43 initially, real platform still running. Candidate supabase/staged/ct16_translation_retirement.sql retains both private link IDs and audit history, adds retired_at/by and one audited retire action, requires verified current view/edit/publish/archive permission on both, publication advisory lock and ordered story row locks, exact source fingerprint/link revision/target timestamp, both archived, no working revisions, pending current review, active schedule or comments. Exact replay is idempotent; stale/mismatched requests rejected. Retired links excluded from public pair projection and pair write guard, no new linking (original create exclusion retained); historical translation targets remain excluded from self-publication exemption. Existing article audience, status, author, votes, placements and comments unchanged. Public wrapper invoker; private definer explicit permission checks and empty search_path, no anon/service execute. Add rollback tests and retired-state UI display/parser; **no retire API/UI button yet**, staged DB RPC only, no feature activation. CLI generates candidate 49 for synthetic cumulative, disposable real platform applies stage after tracked 48. Exact successor CI pending. Restricting retirement to discussion-free pairs avoids unapproved historical comment splitting. Coordinated live access changes and comment policy remain outstanding; no hosted SQL or production changes.
+
+---
 # CURRENT — CT16 R4e; migration 48 adopted, exact successor CI pending
 
 ## CT16 R4e — adopt migration 48; editorial lifecycle guidance and delegated quota
