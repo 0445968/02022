@@ -1,3 +1,4 @@
+import type {SupabaseClient} from '@supabase/supabase-js';
 import { NextResponse, type NextRequest } from 'next/server';
 import { createMiddlewareClient } from '@/lib/db/supabase-middleware';
 import {
@@ -67,7 +68,14 @@ const isInternal =
       // First visit is English regardless of Accept-Language; an explicit URL always wins.
       let accountLocale:string|null=null;
       if(!isLocale(cookieLocale)&&process.env.CT_READER_LANGUAGE_SYNC_ENABLED==='true'&&process.env.CT_READER_ACCOUNT_ENABLED==='true'&&process.env.DEV_AUTH_BYPASS!=='true'&&!authError&&user&&!user.is_anonymous&&user.email_confirmed_at){
-        try{const {data,error}=await client.from('profiles').select('preferred_locale').eq('id',user.id).maybeSingle();if(!error&&isLocale(data?.preferred_locale))accountLocale=data.preferred_locale;}catch{/* use English if preference unavailable */}
+        try{
+          // Keep the generated legacy Database type out of this narrow read;
+          // validate the actual returned scalar before using it.
+          const db=client as unknown as SupabaseClient;
+          const {data,error}=await db.from('profiles').select('preferred_locale').eq('id',user.id).maybeSingle();
+          const preference:unknown=data?.preferred_locale;
+          if(!error&&typeof preference==='string'&&isLocale(preference))accountLocale=preference;
+        }catch{/* use English if preference unavailable */}
       }
       const locale = resolvePublicLocale(cookieLocale,accountLocale);
 

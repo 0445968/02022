@@ -48,11 +48,11 @@ try:
     manifest = (ROOT / "docs/clear-talks/CT15_FORWARD_MIGRATION_MANIFEST.md").read_text()
     forward = re.findall(r"^\d+\. `(supabase/migrations/202611[^\x60]+\.sql)`$", manifest, re.M)
     actual = sorted(str(p.relative_to(ROOT)) for p in (ROOT / "supabase/migrations").glob("202611*.sql"))
-    candidate = os.environ.get("CT16_STORY_TRANSLATIONS_CANDIDATE")
+    candidate = os.environ.get("CT16_POLL_TRANSLATIONS_CANDIDATE")
     if candidate:
-        assert re.fullmatch(r"supabase/migrations/[0-9]{14}_ct16_story_translations\.sql", candidate) and actual[-1] == candidate
+        assert re.fullmatch(r"supabase/migrations/[0-9]{14}_ct16_poll_translations\.sql", candidate) and actual[-1] == candidate
         actual = actual[:-1]
-    assert forward == actual and len(forward) == 45, "Forward manifest mismatch"
+    assert forward == actual and len(forward) == 46, "Forward manifest mismatch"
     apply("tests/fixtures/ct15-local-legacy-platform.sql")
     legacy = sorted(str(p.relative_to(ROOT)) for p in (ROOT / "supabase/migrations").glob("20260*.sql"))
     assert len(legacy) == 23
@@ -75,12 +75,12 @@ try:
     apply("tests/ct16-editorial-privileges-postgres.sql")
     apply("tests/ct16-homepage-visibility-postgres.sql")
     apply("tests/ct16-poll-placements-postgres.sql")
+    apply("tests/ct16-story-translations-postgres.sql")
     if candidate:
-        assert (ROOT / candidate).read_bytes() == (ROOT / "supabase/staged/ct16_story_translations.sql").read_bytes()
+        assert (ROOT / candidate).read_bytes() == (ROOT / "supabase/staged/ct16_poll_translations.sql").read_bytes()
         apply(candidate)
-        apply("tests/ct16-story-translations-postgres.sql")
-        apply("supabase/staged/ct16_poll_translations.sql")
         apply("tests/ct16-poll-translations-postgres.sql")
+        apply("tests/ct16-catalog-security-postgres.sql")
     results["success"] = True
 finally:
     checkpoint()

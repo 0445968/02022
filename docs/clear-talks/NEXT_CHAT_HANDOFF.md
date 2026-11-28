@@ -1,3 +1,9 @@
+# CURRENT — CT16 R3c.4 / R4a; exact CI pending
+
+## CT16 R3c.4 / R4a — adopt 46, repair middleware and expand bilingual real-platform verification
+0f21bed 39/43; all four app workflows failed the same middleware TS2339 legacy generated Database type (preferred_locale on never); cumulative 46077102870 passed article and poll translation fixtures. Adopted exact CLI-generated 46 20261127223151_ct16_story_translations.sql; 47 poll translation candidate generated via pinned CLI and byte-checked, cumulative applies 46 tracked then 47 and catalog security test. Narrow SupabaseClient cast only for own verified profile locale, validates returned scalar and preserves fail-safe English. Disposable real local applies staged poll candidate after tracked 46, enables translation manager locally, adds authenticated source/target draft, independent review, public redirect/browser and reader denial checks; poll approval API, actual Spanish browser own ballot and identical counts. Local public translation gate on only in test, reset alongside poll gate. Added private-table RLS/ACL and staff/public RPC security test, default-off settings assertions. Added CT16_R4_INTEGRATION_SECURITY_GATES.md with release criteria, provider comparison (Azure Translator Text API recommended for first synthetic evaluation, no account or API activation), actual restored review, role/browser/ownership/advisor requirements. Need exact successor CI before claiming verification; real browser test assumptions may need correction. No hosted or production changes. Automatic translation still pending explicit provider authorization; linked access and translated article poll placement coordination unresolved.
+
+---
 # CURRENT — CT16 R3c.3; verify exact successor CI
 
 ## CT16 R3c.3 — adopt migration 45, bilingual polls and account language synchronization
