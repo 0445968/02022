@@ -52,6 +52,19 @@ begin
  if (select status from public.stories where id=target)<>'published' then raise exception 'Independent publication failed';end if;
 end;$fn$;
 reset role;
+-- Trusted baseline capture is tested only when the separately staged schema
+-- is present. No API role can write a baseline or verified alignment.
+do $fn$
+declare source uuid:='b1500000-0000-4000-8000-000000000001';target uuid:=current_setting('test.translation_target')::uuid;actor uuid:='a1500000-0000-4000-8000-000000000001';sf text;tf text;rev integer;baseline uuid;
+begin
+ if to_regprocedure('newsroom_private.capture_translation_baseline(uuid,uuid,text,text,integer)') is not null then
+  sf:=newsroom_private.translation_source_fingerprint(source);tf:=newsroom_private.translation_source_fingerprint(target);
+  select revision into rev from newsroom_private.story_translation_links where source_id=source;
+  baseline:=newsroom_private.capture_translation_baseline(source,actor,sf,tf,rev);
+  if baseline is null or baseline is distinct from newsroom_private.capture_translation_baseline(source,actor,sf,tf,rev) or not exists(select 1 from newsroom_private.translation_memory_baselines b where b.id=baseline and b.source_id=source and b.target_id=target and b.source_copy->>'headline'='Synthetic public story' and b.target_copy->>'headline'='Noticias sintéticas') then raise exception 'Incorrect or duplicate memory baseline';end if;
+  begin perform newsroom_private.capture_translation_baseline(source,actor,repeat('0',64),tf,rev);raise exception 'Stale baseline accepted';exception when serialization_failure then null;end;
+ end if;
+end;$fn$;
 set local request.jwt.claim.sub='';
 set local role anon;
 do $fn$

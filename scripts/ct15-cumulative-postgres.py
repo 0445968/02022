@@ -79,7 +79,10 @@ try:
     apply("tests/ct16-editorial-privileges-postgres.sql")
     apply("tests/ct16-homepage-visibility-postgres.sql")
     apply("tests/ct16-poll-placements-postgres.sql")
+    # Independently staged memory candidate 51; not tracked/adopted.
+    apply("supabase/staged/ct16_translation_memory.sql")
     apply("tests/ct16-story-translations-postgres.sql")
+    apply("tests/ct16-translation-memory-postgres.sql")
     apply("tests/ct16-poll-translations-postgres.sql")
     apply("tests/ct16-catalog-security-postgres.sql")
     # Isolated candidate 50 accounting rehearsal; not part of manifest or candidate 49.

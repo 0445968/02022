@@ -13,6 +13,8 @@ on:
       - 'supabase/staged/ct16_translation_retirement.sql'
       - 'supabase/staged/ct16_translation_budget.sql'
       - 'tests/ct16-translation-budget-postgres.sql'
+      - 'supabase/staged/ct16_translation_memory.sql'
+      - 'tests/ct16-translation-memory-postgres.sql'
       - 'tests/ct16-poll-translations-postgres.sql'
       - 'tests/ct16-catalog-security-postgres.sql'
       - 'tests/ct16-editorial-privileges-postgres.sql'

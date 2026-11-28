@@ -1,0 +1,99 @@
+-- Candidate 51: private, immutable reviewed-copy baselines and versioned terminology.
+-- No provider access, no client writes, no cross-story reuse.
+begin;
+create table newsroom_private.translation_memory_baselines(
+ id uuid primary key default gen_random_uuid(),
+ source_id uuid not null references newsroom_private.story_translation_links(source_id) on delete restrict,
+ target_id uuid not null references public.stories(id) on delete restrict,
+ source_fingerprint text not null check(source_fingerprint~'^[a-f0-9]{64}$'),
+ target_fingerprint text not null check(target_fingerprint~'^[a-f0-9]{64}$'),
+ publication_request_id uuid not null references newsroom_private.publication_events(request_id) on delete restrict,
+ link_revision integer not null check(link_revision>0),
+ captured_by uuid not null,
+ captured_at timestamptz not null default clock_timestamp(),
+ source_locale text not null check(source_locale in ('en','es-CO')),
+ target_locale text not null check(target_locale in ('en','es-CO')),
+ source_copy jsonb not null check(jsonb_typeof(source_copy)='object' and octet_length(source_copy::text)<=524288),
+ target_copy jsonb not null check(jsonb_typeof(target_copy)='object' and octet_length(target_copy::text)<=524288),
+ check(source_id<>target_id and source_locale<>target_locale),
+ unique(source_id,target_id,source_fingerprint,target_fingerprint)
+);
+-- Alignment must be tied to an exact baseline and separately verified.
+-- A future trusted review workflow records alignment only after comparing
+-- the source/target saved copies and checking marks and sentence boundaries.
+create table newsroom_private.translation_memory_alignments(
+ baseline_id uuid not null references newsroom_private.translation_memory_baselines(id) on delete restrict,
+ block_id text not null check(block_id~'^[a-zA-Z0-9_-]{1,100}$'),
+ source_path jsonb not null check(jsonb_typeof(source_path)='array' and octet_length(source_path::text)<=1024),
+ target_path jsonb not null check(jsonb_typeof(target_path)='array' and octet_length(target_path::text)<=1024),
+ pairs jsonb not null check(jsonb_typeof(pairs)='array' and jsonb_array_length(pairs) between 1 and 2500 and octet_length(pairs::text)<=524288),
+ verified_by uuid not null,
+ verified_at timestamptz not null default clock_timestamp(),
+ primary key(baseline_id,block_id),
+ unique(baseline_id,source_path),unique(baseline_id,target_path)
+);
+create table newsroom_private.translation_terminology_versions(
+ revision integer primary key check(revision>0),
+ entries jsonb not null check(jsonb_typeof(entries)='array' and jsonb_array_length(entries)<=500 and octet_length(entries::text)<=131072),
+ changed_by uuid not null,
+ reason text not null check(length(btrim(reason)) between 12 and 500 and reason!~'[[:cntrl:]]'),
+ changed_at timestamptz not null default clock_timestamp()
+);
+alter table newsroom_private.translation_memory_baselines enable row level security;
+alter table newsroom_private.translation_memory_alignments enable row level security;
+alter table newsroom_private.translation_terminology_versions enable row level security;
+revoke all on newsroom_private.translation_memory_baselines,newsroom_private.translation_memory_alignments,newsroom_private.translation_terminology_versions from public,anon,authenticated,service_role;
+-- Capture exact current, independently published pair only. Private invoker,
+-- deliberately no grant even to service_role until trusted orchestration exists.
+create function newsroom_private.capture_translation_baseline(p_source uuid,p_actor uuid,p_source_hash text,p_target_hash text,p_revision integer)
+returns uuid language plpgsql security invoker set search_path='' set timezone='UTC' as $fn$
+declare l newsroom_private.story_translation_links%rowtype; s public.stories%rowtype; t public.stories%rowtype; e newsroom_private.publication_events%rowtype; saved uuid; sc jsonb; tc jsonb;
+begin
+ if p_source is null or p_actor is null or p_source_hash is null or p_source_hash!~'^[a-f0-9]{64}$' or p_target_hash is null or p_target_hash!~'^[a-f0-9]{64}$' or p_revision is null or p_revision<1 then raise exception 'Invalid translation baseline' using errcode='22023';end if;
+ perform pg_advisory_xact_lock(202611,2302);
+ select * into l from newsroom_private.story_translation_links where source_id=p_source for update;
+ if not found or not coalesce(public.staff_invite_verified_identity(p_actor),false) or not newsroom_private.publication_actor_permission(p_actor,'newsroom.access')
+ or not newsroom_private.publication_actor_permission(p_actor,'story.view_all',l.source_id)
+ or not newsroom_private.publication_actor_permission(p_actor,'story.view_all',l.target_id)
+ or not newsroom_private.publication_actor_permission(p_actor,'story.review',l.target_id) then raise exception 'Translation baseline unavailable' using errcode='42501';end if;
+ perform 1 from public.stories where id in(l.source_id,l.target_id) order by id for update;
+ select * into s from public.stories where id=l.source_id;
+ select * into t from public.stories where id=l.target_id;
+ if l.retired_at is not null or l.revision<>p_revision or s.status<>'published' or t.status<>'published' or s.language<>l.source_language or t.language<>l.target_language or s.access_level<>t.access_level or s.access_level not in('public','registered')
+ or l.published_fingerprint is distinct from p_source_hash or newsroom_private.translation_source_fingerprint(s.id) is distinct from p_source_hash or newsroom_private.translation_source_fingerprint(t.id) is distinct from p_target_hash
+ then raise exception 'Published pair changed' using errcode='40001';end if;
+ select * into e from newsroom_private.publication_events where story_id=t.id order by published_at desc,request_id desc limit 1;
+ if not found then raise exception 'Independent publication evidence required' using errcode='42501';end if;
+ sc:=jsonb_build_object('headline',s.headline,'shortTitle',s.short_title,'subheadline',s.subheadline,'summary',s.summary,'seoTitle',s.seo_title,'seoDescription',s.seo_description,'imageCaption',s.image_caption,'body',s.body);
+ tc:=jsonb_build_object('headline',t.headline,'shortTitle',t.short_title,'subheadline',t.subheadline,'summary',t.summary,'seoTitle',t.seo_title,'seoDescription',t.seo_description,'imageCaption',t.image_caption,'body',t.body);
+ select id into saved from newsroom_private.translation_memory_baselines where source_id=s.id and target_id=t.id and source_fingerprint=p_source_hash and target_fingerprint=p_target_hash;
+ if found then return saved;end if;
+ insert into newsroom_private.translation_memory_baselines(source_id,target_id,source_fingerprint,target_fingerprint,publication_request_id,link_revision,captured_by,source_locale,target_locale,source_copy,target_copy)
+ values(s.id,t.id,p_source_hash,p_target_hash,e.request_id,p_revision,p_actor,case when s.language='es' then 'es-CO' else 'en' end,case when t.language='es' then 'es-CO' else 'en' end,sc,tc) returning id into saved;
+ return saved;
+end;$fn$;
+revoke all on function newsroom_private.capture_translation_baseline(uuid,uuid,text,text,integer) from public,anon,authenticated,service_role;
+-- Owner-managed glossary versions: safe read/write contract is intentionally
+-- private until the authorized settings UI/API is implemented.
+create function newsroom_private.append_translation_terminology(p_actor uuid,p_expected integer,p_entries jsonb,p_reason text)
+returns integer language plpgsql security invoker set search_path='' as $fn$
+declare rev integer; item jsonb; term text; preferred text; k text; seen text[]:='{}'; kind text;
+begin
+ if p_actor is null or p_expected is null or p_expected<0 or p_expected>=2147483647 or p_entries is null or jsonb_typeof(p_entries)<>'array' or jsonb_array_length(p_entries)>500 or octet_length(p_entries::text)>131072 or p_reason is null or length(btrim(p_reason)) not between 12 and 500 or p_reason~'[[:cntrl:]]' then raise exception 'Invalid terminology settings' using errcode='22023';end if;
+ if not coalesce(public.staff_invite_verified_identity(p_actor),false) or not newsroom_private.publication_actor_permission(p_actor,'newsroom.access')
+ or not exists(select 1 from public.staff_memberships m join public.staff_member_roles mr on mr.membership_id=m.id join public.staff_role_presets p on p.id=mr.role_preset_id where m.auth_user_id=p_actor and m.status='active' and m.member_type='employee' and m.expires_at is null and mr.expires_at is null and p.role_key='owner')
+ then raise exception 'Terminology settings unavailable' using errcode='42501';end if;
+ for item in select value from jsonb_array_elements(p_entries) loop
+  if jsonb_typeof(item)<>'object' or not(item ?& array['term','preferred','kind','note']) or (select count(*) from jsonb_object_keys(item))<>4 or exists(select 1 from jsonb_each(item) x where jsonb_typeof(x.value)<>'string') then raise exception 'Invalid terminology entry' using errcode='22023';end if;
+  term:=item->>'term';preferred:=item->>'preferred';kind:=item->>'kind';k:=lower(btrim(term));
+  if length(btrim(term)) not between 1 and 160 or length(btrim(preferred)) not between 1 and 160 or length(item->>'note')>500 or term~'[[:cntrl:]]' or preferred~'[[:cntrl:]]' or (item->>'note')~'[[:cntrl:]]' or kind not in('preferred','protected') or (kind='protected' and preferred<>term) or k=any(seen) then raise exception 'Invalid or duplicate terminology entry' using errcode='22023';end if;
+  seen:=array_append(seen,k);
+ end loop;
+ perform pg_advisory_xact_lock(202611,2351);
+ select coalesce(max(revision),0) into rev from newsroom_private.translation_terminology_versions;
+ if rev<>p_expected then raise exception 'Terminology revision changed' using errcode='40001';end if;
+ insert into newsroom_private.translation_terminology_versions(revision,entries,changed_by,reason) values(rev+1,p_entries,p_actor,btrim(p_reason));
+ return rev+1;
+end;$fn$;
+revoke all on function newsroom_private.append_translation_terminology(uuid,integer,jsonb,text) from public,anon,authenticated,service_role;
+commit;

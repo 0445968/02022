@@ -1,3 +1,10 @@
+# CURRENT — CT16 R4n; staged private translation memory and glossary
+
+## CT16 R4n — staged private translation memory and versioned terminology
+
+Exact predecessor e7f925dc17c80d3f3e5463794d4eb87be379818e verified HEAD, but GitHub returned zero workflow runs at two inspections; no migration adoption. Add separately staged candidate 51 supabase/staged/ct16_translation_memory.sql: private RLS-protected per-article baseline snapshots bound to source/target fingerprints, current linked revision and independent publication event, trusted invoker capture only, exact duplicate returns existing baseline. Requires current verified actor and resource-scoped view/review permission, current published eligible pair, locks and exact fingerprints. Private alignment table ties explicit block paths and sentence pairs to baseline; **no alignment writer or reuse yet** until actual source/target extraction and independently verified rich-text alignment. Private append-only terminology revisions with verified indefinite Owner permission, optimistic revision checks, validated preferred/protected names, audit reason, duplicate rejection and retained history. No API/service_role write or read grants; no settings UI or provider activation. Cumulative rehearsal applies staged 51 before translation rollback tests; verify baseline capture/replay/stale, glossary ACL/validation/history. Candidate 49/50 still staged pending exact real verification. Next finish reviewed alignment validation, expose authorized terminology settings and integrate incremental cost preview after CI; no hosted changes.
+
+---
 # CURRENT — CT16 R4m; sentence-level incremental and Colombian editorial foundation
 
 ## CT16 R4m — Colombian editorial standard and incremental sentence foundation
