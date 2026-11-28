@@ -192,4 +192,42 @@ begin
  return true;
 end;$fn$;
 revoke all on function newsroom_private.translation_alignment_text(jsonb,jsonb),newsroom_private.record_translation_alignment(uuid,uuid,text,jsonb,jsonb,jsonb) from public,anon,authenticated,service_role;
+-- Read-only historical alignment projection for an exact current authorized
+-- pair. No target working copy, retired link or mismatched audience is eligible.
+-- Until stable block identities exist, restrict body reuse to a sole simple
+-- paragraph and fields whose source and target paths are exactly the same.
+create function newsroom_private.read_translation_memory_preview(p_source uuid,p_expected text)
+returns jsonb language plpgsql stable security definer set search_path='' as $fn$
+declare p jsonb; l newsroom_private.story_translation_links%rowtype; b newsroom_private.translation_memory_baselines%rowtype; s public.stories%rowtype; t public.stories%rowtype; a newsroom_private.translation_memory_alignments%rowtype; items jsonb:='[]'::jsonb; current_text text; old_source text; old_target text;
+begin
+ p:=newsroom_private.read_translation_preview(p_source,p_expected);
+ select * into l from newsroom_private.story_translation_links where source_id=p_source and retired_at is null;
+ if not found then return jsonb_build_object('sourceFingerprint',p_expected,'rows',items);end if;
+ select * into s from public.stories where id=l.source_id;
+ select * into t from public.stories where id=l.target_id;
+ if s.status<>'published' or t.status<>'published' or s.access_level<>t.access_level or s.language<>l.source_language or t.language<>l.target_language or l.published_fingerprint is null
+ or exists(select 1 from public.story_revisions where story_id in(l.source_id,l.target_id)) then return jsonb_build_object('sourceFingerprint',p_expected,'rows',items);end if;
+ select * into b from newsroom_private.translation_memory_baselines where source_id=l.source_id and target_id=l.target_id and source_fingerprint=l.published_fingerprint and target_fingerprint=newsroom_private.translation_source_fingerprint(t.id) and link_revision=l.revision order by captured_at desc limit 1;
+ if not found then return jsonb_build_object('sourceFingerprint',p_expected,'rows',items);end if;
+ for a in select * from newsroom_private.translation_memory_alignments where baseline_id=b.id order by block_id limit 100 loop
+  if a.source_path is distinct from a.target_path then continue;end if;
+  if jsonb_array_length(a.source_path)=5 then
+   if a.source_path->>2 is distinct from '0' or jsonb_typeof(b.source_copy#>'{body,content}') is distinct from 'array' or jsonb_typeof(b.target_copy#>'{body,content}') is distinct from 'array' or jsonb_typeof(p#>'{copy,body,content}') is distinct from 'array' then continue;end if;
+   if jsonb_array_length(b.source_copy#>'{body,content}')<>1 or jsonb_array_length(b.target_copy#>'{body,content}')<>1 or jsonb_array_length(p#>'{copy,body,content}')<>1 then continue;end if;
+  elsif jsonb_array_length(a.source_path)<>1 then continue;end if;
+  begin
+   current_text:=newsroom_private.translation_alignment_text(p->'copy',a.source_path);
+   old_source:=newsroom_private.translation_alignment_text(b.source_copy,a.source_path);
+   old_target:=newsroom_private.translation_alignment_text(b.target_copy,a.target_path);
+  exception when invalid_parameter_value then continue;end;
+  if current_text is null or length(btrim(current_text))=0 then continue;end if;
+  items:=items||jsonb_build_array(jsonb_build_object('blockId',a.block_id,'path',a.source_path,'currentSource',current_text,'previousSource',old_source,'previousTarget',old_target,'pairs',a.pairs));
+  if octet_length(items::text)>524288 then return jsonb_build_object('sourceFingerprint',p_expected,'rows','[]'::jsonb);end if;
+ end loop;
+ return jsonb_build_object('sourceFingerprint',p_expected,'rows',items);
+end;$fn$;
+create function public.staff_read_translation_memory_preview(p_source uuid,p_expected text)
+returns jsonb language sql stable security invoker set search_path='' RETURN newsroom_private.read_translation_memory_preview(p_source,p_expected);
+revoke all on function newsroom_private.read_translation_memory_preview(uuid,text),public.staff_read_translation_memory_preview(uuid,text) from public,anon,authenticated,service_role;
+grant execute on function newsroom_private.read_translation_memory_preview(uuid,text),public.staff_read_translation_memory_preview(uuid,text) to authenticated;
 commit;

@@ -1,3 +1,10 @@
+# CURRENT — CT16 R4r; verified-memory estimates in editor
+
+## CT16 R4r — permission-bound verified-memory estimate in editor
+
+Exact predecessor 639cd394732d93bc5c1a4e5d85662df55df84146 39/43 passed at inspection, remaining four running; cumulative 46112473138 success including private alignment writer, CLI generated 20261128053207_ct16_translation_retirement.sql; real 46112472997 pending so no migration adoption yet. Staged 51 adds read-only authenticated scoped historical alignment projection: only current published eligible linked pair, exact source fingerprint, exact unchanged target published fingerprint, link revision, no source/target working revisions, same audience, no retired links; same-path fields and sole unformatted paragraph only until stable identities exist. Return bounded historical aligned rows only, no unrestricted memory. Server validates against current saved copy and exact stored segmentation, calculates changed characters, reuse and review counts; editor preview explicitly labels partial estimates and unverified source characters, never authorizes transfer. New SQL rollback and unit tests. No interactive alignment capture yet, no actual provider sends, automatic saves, or hosted changes. Next exact CI/adopt 49 if real green, real candidate 50/51 rehearsal and explicit alignment capture workflow, secure draft apply.
+
+---
 # CURRENT — CT16 R4q; exact browser route guard and private alignment writer
 
 ## CT16 R4q — correct isolated browser POST guard and trusted sentence alignment

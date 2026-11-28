@@ -1,7 +1,8 @@
 import {prepareTranslation,type TranslationCopy,type TranslationLocale} from './story-translation-contract.ts';
 import {splitEditorialSentences} from './incremental-translation-contract.ts';
 export type PreviewBlock={id:string;label:string;characters:number;sentences:{id:string;label:string;characters:number}[]};
-export type ScopePreview={fullCharacters:number;fullSupported:boolean;blocks:PreviewBlock[]};
+import type {ChangedPreview} from './translation-memory-preview-contract.ts';
+export type ScopePreview={fullCharacters:number;fullSupported:boolean;blocks:PreviewBlock[];changed?:ChangedPreview|null};
 const plain=(v:unknown):v is {type:'paragraph';content:[{type:'text';text:string}]}=>{
  if(!v||typeof v!=='object'||Array.isArray(v))return false;
  const x=v as Record<string,unknown>;

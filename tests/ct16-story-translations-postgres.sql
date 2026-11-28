@@ -72,12 +72,27 @@ begin
    declare pairs jsonb:='[{"source":"Synthetic public story","translation":"Noticias sintéticas","sourceSeparator":"","targetSeparator":"","reviewed":true,"manuallyEdited":true}]';begin
     if not newsroom_private.record_translation_alignment(baseline,actor,'headline','["headline"]','["headline"]',pairs) then raise exception 'Initial alignment not recorded';end if;
     if newsroom_private.record_translation_alignment(baseline,actor,'headline','["headline"]','["headline"]',pairs) then raise exception 'Alignment replay duplicated';end if;
+    if to_regprocedure('public.staff_read_translation_memory_preview(uuid,text)') is not null then
+     perform set_config('test.translation_preview_hash',sf,true);
+    end if;
     begin perform newsroom_private.record_translation_alignment(baseline,actor,'headline','["headline"]','["headline"]',jsonb_set(pairs,'{0,translation}','"Incorrect"'));raise exception 'Mismatched alignment accepted';exception when serialization_failure then null;end;
     begin perform newsroom_private.record_translation_alignment(baseline,actor,'headline','["body","content",0,"marks",0]','["headline"]',pairs);raise exception 'Unsupported path accepted';exception when invalid_parameter_value then null;end;
    end;
   end if;
  end if;
 end;$fn$;
+set local role authenticated;
+set local request.jwt.claim.sub='a1500000-0000-4000-8000-000000000001';
+do $fn$declare result jsonb; fp text;begin
+ if to_regprocedure('public.staff_read_translation_memory_preview(uuid,text)') is not null then
+  fp:=current_setting('test.translation_preview_hash');
+  result:=public.staff_read_translation_memory_preview('b1500000-0000-4000-8000-000000000001',fp);
+  if result->>'sourceFingerprint' is distinct from fp or jsonb_array_length(result->'rows')<>1 or result#>>'{rows,0,currentSource}' is distinct from 'Synthetic public story' or result#>>'{rows,0,previousTarget}' is distinct from 'Noticias sintéticas' then raise exception 'Verified memory preview incorrect';end if;
+  begin perform public.staff_read_translation_memory_preview('b1500000-0000-4000-8000-000000000001',repeat('0',64));raise exception 'Stale memory preview accepted';exception when serialization_failure then null;end;
+  if has_function_privilege('anon','public.staff_read_translation_memory_preview(uuid,text)','EXECUTE') or has_function_privilege('service_role','public.staff_read_translation_memory_preview(uuid,text)','EXECUTE') then raise exception 'Memory preview ACL violation';end if;
+ end if;
+end;$fn$;
+reset role;
 set local request.jwt.claim.sub='';
 set local role anon;
 do $fn$
