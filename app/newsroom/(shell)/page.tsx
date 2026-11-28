@@ -1,3 +1,4 @@
+import {TranslationUsage} from '@/components/editorial/dashboard/TranslationUsage';
 import {WorkAssignmentSummary} from '@/components/editorial/dashboard/WorkAssignmentSummary';
 import {DashboardActivity} from '@/components/editorial/dashboard/DashboardActivity';
 import {readDashboardStorySample,readOwnerDashboard,type OwnerDashboardMode} from '@/lib/services/newsroom-dashboard';
@@ -86,6 +87,7 @@ export default async function NewsroomDashboard({searchParams}:{searchParams:Pro
 
       {staffOnboardingEnabled()&&<Link href="/newsroom/profile" className="mt-4 inline-flex text-sm font-medium text-primary underline">{locale==='es'?'Perfil privado del equipo':'Private staff profile'}</Link>}
       {(!owner||mode==='team')&&<CalendarAlerts locale={locale}/>}
+      {owner&&ownerData&&mode==='team'&&<TranslationUsage locale={locale}/>}
       {access&&<WorkAssignmentSummary locale={locale} mode={owner?mode:undefined}/>}
       {access&&<DashboardActivity locale={locale} includeAssignments={true} mode={owner?mode:undefined}/>}
       {recent?.length?<section className="mt-3 space-y-2 rounded-lg border border-border bg-white p-3"><h2 className="font-headline text-lg font-semibold text-deep">{locale==='es'?'Historias recientes accesibles':'Recent accessible stories'}</h2><ul className="divide-y divide-border">{recent.slice(0,5).map(s=><li key={s.id} className="py-2"><Link className="break-words text-sm font-semibold text-deep underline" href={'/newsroom/stories/'+s.id+'/preview'}>{s.headline}</Link></li>)}</ul><Link href="/newsroom/stories" className="text-sm text-primary underline">{dict.newsroom.stories}</Link></section>:null}

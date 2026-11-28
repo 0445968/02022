@@ -58,4 +58,25 @@ begin
  return jsonb_build_object('reserved',true,'alreadyReserved',false,'monthlyUsed',used+p_characters,'monthlyLimit',cfg.monthly_limit,'dailyUsed',daily_used+p_characters,'dailyLimit',cfg.daily_actor_limit);
 end;$fn$;
 revoke all on function newsroom_private.reserve_translation_budget(uuid,uuid,text,uuid,text,integer) from public,anon,authenticated,service_role;
+-- Owner-only aggregate projection, separate from the disabled send gate.
+-- No source content, individual identity, request ID or per-story metadata.
+create function newsroom_private.read_translation_budget()
+returns jsonb language plpgsql stable security definer set search_path='' set timezone='UTC' as $fn$
+declare actor uuid:=auth.uid(); cfg newsroom_private.translation_budget_settings%rowtype; start_at timestamptz:=date_trunc('month',statement_timestamp()); stop_at timestamptz; used bigint; stories bigint; polls bigint; total_requests bigint;
+begin
+ if not coalesce(public.staff_invite_verified_identity(actor),false)
+ or not newsroom_private.publication_actor_permission(actor,'newsroom.access')
+ or not exists(select 1 from public.staff_memberships m join public.staff_member_roles mr on mr.membership_id=m.id join public.staff_role_presets p on p.id=mr.role_preset_id where m.auth_user_id=actor and m.status='active' and m.member_type='employee' and m.expires_at is null and mr.expires_at is null and p.role_key='owner')
+ then raise exception 'Translation usage unavailable' using errcode='42501';end if;
+ select * into cfg from newsroom_private.translation_budget_settings where singleton;
+ if not found then raise exception 'Translation budget unavailable' using errcode='42501';end if;
+ stop_at:=start_at+interval '1 month';
+ select coalesce(sum(characters),0),coalesce(sum(characters) filter(where resource_kind='story'),0),coalesce(sum(characters) filter(where resource_kind='poll'),0),count(*) into used,stories,polls,total_requests
+ from newsroom_private.translation_budget_reservations where reserved_at>=start_at and reserved_at<stop_at;
+ return jsonb_build_object('enabled',cfg.enabled,'periodStart',start_at,'periodEnd',stop_at,'monthlyLimit',cfg.monthly_limit,'dailyActorLimit',cfg.daily_actor_limit,'requestLimit',cfg.request_limit,'reservedCharacters',used,'storyCharacters',stories,'pollCharacters',polls,'requestCount',total_requests);
+end;$fn$;
+create function public.staff_read_translation_budget()
+returns jsonb language sql stable security invoker set search_path='' RETURN newsroom_private.read_translation_budget();
+revoke all on function newsroom_private.read_translation_budget(),public.staff_read_translation_budget() from public,anon,authenticated,service_role;
+grant execute on function newsroom_private.read_translation_budget(),public.staff_read_translation_budget() to authenticated;
 commit;

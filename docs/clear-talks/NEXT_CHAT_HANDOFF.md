@@ -1,3 +1,10 @@
+# CURRENT — CT16 R4k; owner usage monitoring and exact successor CI pending
+
+## CT16 R4k — owner-only translation usage monitoring
+
+At inspection exact 9c5eed649d0dd65b47e5ac38b900c01a96d872e5 cumulative run 46104365264 passed candidate 49 and private budget candidate 50; other workflows including real platform 46104365237 still running. No adoption yet. Extend staged 50 with private owner-only read projection and public invoker wrapper, current verified indefinite employee Owner and newsroom permission, UTC monthly aggregate only (no actor/resource/request identifiers or content), authenticated-only execute, no service/anon access, no reservation grants or provider activation. Disabled-by-default CT_TRANSLATION_USAGE_ENABLED renders compact bilingual Owner Team dashboard usage, article/poll totals, remaining cap and 50/75/90/100% visual thresholds. Explicitly distinguishes conservative reservations from Azure invoice/confirmed sends; no email alerts, paid upgrades or billing claims. Strict response parser and tests, rollback owner/editor and ACL cases. Budget remains staged only, not deployed. No Azure account information required yet. Next exact CI, adopt verified 49; candidate 50 independent migration naming, concurrency/real Auth checks, trusted server-only reserve/source/apply orchestration, provider approval. No hosted changes.
+
+---
 # CURRENT — CT16 R4j; hydration correction and staged budget rehearsal
 
 ## CT16 R4j — browser hydration fix and disabled private budget ledger

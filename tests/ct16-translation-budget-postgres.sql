@@ -34,5 +34,23 @@ begin
  begin perform newsroom_private.reserve_translation_budget(gen_random_uuid(),a,'story',s,fp,201);raise exception 'Monthly budget exceeded';exception when raise_exception then if sqlerrm<>'Translation budget exhausted' then raise;end if;end;
  if (select count(*) from newsroom_private.translation_budget_reservations)<>2 then raise exception 'Unexpected reservation count';end if;
 end;$fn$;
+-- Verify actual JWT identity and aggregate-only response. Existing charges
+-- remain visible after disabling the send gate.
+update newsroom_private.translation_budget_settings set enabled=false where singleton;
+set local role authenticated;
+set local request.jwt.claim.sub='a1500000-0000-4000-8000-000000000001';
+do $fn$declare result jsonb;
+begin
+ result:=public.staff_read_translation_budget();
+ if result->>'enabled' is distinct from 'false' or result->>'reservedCharacters' is distinct from '1000' or result->>'storyCharacters' is distinct from '1000' or result->>'pollCharacters' is distinct from '0' or result->>'requestCount' is distinct from '2' or result->>'monthlyLimit' is distinct from '1200' or (select count(*) from jsonb_object_keys(result))<>10 then raise exception 'Incorrect usage summary';end if;
+end;$fn$;
+set local request.jwt.claim.sub='a1500000-0000-4000-8000-000000000002';
+do $fn$begin
+ begin perform public.staff_read_translation_budget();raise exception 'Nonowner usage read accepted';exception when insufficient_privilege then null;end;
+end;$fn$;
+reset role;
+do $fn$begin
+ if has_function_privilege('anon','public.staff_read_translation_budget()','EXECUTE') or has_function_privilege('service_role','public.staff_read_translation_budget()','EXECUTE') or has_function_privilege('anon','newsroom_private.read_translation_budget()','EXECUTE') or has_function_privilege('service_role','newsroom_private.read_translation_budget()','EXECUTE') then raise exception 'Usage RPC ACL violation';end if;
+end;$fn$;
 rollback;
 select 'CT16 translation budget default-off, ACL, idempotency, source and limits passed' as result;
