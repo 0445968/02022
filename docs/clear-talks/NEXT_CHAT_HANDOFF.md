@@ -1,3 +1,10 @@
+# CURRENT — CT16 R4j; hydration correction and staged budget rehearsal
+
+## CT16 R4j — browser hydration fix and disabled private budget ledger
+
+Exact predecessor 6d4d8f6eedfd3e7b344aa9e7db2ef74745527f34 42/43, cumulative 46103764555 passed; real 46103764671 proved coordinated audience, restricted draft privacy, archive ordering and eligibility, then timed out clicking disabled unlink button after pre-hydration fill. Make translation inputs/buttons disabled until useSyncExternalStore hydration; browser checks retained reason before click. Candidate 49 still awaits real success. Add separate staged candidate 50 supabase/staged/ct16_translation_budget.sql, not in tracked manifest and not applied hosted or real platform; cumulative rehearses it after candidate 49 and catalog tests. Default off, 1.9M monthly UTF-16 units cap, 100k/day per actor, 50k/request, UTC periods, singleton serialization, exact duplicate returns no new send authorization, conflicting replays deny, no refunds for uncertain sends. Private RLS tables and invoker reservation function have no API/service_role grants. Checks verified actor, current source fingerprint, scoped story/poll permissions and eligible status. Future orchestrator must compute characters from saved authorized text, reserve before send, recheck permission/source/target before applying; no public RPC, transport or credentials. Rollback SQL tests disabled/ACL/limits/replay/stale source. User asked about Azure costs and whether account info needed; no account setup required yet; F0 proposed, no approval to activate. Exact successor CI pending. No production changes.
+
+---
 # CURRENT — CT16 R4i; offline provider wire contracts, candidate 49 verification pending
 
 ## CT16 R4i — offline translation provider wire contracts

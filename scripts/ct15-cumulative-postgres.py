@@ -82,6 +82,9 @@ try:
     apply("tests/ct16-story-translations-postgres.sql")
     apply("tests/ct16-poll-translations-postgres.sql")
     apply("tests/ct16-catalog-security-postgres.sql")
+    # Isolated candidate 50 accounting rehearsal; not part of manifest or candidate 49.
+    apply("supabase/staged/ct16_translation_budget.sql")
+    apply("tests/ct16-translation-budget-postgres.sql")
     results["success"] = True
 finally:
     checkpoint()

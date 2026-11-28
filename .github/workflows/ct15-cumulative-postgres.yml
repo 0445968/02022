@@ -11,6 +11,8 @@ on:
       - 'supabase/staged/ct16_poll_translations.sql'
       - 'supabase/staged/ct16_linked_poll_placements.sql'
       - 'supabase/staged/ct16_translation_retirement.sql'
+      - 'supabase/staged/ct16_translation_budget.sql'
+      - 'tests/ct16-translation-budget-postgres.sql'
       - 'tests/ct16-poll-translations-postgres.sql'
       - 'tests/ct16-catalog-security-postgres.sql'
       - 'tests/ct16-editorial-privileges-postgres.sql'

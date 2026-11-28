@@ -1509,7 +1509,8 @@ try{
   const pg=retirementOwner.pages()[0];
   await pg.goto(appOrigin+'/newsroom/stories/'+source+'/translation',{waitUntil:'domcontentloaded',timeout:20000});
   const reason=pg.getByLabel(/Reason for permanent unlinking|Motivo de la desvinculación permanente/);
-  await reason.fill('Retire synthetic archived relationship in browser');
+  await reason.fill('Retire synthetic archived relationship in browser',{timeout:15000});
+  check('retirement reason retained after hydration',await reason.inputValue()==='Retire synthetic archived relationship in browser');
   pg.once('dialog',dialog=>dialog.accept());
   const retire=pg.getByRole('button',{name:/Permanently unlink archived articles|Desvincular permanentemente los artículos archivados/});
   await retire.click();
