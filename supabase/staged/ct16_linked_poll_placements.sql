@@ -11,7 +11,7 @@ begin
  -- Existing exact placements stay unchanged; never inherit through stale, draft, restricted or archived pairs.
  -- Validate before casting the target; reuse the existing safe public relationship projection.
  if p_kind='article' then
-  if exists(select 1 from public.stories s where s.id=p_target::uuid and s.language=p_language) then
+  if exists(select 1 from public.stories s where s.id=p_target::uuid and s.language=p_language::public.story_language) then
    select j#>>'{counterpart,id}' into counterpart
    from jsonb_array_elements(newsroom_private.public_story_translation_pairs(array[p_target::uuid])) j
    where j->>'storyId'=p_target;
@@ -31,5 +31,28 @@ begin
  'ownChoice',case when verified then (select v.choice from newsroom_private.poll_votes v where v.poll_id=p.id and v.voter_id=actor) else null end,
  'counts',case when p.results_released and (p.closed_at is not null or p.closes_at<=statement_timestamp()) and (select count(*) from newsroom_private.poll_votes v where v.poll_id=p.id)>=5 then newsroom_private.poll_counts(p.id,cardinality(p.options)) else null end) order by p.rn) filter(where p.rn<=20),'[]'::jsonb)) into result from numbered p left join newsroom_private.poll_translations tr on tr.poll_id=p.id and tr.language=p_language;
  return result;
+end;$fn$;
+create or replace function newsroom_private.guard_story_translation()
+returns trigger language plpgsql security definer set search_path='' as $fn$
+declare l newsroom_private.story_translation_links%rowtype; s public.stories%rowtype;
+begin
+ select * into l from newsroom_private.story_translation_links where source_id=old.id or target_id=old.id;
+ if not found then return new;end if;
+ if new.language is distinct from old.language or new.access_level is distinct from old.access_level then raise exception 'Linked translation language and access must remain matched' using errcode='42501';end if;
+ -- Do not leave an independently readable public translation behind when retiring its source.
+ -- The existing reviewed-publication guard still authorizes each archive separately.
+ -- Target publication already locks the source FOR SHARE, serializing against source retirement.
+ if l.source_id=old.id and old.status='published' and new.status<>'published'
+ and exists(select 1 from public.stories t where t.id=l.target_id and t.status='published') then
+  raise exception 'Archive the published translation before archiving the original' using errcode='42501';
+ end if;
+ if l.target_id=old.id and new.status='published' then
+  if not newsroom_private.publication_permitted(old.id) then raise exception 'Independent reviewed translation publication required' using errcode='42501';end if;
+  select * into s from public.stories where id=l.source_id for share;
+  if s.status<>'published' or s.language<>l.source_language or new.language<>l.target_language or s.access_level<>new.access_level or newsroom_private.translation_source_fingerprint(l.source_id) is distinct from l.draft_fingerprint then raise exception 'Source must be published and current; refresh translation' using errcode='40001';end if;
+  if not coalesce(jsonb_path_exists(new.body,'strict $.** ? (@.type == "text" || @.type == "image")'::jsonpath,silent=>true),false) then raise exception 'Complete the translated article before publishing' using errcode='22023';end if;
+  update newsroom_private.story_translation_links set published_fingerprint=draft_fingerprint where source_id=l.source_id;
+ end if;
+ return new;
 end;$fn$;
 commit;

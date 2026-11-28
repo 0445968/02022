@@ -1,3 +1,10 @@
+# CURRENT — CT16 R4d; candidate 48 correction and exact successor CI pending
+
+## CT16 R4d — enum correction, ordered translation retirement and Owner boundaries
+
+Predecessor 2a2f79e62ff90f7b67ced9b72960cf00635979e7 at inspection 38/43 green; cumulative run 46100695574 failed at public.story_language = text before new inheritance fixtures. Corrected explicit enum cast after validated language. Candidate 48 also retains the existing translation trigger and requires archiving a published target before archiving its published original, without implicitly archiving either or changing access/permissions; existing authenticated archive authorization remains required. Target publishing already takes source share lock. This is a conservative ordered retirement rule, NOT a coordinated access-change/unlink feature. Rollback SQL tests exact archive ordering, direct access-change denial and archived public pair/placement suppression. Real local suite extends Owner JWT tests for default-off-gated own publishing, historical/translation denial, creator immutability, quota exemption and separate self-publication audit, plus actual ordered archival. Candidate remains staged until cumulative and real platform pass; exact successor CI pending. No hosted SQL, owner assignment, provider, production deployment or feature activation. Next verify failures, adopt candidate only when proven, then add coordinated access/unlink design and user-facing archive guidance, delegated privilege/revocation tests, restored integration and final UI acceptance.
+
+---
 # CURRENT — CT16 R4c; candidate 48 and exact successor CI pending
 
 ## CT16 R4c — current linked article poll placements (candidate 48)

@@ -117,6 +117,26 @@ do $fn$begin
 end;$fn$;
 reset role;
 select 'CT16 linked article poll inheritance, deduplication, window and stale isolation passed' as result;
+-- Ordered archival never silently modifies the counterpart or weakens access.
+set local role authenticated;
+set local request.jwt.claim.sub='a1500000-0000-4000-8000-000000000001';
+do $fn$
+declare source uuid:='b1500000-0000-4000-8000-000000000001';target uuid:=current_setting('test.translation_target')::uuid;
+begin
+ begin update public.stories set status='archived',updated_by=auth.uid() where id=source;raise exception 'Original archived before live translation';exception when insufficient_privilege then null;end;
+ begin update public.stories set access_level='registered',updated_by=auth.uid() where id=target;raise exception 'Linked access mutated directly';exception when insufficient_privilege then null;end;
+ update public.stories set status='archived',updated_by=auth.uid() where id=target;
+ if not found or (select status from public.stories where id=source)<>'published' then raise exception 'Target archival changed original';end if;
+ update public.stories set status='archived',updated_by=auth.uid() where id=source;
+ if not found or (select status from public.stories where id=source)<>'archived' then raise exception 'Ordered source archive failed';end if;
+end;$fn$;
+reset role;
+set local role anon;
+do $fn$begin
+ if jsonb_array_length(public.public_story_translation_pairs(array['b1500000-0000-4000-8000-000000000001'::uuid,current_setting('test.translation_target')::uuid]))<>0 or (public.public_placed_polls('es','article',current_setting('test.translation_target'))->>'enabled')::boolean then raise exception 'Archived pair or placement exposed';end if;
+end;$fn$;
+reset role;
+select 'CT16 linked article ordered archival and access guard passed' as result;
 
 rollback;
 select 'CT16 linked draft, independent publication, public pair and stale source refresh passed' as result;

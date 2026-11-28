@@ -1418,6 +1418,40 @@ try{
  }finally{await finishOwner.close();sql('local poll gate off',['-f','-'],'update newsroom_private.poll_settings set public_enabled=false where singleton;update newsroom_private.poll_translation_settings set public_enabled=false where singleton;');}
  check('local poll gate reset and external newsletter delivery remains off',sql('provider gates',['-At','-f','-'],"select (not (select public_enabled from newsroom_private.poll_settings where singleton) and not (select public_enabled from newsroom_private.poll_translation_settings where singleton) and not (select delivery_enabled from newsroom_private.newsletter_settings where singleton))::text;")==='true');
 
+ mark('CT16 real Owner editorial privilege and linked archive verification');
+ sql('local editorial privileges on',['-f','-'],'update newsroom_private.editorial_privilege_settings set enabled=true where id;');
+ try{
+  const source=await owner.rpc('staff_can_self_publish',{p_story:storyIds.public,p_kind:'revision'});
+  check('Owner cannot bypass review on legacy-authored revision',!source.error&&source.data===false);
+  const translated=await owner.rpc('staff_can_self_publish',{p_story:translatedArticleId,p_kind:'draft'});
+  check('Owner cannot self-publish linked translation',!translated.error&&translated.data===false);
+  const quota=await owner.rpc('staff_private_upload_quota');
+  check('verified indefinite Owner quota exemption is effective',!quota.error&&quota.data.maxSlots===null&&quota.data.maxFileBytes===10485760);
+  const capped=await free.rpc('staff_private_upload_quota');
+  check('ordinary freelancer retains bounded quota',!capped.error&&capped.data.maxSlots===25);
+  const ownId=randomUUID();
+  const body={type:'doc',content:[{type:'paragraph',content:[{type:'text',text:'CT16 synthetic Owner-authored copy'}]}]};
+  const inserted=await owner.from('stories').insert({id:ownId,slug:'ct16-owner-'+ownId,headline:'CT16 own synthetic article',body,status:'draft',language:'en',access_level:'public',author_id:users.owner.id,created_by:users.owner.id,updated_by:users.owner.id}).select('id').single();
+  check('real Owner creates own saved draft'+(inserted.error?' (SQLSTATE '+inserted.error.code+')':''),!inserted.error&&inserted.data.id===ownId);
+  const eligibility=await owner.rpc('staff_can_self_publish',{p_story:ownId,p_kind:'draft'});
+  check('real Owner can explicitly self-publish own authored draft',!eligibility.error&&eligibility.data===true);
+  const forged=await owner.from('stories').update({created_by:users.legacy.id,updated_by:users.owner.id}).eq('id',ownId).select('id');
+  check('Owner cannot rewrite creator provenance',!!forged.error);
+  const review=await owner.rpc('staff_read_review',{p_story:ownId,p_kind:'draft'});
+  check('own saved draft has a review fingerprint',!review.error&&typeof review.data.fingerprint==='string');
+  const publication=await owner.rpc('staff_publish_own_story',{p_story:ownId,p_kind:'draft',p_request:randomUUID(),p_fingerprint:review.data.fingerprint,p_reason:'Explicit disposable Owner self publication'});
+  check('real Owner publishes own copy without fabricated review'+(publication.error?' (SQLSTATE '+publication.error.code+')':''),!publication.error&&publication.data.method==='self_publication');
+  check('separate self publication audit, not independent review',sql('own publication audit',['-At','-f','-'],"select (exists(select 1 from newsroom_private.self_publication_events where story_id="+uuid(ownId)+" and actor="+uuid(users.owner.id)+") and not exists(select 1 from newsroom_private.publication_events where story_id="+uuid(ownId)+"))::text;")==='true');
+ }finally{sql('local editorial privileges off',['-f','-'],'update newsroom_private.editorial_privilege_settings set enabled=false where id;');}
+ const archive=async id=>owner.from('stories').update({status:'archived',updated_by:users.owner.id}).eq('id',id).select('id,status').single();
+ const blockedOriginal=await archive(storyIds.public);
+ check('live translated counterpart blocks original archival',blockedOriginal.error?.code==='42501');
+ const archivedTarget=await archive(translatedArticleId);
+ check('authorized Owner archives translation first',!archivedTarget.error&&archivedTarget.data.status==='archived');
+ const archivedSource=await archive(storyIds.public);
+ check('authorized Owner then archives original',!archivedSource.error&&archivedSource.data.status==='archived');
+ const archivedPair=await anonymous.rpc('public_story_translation_pairs',{p_ids:[storyIds.public,translatedArticleId]});
+ check('archived pair absent from public projection',!archivedPair.error&&archivedPair.data.length===0);
  report.success=true;
 }catch(e){report.error=redact(e instanceof Error?e.message:String(e)).slice(0,500);throw new Error(report.error);}
 finally{
