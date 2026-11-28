@@ -1,3 +1,10 @@
+# CURRENT — CT16 R4i; offline provider wire contracts, candidate 49 verification pending
+
+## CT16 R4i — offline translation provider wire contracts
+
+Exact predecessor 242c60a5aaa07c22a573fcfc2ba774c848595168 CI still running at inspection; do not adopt candidate 49 until exact cumulative and real platform pass. Independent implementation: Azure Translator v3 offline request planner and response parser; fixed EN/ES, only text wire body, conservative 5,000 UTF-16 units/25 entries per batch (Microsoft REST and service-limit docs differ; choose stricter), 50,000 units/request ceiling, explicit lower budget, no oversized segment truncation, no partial results, strict count/language/shape and bounded output. Stable local segment IDs/fingerprint never sent in wire body. Poll question/options prepared and reconstructed with fixed positions, duplicate/stale labels rejected; story contract reconstructs copy without changing markup or original. Unit tests cover limits and failure paths. No network transport, account, credentials, external calls, write route, usage billing or automatic translation activation. Provider approval remains necessary, including confidential text/region/budget; atomic durable quota/idempotency and permission-bound source retrieval/apply still need implementation before connecting a provider. Microsoft references: https://learn.microsoft.com/en-us/azure/ai-services/translator/service-limits and https://learn.microsoft.com/en-us/azure/ai-services/translator/text-translation/reference/v3/translate . Exact successor CI pending. No hosted changes.
+
+---
 # CURRENT — CT16 R4h; candidate 49 corrected and coordinated access pending verification
 
 ## CT16 R4h — repair retirement eligibility and stage coordinated unpublished access
