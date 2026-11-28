@@ -76,10 +76,19 @@ begin
  state:=public.staff_refresh_story_translation(source,state->>'sourceFingerprint',(state->>'revision')::integer,(state->>'targetUpdatedAt')::timestamptz,gen_random_uuid(),'Confirm manual draft matches changed source');
  if state->>'draftStale'<>'false' or state->>'revision'<>'2' or (select headline from public.stories where id=target)<>'Borrador traducido' then raise exception 'Refresh failed or overwrote translated copy';end if;
  if jsonb_array_length(public.public_story_translation_pairs(array[source,target]))<>0 then raise exception 'Unpublished pair leaked';end if;
+ if state->>'canChangeAccess' is distinct from 'true' then raise exception 'Quiet draft pair access eligibility missing';end if;
+ begin update public.stories set access_level='registered',updated_by=auth.uid() where id=source;raise exception 'Direct access change accepted';exception when insufficient_privilege then null;end;
+ declare before_state jsonb:=state; command_id uuid:=gen_random_uuid(); changed jsonb;
+ begin
+  changed:=public.staff_change_translation_access(source,before_state->>'sourceFingerprint',(before_state->>'revision')::integer,(before_state->>'targetUpdatedAt')::timestamptz,'registered',command_id,'Restrict both unpublished synthetic articles');
+  if changed->>'accessLevel' is distinct from 'registered' or changed->>'draftStale' is distinct from 'true' or changed is distinct from public.staff_change_translation_access(source,before_state->>'sourceFingerprint',(before_state->>'revision')::integer,(before_state->>'targetUpdatedAt')::timestamptz,'registered',command_id,'Restrict both unpublished synthetic articles') then raise exception 'Paired audience update or replay incorrect';end if;
+  if (select count(*) from public.stories where id in (source,target) and status='draft' and access_level='registered')<>2 or public.staff_can_self_publish(source,'draft') then raise exception 'Audience transition published copy or bypassed independent review';end if;
+  begin perform public.staff_change_translation_access(source,before_state->>'sourceFingerprint',(before_state->>'revision')::integer,(before_state->>'targetUpdatedAt')::timestamptz,'public',gen_random_uuid(),'Try stale coordinated audience update');raise exception 'Stale access accepted';exception when serialization_failure then null;end;
+ end;
 end;$fn$;
 reset role;
 do $fn$begin
- if (select count(*) from newsroom_private.story_translation_events)<>3 or (select count(*) from newsroom_private.story_translation_links)<>2 or exists(select 1 from newsroom_private.self_publication_events) then raise exception 'Unexpected translation audit or bypass';end if;
+ if (select count(*) from newsroom_private.story_translation_events)<>4 or exists(select 1 from newsroom_private.translation_access_permits) or (select count(*) from newsroom_private.story_translation_links)<>2 or exists(select 1 from newsroom_private.self_publication_events) then raise exception 'Unexpected translation audit or bypass';end if;
 end;$fn$;
 
 -- Directly seeded, rollback-only published poll/placement fixtures isolate the public
@@ -144,6 +153,7 @@ do $fn$
 declare source uuid:='b1500000-0000-4000-8000-000000000001';state jsonb;
 begin
  state:=public.staff_read_story_translation(source);
+ if state->>'canRetire' is distinct from 'false' or state->>'canChangeAccess' is distinct from 'false' then raise exception 'Working revision eligibility leaked';end if;
  begin perform public.staff_retire_story_translation(source,state->>'sourceFingerprint',(state->>'revision')::integer,(state->>'targetUpdatedAt')::timestamptz,gen_random_uuid(),'Attempt retirement with working revision');raise exception 'Working revision retirement allowed';exception when serialization_failure then null;end;
 end;$fn$;
 reset role;

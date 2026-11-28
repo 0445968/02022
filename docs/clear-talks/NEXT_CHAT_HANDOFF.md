@@ -1,3 +1,10 @@
+# CURRENT — CT16 R4h; candidate 49 corrected and coordinated access pending verification
+
+## CT16 R4h — repair retirement eligibility and stage coordinated unpublished access
+
+Predecessor 381f48e75e4fb2d833c7ccef9ff768cf2b1e40ef: 41/43; mobile browser smoke passed; cumulative 46102777524 failed ambiguous r.story_id in new canRetire projection (row variable r vs alias), real 46102777496 failed linked create HTTP 503 from same projection. Correct working revision alias. Extend still-unadopted candidate 49 with audited public/registered audience transitions on quiet pairs only when both are draft or both archived and same audience; no live updates, no auto publication, no language change, no subscriber/premium, no working revisions/current pending review/schedules/comments. Both current scoped publish/archive/edit/view permissions, advisory and row locks, exact version/fingerprint/target timestamp, private transaction/backend/actor-specific permit; direct updates denied, two rows atomically updated, no permit survives. Keep old fingerprint stale, clear prior public fingerprint, require fresh independent review for original after change (self-publish exclusion until independently published); translation already always requires independent review. Add strict API dispatch, bilingual eligibility-gated control and confirmation, SQL/real JWT tests and ACL checks. No provider/hosted action. Exact successor CI pending; candidate 49 remains untracked. Existing comments still block transition pending policy; live pairs must be explicitly archived first, no automatic re-open or republication.
+
+---
 # CURRENT — CT16 R4g; candidate 49 API/UI and CI corrections pending
 
 ## CT16 R4g — retirement API and editorial control, CI corrections

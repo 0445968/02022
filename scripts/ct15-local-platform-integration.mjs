@@ -1487,7 +1487,17 @@ try{
   check('create independent draft for unlink test',create.status()===200);
   const pair=await create.json();
   check('draft pair is not eligible for unlinking',pair.canRetire===false);
-  const command={action:'retire',sourceId:source,sourceFingerprint:pair.sourceFingerprint,revision:pair.revision,targetUpdatedAt:pair.targetUpdatedAt,requestId:randomUUID(),reason:'Retire synthetic archived pair'};
+  const accessCommand={action:'access',sourceId:source,sourceFingerprint:pair.sourceFingerprint,revision:pair.revision,targetUpdatedAt:pair.targetUpdatedAt,requestId:randomUUID(),reason:'Restrict both synthetic drafts',accessLevel:'registered'};
+  check('quiet draft pair allows coordinated audience change',pair.canChangeAccess===true);
+  const deniedAccess=await retirementReader.request.post(endpoint,{headers:{Origin:appOrigin},data:accessCommand});
+  check('reader cannot coordinate draft audience',deniedAccess.status()===403);
+  const accessResult=await retirementOwner.request.post(endpoint,{headers:{Origin:appOrigin},data:accessCommand});
+  check('Owner changes both unpublished audiences via API (HTTP '+accessResult.status()+')',accessResult.status()===200);
+  const changed=await accessResult.json();
+  check('paired audience change invalidates translation without publishing',changed.accessLevel==='registered'&&changed.draftStale===true&&changed.canRetire===false);
+  const publicLeak=await anonymous.from('stories').select('id').in('id',[source,pair.targetId]);
+  check('both restricted drafts remain private',!publicLeak.error&&publicLeak.data.length===0);
+  const command={action:'retire',sourceId:source,sourceFingerprint:changed.sourceFingerprint,revision:changed.revision,targetUpdatedAt:changed.targetUpdatedAt,requestId:randomUUID(),reason:'Retire synthetic archived pair'};
   const rejected=await retirementOwner.request.post(endpoint,{headers:{Origin:appOrigin},data:command});
   check('draft pair unlink rejected by actual API',rejected.status()===409);
   const readerDenied=await retirementReader.request.post(endpoint,{headers:{Origin:appOrigin},data:command});
