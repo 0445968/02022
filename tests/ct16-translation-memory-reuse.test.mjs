@@ -1,0 +1,7 @@
+import test from 'node:test';import assert from 'node:assert/strict';
+import {planVerifiedPlainBlock} from '../lib/permissions/translation-memory-reuse-contract.ts';
+const source='The council met. The vote was five.',target='El concejo se reunió. La votación fue de cinco.';
+const pairs=[{source:'The council met.',translation:'El concejo se reunió.',sourceSeparator:' ',targetSeparator:' ',reviewed:true,manuallyEdited:true},{source:'The vote was five.',translation:'La votación fue de cinco.',sourceSeparator:'',targetSeparator:'',reviewed:true,manuallyEdited:false}];
+test('reviewed sentence reuse counts only new text and preserves manual copy',()=>{const changed='The vote was six.';const result=planVerifiedPlainBlock('p1',source,target,'The council met. '+changed,'en','es-CO',pairs,100);assert.equal(result.estimate.characters,changed.length);assert.equal(result.plan.items[0].translation,pairs[0].translation);assert.equal(result.estimate.reused,1);});
+test('corrupt baseline or separator never authorizes reuse',()=>{assert.throws(()=>planVerifiedPlainBlock('p1',source,target,source,'en','es-CO',[{...pairs[0],sourceSeparator:''},pairs[1]],100));});
+test('changed manually edited sentence needs explicit review',()=>{const result=planVerifiedPlainBlock('p1',source,target,'The mayor met. The vote was five.','en','es-CO',pairs,100);assert.equal(result.estimate.review,1);assert.equal(result.estimate.canProceed,false);});

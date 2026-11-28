@@ -68,6 +68,14 @@ begin
   baseline:=newsroom_private.capture_translation_baseline(source,actor,sf,tf,rev);
   if baseline is null or baseline is distinct from newsroom_private.capture_translation_baseline(source,actor,sf,tf,rev) or not exists(select 1 from newsroom_private.translation_memory_baselines b where b.id=baseline and b.source_id=source and b.target_id=target and b.source_copy->>'headline'='Synthetic public story' and b.target_copy->>'headline'='Noticias sintéticas') then raise exception 'Incorrect or duplicate memory baseline';end if;
   begin perform newsroom_private.capture_translation_baseline(source,actor,repeat('0',64),tf,rev);raise exception 'Stale baseline accepted';exception when serialization_failure then null;end;
+  if to_regprocedure('newsroom_private.record_translation_alignment(uuid,uuid,text,jsonb,jsonb,jsonb)') is not null then
+   declare pairs jsonb:='[{"source":"Synthetic public story","translation":"Noticias sintéticas","sourceSeparator":"","targetSeparator":"","reviewed":true,"manuallyEdited":true}]';begin
+    if not newsroom_private.record_translation_alignment(baseline,actor,'headline','["headline"]','["headline"]',pairs) then raise exception 'Initial alignment not recorded';end if;
+    if newsroom_private.record_translation_alignment(baseline,actor,'headline','["headline"]','["headline"]',pairs) then raise exception 'Alignment replay duplicated';end if;
+    begin perform newsroom_private.record_translation_alignment(baseline,actor,'headline','["headline"]','["headline"]',jsonb_set(pairs,'{0,translation}','"Incorrect"'));raise exception 'Mismatched alignment accepted';exception when serialization_failure then null;end;
+    begin perform newsroom_private.record_translation_alignment(baseline,actor,'headline','["body","content",0,"marks",0]','["headline"]',pairs);raise exception 'Unsupported path accepted';exception when invalid_parameter_value then null;end;
+   end;
+  end if;
  end if;
 end;$fn$;
 set local request.jwt.claim.sub='';

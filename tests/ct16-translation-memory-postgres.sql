@@ -19,6 +19,7 @@ begin
   foreach tbl in array array['translation_memory_baselines','translation_memory_alignments','translation_terminology_versions'] loop
    if has_table_privilege(r,'newsroom_private.'||tbl,'SELECT,INSERT,UPDATE,DELETE') then raise exception 'Private memory or terminology exposed';end if;
   end loop;
+  if has_function_privilege(r,'newsroom_private.record_translation_alignment(uuid,uuid,text,jsonb,jsonb,jsonb)','EXECUTE') or has_function_privilege(r,'newsroom_private.translation_alignment_text(jsonb,jsonb)','EXECUTE') then raise exception 'Alignment writer exposed';end if;
   if has_function_privilege(r,'newsroom_private.capture_translation_baseline(uuid,uuid,text,text,integer)','EXECUTE') or has_function_privilege(r,'newsroom_private.append_translation_terminology(uuid,integer,jsonb,text)','EXECUTE') then raise exception 'Unapproved trusted writer exposed';end if;
  end loop;
  if newsroom_private.append_translation_terminology(owner_id,0,entries,'Establish Colombian editorial terminology')<>1 then raise exception 'Initial glossary revision missing';end if;

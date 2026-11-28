@@ -1,3 +1,10 @@
+# CURRENT — CT16 R4q; exact browser route guard and private alignment writer
+
+## CT16 R4q — correct isolated browser POST guard and trusted sentence alignment
+
+Exact predecessor 62cd1b673b49e1eafd2183de04816ea2d5e73ccb: 42/43; cumulative 46111825980 passed. Real 46111825852 proved authenticated API permanent unlink HTTP 200, no-relink state and exact replay. Browser fetch net::ERR_FAILED traced to adminTestContext catch-all network guard allowing only same-origin GET/HEAD. Add page-local exact endpoint POST fetch allowance, all other requests still fallback to existing guard. Keep actual browser response, state and audit assertions. Candidate 49 remains staged until corrected exact real run passes. Staged 51 private trusted alignment writer accepts exact immutable baseline, current scoped reviewer, current published unretired pair and fingerprints, strict plain fields/one-text-node paragraphs only; reconstruct both full saved texts including separators, reject mismatches and unsupported marks/paths, immutable replay; revoke all API/service grants. Add rollback and ACL tests. Offline reuse verifies actual segmentation against stored pairs and preserves reviewed manual copy, charges only changed sentences, blocks uncertain review. No reader/UI wiring or trusted execution adapter yet, no provider transfer or hosted changes. Next verify exact CI, adopt verified 49; rehearse budget/memory through real platform, add approved alignment capture/read and incremental preview wiring.
+
+---
 # CURRENT — CT16 R4p; saved-source scope preview and unlink API isolation
 
 ## CT16 R4p — saved-source scope preview and unlink API isolation

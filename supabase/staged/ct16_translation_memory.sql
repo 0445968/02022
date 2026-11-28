@@ -141,4 +141,55 @@ create function public.staff_read_translation_preview(p_source uuid,p_expected t
 returns jsonb language sql stable security invoker set search_path='' RETURN newsroom_private.read_translation_preview(p_source,p_expected);
 revoke all on function newsroom_private.read_translation_preview(uuid,text),public.staff_read_translation_preview(uuid,text) from public,anon,authenticated,service_role;
 grant execute on function newsroom_private.read_translation_preview(uuid,text),public.staff_read_translation_preview(uuid,text) to authenticated;
+-- Verify exact immutable saved plain text. Marked nodes, nested content,
+-- links and code deliberately require manual alignment outside this writer.
+create function newsroom_private.translation_alignment_text(p_copy jsonb,p_path jsonb)
+returns text language plpgsql immutable security invoker set search_path='' as $fn$
+declare n jsonb; idx integer; key text;
+begin
+ if jsonb_typeof(p_path) is distinct from 'array' then raise exception 'Unsupported alignment path' using errcode='22023';end if;
+ if jsonb_array_length(p_path)=1 then
+  key:=p_path->>0;
+  if key not in('headline','shortTitle','subheadline','summary','seoTitle','seoDescription','imageCaption') or jsonb_typeof(p_copy->key) is distinct from 'string' then raise exception 'Unsupported alignment field' using errcode='22023';end if;
+  return p_copy->>key;
+ end if;
+ if jsonb_array_length(p_path)<>5 or p_path->>0 is distinct from 'body' or p_path->>1 is distinct from 'content' or coalesce(p_path->>2,'')!~'^(0|[1-9][0-9]{0,3})$' or p_path->>3 is distinct from 'content' or p_path->>4 is distinct from '0' then raise exception 'Unsupported alignment path' using errcode='22023';end if;
+ idx:=(p_path->>2)::integer;n:=p_copy#>array['body','content',idx::text];
+ if jsonb_typeof(n) is distinct from 'object' or n->>'type' is distinct from 'paragraph' or (select count(*) from jsonb_object_keys(n))<>2 or jsonb_typeof(n->'content') is distinct from 'array' or jsonb_array_length(n->'content')<>1 then raise exception 'Unsupported alignment paragraph' using errcode='22023';end if;
+ n:=n#>'{content,0}';
+ if jsonb_typeof(n) is distinct from 'object' or n->>'type' is distinct from 'text' or (select count(*) from jsonb_object_keys(n))<>2 or jsonb_typeof(n->'text') is distinct from 'string' then raise exception 'Unsupported alignment text' using errcode='22023';end if;
+ return n->>'text';
+end;$fn$;
+-- Trusted reviewer writer, not a public RPC. The future orchestrator must
+-- independently validate segmentation and present explicit human confirmation.
+-- SQL proves exact reconstruction, scope and immutable provenance.
+create function newsroom_private.record_translation_alignment(p_baseline uuid,p_actor uuid,p_block text,p_source_path jsonb,p_target_path jsonb,p_pairs jsonb)
+returns boolean language plpgsql security invoker set search_path='' as $fn$
+declare b newsroom_private.translation_memory_baselines%rowtype; l newsroom_private.story_translation_links%rowtype; old newsroom_private.translation_memory_alignments%rowtype; item jsonb; source_text text; target_text text; source_join text:=''; target_join text:='';
+begin
+ if p_baseline is null or p_actor is null or p_block is null or p_block!~'^[a-zA-Z0-9_-]{1,100}$' or jsonb_typeof(p_pairs) is distinct from 'array' or jsonb_array_length(p_pairs) not between 1 and 2500 or octet_length(p_pairs::text)>524288 then raise exception 'Invalid alignment' using errcode='22023';end if;
+ perform pg_advisory_xact_lock(202611,2302);
+ select * into b from newsroom_private.translation_memory_baselines where id=p_baseline;
+ if not found then raise exception 'Alignment unavailable' using errcode='42501';end if;
+ select * into l from newsroom_private.story_translation_links where source_id=b.source_id for update;
+ if not found or not coalesce(public.staff_invite_verified_identity(p_actor),false) or not newsroom_private.publication_actor_permission(p_actor,'newsroom.access') or not newsroom_private.publication_actor_permission(p_actor,'story.view_all',b.source_id) or not newsroom_private.publication_actor_permission(p_actor,'story.view_all',b.target_id) or not newsroom_private.publication_actor_permission(p_actor,'story.review',b.target_id) then raise exception 'Alignment unavailable' using errcode='42501';end if;
+ perform 1 from public.stories where id in(b.source_id,b.target_id) order by id for update;
+ if l.retired_at is not null or l.target_id<>b.target_id or l.revision<>b.link_revision or l.published_fingerprint is distinct from b.source_fingerprint or newsroom_private.translation_source_fingerprint(b.source_id) is distinct from b.source_fingerprint or newsroom_private.translation_source_fingerprint(b.target_id) is distinct from b.target_fingerprint or (select count(*) from public.stories where id in(b.source_id,b.target_id) and status='published')<>2 then raise exception 'Baseline changed' using errcode='40001';end if;
+ source_text:=newsroom_private.translation_alignment_text(b.source_copy,p_source_path);
+ target_text:=newsroom_private.translation_alignment_text(b.target_copy,p_target_path);
+ if length(btrim(source_text))=0 or length(btrim(target_text))=0 then raise exception 'Empty alignment' using errcode='22023';end if;
+ for item in select value from jsonb_array_elements(p_pairs) loop
+  if jsonb_typeof(item) is distinct from 'object' or not(item ?& array['source','translation','sourceSeparator','targetSeparator','reviewed','manuallyEdited']) or (select count(*) from jsonb_object_keys(item))<>6 or jsonb_typeof(item->'source') is distinct from 'string' or jsonb_typeof(item->'translation') is distinct from 'string' or jsonb_typeof(item->'sourceSeparator') is distinct from 'string' or jsonb_typeof(item->'targetSeparator') is distinct from 'string' or item->'reviewed' is distinct from 'true'::jsonb or jsonb_typeof(item->'manuallyEdited') is distinct from 'boolean' or length(btrim(item->>'source'))=0 or length(btrim(item->>'translation'))=0 or (item->>'sourceSeparator')!~'^[[:space:]]*$' or (item->>'targetSeparator')!~'^[[:space:]]*$' then raise exception 'Invalid reviewed sentence pair' using errcode='22023';end if;
+  source_join:=source_join||(item->>'source')||(item->>'sourceSeparator');target_join:=target_join||(item->>'translation')||(item->>'targetSeparator');
+ end loop;
+ if source_join is distinct from source_text or target_join is distinct from target_text then raise exception 'Alignment does not reproduce saved copy' using errcode='40001';end if;
+ select * into old from newsroom_private.translation_memory_alignments where baseline_id=p_baseline and block_id=p_block;
+ if found then
+  if old.source_path is distinct from p_source_path or old.target_path is distinct from p_target_path or old.pairs is distinct from p_pairs then raise exception 'Alignment already verified' using errcode='40001';end if;
+  return false;
+ end if;
+ insert into newsroom_private.translation_memory_alignments(baseline_id,block_id,source_path,target_path,pairs,verified_by) values(p_baseline,p_block,p_source_path,p_target_path,p_pairs,p_actor);
+ return true;
+end;$fn$;
+revoke all on function newsroom_private.translation_alignment_text(jsonb,jsonb),newsroom_private.record_translation_alignment(uuid,uuid,text,jsonb,jsonb,jsonb) from public,anon,authenticated,service_role;
 commit;

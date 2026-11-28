@@ -1531,6 +1531,13 @@ try{
   const apiReplay=await retirementOwner.request.post(apiEndpoint,{headers:{Origin:appOrigin},data:apiCommand});
   check('API retirement replay is idempotent',apiReplay.status()===200&&JSON.stringify(await apiReplay.json())===JSON.stringify(apiResult));
   const pg=retirementOwner.pages()[0];
+  // The general context guard deliberately denies application POSTs. Only
+  // this exact disposable fixture's translation request is allowed here.
+  await pg.route(endpoint,route=>{
+   const req=route.request();
+   if(req.url()===endpoint&&req.method()==='POST'&&req.resourceType()==='fetch')return route.continue();
+   return route.fallback();
+  });
   await pg.goto(appOrigin+'/newsroom/stories/'+source+'/translation',{waitUntil:'domcontentloaded',timeout:20000});
   const reason=pg.getByLabel(/Reason for permanent unlinking|Motivo de la desvinculación permanente/);
   await reason.fill('Retire synthetic archived relationship in browser',{timeout:15000});
