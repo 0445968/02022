@@ -250,4 +250,54 @@ begin
  return newsroom_private.record_translation_alignment(b,p_actor,p_block,p_path,p_path,p_pairs);
 end;$fn$;
 revoke all on function newsroom_private.approve_translation_alignment(uuid,uuid,text,text,integer,text,jsonb,jsonb) from public,anon,authenticated,service_role;
+-- Authenticated reviewer-only read of exact current published candidates.
+-- Return only supported matching fields; never expose working revisions.
+create function newsroom_private.read_alignment_candidates(p_source uuid,p_expected text)
+returns jsonb language plpgsql stable security definer set search_path='' as $fn$
+declare actor uuid:=auth.uid(); l newsroom_private.story_translation_links%rowtype; e newsroom_private.publication_events%rowtype; s public.stories%rowtype; t public.stories%rowtype; sc jsonb; tc jsonb; p jsonb; k text; a text; b text; rows jsonb:='[]'; tf text; saved uuid; approved boolean;
+begin
+ if p_source is null or p_expected is null or p_expected!~'^[a-f0-9]{64}$' then raise exception 'Invalid alignment request' using errcode='22023';end if;
+ select * into l from newsroom_private.story_translation_links where source_id=p_source;
+ if not found or l.retired_at is not null or not coalesce(public.staff_invite_verified_identity(actor),false) or not newsroom_private.publication_actor_permission(actor,'newsroom.access') or not newsroom_private.publication_actor_permission(actor,'story.view_all',l.source_id) or not newsroom_private.publication_actor_permission(actor,'story.view_all',l.target_id) or not newsroom_private.publication_actor_permission(actor,'story.review',l.target_id) then raise exception 'Alignment unavailable' using errcode='42501';end if;
+ select * into e from newsroom_private.publication_events where story_id=l.target_id order by published_at desc,request_id desc limit 1;
+ if not found or not exists(select 1 from newsroom_private.story_review_decisions d where d.request_id=e.request_id and d.decision='approved' and d.decided_by=actor) then raise exception 'Independent reviewer required' using errcode='42501';end if;
+ select * into s from public.stories where id=l.source_id;select * into t from public.stories where id=l.target_id;
+ if s.status<>'published' or t.status<>'published' or s.access_level<>t.access_level or s.access_level not in('public','registered') or s.language<>l.source_language or t.language<>l.target_language or l.published_fingerprint is distinct from p_expected or newsroom_private.translation_source_fingerprint(s.id) is distinct from p_expected or exists(select 1 from public.story_revisions where story_id in(s.id,t.id)) then raise exception 'Current quiet published pair required' using errcode='40001';end if;
+ tf:=newsroom_private.translation_source_fingerprint(t.id);
+ sc:=jsonb_build_object('headline',s.headline,'shortTitle',s.short_title,'subheadline',s.subheadline,'summary',s.summary,'seoTitle',s.seo_title,'seoDescription',s.seo_description,'imageCaption',s.image_caption,'body',s.body);
+ tc:=jsonb_build_object('headline',t.headline,'shortTitle',t.short_title,'subheadline',t.subheadline,'summary',t.summary,'seoTitle',t.seo_title,'seoDescription',t.seo_description,'imageCaption',t.image_caption,'body',t.body);
+ select id into saved from newsroom_private.translation_memory_baselines where source_id=s.id and target_id=t.id and source_fingerprint=p_expected and target_fingerprint=tf and link_revision=l.revision;
+ foreach k in array array['headline','shortTitle','subheadline','summary','seoTitle','seoDescription','imageCaption','body'] loop
+  if k='body' then
+   if jsonb_typeof(sc#>'{body,content}') is distinct from 'array' or jsonb_typeof(tc#>'{body,content}') is distinct from 'array' then continue;end if;
+   if jsonb_array_length(sc#>'{body,content}')<>1 or jsonb_array_length(tc#>'{body,content}')<>1 then continue;end if;
+   p:='["body","content",0,"content",0]'::jsonb;
+  else p:=jsonb_build_array(k);end if;
+  begin a:=newsroom_private.translation_alignment_text(sc,p);b:=newsroom_private.translation_alignment_text(tc,p);exception when invalid_parameter_value then continue;end;
+  if length(btrim(a))=0 or length(btrim(b))=0 or length(a)>20000 or length(b)>20000 then continue;end if;
+  approved:=exists(select 1 from newsroom_private.translation_memory_alignments m where m.baseline_id=saved and m.source_path=p and m.target_path=p);
+  rows:=rows||jsonb_build_array(jsonb_build_object('blockId',k,'source',a,'target',b,'approved',approved));
+ end loop;
+ if octet_length(rows::text)>262144 then raise exception 'Alignment too large' using errcode='22023';end if;
+ return jsonb_build_object('sourceId',s.id,'sourceFingerprint',p_expected,'targetFingerprint',tf,'revision',l.revision,'sourceLocale',s.language,'rows',rows);
+end;$fn$;
+create function newsroom_private.confirm_alignment_candidate(p_source uuid,p_expected text,p_target text,p_revision integer,p_block text,p_pairs jsonb)
+returns boolean language plpgsql security definer set search_path='' as $fn$
+declare state jsonb; p jsonb;
+begin
+ if p_block not in('headline','shortTitle','subheadline','summary','seoTitle','seoDescription','imageCaption','body') or p_block is null or jsonb_typeof(p_pairs) is distinct from 'array' then raise exception 'Invalid alignment approval' using errcode='22023';end if;
+ -- No provider provenance exists yet: all human-approved copies are protected.
+ if exists(select 1 from jsonb_array_elements(p_pairs) v where v->'manuallyEdited' is distinct from 'true'::jsonb) then raise exception 'Manual translation protection required' using errcode='22023';end if;
+ perform pg_advisory_xact_lock(202611,2302);
+ state:=newsroom_private.read_alignment_candidates(p_source,p_expected);
+ if state->>'targetFingerprint' is distinct from p_target or (state->>'revision')::integer is distinct from p_revision or not exists(select 1 from jsonb_array_elements(state->'rows') r where r->>'blockId'=p_block) then raise exception 'Alignment candidate changed' using errcode='40001';end if;
+ p:=case when p_block='body' then '["body","content",0,"content",0]'::jsonb else jsonb_build_array(p_block) end;
+ return newsroom_private.approve_translation_alignment(p_source,auth.uid(),p_expected,p_target,p_revision,p_block,p,p_pairs);
+end;$fn$;
+create function public.staff_read_alignment_candidates(p_source uuid,p_expected text)
+returns jsonb language sql stable security invoker set search_path='' RETURN newsroom_private.read_alignment_candidates(p_source,p_expected);
+create function public.staff_confirm_alignment_candidate(p_source uuid,p_expected text,p_target text,p_revision integer,p_block text,p_pairs jsonb)
+returns boolean language sql security invoker set search_path='' RETURN newsroom_private.confirm_alignment_candidate(p_source,p_expected,p_target,p_revision,p_block,p_pairs);
+revoke all on function newsroom_private.read_alignment_candidates(uuid,text),newsroom_private.confirm_alignment_candidate(uuid,text,text,integer,text,jsonb),public.staff_read_alignment_candidates(uuid,text),public.staff_confirm_alignment_candidate(uuid,text,text,integer,text,jsonb) from public,anon,authenticated,service_role;
+grant execute on function newsroom_private.read_alignment_candidates(uuid,text),newsroom_private.confirm_alignment_candidate(uuid,text,text,integer,text,jsonb),public.staff_read_alignment_candidates(uuid,text),public.staff_confirm_alignment_candidate(uuid,text,text,integer,text,jsonb) to authenticated;
 commit;

@@ -1,3 +1,10 @@
+# CURRENT — CT16 R4t; explicit reviewer alignment interface
+
+## CT16 R4t — explicit independent reviewer alignment interface
+
+Exact predecessor daa58c4f50516cc60da1279b893f132e578d1bd8: 39/43 passed at inspection, cumulative 46114257516 passed, real 46114257457 and three application workflows still running. Candidate 49 tracked; 50/51 not adopted. Staged 51 adds bounded saved candidate read and confirmation RPCs: private auth-derived definer/public invoker, latest independent publication reviewer only, current quiet published pair, scope and exact source/target fingerprints/revision; no arbitrary browser text in HTTP command, re-read and derive sentence pairs server-side, SQL verifies exact reconstruction and manual protection even on direct RPC. Only matching supported fields and sole plain paragraph; unequal segmentation requires manual alignment. Bilingual reviewer panel displays original/translation and every proposed pair, requires explicit checkbox and action, locks on uncertain result. Feature CT_TRANSLATION_ALIGNMENT_ENABLED=false. Existing translated wording always marked human-edited until trustworthy provider provenance exists; changed manual sentences require explicit review. Rollback reviewer/ACL/replay tests and unit contracts. No provider call, no draft write, no production change. Next verify exact CI, real memory/approval integration, candidate 50/51 migration adoption, secure proposal apply; no user action.
+
+---
 # CURRENT — CT16 R4s; verified retirement adopted, staged real REST and approval gate
 
 ## CT16 R4s — adopt verified retirement migration, extend real REST rehearsal and reviewer approval gate

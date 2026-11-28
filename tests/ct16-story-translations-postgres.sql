@@ -109,6 +109,15 @@ do $fn$declare result jsonb; fp text;begin
      begin perform newsroom_private.approve_translation_alignment(source,'a1500000-0000-4000-8000-000000000001',fp,tf,rev,'headline','["headline"]',pairs);raise exception 'Non-reviewer approval accepted';exception when insufficient_privilege then null;end;
      if newsroom_private.approve_translation_alignment(source,'a1500000-0000-4000-8000-000000000002',fp,tf,rev,'headline','["headline"]',pairs) then raise exception 'Exact reviewer replay created duplicate';end if;
      if has_function_privilege('authenticated','newsroom_private.approve_translation_alignment(uuid,uuid,text,text,integer,text,jsonb,jsonb)','EXECUTE') then raise exception 'Approval writer exposed';end if;
+     if to_regprocedure('public.staff_read_alignment_candidates(uuid,text)') is not null then
+      begin perform public.staff_read_alignment_candidates(source,fp);raise exception 'Non-reviewer candidates exposed';exception when insufficient_privilege then null;end;
+      perform set_config('request.jwt.claim.sub','a1500000-0000-4000-8000-000000000002',true);
+      if not exists(select 1 from jsonb_array_elements(public.staff_read_alignment_candidates(source,fp)->'rows') r where r->>'blockId'='headline' and r->>'approved'='true') then raise exception 'Reviewer candidate missing';end if;
+      if public.staff_confirm_alignment_candidate(source,fp,tf,rev,'headline',pairs) then raise exception 'Reviewer replay duplicated';end if;
+      begin perform public.staff_confirm_alignment_candidate(source,fp,tf,rev,'headline',jsonb_set(pairs,'{0,manuallyEdited}','false'));raise exception 'Unprotected manual text accepted';exception when invalid_parameter_value then null;end;
+      if has_function_privilege('anon','public.staff_read_alignment_candidates(uuid,text)','EXECUTE') or has_function_privilege('service_role','public.staff_confirm_alignment_candidate(uuid,text,text,integer,text,jsonb)','EXECUTE') then raise exception 'Alignment RPC ACL violation';end if;
+      perform set_config('request.jwt.claim.sub','a1500000-0000-4000-8000-000000000001',true);
+     end if;
     end;
    end if;
    raise exception 'Restore synthetic working revision' using errcode='P4321';
