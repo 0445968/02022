@@ -1,3 +1,10 @@
+# CURRENT — CT16 R4g; candidate 49 API/UI and CI corrections pending
+
+## CT16 R4g — retirement API and editorial control, CI corrections
+
+Predecessor 2fb5f29d8785facad2c4f7d2e40ebab14812bee6 41/43: cumulative 46101593684 succeeded; real local 46101593584 failed temporary quota override HTTP 422 because exact one-hour fixture fell below server minimum; use two hours and enable editorial privilege application flag only in disposable app. Browser smoke 46101593770 mobile language switch timeout; disable language switch until hydration via useSyncExternalStore (no retry masking, preserved query/hash). Candidate 49 remains untracked until full verification. Add canRetire server-computed authorization/eligibility projection, strict retire command and result parsing, existing same-origin authenticated translation endpoint RPC dispatch and bilingual permanently unlink button/confirmation only when eligible. Add parser tests and real fresh discussion-free synthetic pair through API/browser including draft and reader denial, explicit archival, retired state and audit. No new provider, access transition or hosted changes. Exact successor CI pending; retirement remains limited to archived discussion-free pairs.
+
+---
 # CURRENT — CT16 R4f; retirement candidate 49 and exact successor CI pending
 
 ## CT16 R4f — archived translation retirement candidate 49

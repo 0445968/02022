@@ -1,6 +1,10 @@
 'use client';
 
 import { Globe } from 'lucide-react';
+import { useSyncExternalStore } from 'react';
+const subscribe=()=>()=>{};
+const clientReady=()=>true;
+const serverReady=()=>false;
 import type { Locale } from '@/types';
 import { localizedPath, stripLocale } from '@/lib/i18n/config';
 
@@ -15,6 +19,7 @@ interface LanguageSwitcherProps {
  * and navigates to the same page under the new locale.
  */
 export function LanguageSwitcher({ locale, label }: LanguageSwitcherProps) {
+  const ready=useSyncExternalStore(subscribe,clientReady,serverReady);
   const target: Locale = locale === 'en' ? 'es' : 'en';
 
   function switchLocale() {
@@ -30,6 +35,7 @@ export function LanguageSwitcher({ locale, label }: LanguageSwitcherProps) {
   return (
     <button
       type="button"
+      disabled={!ready}
       onClick={switchLocale}
       className="inline-flex h-9 items-center gap-1.5 rounded-sm border border-border bg-white px-2.5 text-xs font-semibold uppercase tracking-wide text-foreground transition-colors hover:border-primary hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50"
       aria-label={label}

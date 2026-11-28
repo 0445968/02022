@@ -27,6 +27,13 @@ begin
  return jsonb_build_object('linked',true,'sourceId',s.id,'sourceLanguage',s.language,'sourceHeadline',s.headline,'sourceFingerprint',current_hash,'targetId',t.id,'targetLanguage',t.language,'targetHeadline',t.headline,'targetStatus',t.status,'revision',l.revision,
  'draftStale',current_hash is distinct from l.draft_fingerprint,'publishedStale',l.published_fingerprint is not null and current_hash is distinct from l.published_fingerprint,
  'canRefresh',coalesce(s.status in ('draft','published') and (t.status='draft' or (t.status='published' and r.status='draft' and newsroom_private.publication_actor_permission(auth.uid(),'revision.view',t.id) and newsroom_private.publication_actor_permission(auth.uid(),'revision.publish',t.id))),false),
+ 'canRetire',coalesce(s.status='archived' and t.status='archived'
+ and newsroom_private.publication_actor_permission(auth.uid(),'story.publish',s.id) and newsroom_private.publication_actor_permission(auth.uid(),'story.publish',t.id)
+ and newsroom_private.publication_actor_permission(auth.uid(),'story.archive_delete',s.id) and newsroom_private.publication_actor_permission(auth.uid(),'story.archive_delete',t.id)
+ and not exists(select 1 from public.story_revisions r where r.story_id in (s.id,t.id))
+ and not exists(select 1 from newsroom_private.reviewed_publication_schedules q where q.story_id in (s.id,t.id) and q.state in ('pending','blocked'))
+ and not exists(select 1 from newsroom_private.story_review_requests q join newsroom_private.story_review_epochs e on e.story_id=q.story_id and e.generation=q.generation where q.story_id in (s.id,t.id) and not exists(select 1 from newsroom_private.story_review_decisions d where d.request_id=q.id))
+ and not exists(select 1 from public.comments c where c.story_id in (s.id,t.id)),false),
  'targetUpdatedAt',case when t.status='published' then r.updated_at else t.updated_at end);
 end;$fn$;
 create or replace function newsroom_private.refresh_story_translation(p_source uuid,p_expected text,p_revision integer,p_target_updated timestamptz,p_request uuid,p_reason text)

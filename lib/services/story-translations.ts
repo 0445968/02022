@@ -13,8 +13,8 @@ function fail(code:string|undefined):never{throw new DraftHttpError(code==='4250
 export async function readStoryTranslation(id:string){if(!DRAFT_UUID.test(id))throw new DraftHttpError(422);const db=await staffClient(),{data,error}=await db.rpc('staff_read_story_translation',{p_story:id});if(error)fail(error.code);try{return parseTranslationState(data,id);}catch{throw new DraftHttpError(503);}}
 export async function changeStoryTranslation(id:string,c:TranslationCommand){
  if(id!==c.sourceId||!DRAFT_UUID.test(id))throw new DraftHttpError(422);const db=await staffClient(),base={p_source:id,p_expected:c.sourceFingerprint,p_request:c.requestId,p_reason:c.reason};
- const {data,error}=c.action==='create'?await db.rpc('staff_create_story_translation',{...base,p_headline:c.headline}):await db.rpc('staff_refresh_story_translation',{...base,p_revision:c.revision,p_target_updated:c.targetUpdatedAt});if(error)fail(error.code);
- try{const state=parseTranslationState(data,id);if(!state.linked)throw Error();return state;}catch{throw new DraftHttpError(503);}
+ const {data,error}=c.action==='create'?await db.rpc('staff_create_story_translation',{...base,p_headline:c.headline}):await db.rpc(c.action==='retire'?'staff_retire_story_translation':'staff_refresh_story_translation',{...base,p_revision:c.revision,p_target_updated:c.targetUpdatedAt});if(error)fail(error.code);
+ try{const state=parseTranslationState(data,id);if(c.action==='retire'?(state.linked||state.retired!==true):!state.linked)throw Error();return state;}catch{throw new DraftHttpError(503);}
 }
 export async function getPublicTranslationPairs(ids:readonly string[]):Promise<PublicTranslationPair[]>{
  if(!storyTranslationsEnabled()||!ids.length)return [];

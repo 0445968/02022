@@ -205,7 +205,7 @@ try{
   CT_WRITER_DRAFT_CREATION_ENABLED:'true',CT_STORY_REVIEW_ENABLED:'true',
   CT_STAFF_ADMIN_MUTATIONS_ENABLED:'true',CT_READER_COMMUNICATIONS_ENABLED:'true',
   CT_EDITORIAL_CALENDAR_ENABLED:'true',CT_POLLS_ENABLED:'true',CT_PUBLIC_POLLS_ENABLED:'true',CT_REVIEW_INBOX_ENABLED:'true',CT_STORY_ASSIGNMENTS_ENABLED:'true',
-  CT_HOMEPAGE_HISTORY_ENABLED:'true',CT_HOMEPAGE_VISIBILITY_ENABLED:'true',CT_POLL_PLACEMENTS_ENABLED:'true',CT_STORY_TRANSLATIONS_ENABLED:'true',CT_POLL_TRANSLATIONS_ENABLED:'true',CT_READER_LANGUAGE_SYNC_ENABLED:'true',CT_READER_REPORTING_ENABLED:'true',
+  CT_EDITORIAL_PRIVILEGES_ENABLED:'true',CT_HOMEPAGE_HISTORY_ENABLED:'true',CT_HOMEPAGE_VISIBILITY_ENABLED:'true',CT_POLL_PLACEMENTS_ENABLED:'true',CT_STORY_TRANSLATIONS_ENABLED:'true',CT_POLL_TRANSLATIONS_ENABLED:'true',CT_READER_LANGUAGE_SYNC_ENABLED:'true',CT_READER_REPORTING_ENABLED:'true',
   CT_REVIEWED_PUBLICATION_ENABLED:'true',CT_REVIEWED_SCHEDULING_ENABLED:'true',CT_STAFF_INVITATIONS_ENABLED:'true',CT_STAFF_PRESET_MUTATIONS_ENABLED:'true',CT_STAFF_OVERRIDE_MUTATIONS_ENABLED:'true',CT_STAFF_BYLINE_REVIEW_ENABLED:'true'
  };
  const appEnv={...process.env,...flags,NEXT_PUBLIC_SUPABASE_URL:apiOrigin,NEXT_PUBLIC_SUPABASE_ANON_KEY:values.ANON_KEY,SUPABASE_SERVICE_ROLE_KEY:values.SERVICE_ROLE_KEY};
@@ -1440,7 +1440,7 @@ try{
    const member=team.members.find(m=>m.roles.some(r=>r.roleKey==='editor'));
    assert.ok(member);
    const endpoint=appOrigin+'/api/newsroom/team/override-change';
-   const cmd={targetMembershipId:member.id,operation:'set',capability:'media.quota_exempt',scope:'own',effect:'allow',expiresAt:new Date(Date.now()+3600000).toISOString(),reason:'CT16 disposable individual quota exemption'};
+   const cmd={targetMembershipId:member.id,operation:'set',capability:'media.quota_exempt',scope:'own',effect:'allow',expiresAt:new Date(Date.now()+7200000).toISOString(),reason:'CT16 disposable individual quota exemption'};
    const granted=await grantContext.request.post(endpoint,{headers:{Origin:appOrigin},data:cmd});
    check('Owner grants time-limited individual quota exemption (HTTP '+granted.status()+')',granted.status()===200);
    const afterGrant=await delegate.rpc('staff_private_upload_quota');
@@ -1473,6 +1473,41 @@ try{
  check('authorized Owner then archives original',!archivedSource.error&&archivedSource.data.status==='archived');
  const archivedPair=await anonymous.rpc('public_story_translation_pairs',{p_ids:[storyIds.public,translatedArticleId]});
  check('archived pair absent from public projection',!archivedPair.error&&archivedPair.data.length===0);
+ // Separate discussion-free synthetic pair; original integration pair has historical comments.
+ const retirementOwner=await adminTestContext(users.owner.email);
+ const retirementReader=await adminTestContext(users.reader.email);
+ try{
+  const source=randomUUID();
+  const inserted=await owner.from('stories').insert({id:source,slug:'ct16-retire-'+source,headline:'CT16 disposable retirement source',body:{type:'doc',content:[{type:'paragraph',content:[{type:'text',text:'Synthetic archived relationship'}]}]},status:'draft',language:'en',access_level:'public',author_id:users.owner.id,created_by:users.owner.id,updated_by:users.owner.id}).select('id').single();
+  check('create fresh own draft for retirement lifecycle',!inserted.error&&inserted.data.id===source);
+  const endpoint=appOrigin+'/api/newsroom/stories/'+source+'/translation';
+  const get=async()=>{const r=await retirementOwner.request.get(endpoint);check('read real retirement state (HTTP '+r.status()+')',r.status()===200);return r.json();};
+  const initial=await get();
+  const create=await retirementOwner.request.post(endpoint,{headers:{Origin:appOrigin},data:{action:'create',sourceId:source,sourceFingerprint:initial.sourceFingerprint,headline:'CT16 borrador para desvincular',requestId:randomUUID(),reason:'Create synthetic pair for retirement'}});
+  check('create independent draft for unlink test',create.status()===200);
+  const pair=await create.json();
+  check('draft pair is not eligible for unlinking',pair.canRetire===false);
+  const command={action:'retire',sourceId:source,sourceFingerprint:pair.sourceFingerprint,revision:pair.revision,targetUpdatedAt:pair.targetUpdatedAt,requestId:randomUUID(),reason:'Retire synthetic archived pair'};
+  const rejected=await retirementOwner.request.post(endpoint,{headers:{Origin:appOrigin},data:command});
+  check('draft pair unlink rejected by actual API',rejected.status()===409);
+  const readerDenied=await retirementReader.request.post(endpoint,{headers:{Origin:appOrigin},data:command});
+  check('reader cannot invoke unlink action',readerDenied.status()===403);
+  const ta=await archive(pair.targetId),sa=await archive(source);
+  check('both synthetic draft articles archived explicitly',!ta.error&&!sa.error);
+  const ready=await get();
+  check('archived discussion-free pair eligible',ready.canRetire===true);
+  const pg=retirementOwner.pages()[0];
+  await pg.goto(appOrigin+'/newsroom/stories/'+source+'/translation',{waitUntil:'domcontentloaded',timeout:20000});
+  const reason=pg.getByLabel(/Reason for permanent unlinking|Motivo de la desvinculación permanente/);
+  await reason.fill('Retire synthetic archived relationship in browser');
+  pg.once('dialog',dialog=>dialog.accept());
+  const retire=pg.getByRole('button',{name:/Permanently unlink archived articles|Desvincular permanentemente los artículos archivados/});
+  await retire.click();
+  await pg.getByText(/former translation relationship has been retired|relación de traducción se ha retirado/).waitFor({state:'visible',timeout:15000});
+  const retired=await get();
+  check('real browser retires pair and preserves no-relink state',retired.linked===false&&retired.retired===true&&retired.canCreate===false);
+  check('retired audit and archived originals preserved',sql('retired pair audit',['-At','-f','-'],"select (exists(select 1 from newsroom_private.story_translation_links where source_id="+uuid(source)+" and retired_at is not null) and (select count(*) from public.stories where id in ("+uuid(source)+","+uuid(pair.targetId)+") and status='archived')=2)::text;")==='true');
+ }finally{await retirementOwner.close();await retirementReader.close();}
  report.success=true;
 }catch(e){report.error=redact(e instanceof Error?e.message:String(e)).slice(0,500);throw new Error(report.error);}
 finally{
