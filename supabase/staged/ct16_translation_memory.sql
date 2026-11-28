@@ -230,4 +230,24 @@ create function public.staff_read_translation_memory_preview(p_source uuid,p_exp
 returns jsonb language sql stable security invoker set search_path='' RETURN newsroom_private.read_translation_memory_preview(p_source,p_expected);
 revoke all on function newsroom_private.read_translation_memory_preview(uuid,text),public.staff_read_translation_memory_preview(uuid,text) from public,anon,authenticated,service_role;
 grant execute on function newsroom_private.read_translation_memory_preview(uuid,text),public.staff_read_translation_memory_preview(uuid,text) to authenticated;
+-- Reviewer approval gate: only the independent reviewer who approved the
+-- actual latest publication may approve an aligned field for that version.
+-- Not yet exposed: future UI must show both saved texts and explicit approval.
+create function newsroom_private.approve_translation_alignment(p_source uuid,p_actor uuid,p_source_hash text,p_target_hash text,p_revision integer,p_block text,p_path jsonb,p_pairs jsonb)
+returns boolean language plpgsql security invoker set search_path='' as $fn$
+declare l newsroom_private.story_translation_links%rowtype; e newsroom_private.publication_events%rowtype; b uuid;
+begin
+ if p_source is null or p_actor is null or p_source_hash is null or p_target_hash is null or p_revision is null then raise exception 'Invalid alignment approval' using errcode='22023';end if;
+ perform pg_advisory_xact_lock(202611,2302);
+ select * into l from newsroom_private.story_translation_links where source_id=p_source for update;
+ if not found or l.retired_at is not null or not coalesce(public.staff_invite_verified_identity(p_actor),false) or not newsroom_private.publication_actor_permission(p_actor,'newsroom.access') or not newsroom_private.publication_actor_permission(p_actor,'story.view_all',l.source_id) or not newsroom_private.publication_actor_permission(p_actor,'story.view_all',l.target_id) or not newsroom_private.publication_actor_permission(p_actor,'story.review',l.target_id) then raise exception 'Alignment approval unavailable' using errcode='42501';end if;
+ perform 1 from public.stories where id in(l.source_id,l.target_id) order by id for update;
+ if exists(select 1 from public.story_revisions where story_id in(l.source_id,l.target_id)) then raise exception 'Working revision prevents alignment approval' using errcode='40001';end if;
+ select * into e from newsroom_private.publication_events where story_id=l.target_id order by published_at desc,request_id desc limit 1;
+ if not found or not exists(select 1 from newsroom_private.story_review_decisions d where d.request_id=e.request_id and d.decision='approved' and d.decided_by=p_actor) then raise exception 'Independent publication reviewer required' using errcode='42501';end if;
+ if jsonb_typeof(p_path) is distinct from 'array' or jsonb_array_length(p_path) not in(1,5) then raise exception 'Invalid alignment path' using errcode='22023';end if;
+ b:=newsroom_private.capture_translation_baseline(p_source,p_actor,p_source_hash,p_target_hash,p_revision);
+ return newsroom_private.record_translation_alignment(b,p_actor,p_block,p_path,p_path,p_pairs);
+end;$fn$;
+revoke all on function newsroom_private.approve_translation_alignment(uuid,uuid,text,text,integer,text,jsonb,jsonb) from public,anon,authenticated,service_role;
 commit;

@@ -87,12 +87,35 @@ do $fn$declare result jsonb; fp text;begin
  if to_regprocedure('public.staff_read_translation_memory_preview(uuid,text)') is not null then
   fp:=current_setting('test.translation_preview_hash');
   result:=public.staff_read_translation_memory_preview('b1500000-0000-4000-8000-000000000001',fp);
-  if result->>'sourceFingerprint' is distinct from fp or jsonb_array_length(result->'rows')<>1 or result#>>'{rows,0,currentSource}' is distinct from 'Synthetic public story' or result#>>'{rows,0,previousTarget}' is distinct from 'Noticias sintéticas' then raise exception 'Verified memory preview incorrect';end if;
+  if result->>'sourceFingerprint' is distinct from fp or jsonb_array_length(result->'rows')<>0 then raise exception 'Working revision must block memory preview';end if;
   begin perform public.staff_read_translation_memory_preview('b1500000-0000-4000-8000-000000000001',repeat('0',64));raise exception 'Stale memory preview accepted';exception when serialization_failure then null;end;
   if has_function_privilege('anon','public.staff_read_translation_memory_preview(uuid,text)','EXECUTE') or has_function_privilege('service_role','public.staff_read_translation_memory_preview(uuid,text)','EXECUTE') then raise exception 'Memory preview ACL violation';end if;
  end if;
 end;$fn$;
 reset role;
+-- The historical fixture deliberately has an unpublished source revision.
+-- Temporarily remove it in a rollback-only subtransaction to prove the
+-- positive memory case without destroying the later retirement-denial fixture.
+do $fn$declare result jsonb; fp text;begin
+ if to_regprocedure('public.staff_read_translation_memory_preview(uuid,text)') is not null then
+  fp:=current_setting('test.translation_preview_hash');
+  begin
+   delete from public.story_revisions where story_id='b1500000-0000-4000-8000-000000000001';
+   result:=public.staff_read_translation_memory_preview('b1500000-0000-4000-8000-000000000001',fp);
+   if result->>'sourceFingerprint' is distinct from fp or jsonb_array_length(result->'rows')<>1 or result#>>'{rows,0,currentSource}' is distinct from 'Synthetic public story' or result#>>'{rows,0,previousTarget}' is distinct from 'Noticias sintéticas' then raise exception 'Verified quiet-pair memory preview incorrect';end if;
+   if to_regprocedure('newsroom_private.approve_translation_alignment(uuid,uuid,text,text,integer,text,jsonb,jsonb)') is not null then
+    declare source uuid:='b1500000-0000-4000-8000-000000000001';target uuid:=current_setting('test.translation_target')::uuid;tf text;rev integer;pairs jsonb:='[{"source":"Synthetic public story","translation":"Noticias sintéticas","sourceSeparator":"","targetSeparator":"","reviewed":true,"manuallyEdited":true}]';begin
+     tf:=newsroom_private.translation_source_fingerprint(target);select revision into rev from newsroom_private.story_translation_links where source_id=source;
+     begin perform newsroom_private.approve_translation_alignment(source,'a1500000-0000-4000-8000-000000000001',fp,tf,rev,'headline','["headline"]',pairs);raise exception 'Non-reviewer approval accepted';exception when insufficient_privilege then null;end;
+     if newsroom_private.approve_translation_alignment(source,'a1500000-0000-4000-8000-000000000002',fp,tf,rev,'headline','["headline"]',pairs) then raise exception 'Exact reviewer replay created duplicate';end if;
+     if has_function_privilege('authenticated','newsroom_private.approve_translation_alignment(uuid,uuid,text,text,integer,text,jsonb,jsonb)','EXECUTE') then raise exception 'Approval writer exposed';end if;
+    end;
+   end if;
+   raise exception 'Restore synthetic working revision' using errcode='P4321';
+  exception when sqlstate 'P4321' then null;end;
+  if not exists(select 1 from public.story_revisions where story_id='b1500000-0000-4000-8000-000000000001') then raise exception 'Original working fixture lost';end if;
+ end if;
+end;$fn$;
 set local request.jwt.claim.sub='';
 set local role anon;
 do $fn$

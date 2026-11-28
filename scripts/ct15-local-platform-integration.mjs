@@ -89,7 +89,7 @@ try{
  "insert into public.story_revisions(story_id,headline,slug,author_id,created_by) values("+uuid(storyIds.public)+",'CT15 unpublished revision','ct15-public',"+uuid(users.legacy.id)+","+uuid(users.legacy.id)+");");
  const manifest=readFileSync('docs/clear-talks/CT15_FORWARD_MIGRATION_MANIFEST.md','utf8');
  const forward=[...manifest.matchAll(/^\d+\. \x60(supabase\/migrations\/202611[^\x60]+\.sql)\x60$/gm)].map(m=>m[1]);
- assert.deepEqual(forward,readdirSync('supabase/migrations').filter(x=>/^202611.*\.sql$/.test(x)).sort().map(x=>'supabase/migrations/'+x));assert.equal(forward.length,48);
+ assert.deepEqual(forward,readdirSync('supabase/migrations').filter(x=>/^202611.*\.sql$/.test(x)).sort().map(x=>'supabase/migrations/'+x));assert.equal(forward.length,49);
  function grantSql(role){
   const grants=PROPOSED_STAFF_ROLE_GRANTS[role];
   assert.ok(grants?.length);
@@ -105,8 +105,9 @@ try{
   }
   apply(path);
  }
- mark('CT16 staged translation retirement rehearsal');
- apply('supabase/staged/ct16_translation_retirement.sql');
+ mark('CT16 separately staged translation budget and memory rehearsal');
+ apply('supabase/staged/ct16_translation_budget.sql');
+ apply('supabase/staged/ct16_translation_memory.sql');
  mark('explicit disposable staff fixtures');
  const staff=roles.filter(x=>x!=='reader'&&x!=='legacy');
  const inserts=staff.map(role=>{
@@ -147,6 +148,22 @@ try{
  for(const role of ['editor','staff_writer','freelancer','moderator','reader','legacy']){
   const forbidden=await users[role].client.rpc('staff_read_owner_dashboard',{p_mode:'team'});check(role+' cannot read owner dashboard',!!forbidden.error);
  }
+ const budget=await owner.rpc('staff_read_translation_budget');
+ check('Owner reads disabled translation budget through real REST',!budget.error&&budget.data.enabled===false&&budget.data.reservedCharacters===0&&budget.data.monthlyLimit===1900000);
+ const glossary=await owner.rpc('staff_read_translation_terminology');
+ check('Owner reads initial glossary through real REST',!glossary.error&&glossary.data.revision===0&&glossary.data.entries.length===0);
+ const entries=[{term:'parking lot',preferred:'parqueadero',kind:'preferred',note:'Colombian editorial usage'}];
+ const glossarySave=await owner.rpc('staff_save_translation_terminology',{p_expected:0,p_entries:entries,p_reason:'Synthetic Colombian terminology'});
+ check('Owner saves versioned glossary through real REST',!glossarySave.error&&glossarySave.data.revision===1&&glossarySave.data.entries[0].preferred==='parqueadero');
+ const glossaryStale=await owner.rpc('staff_save_translation_terminology',{p_expected:0,p_entries:[],p_reason:'Synthetic stale glossary update'});
+ check('stale glossary mutation denied through real REST',glossaryStale.error?.code==='40001');
+ for(const role of ['editor','staff_writer','freelancer','moderator','reader','legacy']){
+  const c=users[role].client;
+  const [bu,gl,save]=await Promise.all([c.rpc('staff_read_translation_budget'),c.rpc('staff_read_translation_terminology'),c.rpc('staff_save_translation_terminology',{p_expected:1,p_entries:[],p_reason:'Unauthorized glossary mutation'})]);
+  check(role+' denied owner translation settings through real REST',!!bu.error&&!!gl.error&&!!save.error);
+ }
+ const [anonBudget,anonGlossary]=await Promise.all([anonymous.rpc('staff_read_translation_budget'),anonymous.rpc('staff_read_translation_terminology')]);
+ check('anonymous denied translation budget and glossary',!!anonBudget.error&&!!anonGlossary.error);
  const malformedDashboard=await owner.rpc('staff_read_owner_dashboard',{p_mode:'other'});check('invalid dashboard mode denied',!!malformedDashboard.error);
 
  mark('standalone work real Auth and PostgREST');

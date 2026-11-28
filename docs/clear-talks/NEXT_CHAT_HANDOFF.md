@@ -1,3 +1,10 @@
+# CURRENT — CT16 R4s; verified retirement adopted, staged real REST and approval gate
+
+## CT16 R4s — adopt verified retirement migration, extend real REST rehearsal and reviewer approval gate
+
+Exact R4q 639cd394732d93bc5c1a4e5d85662df55df84146 all 43/43 passed, cumulative 46112473138 and real 46112472997 success. Adopt exact CLI-generated supabase/migrations/20261128053207_ct16_translation_retirement.sql using staged blob 7e837f9c78ba9b0ff0318f653353367fb5e940f2 unchanged; forward manifest now 49, remove temporary CLI generation and duplicate apply, validate adopted bytes. Current predecessor 479b088031ef128c012b2fbe418653a8d31ed40f 42/43, real 46112716784 passed independent API and browser unlink, replay, archive/audit. Cumulative 46112716790 failed verified memory preview because legacy fixture intentionally contains an unpublished source revision. Assert zero rows while revision exists, then rollback-only subtransaction temporarily removes fixture and checks positive preview, restores revision before later retirement denial. Do not weaken production safety. Extend real disposable script to apply staged 50/51 separately, actual Owner budget/glossary read/write/stale and non-owner/anon denials. Add private approval gate bound to latest independent publication reviewer's decision, scoped permissions, current quiet pair and exact fingerprints; tests non-reviewer denial/exact replay. No API/UI approval yet; trusted private gate only. Candidate 50/51 not adopted; no hosted changes, no Azure. Next real and cumulative CI, staged 50/51 adoption and explicit reviewer-facing workflow.
+
+---
 # CURRENT — CT16 R4r; verified-memory estimates in editor
 
 ## CT16 R4r — permission-bound verified-memory estimate in editor
