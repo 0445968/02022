@@ -81,5 +81,42 @@ reset role;
 do $fn$begin
  if (select count(*) from newsroom_private.story_translation_events)<>3 or (select count(*) from newsroom_private.story_translation_links)<>2 or exists(select 1 from newsroom_private.self_publication_events) then raise exception 'Unexpected translation audit or bypass';end if;
 end;$fn$;
+
+-- Directly seeded, rollback-only published poll/placement fixtures isolate the public
+-- projection. The real-platform suite exercises the independent approval APIs.
+insert into newsroom_private.polls(id,language,question,options,opens_at,closes_at,response_cap,status,creator,last_editor,reviewer) values
+ ('e1600000-0000-4000-8000-000000000031','es','Encuesta sintética',array['Sí','No'],now()-interval '1 hour',now()+interval '1 day',100,'published','a1500000-0000-4000-8000-000000000001','a1500000-0000-4000-8000-000000000001','a1500000-0000-4000-8000-000000000002'),
+ ('e1600000-0000-4000-8000-000000000032','en','Synthetic poll',array['Yes','No'],now()-interval '1 hour',now()+interval '1 day',100,'published','a1500000-0000-4000-8000-000000000001','a1500000-0000-4000-8000-000000000001','a1500000-0000-4000-8000-000000000002'),
+ ('e1600000-0000-4000-8000-000000000033','es','Expired placement',array['Sí','No'],now()-interval '1 hour',now()+interval '1 day',100,'published','a1500000-0000-4000-8000-000000000001','a1500000-0000-4000-8000-000000000001','a1500000-0000-4000-8000-000000000002');
+insert into newsroom_private.poll_placement_state(poll_id,revision,draft,published,draft_actor,published_actor)
+select p.id,1,'[]'::jsonb,
+ jsonb_build_array(jsonb_build_object('kind','article','target',case when p.language='en' then current_setting('test.translation_target') else 'b1500000-0000-4000-8000-000000000001' end,'startsAt',null,'endsAt',case when p.id='e1600000-0000-4000-8000-000000000033' then now()-interval '1 minute' else null end)),
+ p.creator,p.creator from newsroom_private.polls p;
+update newsroom_private.poll_settings set public_enabled=true where singleton;
+set local role anon;
+do $fn$
+declare source text:='b1500000-0000-4000-8000-000000000001';target text:=current_setting('test.translation_target'); es jsonb; en jsonb;
+begin
+ es:=public.public_placed_polls('es','article',target)->'items';en:=public.public_placed_polls('en','article',source)->'items';
+ if jsonb_array_length(es)<>1 or es#>>'{0,id}' is distinct from 'e1600000-0000-4000-8000-000000000031' or jsonb_array_length(en)<>1 or en#>>'{0,id}' is distinct from 'e1600000-0000-4000-8000-000000000032' then raise exception 'Approved pair inheritance/window/locale mismatch';end if;
+ if (public.public_placed_polls('en','article','b1500000-0000-4000-8000-000000000002')->>'enabled')::boolean or (public.public_placed_polls('es','article','invalid')->>'enabled')::boolean then raise exception 'Unpublished or invalid placement target exposed';end if;
+end;$fn$;
+reset role;
+-- Both explicit placements must still produce only one poll, even with inheritance.
+update newsroom_private.poll_placement_state set published=published||jsonb_build_array(jsonb_build_object('kind','article','target',current_setting('test.translation_target'),'startsAt',null,'endsAt',null)) where poll_id='e1600000-0000-4000-8000-000000000031';
+set local role anon;
+do $fn$begin
+ if jsonb_array_length(public.public_placed_polls('es','article',current_setting('test.translation_target'))->'items')<>1 then raise exception 'Duplicate inherited placement';end if;
+end;$fn$;
+reset role;
+-- Deliberate stale fingerprint fixture: direct placements stay valid; inherited ones disappear.
+update newsroom_private.story_translation_links set published_fingerprint=repeat('0',64) where source_id='b1500000-0000-4000-8000-000000000001';
+set local role anon;
+do $fn$begin
+ if jsonb_array_length(public.public_placed_polls('en','article','b1500000-0000-4000-8000-000000000001')->'items')<>0 or jsonb_array_length(public.public_placed_polls('es','article',current_setting('test.translation_target'))->'items')<>1 then raise exception 'Stale pair inherited placement or lost explicit placement';end if;
+end;$fn$;
+reset role;
+select 'CT16 linked article poll inheritance, deduplication, window and stale isolation passed' as result;
+
 rollback;
 select 'CT16 linked draft, independent publication, public pair and stale source refresh passed' as result;

@@ -1,3 +1,10 @@
+# CURRENT — CT16 R4c; candidate 48 and exact successor CI pending
+
+## CT16 R4c — current linked article poll placements (candidate 48)
+
+Exact predecessor eea6275dacaf0e2d3201b249138e4cc4850497f5 passed all 43 workflows, cumulative 46093341214 (47 tracked migrations and catalog checks), local platform 46093341080 (568 recorded PASS lines). New staged supabase/staged/ct16_linked_poll_placements.sql preserves current poll RPC and grants, uses the existing safe independently published public article-pair projection once per article request, inherits published placements only for current same-locale page and valid counterpart, deduplicates via EXISTS before pagination, respects poll activation, translated labels, display windows, privacy and single vote pool. Explicit placements remain valid on their own eligible target even if pair stale; no automatic placement writes. Candidate 48 is generated via pinned CLI and byte-compared in cumulative CI, not adopted until verified. Real local applies candidate only before fixtures and adds Spanish article RPC/browser and own-vote checks; rollback-only SQL tests bidirectional inheritance, duplicate explicit+inherited, expired/invalid/draft target and stale pair. Exact successor CI and candidate adoption pending. Coordinated linked restricted access/unlink still intentionally blocked; provider authorization, restored review, ownership reconciliation and final UAT outstanding. No hosted SQL, flags, production deployment or provider connection.
+
+---
 # CURRENT — CT16 R4b; exact successor CI pending
 
 ## CT16 R4b — tracked bilingual poll migration and release regression gates

@@ -105,6 +105,8 @@ try{
   }
   apply(path);
  }
+ mark('CT16 staged linked poll placements rehearsal');
+ apply('supabase/staged/ct16_linked_poll_placements.sql');
  mark('explicit disposable staff fixtures');
  const staff=roles.filter(x=>x!=='reader'&&x!=='legacy');
  const inserts=staff.map(role=>{
@@ -1124,6 +1126,7 @@ try{
  mark('isolated invitation redemption and byline review');
  // Linked article translation uses fresh cookie sessions and independent reviewers.
  mark('CT16 real linked article translation lifecycle');
+ let translatedArticleId;
  const translationOwner=await adminTestContext(users.owner.email);
  const translationEditor=await adminTestContext(users.editor.email);
  const translationReader=await adminTestContext(users.reader.email);
@@ -1138,6 +1141,7 @@ try{
   const created=await translationOwner.request.post(url,{headers:{Origin:appOrigin},data:command});
   check('real owner creates independent translation draft (HTTP '+created.status()+')',created.status()===200);
   const pair=await created.json(),id=pair.targetId;
+  translatedArticleId=id;
   check('linked opposite-language draft created',pair.linked===true&&pair.targetLanguage==='es'&&pair.targetStatus==='draft');
   const privatePair=await anonymous.rpc('public_story_translation_pairs',{p_ids:[storyIds.public,id]});
   check('anonymous cannot discover translation draft',!privatePair.error&&privatePair.data.length===0);
@@ -1320,6 +1324,8 @@ try{
   sql('activate disposable bilingual poll gate',['-f','-'],'update newsroom_private.poll_translation_settings set public_enabled=true where singleton;');
   const spanish=await anonymous.rpc('public_placed_polls',{p_language:'es',p_kind:'homepage',p_target:''});
   check('published bilingual poll uses same ID and translated labels',!spanish.error&&spanish.data.items.some(p=>p.id===pollState.id&&p.question==='CT16 pregunta sintética'&&p.options[0]==='Opción A'));
+  const linkedPlaced=await anonymous.rpc('public_placed_polls',{p_language:'es',p_kind:'article',p_target:translatedArticleId});
+  check('approved Spanish article inherits one placed poll from English original',!linkedPlaced.error&&linkedPlaced.data.items.filter(p=>p.id===pollState.id).length===1&&linkedPlaced.data.items.find(p=>p.id===pollState.id)?.question==='CT16 pregunta sintética');
 
   const votePath='/api/polls/'+pollState.id+'/vote';
   const anonymousContext=await browser.newContext();
@@ -1338,7 +1344,12 @@ try{
   check('placed poll shares the original vote pool',!placedOwn.error&&placedOwn.data.items.find(p=>p.id===pollState.id)?.ownChoice===0);
   const spanishOwn=await users.reader.client.rpc('public_list_polls',{p_language:'es',p_page:0});
   check('Spanish poll shares the English vote',!spanishOwn.error&&spanishOwn.data.items.find(p=>p.id===pollState.id)?.ownChoice===0);
+  const translatedPlacedOwn=await users.reader.client.rpc('public_placed_polls',{p_language:'es',p_kind:'article',p_target:translatedArticleId});
+  check('linked Spanish article retains same verified ballot',!translatedPlacedOwn.error&&translatedPlacedOwn.data.items.find(p=>p.id===pollState.id)?.ownChoice===0);
   const readerPollPage=readerContext.pages()[0];
+  await readerPollPage.goto(appOrigin+'/es/article/translation-'+translatedArticleId,{waitUntil:'domcontentloaded',timeout:20000});
+  await readerPollPage.getByRole('heading',{name:'CT16 pregunta sintética',exact:true}).waitFor({state:'visible',timeout:15000});
+  check('Spanish article renders inherited poll with recorded vote',await readerPollPage.getByText('Su voto está registrado.',{exact:true}).count()>0);
   await readerPollPage.goto(appOrigin+'/es/polls',{waitUntil:'domcontentloaded',timeout:20000});
   await readerPollPage.getByRole('heading',{name:'CT16 pregunta sintética',exact:true}).waitFor({state:'visible',timeout:15000});
   check('real Spanish poll UI displays previously recorded ballot',await readerPollPage.getByText('Su voto está registrado.',{exact:true}).count()>0);
