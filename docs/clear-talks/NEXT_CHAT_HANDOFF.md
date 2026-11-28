@@ -1,3 +1,10 @@
+# CURRENT — CT16 R4l; offline proposal orchestration and exact verification pending
+
+## CT16 R4l — offline proposal orchestration and explicit browser response diagnostics
+
+Exact predecessor 686c9c3f2e77208ee843d3d2f196febe52962fb1 42/43 at inspection; cumulative 46104487976 passed (CLI generated 20261128034758_ct16_translation_retirement.sql, rollback lifecycle and budget tests), real platform 46104487955 still running. Earlier real run 46104365237 passed hydration and input retention but timed out confirming retired UI. Capture exact POST status and parsed retired result before UI assertion; do not bypass browser test. Add offline proposal orchestrator with trusted injectable source/reservation/transport ports; current source/target version checks, exact saved text recheck before each batch and after send, full budget reservation before any send, deny replay, no retries/refunds, no sensitive exception propagation, strict reconstruction of separate proposed copy. Synthetic tests only. No real transport, no source/apply RPC or route, no Azure credential, no automatic save/publish. Future reservation must bind target version durably; future server apply must atomically recheck source/target/permissions. Candidate 49 adoption remains gated by real exact CI; 50 remains staged. No hosted changes.
+
+---
 # CURRENT — CT16 R4k; owner usage monitoring and exact successor CI pending
 
 ## CT16 R4k — owner-only translation usage monitoring

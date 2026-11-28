@@ -1513,7 +1513,12 @@ try{
   check('retirement reason retained after hydration',await reason.inputValue()==='Retire synthetic archived relationship in browser');
   pg.once('dialog',dialog=>dialog.accept());
   const retire=pg.getByRole('button',{name:/Permanently unlink archived articles|Desvincular permanentemente los artículos archivados/});
-  await retire.click();
+  const errors=[];
+  pg.on('pageerror',e=>errors.push(redact(e.name+': '+e.message).slice(0,120)));
+  const [response]=await Promise.all([pg.waitForResponse(r=>r.url()===endpoint&&r.request().method()==='POST',{timeout:15000}),retire.click()]).catch(e=>{throw Error('Unlink browser request not observed; runtime errors: '+errors.join('; ')+'; '+redact(String(e)).slice(0,180));});
+  check('browser unlink POST succeeds (HTTP '+response.status()+')',response.status()===200);
+  const result=await response.json();
+  check('browser unlink response is retired and unlinked',result.retired===true&&result.linked===false);
   await pg.getByText(/former translation relationship has been retired|relación de traducción se ha retirado/).waitFor({state:'visible',timeout:15000});
   const retired=await get();
   check('real browser retires pair and preserves no-relink state',retired.linked===false&&retired.retired===true&&retired.canCreate===false);
