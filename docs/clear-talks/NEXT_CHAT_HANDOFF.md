@@ -1,3 +1,10 @@
+# CURRENT — CT16 R4m; sentence-level incremental and Colombian editorial foundation
+
+## CT16 R4m — Colombian editorial standard and incremental sentence foundation
+
+Exact predecessor 26a904bb0999f474929c4d1ac5d9467edde687be: 40/43; cumulative 46104899423 passed; quality 46104899364 and framework 46104899372 failed Node module resolution for extensionless runtime imports in orchestration. Add explicit .ts runtime imports and TypeScript noEmit-compatible allowImportingTsExtensions. Real 46104899338 failed browser unlink POST observation despite valid reason; replace native retire confirm with visible explicit confirmation and observe pathname/status without masking failures. User discussed sentence-level retranslation and Colombian readership. Add offline exact unique sentence alignment planner within stable blocks (preserves reviewed manual edits, ambiguous/edited conflicts require review, deleted blocks no send, estimate actual UTF-16 source units), es-CO editorial guidance (Azure target es), synthetic tests and detailed implementation plan. No durable alignment, provider calls, automatic writes, settings UI, paragraph/full override or live locale changes yet. Candidate 49 adoption still gated; candidate 50 staged. No hosted changes or Azure authorization needed. Exact successor CI pending.
+
+---
 # CURRENT — CT16 R4l; offline proposal orchestration and exact verification pending
 
 ## CT16 R4l — offline proposal orchestration and explicit browser response diagnostics

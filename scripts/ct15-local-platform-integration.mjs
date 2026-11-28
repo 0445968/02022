@@ -1511,11 +1511,13 @@ try{
   const reason=pg.getByLabel(/Reason for permanent unlinking|Motivo de la desvinculación permanente/);
   await reason.fill('Retire synthetic archived relationship in browser',{timeout:15000});
   check('retirement reason retained after hydration',await reason.inputValue()==='Retire synthetic archived relationship in browser');
-  pg.once('dialog',dialog=>dialog.accept());
   const retire=pg.getByRole('button',{name:/Permanently unlink archived articles|Desvincular permanentemente los artículos archivados/});
   const errors=[];
   pg.on('pageerror',e=>errors.push(redact(e.name+': '+e.message).slice(0,120)));
-  const [response]=await Promise.all([pg.waitForResponse(r=>r.url()===endpoint&&r.request().method()==='POST',{timeout:15000}),retire.click()]).catch(e=>{throw Error('Unlink browser request not observed; runtime errors: '+errors.join('; ')+'; '+redact(String(e)).slice(0,180));});
+  await retire.click();
+  const confirm=pg.getByRole('button',{name:/^Confirm permanent unlinking$|^Confirmar desvinculación permanente$/});
+  await confirm.waitFor({state:'visible',timeout:10000});
+  const [response]=await Promise.all([pg.waitForResponse(r=>new URL(r.url()).pathname===new URL(endpoint).pathname&&r.request().method()==='POST',{timeout:15000}),confirm.click()]).catch(e=>{throw Error('Unlink browser request not observed; runtime errors: '+errors.join('; ')+'; '+redact(String(e)).slice(0,180));});
   check('browser unlink POST succeeds (HTTP '+response.status()+')',response.status()===200);
   const result=await response.json();
   check('browser unlink response is retired and unlinked',result.retired===true&&result.linked===false);

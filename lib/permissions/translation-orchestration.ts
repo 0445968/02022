@@ -3,9 +3,9 @@
  * Ports must be trusted server-side implementations, never supplied by a browser.
  * Produces a proposed copy only; no draft writes or publication.
  */
-import {prepareTranslation,applyTranslationResult,type TranslationCopy,type TranslationLocale,type TranslationRequest} from './story-translation-contract';
-import {preparePollTranslation,applyPollTranslationResult,planTranslation,parseProviderResults,type ProviderBatch} from './translation-provider-contract';
-import type {PollTranslationCopy} from './poll-translation-contract';
+import {prepareTranslation,applyTranslationResult,type TranslationCopy,type TranslationLocale,type TranslationRequest} from './story-translation-contract.ts';
+import {preparePollTranslation,applyPollTranslationResult,planTranslation,parseProviderResults,type ProviderBatch} from './translation-provider-contract.ts';
+import type {PollTranslationCopy} from './poll-translation-contract.ts';
 type Kind='story'|'poll';
 export type TranslationJob={requestId:string;kind:Kind;resourceId:string;sourceFingerprint:string;targetVersion:string};
 type Common={resourceId:string;sourceFingerprint:string;targetVersion:string;sourceLocale:TranslationLocale};
