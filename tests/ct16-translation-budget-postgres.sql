@@ -10,6 +10,8 @@ insert into public.staff_member_roles(membership_id,role_preset_id)
 -- Only synthetic bootstrap fixture, rolled back.
 alter table public.staff_role_capabilities disable trigger ct03c_preset_grant_guard;
 insert into public.staff_role_capabilities(role_preset_id,capability_key,scope)
+ select p.id,k::public.staff_capability_key,'all' from public.staff_role_presets p cross join unnest(array['newsroom.access','story.view_all','story.edit_all']) k where p.role_key='owner';
+alter table public.staff_role_capabilities enable trigger ct03c_preset_grant_guard;
 do $fn$
 declare a uuid:='a1500000-0000-4000-8000-000000000001';s uuid:='b1500000-0000-4000-8000-000000000001';fp text;rid uuid:=gen_random_uuid();r jsonb;role_name text;
 begin
