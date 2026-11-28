@@ -1,3 +1,5 @@
+import {readPublicHomepageVisibility} from '@/lib/services/public-homepage-visibility';
+import {getWorkspaceAccess,scopedNewsroomEnabled} from '@/lib/services/newsroom-workspace';
 import {
   Footer,
 } from '@/components/layout/footer';
@@ -36,8 +38,8 @@ export async function PublicShell({
   user,
   children,
 }: PublicShellProps) {
-  const homepageSlots =
-    await getPublicHomepageSlots();
+  const canOpenNewsroom=scopedNewsroomEnabled()?!!user&&await getWorkspaceAccess().then(a=>a.allowed).catch(()=>false):undefined;
+  const [homepageSlots,visibility]=await Promise.all([getPublicHomepageSlots(locale),readPublicHomepageVisibility()]);
 
   const headlineBarPlacements =
     homepageSlots.filter(
@@ -56,7 +58,9 @@ export async function PublicShell({
         bg-white
       "
     >
+      <a href="#main" className="sr-only focus:not-sr-only focus:absolute focus:left-3 focus:top-3 focus:z-50 focus:rounded-md focus:bg-white focus:p-3 focus:text-deep focus:ring-2 focus:ring-primary">{locale==='es'?'Ir al contenido':'Skip to content'}</a>
       <Header
+        canOpenNewsroom={canOpenNewsroom}
         dict={
           dict
         }
@@ -68,20 +72,21 @@ export async function PublicShell({
         }
       />
 
-      <HeadlineBar
+{visibility.headline_bar&&(<HeadlineBar
         locale={
           locale
         }
         placements={
           headlineBarPlacements
         }
-      />
+      />)}
 
       <main
         className="
           flex-1
         "
         id="main"
+        tabIndex={-1}
       >
         {children}
       </main>

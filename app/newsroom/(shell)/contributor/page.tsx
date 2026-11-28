@@ -1,3 +1,4 @@
+import {WorkAssignmentSummary} from '@/components/editorial/dashboard/WorkAssignmentSummary';
 import Link from 'next/link';
 import {DashboardActivity} from '@/components/editorial/dashboard/DashboardActivity';
 import {CalendarAlerts} from '@/components/editorial/calendar/CalendarAlerts';
@@ -10,7 +11,8 @@ import {getDictionary} from '@/lib/i18n/dictionaries';
 import {staffOnboardingEnabled} from '@/lib/services/staff-onboarding';
 import {FileText,Image,Users,Newspaper,User} from 'lucide-react';
 export const dynamic='force-dynamic';
-export default async function ContributorWorkspace({searchParams}:{searchParams:{page?:string}}){
+export default async function ContributorWorkspace(props:{searchParams: Promise<{page?:string}>}) {
+  const searchParams = await props.searchParams;
   if(!scopedNewsroomEnabled())notFound();
   const user=await getCurrentUser();
   if(!user)redirect('/en/auth/sign-in?next=%2Fnewsroom%2Fcontributor');
@@ -22,7 +24,7 @@ export default async function ContributorWorkspace({searchParams}:{searchParams:
   const raw=searchParams.page??'0',page=/^\d{1,3}$/.test(raw)?Math.min(Number(raw),100):0;
   const assigned=await readAssignedWorkspace(page);
   const canCreate=await canStartWriterDraft();
-  const reviewable=new Set((await Promise.all(assigned.items.map(async s=>({id:s.id,allowed:(s.status==='draft'||s.status==='in_review')&&await canAccessStoryReview(s.id,'draft')})))).filter(s=>s.allowed).map(s=>s.id));
+  const reviewable=new Set((await Promise.all(assigned.items.map(async s=>({id:s.id,allowed:(s.status==='draft'||s.status==='in_review')&&(await canAccessStoryReview(s.id,'draft'))})))).filter(s=>s.allowed).map(s=>s.id));
   const links=[
     {allowed:access.viewStories,href:'/newsroom/stories',label:dict.newsroom.stories,icon:FileText},
     {allowed:access.fullMedia||access.privateMedia,href:'/newsroom/media',label:dict.newsroom.media,icon:Image},
@@ -42,6 +44,7 @@ export default async function ContributorWorkspace({searchParams}:{searchParams:
     </section>}
     {canCreate&&<Link href="/newsroom/contributor/new" className="inline-flex rounded-md bg-primary px-4 py-2 text-sm font-semibold text-white">{es?'Nuevo borrador':'New draft'}</Link>}
     <CalendarAlerts locale={locale}/>
+    <WorkAssignmentSummary locale={locale} mode="personal"/>
     <DashboardActivity locale={locale} includeAssignments={false}/>
     <section className="space-y-3 rounded-lg border border-border bg-white p-5">
       <h2 className="font-headline text-lg font-semibold text-deep">{es?'Mis asignaciones activas':'My active assignments'}</h2>

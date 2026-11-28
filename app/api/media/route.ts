@@ -23,6 +23,9 @@ import type {
   MediaStatus,
 } from '@/types/editorial';
 
+// This endpoint reads the current request session; never prerender or cache it.
+export const dynamic = 'force-dynamic';
+
 /* ========================================================= */
 /* VALID VALUES */
 /* ========================================================= */

@@ -317,6 +317,7 @@ function WorkspaceTabButton({
   return (
     <button
       type="button"
+      aria-pressed={active}
       onClick={
         onClick
       }

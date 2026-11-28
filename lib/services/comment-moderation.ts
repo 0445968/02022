@@ -7,6 +7,7 @@ import {resolveGlobalStaffPermissionsOnServer,resolveStoryStaffPermissionsOnServ
 import {DRAFT_UUID} from '@/lib/permissions/assigned-draft-contract';
 import {DraftHttpError} from '@/lib/permissions/assigned-draft-http';
 import {parseModerationPage,parseModerationDetail,type ModerationFilter,type ModerationCommand} from '@/lib/permissions/comment-moderation-contract';
+import {parseCommentArticles} from '@/lib/permissions/comment-article-groups';
 import {parseBulkResult,type BulkModerationCommand} from '@/lib/permissions/comment-bulk-contract';
 export function bulkModerationEnabled(){return commentModerationEnabled()&&process.env.CT_COMMENT_BULK_ENABLED==='true';}
 export function commentModerationEnabled(){return process.env.CT_STAFF_ACCESS_V2_ENABLED==='true'&&process.env.CT_COMMENT_MODERATION_ENABLED==='true'&&!isDevAuthBypass();}
@@ -83,4 +84,12 @@ export async function changeBulkModeration(c:BulkModerationCommand){
  const {data,error}=await db.rpc('staff_bulk_comment_moderation',{p_action:c.action,p_reason:c.reason,p_items:c.items});
  if(error)fail(error.code);
  try{return parseBulkResult(data,c.items.length);}catch{throw new DraftHttpError(503);}
+}
+
+export async function readCommentArticles(status:ModerationFilter,search:string,page:number,storyId:string|null=null){
+ if((storyId!==null&&!DRAFT_UUID.test(storyId))||search.length>120||!Number.isInteger(page)||page<0||page>100)throw new DraftHttpError(422);
+ const db=await client();
+ const {data,error}=await db.rpc('staff_read_comment_article_groups',{p_status:status,p_search:search,p_page:page,p_story:storyId});
+ if(error)fail(error.code);
+ try{return parseCommentArticles(data);}catch{throw new DraftHttpError(503);}
 }

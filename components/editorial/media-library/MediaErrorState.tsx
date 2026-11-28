@@ -17,6 +17,7 @@ export function MediaErrorState({
 }: MediaErrorStateProps) {
   return (
     <div
+      role="alert"
       className="
         mt-6
         flex

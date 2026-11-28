@@ -7,7 +7,11 @@ import type {PublicPollPage} from '@/lib/permissions/polls-contract';
 import {PublicPollCard} from '@/components/polls/PublicPollCard';
 export const dynamic='force-dynamic';
 export const metadata={robots:{index:false,follow:false},referrer:'no-referrer'};
-export default async function PublicPolls({params,searchParams}:{params:{locale:string};searchParams:{page?:string}}){
+export default async function PublicPolls(
+ props:{params: Promise<{locale:string}>;searchParams: Promise<{page?:string}>}
+) {
+ const searchParams = await props.searchParams;
+ const params = await props.params;
  if(!isLocale(params.locale)||!publicPollsEnabled())notFound();
  const locale=params.locale,es=locale==='es',raw=searchParams.page??'0';
  if(typeof raw!=='string'||!/^\d{1,3}$/.test(raw)||Number(raw)>100)notFound();

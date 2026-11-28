@@ -1,4 +1,5 @@
 'use client';
+import {STORY_TYPES,isStoryType} from '@/lib/permissions/story-types';
 
 import { useState } from 'react';
 
@@ -72,6 +73,7 @@ function getLocalDateValue(
 /* ========================================================= */
 
 export function StorySettingsPanel({
+  storyType,setStoryType,
   dict,
   locale,
   language,
@@ -629,6 +631,7 @@ export function StorySettingsPanel({
 
       {/* =================================================== */}
       {/* LANGUAGE */}
+      {storyType!==undefined&&<Section title={locale==='es'?'Tipo de artículo':'Story type'}><label className="block"><span className="sr-only">{locale==='es'?'Tipo de artículo':'Story type'}</span><select className="w-full rounded-lg border border-border bg-white px-3 py-2 text-sm" value={storyType} onChange={e=>{if(isStoryType(e.target.value))setStoryType(e.target.value);}}>{STORY_TYPES.map(([key,en,es])=><option key={key} value={key}>{locale==='es'?es:en}</option>)}</select></label></Section>}
       {/* =================================================== */}
 
       <Section

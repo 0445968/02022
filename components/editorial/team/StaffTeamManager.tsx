@@ -32,7 +32,7 @@ const copy={
     limited:'Showing 25 members per page. Search applies to this page.',page:'Page',previous:'Previous',next:'Next',
     auditAll:'All changes',auditSelected:'Selected member',activePage:'Active on this page',
     caution:'Changes are accepted only after the server verifies a current owner and the database records an audit.',
-    review:'Role definitions and proposed grants cannot be changed in this phase.',
+    review:'Compare configured permissions against the reviewed baseline. Changes require current owner authorization.',
     readOnly:'Read-only',error:'Unable to load staff permissions',noResult:'No matching members.',
     permissionNote:'Role assignments do not imply access until the corresponding database grants are configured.',
   },
@@ -56,7 +56,7 @@ const copy={
     limited:'Se muestran 25 integrantes por página. La búsqueda se aplica a esta página.',page:'Página',previous:'Anterior',next:'Siguiente',
     auditAll:'Todos los cambios',auditSelected:'Integrante seleccionado',activePage:'Activos en esta página',
     caution:'Solo un propietario verificado puede cambiar accesos; la base de datos audita cada cambio.',
-    review:'Las definiciones y propuestas de funciones no pueden editarse en esta fase.',
+    review:'Compare los permisos configurados con la propuesta revisada. Los cambios requieren autorización del propietario.',
     readOnly:'Solo lectura',error:'No se pudieron cargar los permisos',noResult:'Sin coincidencias.',
     permissionNote:'Una función no concede acceso hasta que sus permisos se configuren en la base de datos.',
   }
@@ -93,8 +93,10 @@ export function StaffTeamManager({locale,showInvitations=false,showBylines=false
   const [reason,setReason]=useState('');
   const [confirmed,setConfirmed]=useState(false);
   const [saving,setSaving]=useState(false);
+  const [activeTab,setActiveTab]=useState<'members'|'invitations'|'bylines'|'presets'|'audit'>('members');
 
-  const refresh=useCallback(async()=>{
+  const refresh=useCallback(async(signal?:AbortSignal)=>{
+    if(signal?.aborted)return;
     setLoading(true);
     try{
       const query=new URLSearchParams({
@@ -102,15 +104,16 @@ export function StaffTeamManager({locale,showInvitations=false,showBylines=false
       });
       if(filter!=='all')query.set('status',filter);
       if(auditFilter==='selected'&&selectedId)query.set('auditMemberId',selectedId);
-      const result=await fetch('/api/newsroom/team?'+query.toString(),{cache:'no-store'});
+      const result=await fetch('/api/newsroom/team?'+query.toString(),{cache:'no-store',signal});
       if(!result.ok)throw new Error(t.error);
       const directory=await result.json() as TeamDirectory;
+      if(signal?.aborted)return;
       setData(directory);setError(null);
     }catch(e){
-      setError(e instanceof Error?e.message:t.error);
-    }finally{setLoading(false);}
+      if(!signal?.aborted)setError(e instanceof Error?e.message:t.error);
+    }finally{if(!signal?.aborted)setLoading(false);}
   },[t.error,page,auditPage,filter,auditFilter,selectedId]);
-  useEffect(()=>{void refresh();},[refresh]);
+  useEffect(()=>{const controller=new AbortController();const timer=setTimeout(()=>void refresh(controller.signal),0);return()=>{clearTimeout(timer);controller.abort();};},[refresh]);
 
   const members=useMemo(()=>data?.members.filter(m=>{
     const normalized=search.trim().toLocaleLowerCase(locale);
@@ -160,8 +163,8 @@ export function StaffTeamManager({locale,showInvitations=false,showBylines=false
     finally{setSaving(false);}
   }
 
-  return <div className="mx-auto max-w-7xl space-y-6 px-6 py-8">
-    <header className="flex flex-wrap items-center justify-between gap-4 border-b border-border pb-5">
+  return <div id="ct-team-directory" aria-busy={loading} className="w-full min-w-0 space-y-3 px-3 py-4 sm:px-5">
+    <header className="flex flex-wrap items-center justify-between gap-4 border-b border-border pb-3">
       <div>
         <h1 className="font-headline text-2xl font-bold text-deep">{t.title}</h1>
         <p className="mt-1 text-sm text-muted-foreground">{t.desc}</p>
@@ -173,11 +176,13 @@ export function StaffTeamManager({locale,showInvitations=false,showBylines=false
     {error&&<p role="alert" className="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700">{error}</p>}
     {success&&<p role="status" className="flex items-center gap-2 text-sm text-foreground">
       <CheckCircle2 className="h-4 w-4"/>{success}</p>}
-    {loading&&!data&&<p className="text-sm text-muted-foreground">{t.loading}</p>}
+    {loading&&!data&&<p role="status" className="text-sm text-muted-foreground">{t.loading}</p>}
     {data&&<>
-      {showBylines&&<StaffBylineReviewManager locale={locale}/>}
-      {showInvitations&&<StaffInvitationManager locale={locale} presets={data.presets}/>}
-      <div className="grid gap-3 sm:grid-cols-3">
+      <nav aria-label={locale==='es'?'Secciones del equipo':'Team sections'} className="sticky top-0 z-20 flex w-full max-w-full min-w-0 gap-1 overflow-x-auto rounded-lg border border-border bg-white p-1 shadow-sm">
+        {([{key:'members',label:t.directory,show:true},{key:'invitations',label:locale==='es'?'Invitaciones del equipo':'Staff invitations',show:showInvitations},{key:'bylines',label:locale==='es'?'Solicitudes de firma':'Byline requests',show:showBylines},{key:'presets',label:t.roles,show:true},{key:'audit',label:t.audit,show:data.canViewAudit}] as const).filter(v=>v.show).map(v=><button type="button" key={v.key} data-team-tab={v.key} aria-pressed={activeTab===v.key} aria-controls={'ct-team-'+v.key} disabled={saving} onClick={()=>setActiveTab(v.key)} className={'shrink-0 rounded-md px-3 py-2 text-sm font-semibold focus-visible:ring-2 focus-visible:ring-primary '+(activeTab===v.key?'bg-deep text-white':'text-muted-foreground hover:bg-surface-muted')}>{v.label}</button>)}
+      </nav>
+      <div id="ct-team-members" hidden={activeTab!=='members'} className={activeTab==='members'?'min-w-0 space-y-3':'hidden'}>
+      <div className="grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-3">
         <div className={row+' p-4'}><p className="text-xs text-muted-foreground">{t.directory}</p>
           <p className="mt-1 text-2xl font-bold text-deep">{data.totalMembers}</p></div>
         <div className={row+' p-4'}><p className="text-xs text-muted-foreground">{t.activePage}</p>
@@ -185,11 +190,11 @@ export function StaffTeamManager({locale,showInvitations=false,showBylines=false
         <div className={row+' p-4'}><p className="text-xs text-muted-foreground">{t.roles}</p>
           <p className="mt-1 text-2xl font-bold text-deep">{data.presets.length}</p></div>
       </div>
-      <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)]">
-        <section className={row+' p-4'} aria-label={t.directory}>
+      <div className="grid min-w-0 grid-cols-1 items-start gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)]">
+        <section className={row+' min-w-0 p-4'} aria-label={t.directory}>
           <div className="mb-4 flex items-center gap-2"><Users className="h-4 w-4 text-primary"/>
             <h2 className="text-base font-semibold text-deep">{t.directory}</h2></div>
-          <div className="mb-3 grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto]">
+          <div className="mb-3 grid min-w-0 grid-cols-1 gap-2 sm:grid-cols-[minmax(0,1fr)_auto]">
             <label className="relative">
               <span className="sr-only">{t.search}</span>
               <Search className="pointer-events-none absolute left-3 top-2.5 h-4 w-4 text-muted-foreground"/>
@@ -198,7 +203,7 @@ export function StaffTeamManager({locale,showInvitations=false,showBylines=false
             </label>
             <label>
               <span className="sr-only">{t.filter}</span>
-              <select className={selectClass} value={filter}
+              <select aria-label={t.filter} className={selectClass} value={filter}
                 onChange={e=>{setFilter(e.target.value as 'all'|TeamStatus);setPage(0);setAuditPage(0);setSelectedId(null);setAuditFilter('all');}}>
                 <option value="all">{t.all}</option>
                 {statusKeys.map(s=><option key={s} value={s}>{t[s]}</option>)}
@@ -212,13 +217,14 @@ export function StaffTeamManager({locale,showInvitations=false,showBylines=false
               <button type="button" onClick={()=>pick(member)} aria-pressed={current?.id===member.id}
                 className={'flex w-full items-center justify-between gap-3 rounded-lg border p-3 text-left transition-colors '
                   +(current?.id===member.id?'border-deep bg-surface-muted':'border-border hover:bg-surface-muted')}>
-                <div className="min-w-0">
-                  <p className="truncate text-sm font-semibold text-deep">{member.name}
+                <div className="flex min-w-0 flex-1 items-center gap-2">
+                  <span className="relative flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full bg-surface-muted text-xs font-semibold text-deep" aria-hidden>{member.name.split(/\s+/).slice(0,2).map(n=>n[0]?.toUpperCase()).join('')}{member.avatarUrl&&<img src={member.avatarUrl} alt="" referrerPolicy="no-referrer" loading="lazy" className="absolute inset-0 h-full w-full rounded-full object-cover" onError={e=>{e.currentTarget.style.display='none';}}/>}</span>
+                  <div className="min-w-0"><p className="truncate text-sm font-semibold text-deep">{member.name}
                     {member.isSelf&&<span className="ml-2 font-normal text-muted-foreground">({t.self})</span>}
                   </p>
-                  <p className="mt-1 text-xs text-muted-foreground">
+                  <p className="mt-1 break-words text-xs text-muted-foreground">
                     {member.roles.length?member.roles.map(r=>r.roleKey.replaceAll('_',' ')).join(' · '):t.noRoles}
-                  </p>
+                  </p></div>
                 </div>
                 <span className="flex shrink-0 items-center gap-1 text-xs text-muted-foreground">
                   {t[member.status]}<ChevronRight className="h-4 w-4"/>
@@ -243,7 +249,7 @@ export function StaffTeamManager({locale,showInvitations=false,showBylines=false
             </div>
           </div>
         </section>
-        <section className={row+' p-4'} aria-label={t.manage}>
+        <section className={row+' min-w-0 break-words p-4'} aria-label={t.manage}>
           {!current?<p className="text-sm text-muted-foreground">{t.select}</p>:<>
             <div className="flex items-start justify-between gap-3 border-b border-border pb-4">
               <div><h2 className="font-headline text-lg font-semibold text-deep">{current.name}</h2>
@@ -306,8 +312,11 @@ export function StaffTeamManager({locale,showInvitations=false,showBylines=false
               onSaved={refresh}/>}
           </>}
         </section>
-      </div>
-      <section className={row+' p-4'}>
+      </div></div>
+      {showInvitations&&<div id="ct-team-invitations" hidden={activeTab!=='invitations'} className={activeTab==='invitations'?row+' p-3':'hidden'}><StaffInvitationManager locale={locale} presets={data.presets}/></div>}
+      {showBylines&&<div id="ct-team-bylines" hidden={activeTab!=='bylines'} className={activeTab==='bylines'?row+' p-3':'hidden'}><StaffBylineReviewManager locale={locale}/></div>}
+      <div id="ct-team-presets" hidden={activeTab!=='presets'} className={activeTab==='presets'?row:'hidden'}>
+        <section className="p-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div><h2 className="text-base font-semibold text-deep">{t.roles}</h2>
             <p className="mt-1 text-sm text-muted-foreground">{t.review}</p></div>
@@ -345,7 +354,9 @@ export function StaffTeamManager({locale,showInvitations=false,showBylines=false
           canEdit={data.presetMutationsEnabled && selectedRole.key!=='owner'}
           onSaved={refresh}/>}
       </section>
-      {data.canViewAudit&&<section className={row+' p-4'} aria-label={t.audit}>
+      </div>
+      {data.canViewAudit&&<div id="ct-team-audit" hidden={activeTab!=='audit'} className={activeTab==='audit'?row:'hidden'}>
+        <section className="p-4" aria-label={t.audit}>
         <div className="flex flex-wrap items-center justify-between gap-3">
           <h2 className="text-base font-semibold text-deep">{t.audit}</h2>
           <label className="text-xs text-muted-foreground">
@@ -375,7 +386,7 @@ export function StaffTeamManager({locale,showInvitations=false,showBylines=false
           <button type="button" className={button} disabled={loading||!data.hasMoreAudit}
             onClick={()=>setAuditPage(value=>value+1)}>{t.next}</button>
         </div>
-      </section>}
+      </section></div>}
     </>}
   </div>;
 }

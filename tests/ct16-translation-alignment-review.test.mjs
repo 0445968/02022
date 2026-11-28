@@ -1,0 +1,6 @@
+import test from 'node:test';import assert from 'node:assert/strict';
+import {parseAlignmentReview,parseAlignmentApproval} from '../lib/permissions/translation-alignment-review-contract.ts';
+const id='00000000-0000-4000-8000-000000000001',fingerprint='a'.repeat(64),targetFingerprint='b'.repeat(64);
+const raw={sourceId:id,sourceFingerprint:fingerprint,targetFingerprint,revision:1,sourceLocale:'en',rows:[{blockId:'headline',source:'The council met.',target:'El concejo se reunió.',approved:false}]};
+test('review candidates protect saved human translations and decline unequal segmentation',()=>{const r=parseAlignmentReview(raw,id,fingerprint);assert.equal(r.rows[0].pairs[0].manuallyEdited,true);assert.equal(parseAlignmentReview({...raw,rows:[{...raw.rows[0],target:'El concejo se reunió. Votó.'}]},id,fingerprint).rows[0].pairs,null);assert.throws(()=>parseAlignmentReview({...raw,rows:[raw.rows[0],raw.rows[0]]},id,fingerprint));});
+test('confirmation binds exact versions and cannot supply arbitrary text or actor',()=>{const c={sourceFingerprint:fingerprint,targetFingerprint,revision:1,blockId:'headline',confirmed:true};assert.deepEqual(parseAlignmentApproval(c),c);assert.throws(()=>parseAlignmentApproval({...c,pairs:[]}));assert.throws(()=>parseAlignmentApproval({...c,confirmed:false}));});

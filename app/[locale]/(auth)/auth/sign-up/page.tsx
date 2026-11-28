@@ -6,10 +6,11 @@ import { localizedPath } from '@/lib/i18n/config';
 import type { Locale } from '@/types';
 
 interface PageProps {
-  params: { locale: string };
+  params: Promise<{ locale: string }>;
 }
 
-export default async function SignUpPage({ params }: PageProps) {
+export default async function SignUpPage(props: PageProps) {
+  const params = await props.params;
   const locale = params.locale as Locale;
   const dict = getDictionary(locale);
 

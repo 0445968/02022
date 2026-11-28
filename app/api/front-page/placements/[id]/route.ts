@@ -9,9 +9,9 @@ import {
 } from '@/lib/services/front-page';
 
 interface RouteContext {
-  params: {
+  params: Promise<{
     id: string;
-  };
+  }>;
 }
 
 interface UpdatePlacementBody {
@@ -48,7 +48,7 @@ export async function PATCH(
   }
 
   const id =
-    context.params.id?.trim();
+    (await context.params).id?.trim();
 
   if (!id) {
     return NextResponse.json(
@@ -237,7 +237,7 @@ export async function DELETE(
   }
 
   const id =
-    context.params.id?.trim();
+    (await context.params).id?.trim();
 
   if (!id) {
     return NextResponse.json(

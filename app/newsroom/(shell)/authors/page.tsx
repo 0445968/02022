@@ -71,7 +71,7 @@ import {
               text-deep
             "
           >
-            Authors
+            {dict.newsroom.authors}
           </h1>
   
           <p
@@ -81,9 +81,7 @@ import {
               text-muted-foreground
             "
           >
-            Manage author bylines,
-            biographies, titles, and
-            profile photos.
+            {locale==='es'?'Administre las firmas, biografías, cargos y fotos de perfil.':'Manage author bylines, biographies, titles, and profile photos.'}
           </p>
         </div>
   

@@ -7,10 +7,11 @@ import type { Locale } from '@/types';
 import { AccountSettings } from '@/components/forms/account-settings';
 
 interface PageProps {
-  params: { locale: string };
+  params: Promise<{ locale: string }>;
 }
 
-export default async function AccountPage({ params }: PageProps) {
+export default async function AccountPage(props: PageProps) {
+  const params = await props.params;
   const locale = params.locale as Locale;
   const user = await getCurrentUser();
 

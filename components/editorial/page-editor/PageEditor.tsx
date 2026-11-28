@@ -157,7 +157,7 @@ export function PageEditor({
         }
       />
 
-      <main
+      <div
         className="
           min-w-0
         "
@@ -167,7 +167,7 @@ export function PageEditor({
             resolvedActivePageId
           )
         }
-      </main>
+      </div>
     </div>
   );
 }

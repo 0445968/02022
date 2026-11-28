@@ -35,17 +35,16 @@ import {
   
   export async function GET(
     _request: Request,
-    {
-      params,
-    }: {
-      params: {
+    props: {
+      params: Promise<{
         id: string;
-      };
+      }>;
     }
   ) {
+    const params = await props.params;
     const user =
       await getAuthorizedUser(params.id);
-  
+
     if (
       !user
     ) {
@@ -60,13 +59,13 @@ import {
         }
       );
     }
-  
+
     const isFavorite =
       await isMediaFavorite(
         params.id,
         user.id
       );
-  
+
     return NextResponse.json({
       mediaAssetId:
         params.id,
@@ -81,17 +80,16 @@ import {
   
   export async function POST(
     _request: Request,
-    {
-      params,
-    }: {
-      params: {
+    props: {
+      params: Promise<{
         id: string;
-      };
+      }>;
     }
   ) {
+    const params = await props.params;
     const user =
       await getAuthorizedUser(params.id);
-  
+
     if (
       !user
     ) {
@@ -106,13 +104,13 @@ import {
         }
       );
     }
-  
+
     const success =
       await favoriteMediaAsset(
         params.id,
         user.id
       );
-  
+
     if (
       !success
     ) {
@@ -127,7 +125,7 @@ import {
         }
       );
     }
-  
+
     return NextResponse.json({
       mediaAssetId:
         params.id,
@@ -143,17 +141,16 @@ import {
   
   export async function DELETE(
     _request: Request,
-    {
-      params,
-    }: {
-      params: {
+    props: {
+      params: Promise<{
         id: string;
-      };
+      }>;
     }
   ) {
+    const params = await props.params;
     const user =
       await getAuthorizedUser(params.id);
-  
+
     if (
       !user
     ) {
@@ -168,13 +165,13 @@ import {
         }
       );
     }
-  
+
     const success =
       await unfavoriteMediaAsset(
         params.id,
         user.id
       );
-  
+
     if (
       !success
     ) {
@@ -189,7 +186,7 @@ import {
         }
       );
     }
-  
+
     return NextResponse.json({
       mediaAssetId:
         params.id,
@@ -205,17 +202,16 @@ import {
   
   export async function PATCH(
     _request: Request,
-    {
-      params,
-    }: {
-      params: {
+    props: {
+      params: Promise<{
         id: string;
-      };
+      }>;
     }
   ) {
+    const params = await props.params;
     const user =
       await getAuthorizedUser(params.id);
-  
+
     if (
       !user
     ) {
@@ -230,13 +226,13 @@ import {
         }
       );
     }
-  
+
     const result =
       await toggleMediaFavorite(
         params.id,
         user.id
       );
-  
+
     if (
       !result
     ) {
@@ -251,7 +247,7 @@ import {
         }
       );
     }
-  
+
     return NextResponse.json(
       result
     );

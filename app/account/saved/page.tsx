@@ -39,9 +39,9 @@ import {
 } from '@/lib/services/saved-stories';
 
 interface SavedPageProps {
-  searchParams?: {
+  searchParams?: Promise<{
     page?: string;
-  };
+  }>;
 }
 
 function parsePage(
@@ -81,9 +81,8 @@ function replacePageTokens(
     );
 }
 
-export default async function SavedPage({
-  searchParams,
-}: SavedPageProps) {
+export default async function SavedPage(props: SavedPageProps) {
+  const searchParams = await props.searchParams;
   const user =
     await getCurrentUser();
 

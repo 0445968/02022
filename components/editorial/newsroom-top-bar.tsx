@@ -1,3 +1,4 @@
+import {BRAND_NAME,BRAND_LOGO,BRAND_LOGO_WIDTH,BRAND_LOGO_HEIGHT} from '@/lib/brand';
 import Image from 'next/image';
 import Link from 'next/link';
 
@@ -34,6 +35,7 @@ export function NewsroomTopBar({
       className="
         flex
         h-14
+        shrink-0
         items-center
         justify-between
         border-b
@@ -42,7 +44,7 @@ export function NewsroomTopBar({
         px-4
       "
     >
-      <div className="flex items-center gap-3">
+      <div className="flex min-w-0 items-center gap-3">
         <Link
           href={siteHref}
           className="
@@ -54,17 +56,19 @@ export function NewsroomTopBar({
             focus-visible:ring-2
             focus-visible:ring-ring
           "
-          aria-label="West Island Times"
+          aria-label={BRAND_NAME}
         >
           <Image
-            src="/images/logo-10.png"
-            alt="West Island Times"
-            width={140}
-            height={36}
+            src={BRAND_LOGO} unoptimized
+            alt={BRAND_NAME}
+            width={BRAND_LOGO_WIDTH}
+            height={BRAND_LOGO_HEIGHT}
             priority
             className="
-              h-6
+              h-auto
+              max-h-6
               w-auto
+              max-w-full
               object-contain
             "
           />
@@ -120,6 +124,7 @@ export function NewsroomTopBar({
         </Link>
 
         <SignOutButton
+          locale={locale}
           dict={dict}
         />
       </div>

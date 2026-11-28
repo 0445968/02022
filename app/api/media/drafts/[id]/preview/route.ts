@@ -9,10 +9,8 @@ import { privateDraftMediaEnabled } from '@/lib/permissions/private-draft-media'
 const UUID=/^[a-f\d]{8}-[a-f\d]{4}-[1-8][a-f\d]{3}-[89ab][a-f\d]{3}-[a-f\d]{12}$/i;
 const PREVIEW_TTL_SECONDS=60;
 
-export async function GET(
-  _request: Request,
-  {params}:{params:{id:string}}
-) {
+export async function GET(_request: Request, props:{params: Promise<{id:string}>}) {
+  const params = await props.params;
   if (!privateDraftMediaEnabled() || isDevAuthBypass()) {
     return NextResponse.json({error:'Not found'},{status:404});
   }

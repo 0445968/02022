@@ -1,13 +1,12 @@
 'use client';
+import Link from 'next/link';
 
 import {
   useCallback,
   useRef,
   useState,
 } from 'react';
-import {
-  useRouter,
-} from 'next/navigation';
+import * as HistoryDialog from '@radix-ui/react-dialog';
 
 import type {VersionedLayout} from '@/lib/permissions/homepage-history-contract';
 import {LayoutHistoryPanel} from './LayoutHistoryPanel';
@@ -35,6 +34,7 @@ import {
 } from './front-page/FrontPageController';
 
 interface PageEditorClientProps {
+  pollPlacementHref?:string;
   versioned?:VersionedLayout|null;
   locale: Locale;
 
@@ -69,6 +69,7 @@ const EMPTY_FRONT_PAGE_STATE:
 export function PageEditorClient({
   locale,
   versioned=null,
+  pollPlacementHref,
   placements,
   layoutDraft,
   breakingNews,
@@ -132,6 +133,7 @@ export function PageEditorClient({
 
   return (
     <>
+      {pollPlacementHref&&<div className="flex justify-end border-b border-border px-4 py-2"><Link target="_blank" rel="noopener noreferrer" className="rounded-md border border-border px-3 py-1 text-xs font-medium hover:bg-surface-muted" href={pollPlacementHref}>{locale==='es'?'Ubicaciones de encuestas':'Poll placements'}</Link></div>}
       <PageEditor
         locale={
           locale
@@ -207,111 +209,29 @@ export function PageEditorClient({
         }}
       </PageEditor>
 
-      {historyOpen && (
-        <div
-          className="
-            fixed
-            inset-0
-            z-[100]
-            flex
-            items-center
-            justify-center
-            bg-black/40
-            p-4
-          "
-          role="presentation"
-          onMouseDown={(
-            event
-          ) => {
-            if (
-              event.target ===
-              event.currentTarget
-            ) {
-              setHistoryOpen(
-                false
-              );
-            }
-          }}
-        >
-          <div
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="page-editor-history-title"
-            className="
-              w-full
-              max-w-lg
-              rounded-2xl
-              border
-              border-border
-              bg-white
-              p-5
-              shadow-2xl
-            "
+      <HistoryDialog.Root open={historyOpen} onOpenChange={setHistoryOpen}>
+        <HistoryDialog.Portal>
+          <HistoryDialog.Overlay className="fixed inset-0 z-[100] bg-black/40"/>
+          <HistoryDialog.Content
+            className="fixed left-1/2 top-1/2 z-[101] max-h-[85dvh] w-[calc(100%_-_2rem)] max-w-lg -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-2xl border border-border bg-white p-5 shadow-2xl"
+            onCloseAutoFocus={event=>{event.preventDefault();document.getElementById('page-editor-actions')?.focus();}}
           >
-            <div
-              className="
-                flex
-                items-start
-                justify-between
-                gap-4
-              "
-            >
-              <div>
-                <h2
-                  id="page-editor-history-title"
-                  className="
-                    font-headline
-                    text-xl
-                    font-bold
-                    text-deep
-                  "
-                >
-                  {locale === 'es'
-                    ? 'Historial de diseños'
-                    : 'Layout History'}
-                </h2>
-
-                {versioned?<LayoutHistoryPanel locale={locale} onRestore={async revision=>{await controller.current?.restore(revision);setHistoryOpen(false);}}/>:<p
-                  className="
-                    mt-1
-                    text-sm
-                    leading-6
-                    text-muted-foreground
-                  "
-                >
-                  {locale === 'es'
-                    ? 'El historial de versiones aún no está disponible. Revertir restaura el diseño publicado cargado, no una versión anterior.'
-                    : 'No version history is available yet. Revert restores the currently loaded published layout, not an earlier version.'}
-                </p>}
-              </div>
-
-              <button
-                type="button"
-                onClick={() =>
-                  setHistoryOpen(
-                    false
-                  )
-                }
-                className="
-                  rounded-lg
-                  border
-                  border-border
-                  px-3
-                  py-2
-                  text-xs
-                  font-semibold
-                  text-deep
-                  hover:bg-surface-muted
-                "
-              >
-                {locale === 'es'
-                  ? 'Cerrar'
-                  : 'Close'}
-              </button>
+            <div className="flex items-start justify-between gap-4">
+              <HistoryDialog.Title className="font-headline text-xl font-bold text-deep">
+                {locale==='es'?'Historial de diseños':'Layout History'}
+              </HistoryDialog.Title>
+              <HistoryDialog.Close className="shrink-0 rounded-lg border border-border px-3 py-2 text-xs font-semibold text-deep hover:bg-surface-muted">
+                {locale==='es'?'Cerrar':'Close'}
+              </HistoryDialog.Close>
             </div>
-          </div>
-        </div>
-      )}
+            <HistoryDialog.Description className="mt-2 text-sm leading-6 text-muted-foreground">
+              {locale==='es'?'Restaurar una versión no cambia la portada publicada.':'Restoring a version does not change the published homepage.'}
+            </HistoryDialog.Description>
+            {versioned?<LayoutHistoryPanel locale={locale} onRestore={async revision=>{await controller.current?.restore(revision);setHistoryOpen(false);}}/>:
+              <p className="mt-2 text-sm text-muted-foreground">{locale==='es'?'El historial de versiones aún no está disponible.':'No version history is available yet.'}</p>}
+          </HistoryDialog.Content>
+        </HistoryDialog.Portal>
+      </HistoryDialog.Root>
     </>
   );
 }

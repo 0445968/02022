@@ -1,6 +1,6 @@
 {
   "site": {
-    "name": "Simply Raizal",
+    "name": "Clear Talks",
     "tagline": "News from the Archipelago of San Andrés, Old Providence and Saint Catalina",
     "description": "An independent digital media platform serving the Raizal people and the islands of the Archipelago of San Andrés, Old Providence and Saint Catalina."
   },
@@ -49,7 +49,7 @@
   },
   "footer": {
     "about": "About",
-    "aboutDesc": "Simply Raizal is an independent digital media platform rooted in the Archipelago of San Andrés, Old Providence and Saint Catalina.",
+    "aboutDesc": "Clear Talks is an independent digital media platform rooted in the Archipelago of San Andrés, Old Providence and Saint Catalina.",
     "sections": "Sections",
     "network": "Network",
     "editorial": "Editorial",
@@ -79,8 +79,8 @@
   "auth": {
     "signIn": "Sign in",
     "signUp": "Create account",
-    "signInTitle": "Sign in to Simply Raizal",
-    "signUpTitle": "Join Simply Raizal",
+    "signInTitle": "Sign in to Clear Talks",
+    "signUpTitle": "Join Clear Talks",
     "signInDesc": "Enter your email and password to access your account and the newsroom.",
     "signUpDesc": "Create an account to comment, follow stories, and access the newsroom if you are staff.",
     "email": "Email",
@@ -136,10 +136,10 @@
     "team": "Team & access"
   },
   "account": {
-    "title": "My West Island Times",
+    "title": "My Clear Talks",
     "overview": "Overview",
     "saved": "Saved",
-    "savedDescription": "Articles and other West Island Times content you want to revisit.",
+    "savedDescription": "Articles and other Clear Talks content you want to revisit.",
     "savedArticles": "Articles",
     "savedVideos": "Videos",
     "savedPodcasts": "Podcasts",
@@ -177,7 +177,7 @@
     "commentsUpdateError": "Unable to update your comment. Please try again.",
     "commentsDeleteError": "Unable to delete your comment. Please try again.",
     "commentsEmptyTitle": "You have not commented yet",
-    "commentsEmptyDescription": "Join a conversation on any published West Island Times article.",
+    "commentsEmptyDescription": "Join a conversation on any published Clear Talks article.",
     "commentsBrowseLatest": "Browse latest news",
     "commentsPageStatus": "Page {page} of {totalPages}",
     "commentsPrevious": "Previous",
@@ -200,7 +200,7 @@
     "roleAuthorEditor": "Author & Editor",
     "editorialTitle": "Editorial title",
     "openNewsroom": "Open Newsroom",
-    "backToSite": "Back to West Island Times",
+    "backToSite": "Back to Clear Talks",
     "menuLabel": "Account menu"
   },
   "common": {
@@ -279,7 +279,7 @@
     "originallyPublishedDate": "Originally published",
     "originallyPublishedDateHint": "Original publication date if this piece was published previously.",
     "publishedDate": "Published date",
-    "publishedDateHint": "Publication date on West Island Times.",
+    "publishedDateHint": "Publication date on Clear Talks.",
     "scheduledDate": "Scheduled for",
     "scheduledDateHint": "Date and time this story is scheduled to publish.",
     "publication": "Publication",

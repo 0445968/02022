@@ -34,9 +34,9 @@ test('promotion requires session and independent approval, edit, upload, view gr
 });
 test('private and public file hashes are verified; cross-bucket copy never overwrites or moves original',()=>{
   assert.match(list,/source_sha256:sha256/);
-  assert.match(approve,/digest\(sourceBlob\)!==draft\.source_sha256/);
+  assert.match(approve,/\(await\s+digest\(sourceBlob\)\)\s*!==\s*draft\.source_sha256|await\s+digest\(sourceBlob\)\s*!==\s*draft\.source_sha256/);
   assert.match(approve,/\.copy\(draft\.storage_path,destPath,\{destinationBucket:'media'\}\)/);
-  assert.match(approve,/digest\(publicBlob\)!==draft\.source_sha256/);
+  assert.match(approve,/\(await\s+digest\(publicBlob\)\)\s*!==\s*draft\.source_sha256|await\s+digest\(publicBlob\)\s*!==\s*draft\.source_sha256/);
   assert.match(approve,/\.eq\('storage_path',destPath\)\.maybeSingle\(\)/);
   assert.doesNotMatch(approve,/\.move\(|upsert:\s*true|\.remove\(/);
 });

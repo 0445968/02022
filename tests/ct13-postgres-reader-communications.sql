@@ -5,6 +5,26 @@ do $fn$begin
  if has_table_privilege('authenticated','newsroom_private.reader_notice_events','SELECT') or has_table_privilege('authenticated','newsroom_private.newsletter_subscriptions','SELECT') or has_function_privilege('authenticated','public.mail_begin_confirmation(uuid,text,text)','EXECUTE') or has_function_privilege('anon','public.reader_read_notices(integer)','EXECUTE') then raise exception 'Communications privilege leak';end if;
 end;$fn$;
 begin;
+-- Fixture-only helper. The existing CT06/08 suites exercise the real reviewed
+-- publisher. Here we need deterministic access-level transitions to exercise
+-- the real notification trigger and reader RLS on the same published row.
+-- Only the disposable database owner can insert the transaction-bound permit.
+-- Do not disable triggers, weaken grants or ship this helper in a migration.
+create function pg_temp.ct13_fixture_access(p_access text) returns void
+language plpgsql security invoker as $fn$
+declare sid uuid:='20000000-0000-0000-0000-000000000001';
+ prior text:=current_setting('request.jwt.claim.sub',true);
+ actor uuid:='00000000-0000-0000-0000-000000000001';
+begin
+ perform set_config('request.jwt.claim.sub',actor::text,true);
+ insert into newsroom_private.publication_permits(story_id,transaction_id,backend_pid,actor)
+ values(sid,pg_current_xact_id(),pg_backend_pid(),actor);
+ update public.stories set access_level=p_access where id=sid and status='published';
+ if not found then raise exception 'Expected published fixture';end if;
+ delete from newsroom_private.publication_permits where story_id=sid;
+ perform set_config('request.jwt.claim.sub',coalesce(prior,''),true);
+end;$fn$;
+revoke all on function pg_temp.ct13_fixture_access(text) from public,anon,authenticated,service_role;
 set local role authenticated;
 set local request.jwt.claim.sub='00000000-0000-0000-0000-000000000005';
 do $fn$declare p jsonb;begin
@@ -16,9 +36,13 @@ do $fn$declare p jsonb;begin
  if jsonb_array_length(public.reader_read_newsletters()->'topics')<>3 then raise exception 'Topic projection';end if;
 end;$fn$;
 reset role;
--- Exercise actual story trigger instead of manually inserting the public event.
-update public.stories set access_level='registered' where id='20000000-0000-0000-0000-000000000001';
-update public.stories set access_level='public' where id='20000000-0000-0000-0000-000000000001';
+-- Assert the production guard still rejects an unreviewed direct write.
+do $fn$begin
+ begin update public.stories set access_level='registered' where id='20000000-0000-0000-0000-000000000001';raise exception 'Direct live access change accepted';exception when insufficient_privilege then null;end;
+end;$fn$;
+-- Exercise actual story trigger through the transaction-bound fixture permit.
+select pg_temp.ct13_fixture_access('registered');
+select pg_temp.ct13_fixture_access('public');
 insert into newsroom_private.reader_privacy_requests(account_id,kind) values('00000000-0000-0000-0000-000000000002','export');
 update newsroom_private.reader_privacy_requests set status='reviewing' where account_id='00000000-0000-0000-0000-000000000002' and kind='export';
 set local role authenticated;
@@ -34,7 +58,7 @@ do $fn$declare p jsonb;eid uuid;begin
 end;$fn$;
 reset role;
 -- Direct database checks: verified readers may see registered content, never paid content.
-update public.stories set access_level='registered' where id='20000000-0000-0000-0000-000000000001';
+select pg_temp.ct13_fixture_access('registered');
 set local role anon;
 do $fn$begin
  if exists(select 1 from public.stories where id='20000000-0000-0000-0000-000000000001') then raise exception 'Anonymous registered access';end if;
@@ -46,14 +70,14 @@ do $fn$begin
  if not exists(select 1 from public.stories where id='20000000-0000-0000-0000-000000000001') then raise exception 'Verified registered access missing';end if;
 end;$fn$;
 reset role;
-update public.stories set access_level='premium' where id='20000000-0000-0000-0000-000000000001';
+select pg_temp.ct13_fixture_access('premium');
 set local role authenticated;
 set local request.jwt.claim.sub='00000000-0000-0000-0000-000000000005';
 do $fn$begin
  if exists(select 1 from public.stories where id='20000000-0000-0000-0000-000000000001') then raise exception 'Reader premium access';end if;
 end;$fn$;
 reset role;
-update public.stories set access_level='public' where id='20000000-0000-0000-0000-000000000001';
+select pg_temp.ct13_fixture_access('public');
 do $fn$begin
  begin perform newsroom_private.begin_newsletter_confirmation('00000000-0000-0000-0000-000000000005','latest',repeat('a',64));raise exception 'Disabled delivery allowed';exception when insufficient_privilege then null;end;
 end;$fn$;
@@ -70,5 +94,6 @@ do $fn$declare d jsonb;sid uuid;gen uuid;did uuid;begin
  if newsroom_private.claim_newsletter_digest() is not null then raise exception 'Suppressed digest eligible';end if;
  if not newsroom_private.unsubscribe_newsletter_link(sid,gen) then raise exception 'Unsubscribe failed';end if;
 end;$fn$;
+do $fn$begin if exists(select 1 from newsroom_private.publication_permits) then raise exception 'Fixture permit leaked';end if;end;$fn$;
 rollback;
 select 'CT13 isolated consent, inbox ownership, read-state and suppression checks passed' as result;

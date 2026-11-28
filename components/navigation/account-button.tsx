@@ -1,7 +1,6 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
-import { useTransition } from 'react';
+import {useEffect,useId,useRef,useState} from 'react';
 import Link from 'next/link';
 import { LogIn, LogOut, User, LayoutDashboard } from 'lucide-react';
 import { createClient } from '@/lib/db/supabase-client';
@@ -12,27 +11,37 @@ import type { Locale, CurrentUser } from '@/types';
 
 interface AccountButtonProps {
   user: CurrentUser | null;
+  canOpenNewsroom?:boolean;
   dict: Dictionary;
   locale: Locale;
 }
 
-export function AccountButton({ user, dict, locale }: AccountButtonProps) {
-  const router = useRouter();
-  const [isPending, startTransition] = useTransition();
-
-  async function handleSignOut() {
-    const supabase = createClient();
-    await supabase.auth.signOut();
-    startTransition(() => {
-      router.push(localizedPath(locale, '/'));
-      router.refresh();
-    });
+export function AccountButton({ user, dict, locale, canOpenNewsroom }: AccountButtonProps) {
+  const lock=useRef(false),root=useRef<HTMLDivElement>(null),trigger=useRef<HTMLButtonElement>(null);
+  const panelId=useId();
+  const [open,setOpen]=useState(false);
+  useEffect(()=>{
+    if(!open)return;
+    const outside=(event:PointerEvent)=>{if(!root.current?.contains(event.target as Node))setOpen(false);};
+    document.addEventListener('pointerdown',outside);
+    return()=>document.removeEventListener('pointerdown',outside);
+  },[open]);
+  const [isPending,setPending]=useState(false),[error,setError]=useState(false);
+  async function handleSignOut(){
+    if(lock.current)return;
+    lock.current=true;setPending(true);setError(false);
+    try{
+      const {error:failure}=await createClient().auth.signOut();
+      if(failure)throw failure;
+      window.location.replace(localizedPath(locale,'/'));
+    }catch{setError(true);setPending(false);lock.current=false;}
   }
 
   if (!user) {
     return (
       <Link
         href={localizedPath(locale, '/auth/sign-in')}
+        aria-label={dict.nav.signIn}
         className="inline-flex h-9 items-center gap-1.5 bg-primary px-3 text-xs font-semibold uppercase tracking-wide text-white transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
       >
         <LogIn className="h-3.5 w-3.5" aria-hidden />
@@ -49,12 +58,14 @@ export function AccountButton({ user, dict, locale }: AccountButtonProps) {
     .toUpperCase();
 
   return (
-    <div className="group relative">
+    <div ref={root} className="relative" onBlur={event=>{if(!event.currentTarget.contains(event.relatedTarget as Node|null))setOpen(false);}} onKeyDown={event=>{if(event.key==='Escape'&&open){event.preventDefault();setOpen(false);trigger.current?.focus();}}}>
       <button
         type="button"
         className="inline-flex h-9 items-center gap-1.5 rounded-sm border border-border bg-white px-2 text-xs font-semibold text-foreground transition-colors hover:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-        aria-haspopup="true"
-        aria-expanded="false"
+        ref={trigger}
+        aria-controls={panelId}
+        aria-expanded={open}
+        onClick={()=>setOpen(value=>!value)}
         aria-label={dict.nav.account}
       >
         <span className="flex h-6 w-6 items-center justify-center rounded-full bg-deep text-[0.625rem] font-bold text-white">
@@ -65,7 +76,7 @@ export function AccountButton({ user, dict, locale }: AccountButtonProps) {
         </span>
       </button>
 
-      <div className="invisible absolute right-0 top-full z-50 mt-1 w-56 border border-border bg-white opacity-0 shadow-lg transition-all group-hover:visible group-hover:opacity-100 group-focus-within:visible group-focus-within:opacity-100">
+      <div id={panelId} hidden={!open} className="absolute right-0 top-full z-50 mt-1 w-56 border border-border bg-white shadow-lg">
         <div className="border-b border-border px-3 py-2.5">
           <p className="text-[0.6875rem] font-semibold uppercase tracking-wide text-muted-foreground">
             {dict.account.signedInAs}
@@ -75,7 +86,7 @@ export function AccountButton({ user, dict, locale }: AccountButtonProps) {
           </p>
         </div>
         <ul className="py-1">
-          {isStaff(user) && (
+          {(canOpenNewsroom??isStaff(user)) && (
             <li>
               <Link
                 href="/newsroom"
@@ -105,6 +116,7 @@ export function AccountButton({ user, dict, locale }: AccountButtonProps) {
               <LogOut className="h-4 w-4" aria-hidden />
               {dict.nav.signOut}
             </button>
+            {error&&<p role="alert" className="px-3 py-2 text-xs text-breaking">{locale==='es'?'No se pudo cerrar sesión. Intente de nuevo.':'Sign-out could not be confirmed. Try again.'}</p>}
           </li>
         </ul>
       </div>

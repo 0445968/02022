@@ -9,6 +9,8 @@ import {
 } from 'lucide-react';
 import {
   useState,
+  useEffect,
+  useRef,
 } from 'react';
 
 import type {
@@ -41,6 +43,16 @@ export function PageEditorTopBar({
     menuOpen,
     setMenuOpen,
   ] = useState(false);
+  const menuRef=useRef<HTMLDivElement>(null);
+  const actionsRef=useRef<HTMLButtonElement>(null);
+  useEffect(()=>{
+    if(!menuOpen)return;
+    const outside=(event:PointerEvent)=>{if(event.target instanceof Node&&!menuRef.current?.contains(event.target))setMenuOpen(false);};
+    const key=(event:KeyboardEvent)=>{if(event.key==='Escape'){event.preventDefault();setMenuOpen(false);actionsRef.current?.focus();}};
+    document.addEventListener('pointerdown',outside);
+    document.addEventListener('keydown',key);
+    return()=>{document.removeEventListener('pointerdown',outside);document.removeEventListener('keydown',key);};
+  },[menuOpen]);
 
   return (
     <div
@@ -58,9 +70,13 @@ export function PageEditorTopBar({
         className="
           flex
           min-h-14
+          flex-wrap
           items-center
           justify-between
-          gap-4
+          gap-2
+          py-2
+          sm:gap-4
+          sm:py-0
           px-4
           sm:px-6
         "
@@ -78,7 +94,7 @@ export function PageEditorTopBar({
               min-w-0
             "
           >
-            <p
+            <h1
               className="
                 truncate
                 text-sm
@@ -89,7 +105,7 @@ export function PageEditorTopBar({
               {locale === 'es'
                 ? 'Editor de páginas'
                 : 'Page Editor'}
-            </p>
+            </h1>
 
             <p
               className="
@@ -130,6 +146,7 @@ export function PageEditorTopBar({
         </div>
 
         <div
+          ref={menuRef}
           className="
             relative
             flex
@@ -179,7 +196,10 @@ export function PageEditorTopBar({
           )}
 
           <button
+            id="page-editor-actions"
+            ref={actionsRef}
             type="button"
+            aria-controls={menuOpen?'page-editor-actions-panel':undefined}
             disabled={
               busy
             }
@@ -226,6 +246,7 @@ export function PageEditorTopBar({
 
           {menuOpen && (
             <div
+              id="page-editor-actions-panel"
               className="
                 absolute
                 right-0

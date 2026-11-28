@@ -1,3 +1,4 @@
+import type {StoryType} from '@/lib/permissions/story-types';
 import type {
   StoryLanguage,
   StoryStatus,
@@ -803,6 +804,7 @@ export interface StoryTag {
  * - public article view
  */
 export interface StoryWithRelations {
+  storyType?: StoryType;
   id: string;
 
   slug: string;
@@ -910,6 +912,7 @@ export interface StoryWithRelations {
  * Lightweight story row used by newsroom lists and dashboards.
  */
 export interface StoryListItem {
+  storyType?: StoryType;
   id: string;
 
   slug: string;
@@ -969,6 +972,7 @@ export interface StoryListItem {
 /* ========================================================= */
 
 export interface StoryVersion {
+  storyType?: StoryType;
   id: string;
 
   storyId: string;

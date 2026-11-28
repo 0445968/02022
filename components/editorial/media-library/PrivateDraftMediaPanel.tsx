@@ -15,7 +15,7 @@ const choices=[['owned','Owned'],['staff_created','Staff-created'],['licensed','
 const field='w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground';
 const button='inline-flex items-center gap-2 rounded-lg border border-border px-3 py-2 text-sm text-foreground disabled:opacity-50';
 
-export function PrivateDraftMediaPanel({canReview,locale='en'}:{canReview:boolean;locale?:Locale}){
+export function PrivateDraftMediaPanel({canReview,locale='en',onBusyChange,onChanged}:{canReview:boolean;locale?:Locale;onBusyChange?:(busy:boolean)=>void;onChanged?:()=>void}){
   const es=locale==='es';
   const [quota,setQuota]=useState<PrivateUploadQuota|null>(null);
   const [drafts,setDrafts]=useState<Draft[]>([]);
@@ -33,21 +33,22 @@ export function PrivateDraftMediaPanel({canReview,locale='en'}:{canReview:boolea
   const [confirmRights,setConfirmRights]=useState(false);
   const [reason,setReason]=useState('');
 
-  const refresh=useCallback(async()=>{
-    const response=await fetch('/api/media/drafts',{cache:'no-store'});
+  const refresh=useCallback(async(signal?:AbortSignal)=>{
+    const response=await fetch('/api/media/drafts',{cache:'no-store',signal});
     const data=await response.json() as {drafts?:Draft[];quota?:PrivateUploadQuota|null;error?:string};
     if(!response.ok)throw new Error(data.error??'Unable to list drafts');
+    if(signal?.aborted)return;
     setDrafts(data.drafts??[]);setQuota(data.quota??null);
   },[]);
   useEffect(()=>{
-    let active=true;
-    void refresh().catch((e:unknown)=>{if(active)setError(e instanceof Error?e.message:'Draft list unavailable');});
-    return ()=>{active=false;};
+    const controller=new AbortController();
+    const timer=setTimeout(()=>void refresh(controller.signal).catch((e:unknown)=>{if(!controller.signal.aborted)setError(e instanceof Error?e.message:'Draft list unavailable');}),0);
+    return ()=>{clearTimeout(timer);controller.abort();};
   },[refresh]);
 
   async function upload(){
     if(!file||!quota||quota.remainingSlots===0||file.size>quota.maxFileBytes)return;
-    setBusy(true);setError(null);setNotice(null);
+    setBusy(true);onBusyChange?.(true);setError(null);setNotice(null);
     try{
       const form=new FormData();form.append('file',file);
       const response=await fetch('/api/media/drafts',{method:'POST',body:form});
@@ -55,17 +56,17 @@ export function PrivateDraftMediaPanel({canReview,locale='en'}:{canReview:boolea
       if(!response.ok)throw new Error(data.error??'Upload failed');
       await refresh();setFile(null);setNotice('Media uploaded privately for review.');
     }catch(e){setError(e instanceof Error?e.message:'Upload failed');await refresh().catch(()=>setQuota(null));}
-    finally{setBusy(false);}
+    finally{setBusy(false);onBusyChange?.(false);}
   }
   async function preview(id:string){
-    setBusy(true);setError(null);
+    setBusy(true);onBusyChange?.(true);setError(null);
     try{
       const response=await fetch(`/api/media/drafts/${id}/preview`,{cache:'no-store'});
       const data=await response.json() as {error?:string;signedUrl?:string};
       if(!response.ok||!data.signedUrl)throw new Error(data.error??'Preview failed');
       window.open(data.signedUrl,'_blank','noopener,noreferrer');
     }catch(e){setError(e instanceof Error?e.message:'Preview failed');}
-    finally{setBusy(false);}
+    finally{setBusy(false);onBusyChange?.(false);}
   }
   function choose(d:Draft){
     setSelected(d.id);setRightsStatus(d.rightsStatus??'owned');
@@ -74,7 +75,7 @@ export function PrivateDraftMediaPanel({canReview,locale='en'}:{canReview:boolea
     setReason('');setConfirmRights(false);setError(null);
   }
   async function act(id:string,kind:'approve'|'reject'){
-    setBusy(true);setError(null);setNotice(null);
+    setBusy(true);onBusyChange?.(true);setError(null);setNotice(null);
     try{
       const payload=kind==='reject'?{reason}:{
         rightsStatus,rightsNotes,licenseName,credit,altText,title,
@@ -87,13 +88,13 @@ export function PrivateDraftMediaPanel({canReview,locale='en'}:{canReview:boolea
       if(!response.ok)throw new Error(data.error??'Review failed');
       await refresh();setSelected(null);
       setNotice(kind==='approve'?'Public media approved.':'Draft rejected; private original retained.');
-      if(kind==='approve')window.location.reload();
+      if(kind==='approve')onChanged?.();
     }catch(e){setError(e instanceof Error?e.message:'Review failed');}
-    finally{setBusy(false);}
+    finally{setBusy(false);onBusyChange?.(false);}
   }
   const current=drafts.find(d=>d.id===selected);
   return <section id="ct-private-draft-panel" aria-label="Private media drafts"
-    className="mb-6 rounded-xl border border-border bg-background p-4 sm:p-5">
+    className="min-w-0 rounded-lg border border-border bg-background p-3">
     <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
       <div>
         <h2 className="text-base font-semibold text-foreground">Private media drafts</h2>
@@ -105,9 +106,9 @@ export function PrivateDraftMediaPanel({canReview,locale='en'}:{canReview:boolea
       </button>
     </div>
     {quota&&<div className="mb-4 rounded-lg border border-border p-3 text-sm">
-      <div className="flex flex-wrap justify-between gap-2"><strong>{es?'Cupo de cargas privadas':'Private upload allowance'}</strong><span>{quota.usedSlots} / {quota.maxSlots}</span></div>
-      <div className="mt-2 h-2 overflow-hidden rounded-full bg-surface-muted"><div className="h-full bg-primary" style={{width:(quota.usedSlots/quota.maxSlots*100)+'%'}}/></div>
-      <p className="mt-2 text-xs text-muted-foreground">{es?`${quota.remainingSlots} cargas disponibles. Máximo 10 MiB por archivo. Las reservas y los originales retenidos cuentan para el cupo.`:`${quota.remainingSlots} uploads remaining. Maximum 10 MiB per file. Reserved paths and retained originals count toward the allowance.`}</p>
+      <div className="flex flex-wrap justify-between gap-2"><strong>{es?'Cupo de cargas privadas':'Private upload allowance'}</strong><span>{quota.usedSlots}{quota.maxSlots===null?(es?' · Sin cupo acumulado':' · No cumulative cap'):' / '+quota.maxSlots}</span></div>
+      {quota.maxSlots!==null&&<div className="mt-2 h-2 overflow-hidden rounded-full bg-surface-muted"><div className="h-full bg-primary" style={{width:Math.min(100,quota.usedSlots/quota.maxSlots*100)+'%'}}/></div>}
+      <p className="mt-2 text-xs text-muted-foreground">{quota.maxSlots===null?(es?'Sin límite editorial acumulado. Máximo 10 MiB por archivo; siguen vigentes las verificaciones y los límites del proveedor.':'No cumulative editorial cap. Maximum 10 MiB per file; validation and provider limits still apply.'):es?`${quota.remainingSlots} cargas disponibles. Máximo 10 MiB por archivo. Las reservas y los originales retenidos cuentan para el cupo.`:`${quota.remainingSlots} uploads remaining. Maximum 10 MiB per file. Reserved paths and retained originals count toward the allowance.`}</p>
       {quota.remainingSlots===0&&<p role="status" className="mt-2 text-xs">{es?'Cupo agotado. Solicite una revisión del almacenamiento.':'Allowance exhausted. Request a storage review.'}</p>}
     </div>}
     <div className="mb-4 flex flex-wrap items-center gap-3">

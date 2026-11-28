@@ -15,10 +15,11 @@ export async function generateStaticParams() {
 
 interface LayoutProps {
   children: React.ReactNode;
-  params: { locale: string };
+  params: Promise<{ locale: string }>;
 }
 
-export async function generateMetadata({ params }: LayoutProps) {
+export async function generateMetadata(props: LayoutProps) {
+  const params = await props.params;
   const locale = isLocale(params.locale) ? params.locale : 'en';
   const dict = getDictionary(locale as Locale);
   return {
@@ -36,7 +37,13 @@ export async function generateMetadata({ params }: LayoutProps) {
   };
 }
 
-export default async function LocaleLayout({ children, params }: LayoutProps) {
+export default async function LocaleLayout(props: LayoutProps) {
+  const params = await props.params;
+
+  const {
+    children
+  } = props;
+
   if (!isLocale(params.locale)) {
     notFound();
   }

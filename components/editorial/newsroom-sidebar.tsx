@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import {useEffect,useRef} from 'react';
 import { usePathname } from 'next/navigation';
 
 import {
@@ -90,6 +91,7 @@ const NAV = [
     icon: BarChart3,
     href: '/newsroom/polls',
   },
+  {key:'workAssignments',icon:ClipboardCheck,href:'/newsroom/assignments'},
   {
     key: 'schedule',
     icon: Calendar,
@@ -114,17 +116,31 @@ export function NewsroomSidebar({
 }: NewsroomSidebarProps) {
   const pathname =
     usePathname();
+  const navRef=useRef<HTMLElement>(null);
+  useEffect(()=>{
+    const nav=navRef.current;
+    if(!nav||!window.matchMedia('(max-width: 1023px)').matches)return;
+    const active=nav.querySelector<HTMLElement>('[aria-current="page"]');
+    if(!active)return;
+    const bounds=nav.getBoundingClientRect(),item=active.getBoundingClientRect();
+    if(item.left<bounds.left||item.right>bounds.right)nav.scrollLeft+=item.left-bounds.left-(bounds.width-item.width)/2;
+  },[pathname]);
 
   const items=scopedNav?scopedNav.map(key=>key==='contributor'?{key,icon:LayoutDashboard,href:'/newsroom/contributor'}:
-    key==='profile'?{key,icon:User,href:'/newsroom/profile'}:key==='reviewInbox'?{key,icon:ClipboardCheck,href:'/newsroom/reviews'}:key==='reports'?{key,icon:Flag,href:'/newsroom/reports'}:NAV.find(item=>item.key===key)!).filter(Boolean):NAV.filter(item=>(item.key!=='team'||showTeamNav)&&item.key!=='comments'&&item.key!=='schedule'&&item.key!=='polls');
+    key==='contributorNew'?{key,icon:PlusCircle,href:'/newsroom/contributor/new'}:key==='profile'?{key,icon:User,href:'/newsroom/profile'}:key==='reviewInbox'?{key,icon:ClipboardCheck,href:'/newsroom/reviews'}:key==='reports'?{key,icon:Flag,href:'/newsroom/reports'}:NAV.find(item=>item.key===key)!).filter(Boolean):NAV.filter(item=>(item.key!=='team'||showTeamNav)&&item.key!=='comments'&&item.key!=='schedule'&&item.key!=='polls'&&item.key!=='workAssignments');
+  const activeHref=items.filter(item=>pathname===item.href||(item.href!=='/newsroom'&&pathname.startsWith(item.href+'/'))).sort((a,b)=>b.href.length-a.href.length)[0]?.href;
   return (
     <aside
       className="
         flex
-        w-60
+        w-full
+        min-w-0
         shrink-0
         flex-col
-        border-r
+        border-b
+        lg:w-60
+        lg:border-b-0
+        lg:border-r
         border-border
         bg-surface-muted
       "
@@ -132,11 +148,13 @@ export function NewsroomSidebar({
       {/* User block */}
       <div
         className="
+          hidden
           border-b
           border-border
           bg-white
           px-4
           py-3
+          lg:block
         "
       >
         <p
@@ -180,17 +198,25 @@ export function NewsroomSidebar({
       </div>
 
       <nav
+        ref={navRef}
         className="
+          min-w-0
           flex-1
-          overflow-y-auto
+          overflow-x-auto
           py-2
+          lg:overflow-y-auto
         "
-        aria-label="Newsroom"
+        aria-label={locale==='es'?'Redacción':'Newsroom'}
       >
         <ul
           className="
-            space-y-0.5
+            flex
+            min-w-max
+            gap-1
             px-2
+            lg:block
+            lg:min-w-0
+            lg:space-y-0.5
           "
         >
           {items.map(
@@ -198,12 +224,7 @@ export function NewsroomSidebar({
               const Icon =
                 item.icon;
 
-              const active =
-                item.href ===
-                '/newsroom'
-                  ? pathname ===
-                    '/newsroom'
-                  : (pathname===item.href||pathname.startsWith(item.href+'/'))&&!(item.key==='stories'&&pathname==='/newsroom/stories/new');
+              const active = item.href===activeHref;
 
               /*
                * Temporary literal label
@@ -213,7 +234,7 @@ export function NewsroomSidebar({
                * dictionary values next.
                */
               const label =
-  item.key==='contributor'?(locale==='es'?'Mi espacio de trabajo':'My workspace'):item.key==='reviewInbox'?(locale==='es'?'Bandeja editorial':'Review inbox'):item.key==='reports'?(locale==='es'?'Denuncias':'Reports'):dict.newsroom[item.key as keyof typeof dict.newsroom];
+  item.key==='workAssignments'?(locale==='es'?'Asignaciones':'Assignments'):item.key==='contributorNew'?(locale==='es'?'Nuevo borrador':'New draft'):item.key==='contributor'?(locale==='es'?'Mi espacio de trabajo':'My workspace'):item.key==='reviewInbox'?(locale==='es'?'Bandeja editorial':'Review inbox'):item.key==='reports'?(locale==='es'?'Denuncias':'Reports'):dict.newsroom[item.key as keyof typeof dict.newsroom];
 
               return (
                 <li
@@ -229,7 +250,9 @@ export function NewsroomSidebar({
                       `
                         flex
                         items-center
+                        whitespace-nowrap
                         gap-2.5
+                        lg:whitespace-normal
                         rounded-[6px]
                         px-3
                         py-2
@@ -272,10 +295,12 @@ export function NewsroomSidebar({
 
       <div
         className="
+          hidden
           border-t
           border-border
           px-3
           py-3
+          lg:block
         "
       >
         <Link

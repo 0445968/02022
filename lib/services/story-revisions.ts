@@ -1,3 +1,4 @@
+import {isStoryType,storyTypesEnabled,type StoryType} from '@/lib/permissions/story-types';
 import {
     getDataClient,
   } from '@/lib/db/supabase-data-access';
@@ -6,10 +7,12 @@ import {
     AccessLevel,
     IslandScope,
     StoryLanguage,
+    Database,
     StoryStatus,
   } from '@/lib/db/database.types';
   
   export interface StoryRevision {
+    storyType?: StoryType;
     id: string;
   
     storyId: string;
@@ -107,6 +110,7 @@ import {
   }
   
   export interface SaveStoryRevisionInput {
+    storyType?: StoryType;
     headline: string;
 
     shortTitle:
@@ -190,6 +194,7 @@ import {
   }
   
   interface StoryRevisionRow {
+    story_type?: StoryType;
     id: string;
   
     story_id: string;
@@ -299,6 +304,7 @@ import {
       headline:
         row.headline,
 
+      storyType:storyTypesEnabled()&&isStoryType(row.story_type)?row.story_type:undefined,
       shortTitle:
         row.short_title,
   
@@ -438,7 +444,9 @@ import {
     const supabase =
       await getDataClient();
   
+    if(input.storyType!==undefined&&(!storyTypesEnabled()||!isStoryType(input.storyType)))throw Error('Invalid story type');
     const revisionData = {
+      ...(input.storyType!==undefined?{story_type:input.storyType}:{}),
       story_id:
         storyId,
   
@@ -576,6 +584,8 @@ import {
       );
     }
   
+    let initialType=input.storyType;
+    if(storyTypesEnabled()&&initialType===undefined){const live=await supabase.from('stories').select('story_type').eq('id',storyId).single();if(live.error||!isStoryType(live.data?.story_type))throw Error('Unable to read live story type');initialType=live.data.story_type;}
     const {
       data,
       error,
@@ -585,6 +595,7 @@ import {
       )
       .insert({
         ...revisionData,
+        ...(initialType!==undefined?{story_type:initialType}:{}),
   
         created_by:
           input.userId,
@@ -677,11 +688,12 @@ import {
       .from(
         'story_versions'
       )
-      .select(
+      .select<string, Pick<Database['public']['Tables']['story_versions']['Row'],'id'|'story_id'|'headline'|'short_title'|'subheadline'|'summary'|'body'|'language'|'author_id'|'editor_id'|'primary_category_id'|'created_at'> & {story_type?: Database['public']['Tables']['story_versions']['Row']['story_type']}>(
         `
           id,
           story_id,
           headline,
+          ${storyTypesEnabled()?'story_type,':''}
           subheadline,
           summary,
           body,
@@ -917,6 +929,7 @@ import {
         headline:
           version.headline,
 
+        storyType:storyTypesEnabled()&&isStoryType(version.story_type)?version.story_type:undefined,
         shortTitle:
           currentStory.short_title ?? null,
   

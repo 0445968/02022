@@ -19,7 +19,8 @@ export async function applyStaffPresetGrantChange(
     return {ok:false,code:'disabled'};
   }
   let validated:PresetGrantChange;
-  try{validated=validatePresetGrantChange(input);}
+  try{validated=validatePresetGrantChange(input);
+    if(process.env.CT_WORK_ASSIGNMENTS_ENABLED!=='true'&&validated.grants.some(g=>g.capability.startsWith('assignment.')))return {ok:false,code:'disabled'};}
   catch{return {ok:false,code:'invalid'};}
   try{
     const access=await getStaffTeamAccess();

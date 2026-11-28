@@ -7,7 +7,8 @@ import {DraftHttpError} from '@/lib/permissions/assigned-draft-http';
 import {ReviewInbox} from '@/components/editorial/story-editor/ReviewInbox';
 export const dynamic='force-dynamic';
 export const metadata={robots:{index:false,follow:false},referrer:'no-referrer'};
-export default async function ReviewInboxPage({searchParams}:{searchParams:{mode?:string;page?:string}}){
+export default async function ReviewInboxPage(props:{searchParams: Promise<{mode?:string;page?:string}>}) {
+ const searchParams = await props.searchParams;
  if(!reviewInboxEnabled())notFound();
  const user=await getCurrentUser();
  if(!user)redirect('/en/auth/sign-in?next=%2Fnewsroom%2Freviews');

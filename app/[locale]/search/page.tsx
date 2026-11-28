@@ -33,15 +33,15 @@ import type {
 } from '@/types';
 
 interface PageProps {
-  params: {
+  params: Promise<{
     locale: string;
-  };
+  }>;
 
-  searchParams: {
+  searchParams: Promise<{
     q?: string;
     type?: string;
     page?: string;
-  };
+  }>;
 }
 
 type SearchType =
@@ -230,10 +230,9 @@ function getPaginationPages(
   );
 }
 
-export default async function SearchPage({
-  params,
-  searchParams,
-}: PageProps) {
+export default async function SearchPage(props: PageProps) {
+  const searchParams = await props.searchParams;
+  const params = await props.params;
   if (
     !isLocale(
       params.locale

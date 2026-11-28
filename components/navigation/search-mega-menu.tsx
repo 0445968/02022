@@ -163,6 +163,11 @@ export function SearchMegaMenu({
 
   const hasSearch =
     trimmedQuery.length >= 1;
+  const searchKey=open?trimmedQuery:'';
+  const [previousSearchKey,setPreviousSearchKey]=useState(searchKey);
+  if(searchKey!==previousSearchKey){
+    setPreviousSearchKey(searchKey);setResults([]);setLoading(false);setSearchError(false);
+  }
 
   useEffect(() => {
     if (!open) {
@@ -217,10 +222,6 @@ export function SearchMegaMenu({
       !open ||
       trimmedQuery.length < 1
     ) {
-      setResults([]);
-      setLoading(false);
-      setSearchError(false);
-
       return;
     }
 

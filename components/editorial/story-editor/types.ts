@@ -1,3 +1,4 @@
+import type {StoryType} from '@/lib/permissions/story-types';
 import type {
   AccessLevel,
   IslandScope,
@@ -47,6 +48,8 @@ export interface StoryEditorUser {
 export interface StoryEditorProps {
   dict: Dictionary;
   assignmentHref?:string;
+  pollPlacementHref?:string;
+  translationHref?:string;
   reviewHref?:string;
   reviewedPublication?:boolean;
 
@@ -76,6 +79,7 @@ export interface StoryEditorProps {
  * autosave plus the editor child components.
  */
 export interface StoryEditorState {
+  storyType?: StoryType;
   headline: string;
 
   shortTitle: string;
@@ -154,6 +158,7 @@ export interface StoryEditorState {
  * PUT /api/stories/[id]
  */
 export interface StorySavePayload {
+  storyType?: StoryType;
   headline: string;
 
   shortTitle:
@@ -244,6 +249,8 @@ export interface StorySavePayload {
  * Props shared by desktop and mobile settings panels.
  */
 export interface StorySettingsPanelProps {
+  storyType?: StoryType;
+  setStoryType:(value:StoryType)=>void;
   reviewedPublication?:boolean;
   dict: Dictionary;
 

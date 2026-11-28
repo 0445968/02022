@@ -72,9 +72,10 @@ test('staff story resource scope is loaded by the server, not accepted from clie
 
 test('migration enum matches the finite capabilities registry', () => {
   const source = readFileSync(new URL('../lib/permissions/capabilities.ts', import.meta.url), 'utf8');
-  const keys = [...source.matchAll(/^\s*'([^']+)'/gm)].map((match) => match[1]);
-  const sqlEnum = sql.slice(sql.indexOf('create type public.staff_capability_key'), sql.indexOf('create table public.staff_memberships'));
-  for (const key of keys.filter((value) => value.includes('.'))) {
-    assert.ok(sqlEnum.includes("'" + key + "'"), 'Missing capability: ' + key);
-  }
+  const registry=source.slice(source.indexOf('export const CAPABILITY_KEYS'),source.indexOf('export type Capability'));
+  const keys=[...registry.matchAll(/'([^']+)'/g)].map(m=>m[1]);
+  const original=sql.slice(sql.indexOf('create type public.staff_capability_key'),sql.indexOf('create table public.staff_memberships'));
+  const extensions=readdirSync(dir).filter(n=>/^\d{14}_.*\.sql$/.test(n)).flatMap(n=>[...readFileSync(new URL(n,dir),'utf8').matchAll(/alter type public\.staff_capability_key add value '([^']+)'/gi)].map(m=>m[1]));
+  const baseline=[...original.matchAll(/'([a-z_]+\.[a-z_]+)'/g)].map(m=>m[1]);
+  assert.deepEqual([...new Set([...baseline,...extensions])].sort(),[...new Set(keys)].sort());
 });

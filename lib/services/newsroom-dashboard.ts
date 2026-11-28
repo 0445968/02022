@@ -46,3 +46,24 @@ export async function readDashboardActivity(includeAssignments:boolean){
  ]);
  return {assigned,pending,feedback};
 }
+
+export type OwnerDashboardMode='team'|'personal';
+export async function readOwnerDashboard(mode:OwnerDashboardMode){
+ if(isDevAuthBypass())return null;
+ try{
+  const access=await getWorkspaceAccess();if(!access.allowed||!access.viewStories)return null;
+  const db=createClient() as unknown as SupabaseClient;
+  const {data:{user},error:authError}=await db.auth.getUser();if(authError||!user)return null;
+  const {data,error}=await db.rpc('staff_read_owner_dashboard',{p_mode:mode});
+  if(error||!data||data.mode!==mode||!data.summary||!Array.isArray(data.items)||data.items.length>5)return null;
+  const summary=data.summary;
+  for(const k of ['total','drafts','inReview','published','assignments'])if(!Number.isSafeInteger(summary[k])||summary[k]<0)return null;
+  if(summary.drafts+summary.inReview+summary.published>summary.total||data.items.length>summary.total)return null;
+  const items:DashboardStory[]=data.items.map((row:Record<string,unknown>)=>{
+   if(typeof row.id!=='string'||typeof row.headline!=='string'||typeof row.status!=='string'||typeof row.updatedAt!=='string'||!Number.isFinite(Date.parse(row.updatedAt)))throw Error('Invalid dashboard row');
+   return {id:row.id,headline:row.headline,status:row.status,updatedAt:row.updatedAt};
+  });
+  const {data:{user:fresh},error:freshError}=await db.auth.getUser();if(freshError||fresh?.id!==user.id)return null;
+  return {summary:{total:summary.total as number,drafts:summary.drafts as number,inReview:summary.inReview as number,published:summary.published as number,assignments:summary.assignments as number},items};
+ }catch{return null;}
+}

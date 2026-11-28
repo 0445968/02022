@@ -1,6 +1,7 @@
 'use client';
 
 import { createContext, useContext } from 'react';
+import { DocumentLanguage } from '@/components/layout/document-language';
 import type { Locale } from '@/types';
 import type { Dictionary } from '@/lib/i18n/dictionaries';
 
@@ -17,7 +18,7 @@ export function I18nProvider({
   children,
 }: I18nContextValue & { children: React.ReactNode }) {
   return (
-    <I18nContext.Provider value={{ locale, dict }}>{children}</I18nContext.Provider>
+    <I18nContext.Provider value={{ locale, dict }}><DocumentLanguage locale={locale}/>{children}</I18nContext.Provider>
   );
 }
 

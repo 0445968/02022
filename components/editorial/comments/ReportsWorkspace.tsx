@@ -35,10 +35,10 @@ export function ReportsWorkspace({data,detail,status,storyId,page,locale,comment
   }catch{setBlocked(true);setError(es?'Resultado incierto. Actualice antes de reintentar.':'Uncertain result. Refresh before retrying.');}
   finally{inFlight.current=false;setBusy(false);}
  }
- return <div className="mx-auto max-w-7xl space-y-5 px-4 py-6 sm:px-6">
-  <header className="flex flex-wrap items-start justify-between gap-3 border-b border-border pb-4">
-   <div><h1 className="font-headline text-2xl font-bold text-deep">{es?'Denuncias':'Reports'}</h1><p className="mt-1 text-sm text-muted-foreground">{es?'Investigue denuncias y registre decisiones sin cambiar automáticamente el comentario.':'Investigate reports and record decisions without automatically changing the comment.'}</p></div>
-   <div className="flex flex-wrap gap-2">{canOpenComments&&<Link onClick={guard} prefetch={false} href="/newsroom/comments" className={btn}>{es?'Comentarios':'Comments'}</Link>}<button type="button" className={btn} disabled={busy} onClick={()=>window.location.reload()}><RefreshCw className="h-4 w-4" aria-hidden/>{es?'Actualizar':'Refresh'}</button></div>
+ return <div className="w-full min-w-0 space-y-3 px-3 py-4 sm:px-5">
+  <header className="flex flex-wrap items-start justify-between gap-3 border-b border-border pb-3">
+   <div><h1 className="font-headline text-2xl font-bold text-deep">{es?'Denuncias':'Reports'}</h1><p className="mt-1 text-sm text-muted-foreground">{es?'Denuncias de lectores sobre comentarios, no estadísticas editoriales. Investigue y registre una decisión separada de la moderación.':'Reader-submitted comment complaints, not editorial analytics. Investigate the reported text and record a decision separately from moderation.'}</p></div>
+   <div className="flex flex-wrap gap-2">{canOpenComments&&<Link onClick={guard} prefetch={false} href={commentHref??"/newsroom/comments?view=article&status=all"} className={btn}>{commentHref?(es?'Abrir comentario':'Open comment'):(es?'Comentarios':'Comments')}</Link>}<button type="button" className={btn} disabled={busy} onClick={()=>window.location.reload()}><RefreshCw className="h-4 w-4" aria-hidden/>{es?'Actualizar':'Refresh'}</button></div>
   </header>
   <nav className="flex flex-wrap gap-2" aria-label={es?'Estados de denuncias':'Report statuses'}>
    {filters.map(f=><Link key={f} onClick={guard} prefetch={false} href={reportQueueHref(f,storyId)} aria-current={status===f?'page':undefined} className={status===f?'rounded-md bg-deep px-3 py-2 text-sm font-semibold text-white':btn}>{labels[f]}</Link>)}
@@ -52,7 +52,7 @@ export function ReportsWorkspace({data,detail,status,storyId,page,locale,comment
     {data.items.map(item=><article key={item.id} className="space-y-2 border-t border-border py-4">
      <div className="flex flex-wrap justify-between gap-2"><strong className="break-words text-sm">{es?'Denuncia de lector':'Reader report'}</strong><span className="rounded bg-surface-muted px-2 py-1 text-xs font-semibold">{labels[item.status]}</span></div>
      <p className="text-xs text-muted-foreground">{date(item.createdAt)} · {es?'Comentario':'Comment'}: {commentLabels[item.commentStatus]}</p>
-     <Link onClick={guard} prefetch={false} href={reportQueueHref(status,item.storyId)} className="break-words text-xs font-medium text-primary underline">{item.headline}</Link>
+     <Link onClick={guard} prefetch={false} href={reportQueueHref(status,item.storyId,0,item.id)} className="break-words text-xs font-medium text-primary underline">{item.headline}</Link>
      <p className="line-clamp-3 whitespace-pre-wrap break-words text-sm">{item.reason}</p>
      <Link onClick={guard} prefetch={false} className={btn} href={reportQueueHref(status,storyId,page,item.id)} aria-current={report?.id===item.id?'true':undefined}>{es?'Investigar':'Investigate'}</Link>
     </article>)}
@@ -62,7 +62,7 @@ export function ReportsWorkspace({data,detail,status,storyId,page,locale,comment
    </section>
    {report&&detail&&<section className="min-w-0 self-start space-y-4 rounded-lg border border-border bg-white p-4">
     <header className="flex items-center justify-between gap-2"><h2 className="font-semibold">{es?'Detalle de denuncia':'Report details'} · {labels[report.status]}</h2><Link onClick={guard} prefetch={false} href={reportQueueHref(status,storyId,page)} className={btn} aria-label={es?'Cerrar':'Close'}><X className="h-4 w-4" aria-hidden/></Link></header>
-    <div className="space-y-1"><h3 className="text-sm font-semibold">{es?'Motivo del lector':'Reader’s reason'}</h3><p className="whitespace-pre-wrap break-words text-sm">{report.reason}</p><p className="text-xs text-muted-foreground">{date(report.createdAt)}</p></div>
+    <div className="rounded-md border border-border bg-surface-muted p-3"><p className="text-xs font-medium text-muted-foreground">{es?'Artículo denunciado':'Reported article'}</p><p className="break-words text-sm font-semibold text-deep">{report.headline}</p><Link onClick={guard} prefetch={false} href={reportQueueHref('all',report.storyId)} className="text-xs text-primary underline">{es?'Todas las denuncias del artículo':'All reports for this article'}</Link></div><div className="space-y-1"><h3 className="text-sm font-semibold">{es?'Motivo del lector':'Reader’s reason'}</h3><p className="whitespace-pre-wrap break-words text-sm">{report.reason}</p><p className="text-xs text-muted-foreground">{date(report.createdAt)}</p></div>
     <div className="space-y-2 border-t border-border pt-3"><h3 className="text-sm font-semibold">{es?'Comentario actual':'Current comment'}</h3><p className="break-words text-xs text-muted-foreground">{report.author} · {commentLabels[report.commentStatus]}</p><p className="whitespace-pre-wrap break-words text-sm">{report.body}</p>
      <p className="text-xs text-muted-foreground">{es?'Versión denunciada':'Reported revision'}: {report.reportedRevision??(es?'Desconocida':'Unknown')} · {es?'Versión actual':'Current revision'}: {report.commentRevision}</p>
      {version!=='same'&&<p role="status" className="text-sm text-breaking">{version==='unknown'?(es?'No se registró la versión original. No se puede verificar el texto denunciado.':'The original revision was not recorded. The reported text cannot be verified.'):(es?'El comentario cambió. El texto mostrado no es una copia histórica.':'The comment changed. The displayed text is not a historical copy.')}</p>}

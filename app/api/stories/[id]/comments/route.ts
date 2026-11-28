@@ -1,3 +1,5 @@
+
+import {readReaderJson,ReaderWriteError} from '@/lib/permissions/reader-write-http';
 import {
     NextResponse,
   } from 'next/server';
@@ -20,21 +22,13 @@ import {
   } from '@/lib/services/comments';
   
   export const dynamic='force-dynamic';
-  const MAX_REQUEST_SIZE =
-    20_000;
-  
   const MAX_COMMENT_LENGTH =
     5000;
   
   interface RouteContext {
-    params: {
+    params: Promise<{
       id: string;
-    };
-  }
-  
-  interface CreateCommentRequest {
-    body?: unknown;
-    parentId?: unknown;
+    }>;
   }
   
   async function publishedStoryExists(
@@ -75,17 +69,13 @@ import {
   /**
    * Public endpoint for reading published comments.
    */
-  export async function GET(
-    request: Request,
-    {
-      params,
-    }: RouteContext
-  ) {
+  export async function GET(request: Request, props: RouteContext) {
+    const params = await props.params;
     const requestUrl =
       new URL(
         request.url
       );
-  
+
     const requestedLimit =
       Number.parseInt(
         requestUrl.searchParams.get(
@@ -93,14 +83,14 @@ import {
         ) ?? '',
         10
       );
-  
+
     const limit =
       Number.isFinite(
         requestedLimit
       )
         ? requestedLimit
         : undefined;
-  
+
     try {
       const thread =
         await getPublicCommentsForStory(
@@ -142,12 +132,8 @@ import {
    *
    * user_id and status are server/database-owned.
    */
-  export async function POST(
-    request: Request,
-    {
-      params,
-    }: RouteContext
-  ) {
+  export async function POST(request: Request, props: RouteContext) {
+    const params = await props.params;
     /*
      * DEV_AUTH_BYPASS is not a real authenticated
      * reader session and cannot create reader content.
@@ -165,10 +151,10 @@ import {
         }
       );
     }
-  
+
     const user =
       await getCurrentUser();
-  
+
     if (!user) {
       return NextResponse.json(
         {
@@ -180,51 +166,12 @@ import {
         }
       );
     }
-  
-    const contentLength =
-      Number.parseInt(
-        request.headers.get(
-          'content-length'
-        ) ?? '0',
-        10
-      );
-  
-    if (
-      Number.isFinite(
-        contentLength
-      ) &&
-      contentLength >
-        MAX_REQUEST_SIZE
-    ) {
-      return NextResponse.json(
-        {
-          error:
-            'Request is too large',
-        },
-        {
-          status: 413,
-        }
-      );
-    }
-  
-    let requestBody:
-      CreateCommentRequest;
-  
-    try {
-      requestBody =
-        await request.json();
-    } catch {
-      return NextResponse.json(
-        {
-          error:
-            'Invalid JSON',
-        },
-        {
-          status: 400,
-        }
-      );
-    }
-  
+
+    let requestBody:Record<string,unknown>;
+    try { requestBody=await readReaderJson(request); }
+    catch(error){return NextResponse.json({error:'Invalid reader request'},{status:error instanceof ReaderWriteError?error.status:400});}
+    if(Object.keys(requestBody).some(key=>!['body','parentId'].includes(key)))return NextResponse.json({error:'Invalid comment fields'},{status:422});
+
     if (
       typeof requestBody.body !==
       'string'
@@ -239,10 +186,10 @@ import {
         }
       );
     }
-  
+
     const commentBody =
       requestBody.body.trim();
-  
+
     if (!commentBody) {
       return NextResponse.json(
         {
@@ -254,7 +201,7 @@ import {
         }
       );
     }
-  
+
     if (
       commentBody.length >
       MAX_COMMENT_LENGTH
@@ -269,7 +216,7 @@ import {
         }
       );
     }
-  
+
     const parentId =
       requestBody.parentId ===
         undefined ||
@@ -280,7 +227,7 @@ import {
             'string'
           ? requestBody.parentId.trim()
           : null;
-  
+
     if (
       requestBody.parentId !==
         undefined &&
@@ -298,7 +245,7 @@ import {
         }
       );
     }
-  
+
     try {
       const storyExists =
         await publishedStoryExists(

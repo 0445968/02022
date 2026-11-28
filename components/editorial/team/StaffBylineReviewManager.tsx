@@ -22,23 +22,24 @@ export function StaffBylineReviewManager({locale}:{locale:Locale}){
   const [candidatePage,setCandidatePage]=useState(0),[candidates,setCandidates]=useState<BylinePage<BylineCandidate>|null>(null);
   const [bylineId,setBylineId]=useState(''),[reason,setReason]=useState(''),[confirmed,setConfirmed]=useState(false);
   const [error,setError]=useState(''),[status,setStatus]=useState(''),[busy,setBusy]=useState(false),[loading,setLoading]=useState(false);
-  const refresh=useCallback(async()=>{
+  const refresh=useCallback(async(signal?:AbortSignal)=>{
+    if(signal?.aborted)return;
     setLoading(true);
-    try{const res=await fetch(endpoint+'?page='+page,{cache:'no-store'});if(!res.ok)throw Error();setData(await res.json());}
-    catch{setData(null);setError(t.failed);}finally{setLoading(false);}
+    try{const res=await fetch(endpoint+'?page='+page,{cache:'no-store',signal});if(!res.ok)throw Error();const next=await res.json();if(!signal?.aborted)setData(next);}
+    catch{if(!signal?.aborted){setData(null);setError(t.failed);}}finally{if(!signal?.aborted)setLoading(false);}
   },[page,t.failed]);
-  useEffect(()=>{void refresh();},[refresh]);
+  useEffect(()=>{const controller=new AbortController();const timer=setTimeout(()=>void refresh(controller.signal),0);return()=>{clearTimeout(timer);controller.abort();};},[refresh]);
   useEffect(()=>{
-    let active=true;setCandidates(null);setBylineId('');setConfirmed(false);
+    const controller=new AbortController();
     if(target&&action==='approve')void (async()=>{
-      try{const res=await fetch(endpoint+'?member='+encodeURIComponent(target.membership_id)+'&page='+candidatePage,{cache:'no-store'});
-        if(!res.ok)throw Error();const result=await res.json() as BylinePage<BylineCandidate>;if(active)setCandidates(result);}
-      catch{if(active)setError(t.failed);}
+      try{const res=await fetch(endpoint+'?member='+encodeURIComponent(target.membership_id)+'&page='+candidatePage,{cache:'no-store',signal:controller.signal});
+        if(!res.ok)throw Error();const result=await res.json() as BylinePage<BylineCandidate>;if(!controller.signal.aborted)setCandidates(result);}
+      catch{if(!controller.signal.aborted)setError(t.failed);}
     })();
-    return()=>{active=false;};
+    return()=>controller.abort();
   },[target,action,candidatePage,t.failed]);
   function pick(row:BylineRequest,next:'approve'|'reject'|'unlink'){
-    setTarget(row);setAction(next);setCandidatePage(0);setReason('');setConfirmed(false);setBylineId('');setError('');setStatus('');
+    setCandidates(null);setTarget(row);setAction(next);setCandidatePage(0);setReason('');setConfirmed(false);setBylineId('');setError('');setStatus('');
   }
   const valid=!!target&&confirmed&&reason.trim().length>=12&&reason.length<=500&&(action!=='approve'||candidates?.items.some(c=>c.id===bylineId));
   async function submit(e:FormEvent<HTMLFormElement>){
@@ -66,7 +67,7 @@ export function StaffBylineReviewManager({locale}:{locale:Locale}){
       <h3 className="text-sm font-semibold">{t[action]} · {target.display_name}</h3>
       {action==='approve'&&<><label className="block text-sm">{t.choose}<select className={field} value={bylineId} disabled={busy} onChange={e=>{setBylineId(e.target.value);setConfirmed(false);}}><option value="">{t.choose}</option>{candidates?.items.map(c=><option key={c.id} value={c.id}>{c.byline_name} · {c.slug} · {c.byline_status}</option>)}</select></label>
       {candidates?.items.length===0&&<p className="text-sm text-muted-foreground">{t.none}</p>}
-      <div className="flex gap-2 items-center"><button className={button} disabled={busy||candidatePage===0} type="button" onClick={()=>setCandidatePage(p=>p-1)}>{t.previous}</button><span className="text-xs">{t.candidatePage} {candidatePage+1}</span><button className={button} disabled={busy||!candidates?.hasMore} type="button" onClick={()=>setCandidatePage(p=>p+1)}>{t.next}</button></div></>}
+      <div className="flex gap-2 items-center"><button className={button} disabled={busy||candidatePage===0} type="button" onClick={()=>{setCandidates(null);setBylineId('');setConfirmed(false);setCandidatePage(p=>p-1);}}>{t.previous}</button><span className="text-xs">{t.candidatePage} {candidatePage+1}</span><button className={button} disabled={busy||!candidates?.hasMore} type="button" onClick={()=>{setCandidates(null);setBylineId('');setConfirmed(false);setCandidatePage(p=>p+1);}}>{t.next}</button></div></>}
       <label className="block text-sm">{t.reason}<textarea className={field} required minLength={12} maxLength={500} value={reason} disabled={busy} onChange={e=>{setReason(e.target.value);setConfirmed(false);}}/></label>
       <label className="flex items-start gap-2 text-sm"><input type="checkbox" className="mt-1" checked={confirmed} disabled={busy} onChange={e=>setConfirmed(e.target.checked)}/>{t.confirm}</label>
       <div className="flex gap-2"><button className={button} disabled={!valid||busy} type="submit">{busy?t.working:t[action]}</button><button className={button} type="button" disabled={busy} onClick={()=>setTarget(null)}>{t.cancel}</button></div>

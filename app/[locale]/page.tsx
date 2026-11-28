@@ -1,3 +1,5 @@
+import {PlacedPolls} from '@/components/polls/PlacedPolls';
+import {readPublicHomepageVisibility} from '@/lib/services/public-homepage-visibility';
 import {
   HomePage,
 } from '@/components/editorial/home-page';
@@ -22,14 +24,13 @@ import type {
 } from '@/types';
 
 interface PageProps {
-  params: {
+  params: Promise<{
     locale: string;
-  };
+  }>;
 }
 
-export default async function Page({
-  params,
-}: PageProps) {
+export default async function Page(props: PageProps) {
+  const params = await props.params;
   const locale =
     params.locale as Locale;
 
@@ -42,8 +43,9 @@ export default async function Page({
     latestStories,
     worldStories,
     acrossTheIslands,
+    visibility,
   ] = await Promise.all([
-    getPublicHomepageSlots(),
+    getPublicHomepageSlots(locale),
 
     getPublicBreakingNews(),
 
@@ -58,11 +60,14 @@ export default async function Page({
     ),
 
     getAcrossTheIslands(),
+    readPublicHomepageVisibility(),
   ]);
 
   return (
+    <>
     <HomePage
       dict={dict}
+      visibility={visibility}
       locale={locale}
       placements={
         placements
@@ -80,5 +85,7 @@ export default async function Page({
         acrossTheIslands
       }
     />
+    <PlacedPolls locale={locale} kind="homepage" returnPath={'/'+locale}/>
+    </>
   );
 }

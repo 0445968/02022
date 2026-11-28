@@ -1,0 +1,50 @@
+name: CT-15 Next 16 disposable upgrade rehearsal
+on:
+  pull_request:
+    paths:
+      - 'scripts/ct15-framework-rehearsal.mjs'
+      - '.github/workflows/ct15-framework-rehearsal.yml'
+permissions:
+  contents: read
+jobs:
+  candidate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      CI: 'true'
+      CT15_DISPOSABLE_REHEARSAL: 'yes'
+      NEXT_PUBLIC_SUPABASE_URL: 'https://example.supabase.co'
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: 'ci-build-placeholder'
+      DEV_AUTH_BYPASS: 'false'
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '22.16.0'
+      - name: Prepare and verify Next 16.4.6 candidate
+        run: |
+          export CT15_EVIDENCE_DIR="$RUNNER_TEMP/ct15-framework"
+          if [ "$(node -p "require('./package.json').dependencies.next")" = "16.4.6" ]; then
+            # Verify tracked source and lockfile; do not rerun the migration.
+            mkdir -p "$CT15_EVIDENCE_DIR"
+            npm ci --ignore-scripts --strict-peer-deps
+            npm ls --all
+            npm audit --audit-level=high
+            npm test
+            npx --no-install next typegen
+            npm run typecheck
+            npm run lint
+            npm run build
+            printf '%s\n' '{"target":"16.4.6","tracked":true,"success":true}' > "$CT15_EVIDENCE_DIR/result.json"
+          else
+            node scripts/ct15-framework-rehearsal.mjs
+          fi
+      - name: Preserve candidate patch and results, even on failure
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: ct15-next16-candidate
+          path: ${{ runner.temp }}/ct15-framework/
+          retention-days: 7

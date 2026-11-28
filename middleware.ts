@@ -1,8 +1,10 @@
+import type {SupabaseClient} from '@supabase/supabase-js';
 import { NextResponse, type NextRequest } from 'next/server';
 import { createMiddlewareClient } from '@/lib/db/supabase-middleware';
 import {
   defaultLocale,
   isLocale,
+  resolvePublicLocale,
   LOCALE_COOKIE,
   LOCALE_HEADER,
   stripLocale,
@@ -12,17 +14,20 @@ import {
  * Middleware does two things:
  *  1. Refreshes the Supabase auth session on every request.
  *  2. Handles locale routing: ensures every public/auth path carries a
- *     locale prefix (en/es), defaulting to the cookie or browser preference.
+ *     locale prefix (en/es), defaulting to the saved cookie or English.
  *     /newsroom paths are NOT locale-prefixed (the newsroom is an internal
  *     tool with a single interface language, set per user).
  */
 export async function middleware(request: NextRequest) {
-  const { client, response } = createMiddlewareClient(request);
+  // Derive the locale from the route, never from a caller-supplied header.
+  // The refreshed middleware response forwards the same request headers.
+  const segment=request.nextUrl.pathname.split('/').filter(Boolean)[0];
+  request.headers.set(LOCALE_HEADER,isLocale(segment)?segment:defaultLocale);
+  const { client, getResponse } = createMiddlewareClient(request);
 
   // Refresh the session — this also sets updated auth cookies on the response.
-  const {
-    data: { user },
-  } = await client.auth.getUser();
+  const {data:{user},error:authError}=await client.auth.getUser();
+  const response = getResponse();
 
   const pathname = request.nextUrl.pathname;
 
@@ -60,13 +65,19 @@ const isInternal =
     if (!hasLocale) {
       // No locale in the URL — pick one and redirect.
       const cookieLocale = request.cookies.get(LOCALE_COOKIE)?.value;
-      const browser =
-        request.headers
-          .get('accept-language')
-          ?.split(',')[0]
-          ?.split('-')[0]
-          .toLowerCase() ?? defaultLocale;
-      const locale = isLocale(cookieLocale) ? cookieLocale : isLocale(browser) ? browser : defaultLocale;
+      // First visit is English regardless of Accept-Language; an explicit URL always wins.
+      let accountLocale:string|null=null;
+      if(!isLocale(cookieLocale)&&process.env.CT_READER_LANGUAGE_SYNC_ENABLED==='true'&&process.env.CT_READER_ACCOUNT_ENABLED==='true'&&process.env.DEV_AUTH_BYPASS!=='true'&&!authError&&user&&!user.is_anonymous&&user.email_confirmed_at){
+        try{
+          // Keep the generated legacy Database type out of this narrow read;
+          // validate the actual returned scalar before using it.
+          const db=client as unknown as SupabaseClient;
+          const {data,error}=await db.from('profiles').select('preferred_locale').eq('id',user.id).maybeSingle();
+          const preference:unknown=data?.preferred_locale;
+          if(!error&&typeof preference==='string'&&isLocale(preference))accountLocale=preference;
+        }catch{/* use English if preference unavailable */}
+      }
+      const locale = resolvePublicLocale(cookieLocale,accountLocale);
 
       const rest = stripLocale(pathname);
       const url = request.nextUrl.clone();
@@ -79,10 +90,13 @@ const isInternal =
     }
 
     // Persist the chosen locale for next visit.
-    response.cookies.set(LOCALE_COOKIE, firstSegment, {
+    // A speculative prefetch must not overwrite a reader's saved preference.
+    const prefetch=request.headers.has('next-router-prefetch')||request.headers.get('purpose')==='prefetch'||request.headers.get('sec-purpose')?.includes('prefetch');
+    if(!prefetch)response.cookies.set(LOCALE_COOKIE, firstSegment, {
       path: '/',
       maxAge: 60 * 60 * 24 * 365,
       sameSite: 'lax',
+      secure: request.nextUrl.protocol==='https:',
     });
     response.headers.set(LOCALE_HEADER, firstSegment);
   }

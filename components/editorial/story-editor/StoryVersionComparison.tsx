@@ -1,3 +1,4 @@
+import {storyTypeLabel} from '@/lib/permissions/story-types';
 import {
     createStoryTextSnapshot,
     diffText,
@@ -359,6 +360,7 @@ import {
                   space-y-4
                 "
               >
+                {(liveStory.storyType||historicalStory.storyType)&&<SimpleComparison label={locale==='es'?'Tipo de artículo':'Story type'} liveValue={liveStory.storyType?storyTypeLabel(liveStory.storyType,locale):'—'} historicalValue={historicalStory.storyType?storyTypeLabel(historicalStory.storyType,locale):'—'}/>}
                 <SimpleComparison
                   label={
                     locale === 'es'

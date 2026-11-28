@@ -23,7 +23,7 @@ export function validatePresetGrantChange(raw:unknown):PresetGrantChange{
   if(typeof roleKey!=='string'||!roleSet.has(roleKey)||roleKey==='owner'
     ||!Number.isSafeInteger(expectedRevision)||Number(expectedRevision)<0
     ||typeof reason!=='string'||reason.trim().length<12||reason.length>500
-    ||confirmed!==true||!Array.isArray(grants)||grants.length>47){
+    ||confirmed!==true||!Array.isArray(grants)||grants.length>51){
     throw Error('Invalid role preset change');
   }
   const role=roleKey as StaffRoleKey;

@@ -1,3 +1,4 @@
+import {readReaderJson,ReaderWriteError} from '@/lib/permissions/reader-write-http';
 import {NextResponse} from 'next/server';
 import {validateStaffRoleChange} from '@/lib/permissions/staff-admin-input';
 import {getStaffTeamAccess} from '@/lib/services/staff-team-directory';
@@ -25,8 +26,8 @@ export async function POST(request:Request){
       return NextResponse.json({error:'Not found'},{status:404});
     }
     let input:unknown;
-    try{input=await request.json();}catch{
-      return NextResponse.json({error:'Invalid JSON'},{status:400});
+    try{input=await readReaderJson(request,2048);}catch(error){
+      return NextResponse.json({error:'Invalid request'},{status:error instanceof ReaderWriteError?error.status:400});
     }
     let valid;
     try{valid=validateStaffRoleChange(input);}catch{

@@ -43,10 +43,13 @@ function MainStory({
 }) {
   if (!source) {
     return (
-      <EmptySlot
-        locale={locale}
-        className="min-h-[400px]"
-      />
+      <>
+        <h1 className="sr-only">{locale === 'es' ? 'Noticias principales' : 'Top news'}</h1>
+        <EmptySlot
+          locale={locale}
+          className="min-h-[400px]"
+        />
+      </>
     );
   }
 

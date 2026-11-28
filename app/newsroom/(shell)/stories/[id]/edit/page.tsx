@@ -1,3 +1,6 @@
+import {storyTranslationsEnabled,readStoryTranslation} from '@/lib/services/story-translations';
+import {pollPlacementsEnabled} from '@/lib/services/poll-placements';
+import {canEnterPolls} from '@/lib/services/polls';
 import {reviewedPublicationEnabled} from '@/lib/services/reviewed-publication';
 import {canAccessStoryReview} from '@/lib/services/story-review';
 import {canManageStoryAssignments} from '@/lib/services/story-assignments';
@@ -13,10 +16,11 @@ import { canEditStory } from '@/lib/permissions/stories';
 import { StoryEditor } from '@/components/editorial/story-editor';
 
 interface PageProps {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }
 
-export default async function EditStoryPage({ params }: PageProps) {
+export default async function EditStoryPage(props: PageProps) {
+  const params = await props.params;
   await requireWorkspacePage('fullEditor');
   const scoped=scopedNewsroomEnabled();
   if(scoped&&!(await mayMountFullStoryEditor(params.id)))notFound();
@@ -51,9 +55,11 @@ export default async function EditStoryPage({ params }: PageProps) {
   return (
     <StoryEditor
       dict={dict}
+      translationHref={storyTranslationsEnabled()&&await readStoryTranslation(params.id).catch(()=>null)?'/newsroom/stories/'+params.id+'/translation':undefined}
+      pollPlacementHref={pollPlacementsEnabled()&&story.status==='published'&&story.accessLevel==='public'&&await canEnterPolls()?'/newsroom/polls?kind=article&target='+params.id:undefined}
       reviewedPublication={reviewedPublicationEnabled()}
-      reviewHref={await canAccessStoryReview(params.id,story.status==='published'?'revision':'draft')?'/newsroom/stories/'+params.id+'/review?kind='+(story.status==='published'?'revision':'draft'):undefined}
-      assignmentHref={await canManageStoryAssignments(params.id)?'/newsroom/stories/'+params.id+'/assignments':undefined}
+      reviewHref={(await canAccessStoryReview(params.id,story.status==='published'?'revision':'draft'))?'/newsroom/stories/'+params.id+'/review?kind='+(story.status==='published'?'revision':'draft'):undefined}
+      assignmentHref={(await canManageStoryAssignments(params.id))?'/newsroom/stories/'+params.id+'/assignments':undefined}
       locale={locale}
       story={story!}
       user={{

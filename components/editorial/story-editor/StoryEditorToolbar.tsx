@@ -398,84 +398,11 @@ export function StoryEditorToolbar({
             Text color
           </DropdownMenu.Label>
 
-          <div
-            className="
-              flex
-              items-center
-              gap-2
-              px-2
-              pb-2
-            "
-            onPointerDown={(
-              event
-            ) =>
-              event.preventDefault()
-            }
-          >
-            <label
-              className="
-                flex
-                h-8
-                flex-1
-                cursor-pointer
-                items-center
-                gap-2
-                rounded-md
-                px-2
-                text-sm
-                text-foreground
-                hover:bg-surface-muted
-              "
-            >
-              <Palette
-                className="
-                  h-4
-                  w-4
-                "
-              />
-
-              Choose color
-
-              <span
-                className="
-                  ml-auto
-                  h-4
-                  w-4
-                  rounded-full
-                  border
-                  border-border
-                "
-                style={{
-                  backgroundColor:
-                    currentColor ??
-                    '#000000',
-                }}
-              />
-
-              <input
-                type="color"
-                value={
-                  currentColor ??
-                  '#000000'
-                }
-                onChange={(
-                  event
-                ) =>
-                  editor
-                    .chain()
-                    .focus()
-                    .setColor(
-                      event.target.value
-                    )
-                    .run()
-                }
-                className="
-                  absolute
-                  h-0
-                  w-0
-                  opacity-0
-                "
-              />
+          <div className="px-2 pb-2">
+            <label className="relative flex h-8 cursor-pointer items-center gap-2 rounded-md px-2 text-sm text-foreground hover:bg-surface-muted focus-within:ring-2 focus-within:ring-primary">
+              <Palette className="h-4 w-4" aria-hidden/> Choose color
+              <span className="ml-auto h-4 w-4 rounded-full border border-border" style={{backgroundColor:currentColor??'#000000'}}/>
+              <input aria-label="Choose color" type="color" value={currentColor??'#000000'} onPointerDown={e=>e.stopPropagation()} onClick={e=>e.stopPropagation()} onChange={e=>editor.chain().focus().setColor(e.target.value).run()} className="absolute inset-0 h-full w-full cursor-pointer opacity-0"/>
             </label>
           </div>
 

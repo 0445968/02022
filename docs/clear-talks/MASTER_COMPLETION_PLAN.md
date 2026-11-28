@@ -250,3 +250,9 @@ Decisions requiring confirmation only when their batch begins: exact staff role 
 ## 10. Current approved work versus future implementation
 
 This planning change commits **only documentation**. No app feature, RLS migration, Vercel environment setting, or Supabase record is changed here. Start implementation in new conversation on CT-00/CT-01 after checking current HEAD; follow the ledger strictly.
+
+
+**CT15 checkpoint (2026-11-25):** 43/43 automated workflows on c64568d, including 38 cumulative forward migrations, 110 signed-out browser checks and 140 real local platform checks across seven authenticated test accounts. Synthetic local data only. Expanded admin/review/reader communications rehearsal staged; dedicated CT15a visual review, actual restored database and hosted acceptance remain open. See CT15_INTEGRATION_READINESS.md and NEXT_CHAT_HANDOFF.md.
+
+
+**CT15 checkpoint — November 25, 2026:** Exact aeead32422dcecfb7d92ce4a4bf19502297f67a3 verified 43/43 workflows and 484 PASS lines, run 45708640590 artifact 15066222948. Modal focus restoration, containment, compact disclosures, full private byline approval/unlink and historical attribution preservation passed. Batch 4 automated visual/accessibility baseline accepted; real user visual judgment, screen-reader/manual cross-browser and hosted performance still pending. Read-only connector inventory November 25: Clear Talks Supabase account exposes only yqqzohrlhiitctwacdad and default main branch, no isolated target; connected Vercel team exposes mytexascase, bivi, west-island-times only, no clear-talks project. Do not substitute old project, create paid resources, change production, copy private data or activate providers without approval. Batch 5 blocked on correct Vercel connection and explicit separate test target authorization. CT15_REVIEW_HANDOFF.md contains unified review scenarios, environment gates, restore and release checklist. No live mutations.

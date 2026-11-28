@@ -7,9 +7,11 @@ import {canEnterEditorialCalendar,readEditorialCalendar} from '@/lib/services/ed
 import {CALENDAR_SOON_MS,calendarAlertPreview,calendarItemReasons} from '@/lib/permissions/calendar-alerts';
 
 const ZONE='America/Bogota';
+// Server request time, not client render state.
+async function requestClock(){return Date.now();}
 export async function CalendarAlerts({locale}:{locale:Locale}){
  if(!await canEnterEditorialCalendar())return null;
- const es=locale==='es',now=Date.now(),start=new Date(now).toISOString(),end=new Date(now+CALENDAR_SOON_MS).toISOString();
+ const es=locale==='es',now=await requestClock(),start=new Date(now).toISOString(),end=new Date(now+CALENDAR_SOON_MS).toISOString();
  const result=await Promise.allSettled([
   readEditorialCalendar({start,end,mode:'attention',filter:'all',page:0}),
   readEditorialCalendar({start,end,mode:'range',filter:'all',page:0})
@@ -34,11 +36,11 @@ export async function CalendarAlerts({locale}:{locale:Locale}){
    </>}
   </div>;
  };
- return <section className="mt-6 space-y-4 rounded-xl border border-border bg-white p-5">
+ return <section className="mt-3 space-y-2 rounded-xl border border-border bg-white p-3">
   <h2 className="font-headline text-lg font-semibold text-deep">{es?'Alertas editoriales':'Editorial alerts'}</h2>
   <p className="text-xs text-muted-foreground">{es?'Vista previa de elementos autorizados (hasta cinco por grupo). Las colas no garantizan la publicación automática.':'Preview of authorized items (up to five per group). Queues do not guarantee automatic publication.'} · {ZONE}</p>
   <SchedulerHealthNotice locale={locale}/>
-  <div className="grid gap-5 md:grid-cols-2">
+  <div className="grid gap-3 md:grid-cols-2">
    {group(es?'Requiere atención':'Needs attention',result[0].status==='fulfilled'?result[0].value:null,'/newsroom/schedule?mode=attention&view=agenda')}
    {group(es?'Próximas 48 horas':'Next 48 hours',result[1].status==='fulfilled'?result[1].value:null,'/newsroom/schedule?view=agenda')}
   </div>

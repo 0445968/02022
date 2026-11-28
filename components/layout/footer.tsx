@@ -1,3 +1,5 @@
+import Image from 'next/image';
+import {BRAND_NAME,BRAND_LOGO,BRAND_LOGO_WIDTH,BRAND_LOGO_HEIGHT} from '@/lib/brand';
 import Link from 'next/link';
 import { localizedPath } from '@/lib/i18n/config';
 import type { Dictionary } from '@/lib/i18n/dictionaries';
@@ -31,9 +33,7 @@ export function Footer({ dict, locale }: FooterProps) {
         <div className="grid grid-cols-2 gap-8 md:grid-cols-4 lg:grid-cols-5">
           {/* Brand */}
           <div className="col-span-2 lg:col-span-1">
-            <p className="font-headline text-2xl font-bold text-deep">
-              Simply<span className="text-primary">Raizal</span>
-            </p>
+            <Link href={localizedPath(locale,'/')} aria-label={BRAND_NAME} className="inline-flex focus-visible:ring-2 focus-visible:ring-ring"><Image src={BRAND_LOGO} alt={BRAND_NAME} width={BRAND_LOGO_WIDTH} height={BRAND_LOGO_HEIGHT} unoptimized className="h-14 w-auto max-w-full object-contain"/></Link>
             <p className="mt-2 max-w-xs text-sm leading-relaxed text-muted-foreground">
               {dict.footer.aboutDesc}
             </p>
@@ -103,7 +103,7 @@ export function Footer({ dict, locale }: FooterProps) {
 
         <div className="mt-10 flex flex-col items-start justify-between gap-3 border-t border-border pt-6 sm:flex-row sm:items-center">
           <p className="text-xs text-muted-foreground">
-            © {new Date().getFullYear()} Simply Raizal. {dict.footer.rights}
+            © {new Date().getFullYear()} {BRAND_NAME}. {dict.footer.rights}
           </p>
           <p className="text-xs text-muted-foreground">
             San Andrés · Old Providence · Saint Catalina

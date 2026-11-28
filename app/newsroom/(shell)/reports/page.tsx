@@ -10,10 +10,13 @@ import {DraftHttpError} from '@/lib/permissions/assigned-draft-http';
 import {ReportsWorkspace} from '@/components/editorial/comments/ReportsWorkspace';
 export const dynamic='force-dynamic';
 export const metadata={robots:{index:false,follow:false},referrer:'no-referrer'};
-export default async function ReportsPage({searchParams}:{searchParams:{status?:string;storyId?:string;page?:string;reportId?:string}}){
+export default async function ReportsPage(
+ props:{searchParams: Promise<{status?:string;storyId?:string;page?:string;reportId?:string}>}
+) {
+ const searchParams = await props.searchParams;
  const user=await getCurrentUser();
  if(!user)redirect('/en/auth/sign-in?next=%2Fnewsroom%2Freports');
- if(!await canEnterReportManagement())notFound();
+ if(!(await canEnterReportManagement()))notFound();
  const locale=await newsroomLocale(user),status=searchParams.status??'open',raw=searchParams.page??'0';
  const storyId=searchParams.storyId??null,id=searchParams.reportId;
  if(!reportFilter(status)||typeof raw!=='string'||!/^\d{1,3}$/.test(raw)||Number(raw)>100

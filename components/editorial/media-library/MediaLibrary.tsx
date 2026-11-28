@@ -4,9 +4,12 @@ import {
   useCallback,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from 'react';
 
+import {PrivateDraftMediaDialog} from './PrivateDraftMediaDialog';
+import type {Locale} from '@/types';
 import type { Dictionary } from '@/lib/i18n/dictionaries';
 
 import type {
@@ -121,6 +124,8 @@ interface MediaLibraryProps {
   dict: Dictionary;
   userId: string;
   privateDraftsEnabled?: boolean;
+  canReviewPrivate?:boolean;
+  locale?:Locale;
 }
 
 type BulkAction =
@@ -210,7 +215,10 @@ export function MediaLibrary({
   dict,
   userId,
   privateDraftsEnabled = false,
+  canReviewPrivate=false,locale='en',
 }: MediaLibraryProps) {
+  const uploadTrigger=useRef<HTMLElement|null>(null);
+  function openUpload(){uploadTrigger.current=document.activeElement instanceof HTMLElement?document.activeElement:null;setUploadOpen(true);}
   /* ======================================================= */
   /* DATA */
   /* ======================================================= */
@@ -627,7 +635,8 @@ export function MediaLibrary({
 
   const fetchMedia =
     useCallback(
-      async () => {
+      async (signal?:AbortSignal) => {
+        if(signal?.aborted)return;
         setLoading(
           true
         );
@@ -646,6 +655,7 @@ export function MediaLibrary({
               {
                 cache:
                   'no-store',
+                signal,
               }
             );
 
@@ -657,6 +667,7 @@ export function MediaLibrary({
                   null
               );
 
+          if(signal?.aborted)return;
           if (
             !response.ok
           ) {
@@ -761,6 +772,7 @@ export function MediaLibrary({
         } catch (
           fetchError
         ) {
+          if(signal?.aborted)return;
           console.error(
             'Failed to load media:',
             fetchError
@@ -785,7 +797,7 @@ export function MediaLibrary({
               : 'Unable to load media library.'
           );
         } finally {
-          setLoading(
+          if(!signal?.aborted)setLoading(
             false
           );
         }
@@ -798,7 +810,10 @@ export function MediaLibrary({
 
   useEffect(
     () => {
-      void fetchMedia();
+      const controller=new AbortController();
+      // Schedule external loading after commit; cancel abandoned requests.
+      const timer=setTimeout(()=>void fetchMedia(controller.signal),0);
+      return ()=>{clearTimeout(timer);controller.abort();};
     },
     [
       fetchMedia,
@@ -808,21 +823,6 @@ export function MediaLibrary({
   /* ======================================================= */
   /* RESET PAGE WHEN QUERY CHANGES */
   /* ======================================================= */
-
-  useEffect(
-    () => {
-      setPage(
-        1
-      );
-    },
-    [
-      filters,
-      search,
-      section,
-      sort,
-      perPage,
-    ]
-  );
 
   /* ======================================================= */
   /* SECTION */
@@ -864,6 +864,7 @@ export function MediaLibrary({
       mode
     );
 
+    setPage(1);
     setPerPage(
       mode ===
         'compact'
@@ -1541,6 +1542,8 @@ export function MediaLibrary({
 
   return (
     <div
+      id="ct-media-library"
+      aria-busy={loading}
       className="
         min-h-full
         bg-background
@@ -1550,11 +1553,10 @@ export function MediaLibrary({
         className="
           mx-auto
           w-full
-          max-w-[1600px]
-          px-5
-          py-6
-          sm:px-6
-          lg:px-8
+          min-w-0
+          px-3
+          py-4
+          sm:px-5
         "
       >
         {/* ================================================= */}
@@ -1580,11 +1582,7 @@ export function MediaLibrary({
           onViewModeChange={
             handleViewModeChange
           }
-          onUpload={() => {
-            if (privateDraftsEnabled) {
-              document.getElementById('ct-private-draft-panel')?.scrollIntoView({ behavior: 'smooth' });
-            } else { setUploadOpen(true); }
-          }}
+          onUpload={openUpload}
         />
 
         {/* ================================================= */}
@@ -1601,12 +1599,8 @@ export function MediaLibrary({
           filters={
             filters
           }
-          onSearchChange={
-            setSearch
-          }
-          onSortChange={
-            setSort
-          }
+          onSearchChange={value=>{setSearch(value);setPage(1);}}
+          onSortChange={value=>{setSort(value);setPage(1);}}
           onFiltersClick={() =>
             setFiltersOpen(
               true
@@ -1626,9 +1620,7 @@ export function MediaLibrary({
             message={
               error
             }
-            onRetry={
-              fetchMedia
-            }
+            onRetry={()=>void fetchMedia()}
           />
         )}
 
@@ -1643,7 +1635,7 @@ export function MediaLibrary({
                 .loading
             }
           />
-        ) : media.length ===
+        ) : error ? null : media.length ===
           0 ? (
           <MediaEmptyState
             section={
@@ -1655,11 +1647,7 @@ export function MediaLibrary({
             onClearFilters={
               resetFilters
             }
-            onUpload={() => {
-              if (privateDraftsEnabled) {
-                document.getElementById('ct-private-draft-panel')?.scrollIntoView({ behavior: 'smooth' });
-              } else { setUploadOpen(true); }
-            }}
+            onUpload={openUpload}
           />
         ) : (
           <>
@@ -1756,9 +1744,7 @@ export function MediaLibrary({
           filters={
             filters
           }
-          onChange={
-            setFilters
-          }
+          onChange={value=>{setFilters(value);setPage(1);}}
           onReset={
             resetFilters
           }
@@ -1773,6 +1759,7 @@ export function MediaLibrary({
         {/* UPLOAD DRAWER */}
         {/* ================================================= */}
 
+        {privateDraftsEnabled&&<PrivateDraftMediaDialog open={uploadOpen} onOpenChange={setUploadOpen} canReview={canReviewPrivate} locale={locale} restoreFocus={()=>{if(uploadTrigger.current?.isConnected)uploadTrigger.current.focus();}} onChanged={()=>void fetchMedia()}/>}
         <MediaUploadDrawer
           open={
             uploadOpen && !privateDraftsEnabled

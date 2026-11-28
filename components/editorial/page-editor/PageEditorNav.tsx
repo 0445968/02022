@@ -63,6 +63,7 @@ export function PageEditorNav({
                   page.id
                 }
                 type="button"
+                aria-pressed={active}
                 onClick={() =>
                   onChangePage(
                     page.id

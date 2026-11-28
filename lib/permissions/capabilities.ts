@@ -57,9 +57,17 @@ export const CAPABILITY_KEYS = [
   'team.view_audit',
   'settings.security_admin',
   'reader.personal',
+  'assignment.view_team',
+  'assignment.manage',
+  'assignment.view_assigned',
+  'assignment.update_assigned',
+  'story.publish_own_without_review',
+  'byline.self_service',
+  'media.quota_exempt',
 ] as const;
 
 export type Capability = (typeof CAPABILITY_KEYS)[number];
+export const EDITORIAL_OWN_PRIVILEGES:ReadonlySet<string>=new Set(['story.publish_own_without_review','byline.self_service','media.quota_exempt']);
 export type AccessScope = 'all' | 'assigned' | 'own';
 export type MembershipStatus = 'invited' | 'active' | 'suspended' | 'revoked';
 
@@ -92,7 +100,7 @@ export interface MembershipSnapshot {
 
 export interface ResourceContext {
   /** From a server/database resource lookup, never from submitted form data. */
-  kind: 'story' | 'media' | 'calendar' | 'reader' | 'other';
+  kind: 'story' | 'media' | 'calendar' | 'reader' | 'assignment' | 'other';
   /** For assigned-only access, the row must list the effective membership ID. */
   assignedMembershipIds?: readonly string[];
   ownerMembershipId?: string | null;
@@ -126,6 +134,8 @@ const ASSIGNED_ONLY_CAPABILITIES: ReadonlySet<Capability> = new Set([
   'story.edit_assigned',
   'revision.edit_assigned',
   'calendar.view_assigned',
+  'assignment.view_assigned',
+  'assignment.update_assigned',
 ]);
 const OWN_ONLY_CAPABILITIES: ReadonlySet<Capability> = new Set([
   'media.edit_own',
@@ -203,10 +213,12 @@ export function resolveEffectivePermission(
     return deny('membership_expired');
   }
 
+  if ((capability==='assignment.view_assigned'||capability==='assignment.update_assigned')&&resource?.kind!=='assignment')return deny('missing_resource_scope');
   if (ASSIGNED_ONLY_CAPABILITIES.has(capability) &&
       (!resource || !scopeCovers('assigned', resource, membership.id))) {
     return deny('missing_resource_scope');
   }
+  if (EDITORIAL_OWN_PRIVILEGES.has(capability)) return deny('missing_resource_scope'); // dedicated database gate; generic resource checks cannot authorize
   if (OWN_ONLY_CAPABILITIES.has(capability) &&
       (!resource || !scopeCovers('own', resource, membership.id))) {
     return deny('missing_resource_scope');

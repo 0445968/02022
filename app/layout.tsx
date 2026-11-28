@@ -1,4 +1,7 @@
+import {BRAND_NAME,BRAND_ICON} from '@/lib/brand';
 import type { Metadata } from 'next';
+import { headers } from 'next/headers';
+import { defaultLocale, isLocale, LOCALE_HEADER } from '@/lib/i18n/config';
 
 import {
   Figtree,
@@ -39,31 +42,34 @@ const interfaceFont = Inter({
 
 export const metadata: Metadata = {
   title: {
-    default: 'West Island Times | News from the Archipelago',
-    template: '%s — West Island Times',
+    default: BRAND_NAME+' | News from the Archipelago',
+    template: '%s — '+BRAND_NAME,
   },
 
   description:
     'An independent digital media platform serving the Raizal people and the Archipelago of San Andrés, Old Providence and Saint Catalina.',
 
-  metadataBase: new URL('https://westislandtimes.com'),
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL?.startsWith('https://')?process.env.NEXT_PUBLIC_SITE_URL:'https://clear-talks.vercel.app'),
+  icons: {icon:{url:BRAND_ICON,type:'image/svg+xml'}},
 
   openGraph: {
-    title: 'West Island Times',
+    title: BRAND_NAME,
     description:
       'News from the Archipelago of San Andrés, Old Providence and Saint Catalina.',
     type: 'website',
   },
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const requestLocale=(await headers()).get(LOCALE_HEADER);
+  const locale=isLocale(requestLocale)?requestLocale:defaultLocale;
   return (
     <html
-      lang="en"
+      lang={locale}
       suppressHydrationWarning
     >
       <body

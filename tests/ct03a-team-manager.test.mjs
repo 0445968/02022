@@ -28,7 +28,9 @@ test('service-role lookups occur after live authorized viewer check and sanitize
   assert.ok(gate>=0&&service>gate,'Privilege read must occur only after viewer gate');
   assert.match(directory,/SUPABASE_SERVICE_ROLE_KEY/);
   assert.match(directory,/select\('id,auth_user_id,status,member_type,expires_at,created_at'/);
-  assert.match(directory,/select\('id,name'\)/);
+  assert.match(directory,/select\('id,name,display_name,image'\)/);
+  assert.match(directory,/image\.origin===new URL\(url\)\.origin/);
+  assert.ok(directory.includes('/storage/v1/object/public/'));
   assert.match(directory,/access\.canViewAudit \? \(\(\) =>/);
   assert.match(directory,/db\.from\('staff_access_audit'\)/);
   assert.doesNotMatch(directory,/raw_user_meta_data|\.from\('auth\.users'\)|\.select\('\*'\)/);

@@ -454,6 +454,7 @@ resolveRevisionIdentity(
   
     return {
       ...story,
+      storyType:revision.storyType,
   
       slug:
         revision.slug,

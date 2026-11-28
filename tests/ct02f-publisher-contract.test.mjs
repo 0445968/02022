@@ -51,7 +51,7 @@ test('version snapshot guard verifies actual current story fields, not a forgabl
 test('restore flow snapshots actual confirmed row including original author/editor/byline links',()=>{
   const stories=read('lib/services/stories.ts');
   const restoration=stories.slice(stories.indexOf('export async function restoreStoryVersion('));
-  assert.match(restoration,/\.update\(restoredContent\)[\s\S]*\.select\('headline, short_title/);
+  assert.match(restoration,/\.update\(restoredContent\)[\s\S]*?\.select(?:<[^]*?>)?\(\s*'headline, short_title/);
   for(const field of ['short_title','author_id','editor_id','language','primary_category_id']){
     assert.ok(restoration.includes(field+': restoredRow.'+field),field);
   }

@@ -6,7 +6,8 @@ import {DraftHttpError} from '@/lib/permissions/assigned-draft-http';
 import {StoryAssignmentManager} from '@/components/editorial/story-editor/StoryAssignmentManager';
 export const dynamic='force-dynamic';
 export const metadata={robots:{index:false,follow:false}};
-export default async function StoryAssignmentPage({params}:{params:{id:string}}){
+export default async function StoryAssignmentPage(props:{params: Promise<{id:string}>}) {
+ const params = await props.params;
  if(!assignmentManagementEnabled())notFound();
  const user=await getCurrentUser();
  if(!user)redirect('/en/auth/sign-in?next=%2Fnewsroom%2Fstories');

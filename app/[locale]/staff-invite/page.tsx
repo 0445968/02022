@@ -5,11 +5,12 @@ import {StaffInviteRedeemForm} from '@/components/forms/staff-invite-redeem-form
 import {isLocale} from '@/lib/i18n/config';
 export const dynamic='force-dynamic';
 export const metadata={robots:{index:false,follow:false},referrer:'no-referrer' as const};
-export default async function StaffInvitePage({params}:{params:{locale:string}}){
+export default async function StaffInvitePage(props:{params: Promise<{locale:string}>}) {
+  const params = await props.params;
   if(!staffInvitationsEnabled()||!isLocale(params.locale))notFound();
   const locale=params.locale,es=locale==='es';
   const user=await verifiedInvitationUser();
-  return <main className="mx-auto max-w-md space-y-6 px-4 py-12">
+  return <div className="mx-auto max-w-md space-y-6 px-4 py-12">
     <h1 className="font-headline text-2xl font-bold text-deep">{es?'Invitación a la redacción':'Newsroom invitation'}</h1>
     <div className="space-y-4 border border-border bg-white p-6">
       <p className="text-sm text-muted-foreground">{es?'Use únicamente el código privado que recibió del administrador y su correo verificado.':'Use only the private code received from your administrator and the invited, verified email.'}</p>
@@ -19,5 +20,5 @@ export default async function StaffInvitePage({params}:{params:{locale:string}})
         <Link className="block text-sm font-semibold text-primary underline" href={'/'+locale+'/auth/sign-up'}>{es?'Crear cuenta':'Create account'}</Link>
       </>}
     </div>
-  </main>;
+  </div>;
 }

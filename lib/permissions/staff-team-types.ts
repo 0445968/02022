@@ -5,7 +5,7 @@ export type TeamRoleAssignment={
   roleKey:StaffRoleKey; grantedAt:string; expiresAt:string|null;
 };
 export type TeamMember={
-  id:string; name:string; memberType:'employee'|'contractor'|'freelancer';
+  id:string; name:string; avatarUrl?:string|null; memberType:'employee'|'contractor'|'freelancer';
   status:TeamStatus; expiresAt:string|null; joinedAt:string;
   isSelf:boolean; roles:TeamRoleAssignment[];
 };

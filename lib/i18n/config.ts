@@ -32,3 +32,6 @@ export function localizedPath(locale: Locale, pathname: string): string {
   if (clean === '/') return `/${locale}`;
   return `/${locale}${clean}`;
 }
+
+/** Browser Accept-Language never overrides the English first-visit default. */
+export function resolvePublicLocale(saved: string | null | undefined,account?:string|null):Locale{return isLocale(saved)?saved:isLocale(account)?account:defaultLocale;}

@@ -3,6 +3,7 @@ import {useState,useRef,useEffect} from 'react';
 import Link from 'next/link';
 import {useRouter} from 'next/navigation';
 import {Search,RefreshCw,MessageSquare,Check,EyeOff,RotateCcw,Trash2,History,X} from 'lucide-react';
+import type {CommentArticle,CommentArticlesPage} from '@/lib/permissions/comment-article-groups';
 import type {Locale} from '@/types';
 import {parseModerationDetail,parseModerationCommand,type ModerationAction,type ModerationFilter,type ModerationPage,type ModerationDetail} from '@/lib/permissions/comment-moderation-contract';
 import {bulkActions,parseBulkModerationCommand,parseBulkResult} from '@/lib/permissions/comment-bulk-contract';
@@ -10,8 +11,10 @@ import {availableCommentActions,commentQueueHref} from '@/lib/permissions/commen
 const btn='inline-flex items-center justify-center gap-2 rounded-md border border-border bg-white px-3 py-2 text-sm font-medium hover:bg-surface-muted disabled:opacity-50';
 const filters:ModerationFilter[]=['pending','reported','published','hidden','deleted','all'];
 const icons={approve:Check,hide:EyeOff,restore:RotateCcw,remove:Trash2};
-export function CommentsWorkspace({initial,status,storyId,query,page,locale,initialDetail=null,canOpenReports=false,returnReportHref=null,bulkEnabled=false}:{initial:ModerationPage;bulkEnabled?:boolean;initialDetail?:ModerationDetail|null;canOpenReports?:boolean;returnReportHref?:string|null;status:ModerationFilter;storyId:string|null;query:string;page:number;locale:Locale}){
+export function CommentsWorkspace({initial,status,storyId,query,page,locale,initialDetail=null,canOpenReports=false,returnReportHref=null,bulkEnabled=false,view='article',articles=null,article=null}:{initial:ModerationPage;view?:'article'|'comments';articles?:CommentArticlesPage|null;article?:CommentArticle|null;bulkEnabled?:boolean;initialDetail?:ModerationDetail|null;canOpenReports?:boolean;returnReportHref?:string|null;status:ModerationFilter;storyId:string|null;query:string;page:number;locale:Locale}){
  const es=locale==='es',router=useRouter();
+ const queueHref=(filter:ModerationFilter,id:string|null,q:string,p=0)=>commentQueueHref(filter,id,q,p,view);
+ const articleHref=(id:string)=>commentQueueHref('all',id,'',0,'article');
  const [search,setSearch]=useState(query),[detail,setDetail]=useState<ModerationDetail|null>(initialDetail);
  const [selected,setSelected]=useState<string|null>(initialDetail?.comment.id??null),[action,setAction]=useState<ModerationAction|null>(null);
  const [reason,setReason]=useState(''),[confirm,setConfirm]=useState(false),[busy,setBusy]=useState(false),[blocked,setBlocked]=useState(false);
@@ -77,25 +80,32 @@ export function CommentsWorkspace({initial,status,storyId,query,page,locale,init
  }
  const valid=reason.trim().length>=12&&reason.trim().length<=1000&&!/[\u0000-\u001f\u007f]/.test(reason);
  const date=(s:string)=>new Date(s).toLocaleString(es?'es':'en');
- return <div className="mx-auto max-w-7xl space-y-5 px-4 py-6 sm:px-6">
-  <header className="flex flex-wrap items-start justify-between gap-3 border-b border-border pb-4">
+ return <div className="w-full min-w-0 space-y-3 px-3 py-4 sm:px-5">
+  <header className="flex flex-wrap items-start justify-between gap-3 border-b border-border pb-3">
    <div><h1 className="font-headline text-2xl font-bold text-deep">{es?'Comentarios':'Comments'}</h1>
    <p className="mt-1 text-sm text-muted-foreground">{es?'Modere comentarios de lectores según sus permisos vigentes.':'Manage reader comments within your current permissions.'}</p></div>
    <div className="flex flex-wrap gap-2">{canOpenReports&&<Link onClick={guardNavigation} prefetch={false} className={btn} href={returnReportHref??('/newsroom/reports'+(storyId?'?storyId='+encodeURIComponent(storyId):''))}>{returnReportHref?(es?'Volver a la denuncia':'Back to report'):(es?'Denuncias':'Reports')}</Link>}
    <button type="button" disabled={busy} className={btn} onClick={refresh}><RefreshCw className="h-4 w-4" aria-hidden/>{es?'Actualizar':'Refresh'}</button></div>
   </header>
-  <nav className="flex flex-wrap gap-2" aria-label={es?'Estados de comentarios':'Comment statuses'}>
-   {filters.map(f=><Link onClick={guardNavigation} prefetch={false} key={f} href={commentQueueHref(f,storyId,query)} aria-current={status===f?'page':undefined} className={status===f?'rounded-md bg-deep px-3 py-2 text-sm font-semibold text-white':btn}>{labels[f]}</Link>)}
-  </nav>
-  <form className="flex flex-wrap items-center gap-2" onSubmit={e=>{e.preventDefault();if(!inFlight.current)router.push(commentQueueHref(status,storyId,search.trim()));}}>
+  <div className="sticky top-0 z-10 space-y-2 rounded-lg border border-border bg-white p-2"><nav className="flex flex-wrap gap-1" aria-label={es?'Vista de comentarios':'Comment view'}>{(['article','comments'] as const).map(v=><Link key={v} onClick={guardNavigation} href={commentQueueHref('all',null,query,0,v)} prefetch={false} aria-current={view===v?'page':undefined} className={view===v?'rounded-md bg-deep px-3 py-2 text-sm font-semibold text-white':btn}>{v==='article'?(es?'Por artículo':'Article view'):(es?'Comentarios':'Comments view')}</Link>)}</nav><nav className="flex flex-wrap gap-2" aria-label={es?'Estados de comentarios':'Comment statuses'}>
+   {filters.map(f=><Link onClick={guardNavigation} prefetch={false} key={f} href={queueHref(f,storyId,query)} aria-current={status===f?'page':undefined} className={status===f?'rounded-md bg-deep px-3 py-2 text-sm font-semibold text-white':btn}>{labels[f]}</Link>)}
+  </nav></div>
+  <form className="flex flex-wrap items-center gap-2" onSubmit={e=>{e.preventDefault();if(!inFlight.current)router.push(queueHref(status,storyId,search.trim()));}}>
    <label className="flex min-w-0 flex-1 items-center gap-2 rounded-md border border-border bg-white px-3 py-2"><Search className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden/>
     <input aria-label={es?'Buscar comentarios':'Search comments'} placeholder={es?'Buscar texto, lector o artículo':'Search text, reader or story'} value={search} disabled={busy} maxLength={120} onChange={e=>setSearch(e.target.value)} className="min-w-0 flex-1 bg-transparent text-sm outline-none"/></label>
    <button type="submit" disabled={busy} className={btn}>{es?'Buscar':'Search'}</button>
-   {(query||storyId)&&<Link onClick={guardNavigation} prefetch={false} className={btn} href={commentQueueHref(status,null,'')}>{es?'Borrar filtros':'Clear filters'}</Link>}
+   {(query||storyId)&&<Link onClick={guardNavigation} prefetch={false} className={btn} href={queueHref(status,null,'')}>{es?'Borrar filtros':'Clear filters'}</Link>}
   </form>
-  {storyId&&<p className="text-sm text-muted-foreground">{es?'Filtro de artículo activo':'Story filter active'} · <Link onClick={guardNavigation} className="underline" href={commentQueueHref(status,null,query)} prefetch={false}>{es?'Todos los artículos':'All stories'}</Link></p>}
+  {article&&<ArticleMiniPreview article={article} es={es}/>}
+  {storyId&&<p className="text-sm text-muted-foreground">{es?'Filtro de artículo activo':'Story filter active'} · <Link onClick={guardNavigation} className="underline" href={queueHref(status,null,query)} prefetch={false}>{es?'Todos los artículos':'All stories'}</Link></p>}
   {error&&<p role="alert" className="text-sm text-breaking">{error}</p>}{notice&&<p role="status" className="text-sm">{notice}</p>}
-  <div className={selected?'grid gap-4 lg:grid-cols-2':'grid gap-4'}>
+  {articles?<section className="rounded-lg border border-border bg-white p-3" aria-label={es?'Artículos con comentarios':'Articles with comments'}>
+   <h2 className="mb-2 font-semibold">{es?'Artículos con comentarios':'Articles with comments'}</h2>
+   <p className="mb-2 text-xs text-muted-foreground">{es?'Los totales incluyen todos los comentarios autorizados de cada artículo.':'Totals include all authorized comments for each article.'}</p>
+   {!articles.items.length&&<p className="p-4 text-sm text-muted-foreground">{es?'No hay artículos con estos filtros.':'No articles match these filters.'}</p>}
+   <div className="grid gap-2 xl:grid-cols-2">{articles.items.map(a=><Link onClick={guardNavigation} key={a.storyId} href={articleHref(a.storyId)} prefetch={false} className="rounded-lg border border-border p-3 hover:bg-surface-muted focus-visible:ring-2 focus-visible:ring-primary"><p className="break-words font-semibold text-deep">{a.headline}</p><p className="mt-1 text-xs uppercase text-muted-foreground">{a.language} · {new Date(a.publishedAt).toLocaleDateString(locale)}</p><div className="mt-2 flex flex-wrap gap-2 text-xs"><span className="rounded-md bg-surface-muted px-2 py-1">{es?'Total':'Total'} {a.total}</span><span className="rounded-md border border-border px-2 py-1">{es?'Publicados':'Published'} {a.published}</span><span className="rounded-md border border-primary/40 px-2 py-1">{es?'Pendientes':'Pending'} {a.pending}</span></div></Link>)}</div>
+   <nav className="mt-3 flex items-center justify-between gap-2" aria-label={es?'Páginas de artículos':'Article pages'}>{page>0?<Link onClick={guardNavigation} href={queueHref(status,null,query,page-1)} className={btn}>{es?'Anterior':'Previous'}</Link>:<span/>}<span className="text-xs">{es?'Página':'Page'} {page+1}</span>{articles.hasMore?<Link onClick={guardNavigation} href={queueHref(status,null,query,page+1)} className={btn}>{es?'Siguiente':'Next'}</Link>:<span/>}</nav>
+  </section>:<div className={selected?'grid gap-3 lg:grid-cols-2':'grid gap-3'}>
    <section className="min-w-0 rounded-lg border border-border bg-white p-4">
     <h2 className="mb-3 font-semibold">{labels[status]}</h2>
     {bulkEnabled&&initial.items.some(i=>i.canModerate)&&<div className="space-y-3 border-b border-border pb-3">
@@ -121,20 +131,21 @@ export function CommentsWorkspace({initial,status,storyId,query,page,locale,init
       {bulkEnabled&&item.canModerate&&<label className="flex items-center gap-2 text-xs text-muted-foreground"><input type="checkbox" checked={bulk[item.id]!==undefined} disabled={busy||bulkBlocked} onChange={e=>toggleBulk(item.id,item.revision,e.target.checked)}/>{es?'Seleccionar comentario':'Select comment'}</label>}
       <div className="flex flex-wrap justify-between gap-2"><strong className="break-words text-sm">{current.author}</strong><span className="rounded bg-surface-muted px-2 py-1 text-xs font-semibold">{labels[current.status]}</span></div>
       <p className="text-xs text-muted-foreground">{date(current.createdAt)}{current.parentId&&(es?' · Respuesta':' · Reply')}{current.openReports!==null&&current.openReports>0&&(es?' · Denuncias abiertas: ':' · Open reports: ')+current.openReports}</p>
-      <Link onClick={guardNavigation} prefetch={false} className="break-words text-xs font-medium text-primary underline" href={commentQueueHref(status,current.storyId,query)}>{current.headline}</Link>
+      <Link onClick={guardNavigation} prefetch={false} className="break-words text-xs font-medium text-primary underline" href={queueHref(status,current.storyId,query)}>{current.headline}</Link>
       <p className="line-clamp-3 whitespace-pre-wrap break-words text-sm">{current.body}</p>
       <button type="button" className={btn} disabled={busy} aria-pressed={selected===item.id} onClick={()=>void open(item.id)}>{es?'Ver detalles':'View details'}</button>
      </article>;
     })}
     <div className="flex items-center justify-between gap-2 border-t border-border pt-3">
-     {page>0?<Link onClick={guardNavigation} prefetch={false} className={btn} href={commentQueueHref(status,storyId,query,page-1)}>{es?'Anterior':'Previous'}</Link>:<span/>}
+     {page>0?<Link onClick={guardNavigation} prefetch={false} className={btn} href={queueHref(status,storyId,query,page-1)}>{es?'Anterior':'Previous'}</Link>:<span/>}
      <span className="text-xs text-muted-foreground">{es?'Página':'Page'} {page+1}</span>
-     {initial.hasMore?<Link onClick={guardNavigation} prefetch={false} className={btn} href={commentQueueHref(status,storyId,query,page+1)}>{es?'Siguiente':'Next'}</Link>:<span/>}
+     {initial.hasMore?<Link onClick={guardNavigation} prefetch={false} className={btn} href={queueHref(status,storyId,query,page+1)}>{es?'Siguiente':'Next'}</Link>:<span/>}
     </div>
    </section>
    {selected&&<section className="min-w-0 space-y-4 self-start rounded-lg border border-border bg-white p-4">
     <header className="flex items-center justify-between"><h2 className="font-semibold">{es?'Detalle del comentario':'Comment details'}</h2><button type="button" className={btn} disabled={busy} onClick={close} aria-label={es?'Cerrar':'Close'}><X className="h-4 w-4" aria-hidden/></button></header>
     {!detail?<p className="text-sm text-muted-foreground">{es?'Cargando o no disponible…':'Loading or unavailable…'}</p>:<>
+     <div className="rounded-md border border-border bg-surface-muted p-3"><p className="text-xs text-muted-foreground">{es?'Artículo':'Article'}</p><p className="break-words text-sm font-semibold text-deep">{detail.comment.headline}</p><Link onClick={guardNavigation} href={articleHref(detail.comment.storyId)} className="text-xs text-primary underline">{es?'Ver todos los comentarios del artículo':'View all article comments'}</Link></div>
      <div className="space-y-2"><p className="break-words text-sm font-semibold">{detail.comment.author} · {labels[detail.comment.status]}</p><p className="break-words text-xs text-muted-foreground">{detail.comment.headline} · {date(detail.comment.updatedAt)}</p><p className="whitespace-pre-wrap break-words text-sm">{detail.comment.body}</p></div>
      {availableCommentActions(detail.comment).length>0&&<div className="flex flex-wrap gap-2 border-t border-border pt-3">
       {availableCommentActions(detail.comment).map(a=>{const Icon=icons[a];return <button key={a} type="button" disabled={busy||blocked||bulkCount>0} aria-pressed={action===a} className={btn+(action===a?' ring-2 ring-primary':'')+(a==='remove'?' text-breaking':'')} onClick={()=>{setAction(a);setReason('');setConfirm(false);}}><Icon className="h-4 w-4" aria-hidden/>{decisions[a]}</button>;})}
@@ -151,6 +162,7 @@ export function CommentsWorkspace({initial,status,storyId,query,page,locale,init
      </div>
     </>}
    </section>}
-  </div>
+  </div>}
  </div>;
 }
+function ArticleMiniPreview({article,es}:{article:CommentArticle;es:boolean}){return <section className="rounded-lg border border-border bg-white p-3"><p className="text-xs uppercase text-muted-foreground">{es?'Artículo seleccionado':'Selected article'} · {article.language}</p><h2 className="break-words font-semibold text-deep">{article.headline}</h2><p className="text-xs text-muted-foreground">{new Date(article.publishedAt).toLocaleDateString(es?'es':'en')} · {article.total} {es?'comentarios':'comments'} · {article.pending} {es?'pendientes':'pending'} · {article.published} {es?'publicados':'published'}</p>{article.publicPath&&<Link href={article.publicPath} target="_blank" rel="noopener noreferrer" className="text-xs text-primary underline">{es?'Abrir artículo publicado':'Open published article'}</Link>}</section>;}

@@ -1,3 +1,4 @@
+import {parseHomeVisibility,type HomeVisibility} from './homepage-visibility';
 import {DRAFT_UUID,isDraftTimestamp} from './assigned-draft-contract';
 import type {HomepageLayoutSelection} from '@/lib/services/front-page';
 const slots=new Set(['lead','top_left','top_right','secondary','lead_support','more_coverage','highlight','world','latest_news','editors_pick','latest_feature','section_feature','video_feature','island_feature','headline_bar']);
@@ -16,19 +17,21 @@ export function parseSelections(v:unknown):HomepageLayoutSelection[]{
  return v as HomepageLayoutSelection[];
 }
 export type LayoutHistoryItem={revision:number;publishedAt:string;baseline:boolean;slotCount:number};
-export type VersionedLayout={revision:number;published:HomepageLayoutSelection[];selections:HomepageLayoutSelection[];updatedAt:string|null;history:LayoutHistoryItem[];legacyBlocked:boolean};
-export type LayoutCommand={action:'save'|'publish'|'revert'|'restore';expectedRevision:number;selections:HomepageLayoutSelection[]|null;restoreRevision:number|null};
+export type VersionedLayout={revision:number;published:HomepageLayoutSelection[];selections:HomepageLayoutSelection[];updatedAt:string|null;history:LayoutHistoryItem[];legacyBlocked:boolean;visibility?:HomeVisibility;publishedVisibility?:HomeVisibility};
+export type LayoutCommand={action:'save'|'publish'|'revert'|'restore';expectedRevision:number;selections:HomepageLayoutSelection[]|null;restoreRevision:number|null;visibility?:HomeVisibility|null};
 export function parseLayoutCommand(v:unknown):LayoutCommand{
  const x=obj(v);
- if(!exact(x,['action','expectedRevision','selections','restoreRevision'])||!rev(x.expectedRevision)||!['save','publish','revert','restore'].includes(String(x.action)))throw Error('Invalid command');
+ if(!(exact(x,['action','expectedRevision','selections','restoreRevision'])||exact(x,['action','expectedRevision','selections','restoreRevision','visibility']))||!rev(x.expectedRevision)||!['save','publish','revert','restore'].includes(String(x.action)))throw Error('Invalid command');
+ if(x.visibility!==undefined&&x.visibility!==null){if(x.action!=='save'&&x.action!=='publish')throw Error('Unexpected visibility');parseHomeVisibility(x.visibility);}
  if(x.action==='save'||x.action==='publish'){parseSelections(x.selections);if(x.restoreRevision!==null)throw Error('Unexpected version');}
  else if(x.selections!==null||(x.action==='restore'?!rev(x.restoreRevision):x.restoreRevision!==null))throw Error('Invalid recovery');
  return x as unknown as LayoutCommand;
 }
 export function parseVersionedLayout(v:unknown):VersionedLayout{
  const x=obj(v);
- if(!exact(x,['revision','published','selections','updatedAt','history','legacyBlocked'])||!rev(x.revision)||(x.updatedAt!==null&&!isDraftTimestamp(x.updatedAt))||typeof x.legacyBlocked!=='boolean'||!Array.isArray(x.history)||x.history.length>20)throw Error('Invalid layout state');
+ if(!(exact(x,['revision','published','selections','updatedAt','history','legacyBlocked'])||exact(x,['revision','published','selections','updatedAt','history','legacyBlocked','visibility','publishedVisibility']))||!rev(x.revision)||(x.updatedAt!==null&&!isDraftTimestamp(x.updatedAt))||typeof x.legacyBlocked!=='boolean'||!Array.isArray(x.history)||x.history.length>20)throw Error('Invalid layout state');
  // Legacy timed layouts are blocked for edits; malformed/oversized legacy snapshots also fail closed.
+ if(x.visibility!==undefined){parseHomeVisibility(x.visibility);parseHomeVisibility(x.publishedVisibility);}
  parseSelections(x.published);parseSelections(x.selections);
  let previous=Number.MAX_SAFE_INTEGER;
  for(const item of x.history){const h=obj(item);if(!exact(h,['revision','publishedAt','baseline','slotCount'])||!rev(h.revision)||h.revision> x.revision||h.revision>=previous||!isDraftTimestamp(h.publishedAt)||h.baseline!==(h.revision===0)||!rev(h.slotCount)||h.slotCount>100)throw Error('Invalid history');previous=h.revision;}

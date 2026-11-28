@@ -1,3 +1,4 @@
+import {isStoryType,storyTypesEnabled,type StoryType} from '@/lib/permissions/story-types';
 import {
   NextResponse,
 } from 'next/server';
@@ -29,13 +30,14 @@ import type {
 } from '@/lib/db/database.types';
 
 interface RouteContext {
-  params: {
+  params: Promise<{
     id: string;
-  };
+  }>;
 }
 
 interface RevisionRequestBody {
   headline?: string;
+    storyType?: StoryType;
 
   shortTitle?:
     | string
@@ -120,12 +122,8 @@ interface RevisionRequestBody {
  *
  * The published story itself remains unchanged.
  */
-export async function GET(
-  _request: Request,
-  {
-    params,
-  }: RouteContext
-) {
+export async function GET(_request: Request, props: RouteContext) {
+  const params = await props.params;
   const user =
     await getCurrentUser();
 
@@ -214,12 +212,8 @@ export async function GET(
  * This route does not modify the published
  * public.stories row.
  */
-export async function PUT(
-  request: Request,
-  {
-    params,
-  }: RouteContext
-) {
+export async function PUT(request: Request, props: RouteContext) {
+  const params = await props.params;
   const user =
     await getCurrentUser();
 
@@ -307,6 +301,9 @@ export async function PUT(
       }
     );
   }
+
+  if(!body||typeof body!=='object'||Array.isArray(body))return NextResponse.json({error:'Invalid request'},{status:400});
+  if(body.storyType!==undefined&&(!storyTypesEnabled()||!isStoryType(body.storyType)))return NextResponse.json({error:'Invalid or unavailable story type'},{status:422});
 
   // CT-02d: an assigned contributor can edit article copy, not
   // change author/editor ownership, live slug, access tier or schedule.
@@ -448,6 +445,7 @@ export async function PUT(
         {
           headline,
 
+          storyType:body.storyType,
           shortTitle,
 
           subheadline:
@@ -598,12 +596,8 @@ export async function PUT(
  * This deletes the working revision and leaves
  * the live published article completely untouched.
  */
-export async function DELETE(
-  _request: Request,
-  {
-    params,
-  }: RouteContext
-) {
+export async function DELETE(_request: Request, props: RouteContext) {
+  const params = await props.params;
   const user =
     await getCurrentUser();
 

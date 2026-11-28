@@ -1,3 +1,4 @@
+import {isStoryType,storyTypesEnabled} from '@/lib/permissions/story-types';
 import Link from 'next/link';
 import {canEnterEditorialCalendar,readStoryPublicationQueue} from '@/lib/services/editorial-calendar';
 import type {StoryQueueDisplay} from '@/lib/permissions/story-publication-queue';
@@ -10,10 +11,10 @@ import { listStories } from '@/lib/services/stories';
 import { getCategories } from '@/lib/services/taxonomy';
 import { getAuthors } from '@/lib/services/staff';
 import { StoriesDashboard } from '@/components/editorial/stories-dashboard';
-import type { StoryStatus, StoryLanguage, IslandScope } from '@/lib/db/database.types';
+import type { StoryStatus, StoryLanguage, IslandScope, AccessLevel } from '@/lib/db/database.types';
 
 interface PageProps {
-  searchParams: {
+  searchParams: Promise<{
     page?: string;
     search?: string;
     status?: string;
@@ -22,23 +23,26 @@ interface PageProps {
     category?: string;
     island?: string;
     sort?: string;
-  };
+    access?: string;
+    storyType?:string;
+  }>;
 }
 
 const VALID_STATUSES: StoryStatus[] = ['draft', 'in_review', 'scheduled', 'published', 'archived'];
 const VALID_LANGUAGES: StoryLanguage[] = ['en', 'es'];
 const VALID_ISLANDS: IslandScope[] = ['san_andres', 'old_providence', 'saint_catalina', 'archipelago', 'none'];
 
-export default async function StoriesPage({ searchParams }: PageProps) {
+export default async function StoriesPage(props: PageProps) {
+  const searchParams = await props.searchParams;
   await requireWorkspacePage('viewStories');
   const access=scopedNewsroomEnabled()?await getWorkspaceAccess():null;
   const user = await getCurrentUser();
   const locale = await newsroomLocale(user);
   const dict = getDictionary(locale);
 
-  const page = parseInt(searchParams.page ?? '1', 10) || 1;
-  const sortBy = (searchParams.sort ?? 'updated_desc') as
-    | 'updated_desc' | 'updated_asc' | 'published_desc' | 'headline_asc';
+  const page = Math.min(10000,Math.max(1,parseInt(searchParams.page ?? '1',10)||1));
+  const sorts=['updated_desc','updated_asc','published_desc','headline_asc'] as const;
+  const sortBy=sorts.find(sort=>sort===searchParams.sort)??'updated_desc';
 
   const status = VALID_STATUSES.includes(searchParams.status as StoryStatus)
     ? (searchParams.status as StoryStatus)
@@ -50,6 +54,8 @@ export default async function StoriesPage({ searchParams }: PageProps) {
     ? (searchParams.island as IslandScope)
     : 'all';
 
+  const accessLevel=(['public','registered','subscriber','premium'] as const).find(v=>v===searchParams.access)??'all';
+  const typeEnabled=storyTypesEnabled();const storyType=typeEnabled&&isStoryType(searchParams.storyType)?searchParams.storyType:'all';
   const [storiesResult, categories, authors] = await Promise.all([
     listStories({
       page,
@@ -61,6 +67,7 @@ export default async function StoriesPage({ searchParams }: PageProps) {
       categoryId: searchParams.category ?? 'all',
       island,
       sortBy,
+      accessLevel,storyType,
     }),
     getCategories({ includeInactive: true }),
     getAuthors(),
@@ -73,8 +80,8 @@ export default async function StoriesPage({ searchParams }: PageProps) {
   }
 
   return (
-    <div className="mx-auto max-w-7xl px-6 py-8">
-      <div className="flex items-center justify-between border-b border-border pb-5">
+    <div className="w-full min-w-0 px-3 py-4 sm:px-5">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border pb-3">
         <div>
           <h1 className="font-headline text-2xl font-bold text-deep">{dict.stories.title}</h1>
           <p className="mt-1 text-sm text-muted-foreground">
@@ -83,7 +90,7 @@ export default async function StoriesPage({ searchParams }: PageProps) {
         </div>
         {(!access||access.createStory)&&<Link
           href="/newsroom/stories/new"
-          className="inline-flex h-9 items-center gap-1.5 bg-primary px-4 text-sm font-semibold text-white transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          className="inline-flex h-9 items-center gap-1.5 rounded-md bg-primary px-4 text-sm font-semibold text-white transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >
           <Plus className="h-4 w-4" aria-hidden />
           {dict.stories.newStory}
@@ -92,7 +99,10 @@ export default async function StoriesPage({ searchParams }: PageProps) {
 
       <StoriesDashboard
         dict={dict}
+        storyTypesEnabled={typeEnabled}
         locale={locale}
+        preferenceKey={user?.id??'local'}
+        asOf={new Date().toISOString()}
         publicationQueue={publicationQueue}
         canEdit={!access||access.fullEditor}
         canCreate={!access||access.createStory}
@@ -110,6 +120,7 @@ export default async function StoriesPage({ searchParams }: PageProps) {
           categoryId: searchParams.category ?? 'all',
           island,
           sortBy,
+          accessLevel:accessLevel as AccessLevel|'all',storyType,
         }}
       />
     </div>

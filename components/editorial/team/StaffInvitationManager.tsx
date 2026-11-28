@@ -30,6 +30,7 @@ const field='w-full rounded-md border border-border bg-white px-3 py-2 text-sm t
 const button='inline-flex items-center justify-center gap-2 rounded-md border border-border bg-white px-3 py-2 text-sm font-medium hover:bg-surface-muted disabled:opacity-50';
 const endpoint='/api/newsroom/team/invitations';
 const day=86400000;
+function invitationClock(){return Date.now();}
 
 export function StaffInvitationManager({locale,presets}:{locale:Locale;presets:TeamPreset[]}){
   const t=copy[locale==='es'?'es':'en'];
@@ -54,16 +55,17 @@ export function StaffInvitationManager({locale,presets}:{locale:Locale;presets:T
   const [target,setTarget]=useState<{row:StaffInviteRow;action:'replace'|'cancel'}|null>(null);
   const formRef=useRef<HTMLFormElement>(null);
   const selected=available.find(p=>p.key===role&&p.grantRevision===selectedRevision);
-  const refresh=useCallback(async()=>{
+  const refresh=useCallback(async(signal?:AbortSignal)=>{
+    if(signal?.aborted)return;
     setLoading(true);
     try{
-      const res=await fetch(endpoint+'?page='+page,{cache:'no-store'});
+      const res=await fetch(endpoint+'?page='+page,{cache:'no-store',signal});
       if(!res.ok)throw Error();
-      setData(await res.json() as StaffInviteDirectory);
-    }catch{setData(null);setError(t.failed);}
-    finally{setLoading(false);}
+      const next=await res.json() as StaffInviteDirectory;if(!signal?.aborted)setData(next);
+    }catch{if(!signal?.aborted){setData(null);setError(t.failed);}}
+    finally{if(!signal?.aborted)setLoading(false);}
   },[page,t.failed]);
-  useEffect(()=>{void refresh();},[refresh]);
+  useEffect(()=>{const controller=new AbortController();const timer=setTimeout(()=>void refresh(controller.signal),0);return()=>{clearTimeout(timer);controller.abort();};},[refresh]);
   function clearForm(){
     setTarget(null);setEmail('');setRole('');setSelectedRevision(null);
     setMemberType('employee');setReason('');setConfirmed(false);setDays(3);setContract(90);
@@ -79,7 +81,7 @@ export function StaffInvitationManager({locale,presets}:{locale:Locale;presets:T
     e.preventDefault();if(!valid||busy)return;
     setBusy(true);setError('');setStatus('');setCode('');setCopied(false);
     try{
-      const now=Date.now();
+      const now=invitationClock();
       const payload=target?.action==='cancel'?{action:'cancel',id:target.row.invitationId,reason:reason.trim(),confirmed:true}:
         {action:target?.action==='replace'?'replace':'issue',
           ...(target?.action==='replace'?{replaceId:target.row.invitationId}:{}),

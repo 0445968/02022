@@ -1,3 +1,4 @@
+import {canSelfPublish} from '@/lib/services/editorial-privileges';
 import {notFound,redirect} from 'next/navigation';
 import {getCurrentUser} from '@/lib/auth/session';
 import {newsroomLocale,mayMountFullStoryEditor} from '@/lib/services/newsroom-workspace';
@@ -12,7 +13,9 @@ import {DraftHttpError} from '@/lib/permissions/assigned-draft-http';
 import {StoryReviewPanel} from '@/components/editorial/story-editor/StoryReviewPanel';
 export const dynamic='force-dynamic';
 export const metadata={robots:{index:false,follow:false},referrer:'no-referrer'};
-export default async function StoryReviewPage({params,searchParams}:{params:{id:string};searchParams:{kind?:string}}){
+export default async function StoryReviewPage(props:{params: Promise<{id:string}>;searchParams: Promise<{kind?:string}>}) {
+ const searchParams = await props.searchParams;
+ const params = await props.params;
  if(!storyReviewEnabled()||!reviewKind(searchParams.kind))notFound();
  const user=await getCurrentUser();
  if(!user)redirect('/en/auth/sign-in?next=%2Fnewsroom%2Fstories');
@@ -35,5 +38,5 @@ export default async function StoryReviewPage({params,searchParams}:{params:{id:
   try{schedule=await readReviewedSchedule(params.id,state.kind);}
   catch{return <p role="alert" className="p-6 text-sm text-muted-foreground">{locale==='es'?'No se pudo verificar la programación. Actualice la página.':'Unable to verify scheduling. Refresh the page.'}</p>;}
  }
- return <StoryReviewPanel key={state.storyId+state.kind} initial={state} locale={locale} backHref={backHref} canEdit={canEdit} canPublish={await canPublishReviewed(params.id,state.kind)} scheduling={scheduling} schedule={schedule} canSchedule={scheduling&&await canManageReviewedSchedule(params.id,state.kind)}/>;
+ return <StoryReviewPanel key={state.storyId+state.kind} initial={state} locale={locale} backHref={backHref} canEdit={canEdit} canPublish={await canPublishReviewed(params.id,state.kind)} canSelfPublish={!schedule&&await canSelfPublish(params.id,state.kind)} scheduling={scheduling} schedule={schedule} canSchedule={scheduling&&(await canManageReviewedSchedule(params.id,state.kind))}/>;
 }

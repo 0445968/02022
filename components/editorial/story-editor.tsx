@@ -73,6 +73,8 @@ export function StoryEditor({
   editors,
   versions,
   assignmentHref,
+  pollPlacementHref,
+  translationHref,
   reviewHref,
   reviewedPublication=false,
 }: StoryEditorProps) {
@@ -226,6 +228,7 @@ export function StoryEditor({
         setHeadline:
           editor.setHeadline,
 
+        setStoryType:editor.setStoryType,
         setShortTitle:
           editor.setShortTitle,
 
@@ -271,6 +274,7 @@ export function StoryEditor({
       }),
       [
         editor.setHeadline,
+        editor.setStoryType,
         editor.setShortTitle,
         editor.setSubheadline,
         editor.setSummary,
@@ -446,6 +450,7 @@ export function StoryEditor({
 
   const settingsProps = {
     reviewedPublication,
+    storyType:editor.storyType,setStoryType:editor.setStoryType,
     dict,
 
     locale,
@@ -670,6 +675,8 @@ export function StoryEditor({
 
       <StoryEditorHeader
         assignmentHref={assignmentHref}
+        pollPlacementHref={pollPlacementHref}
+        translationHref={translationHref}
         reviewEnabled={Boolean(reviewHref)}
         reviewedPublication={reviewedPublication}
         onOpenReview={()=>{if(reviewHref)void (async()=>{if(await autosave.flushSave())router.push(reviewHref);})();}}

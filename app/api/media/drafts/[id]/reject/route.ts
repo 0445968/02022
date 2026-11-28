@@ -1,3 +1,4 @@
+import {readReaderJson,ReaderWriteError} from '@/lib/permissions/reader-write-http';
 import { NextResponse } from 'next/server';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { getCurrentUser } from '@/lib/auth/session';
@@ -6,7 +7,8 @@ import { getDataClient } from '@/lib/db/supabase-data-access';
 import { privateDraftMediaEnabled } from '@/lib/permissions/private-draft-media';
 import { resolveStaffPermissionOnServer } from '@/lib/permissions/server';
 
-export async function POST(request:Request,{params}:{params:{id:string}}) {
+export async function POST(request:Request, props:{params: Promise<{id:string}>}) {
+  const params = await props.params;
   if (!privateDraftMediaEnabled() || isDevAuthBypass()) {
     return NextResponse.json({error:'Not found'},{status:404});
   }
@@ -17,7 +19,7 @@ export async function POST(request:Request,{params}:{params:{id:string}}) {
     return NextResponse.json({error:'Forbidden'},{status:403});
   }
   let body:unknown;
-  try {body=await request.json();} catch {return NextResponse.json({error:'Invalid JSON'},{status:400});}
+  try {body=await readReaderJson(request);} catch(error){return NextResponse.json({error:'Invalid request'},{status:error instanceof ReaderWriteError?error.status:400});}
   if (!body || typeof body!=='object' || Array.isArray(body)) {
     return NextResponse.json({error:'Invalid review'},{status:400});
   }

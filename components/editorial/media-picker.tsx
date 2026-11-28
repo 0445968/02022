@@ -244,7 +244,8 @@ export function MediaPicker({
 
   const fetchMedia =
     useCallback(
-      async () => {
+      async (signal?:AbortSignal) => {
+        if(signal?.aborted)return;
         setLoading(
           true
         );
@@ -287,6 +288,7 @@ export function MediaPicker({
               {
                 cache:
                   'no-store',
+                signal,
               }
             );
 
@@ -303,6 +305,7 @@ export function MediaPicker({
                   null
               );
 
+          if(signal?.aborted)return;
           if (
             !response.ok
           ) {
@@ -374,6 +377,7 @@ export function MediaPicker({
         } catch (
         fetchError
         ) {
+          if(signal?.aborted)return;
           setMedia(
             []
           );
@@ -385,7 +389,7 @@ export function MediaPicker({
               : 'Unable to load media.'
           );
         } finally {
-          setLoading(
+          if(!signal?.aborted)setLoading(
             false
           );
         }
@@ -398,7 +402,10 @@ export function MediaPicker({
 
   useEffect(
     () => {
-      void fetchMedia();
+      const controller=new AbortController();
+      // Schedule external loading after commit; cancel abandoned requests.
+      const timer=setTimeout(()=>void fetchMedia(controller.signal),0);
+      return ()=>{clearTimeout(timer);controller.abort();};
     },
     [
       fetchMedia,

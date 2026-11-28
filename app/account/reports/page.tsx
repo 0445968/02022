@@ -6,7 +6,8 @@ import {localizedPath} from '@/lib/i18n/config';
 import {readerReportingEnabled,readOwnReports} from '@/lib/services/reader-reports';
 export const dynamic='force-dynamic';
 export const metadata={robots:{index:false,follow:false},referrer:'no-referrer'};
-export default async function MyReports({searchParams}:{searchParams:{page?:string}}){
+export default async function MyReports(props:{searchParams: Promise<{page?:string}>}) {
+ const searchParams = await props.searchParams;
  if(!readerReportingEnabled())notFound();
  const user=await getCurrentUser(),locale=getServerLocale(user?.profile?.preferredLocale),es=locale==='es';
  if(!user)redirect(localizedPath(locale,'/auth/sign-in')+'?next=%2Faccount%2Freports');

@@ -1,3 +1,4 @@
+import {isStoryType,storyTypesEnabled} from '@/lib/permissions/story-types';
 import {
     getDataClient,
   } from '@/lib/db/supabase-data-access';
@@ -8,6 +9,7 @@ import {
   
   import type {
     StoryLanguage,
+    Database,
   } from '@/lib/db/database.types';
   
   import type {
@@ -54,12 +56,13 @@ import {
       .from(
         'story_versions'
       )
-      .select(
+      .select<string, Pick<Database['public']['Tables']['story_versions']['Row'],'id'|'story_id'|'headline'|'short_title'|'subheadline'|'summary'|'body'|'language'|'author_id'|'editor_id'|'primary_category_id'|'created_at'> & {story_type?: Database['public']['Tables']['story_versions']['Row']['story_type']}>(
         `
           id,
           story_id,
           headline,
           short_title,
+          ${storyTypesEnabled()?'story_type,':''}
           subheadline,
           summary,
           body,
@@ -367,6 +370,7 @@ resolveHistoricalIdentity(
   
     return {
       ...story,
+      storyType:storyTypesEnabled()&&isStoryType(version.story_type)?version.story_type:undefined,
   
       headline:
         version.headline,

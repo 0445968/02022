@@ -49,6 +49,7 @@ import type {
   Category,
 } from '@/types/editorial';
 
+import {HOME_SECTIONS,countVisibilityChanges,type HomeVisibility,type HomeSection} from '@/lib/permissions/homepage-visibility';
 import {parseVersionedLayout,type VersionedLayout,type LayoutCommand} from '@/lib/permissions/homepage-history-contract';
 import {
   BreakingNewsEditor,
@@ -347,18 +348,23 @@ export const FrontPageController =
           null
         );
 
+      const [visibility,setVisibility]=useState<HomeVisibility|null>(versioned?.visibility??null);
+      const [publishedVisibility,setPublishedVisibility]=useState<HomeVisibility|null>(versioned?.publishedVisibility??null);
+      const visibilityRef=useRef<HomeVisibility|null>(versioned?.visibility??null);
       const mutationLock=useRef(false);
+      const setMutationLocked=useCallback((locked:boolean)=>{mutationLock.current=locked;},[]);
+      const toggleSection=useCallback((key:HomeSection,visible:boolean)=>{if(!visibilityRef.current||mutationLock.current)return;const next={...visibilityRef.current,[key]:visible};visibilityRef.current=next;setVisibility(next);},[]);
       const versionRef=useRef(versioned?.revision??null);
       const uncertain=useRef(false);
       const versionCommand=useCallback(async(action:LayoutCommand['action'],copy:HomepageLayoutSelection[]|null,restoreRevision:number|null)=>{
        if(versionRef.current===null||uncertain.current)throw Error('Reload before changing the layout.');
        const expectedRevision=versionRef.current;
        try{
-        const response=await fetch('/api/front-page/history',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action,expectedRevision,selections:copy,restoreRevision})});
+        const response=await fetch('/api/front-page/history',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action,expectedRevision,selections:copy,restoreRevision,...(visibilityRef.current&&(action==='save'||action==='publish')?{visibility:visibilityRef.current}:{})})});
         if(!response.ok)throw Error('Layout changed or is unavailable. Reload before retrying.');
         const state=parseVersionedLayout(await response.json());
         if(state.revision!==expectedRevision+1)throw Error('Unexpected layout revision.');
-        versionRef.current=state.revision;setLastSavedAt(state.updatedAt);return state;
+        versionRef.current=state.revision;setLastSavedAt(state.updatedAt);if(state.visibility&&(action==='revert'||action==='restore'||action==='publish')){visibilityRef.current=state.visibility;setVisibility(state.visibility);}if(state.publishedVisibility&&action==='publish')setPublishedVisibility(state.publishedVisibility);return state;
        }catch(e){uncertain.current=true;throw e;}
       },[]);
       const autosaveTail=useRef<Promise<unknown>>(Promise.resolve());
@@ -633,7 +639,7 @@ export const FrontPageController =
 
       const totalChangeCount =
         layoutChangeCount +
-        headlineBarChangeCount;
+        headlineBarChangeCount+countVisibilityChanges(visibility,publishedVisibility);
 
       const totalAssignedSlots =
         layoutAssignedSlots +
@@ -825,6 +831,7 @@ export const FrontPageController =
         [
           saveDraft,
           selections,
+          visibility,
         ]
       );
 
@@ -942,7 +949,7 @@ export const FrontPageController =
               return;
             }
 
-            mutationLock.current=true;
+            setMutationLocked(true);
             setBusy(true);
 
             setError(
@@ -1050,7 +1057,7 @@ export const FrontPageController =
                     : 'Unable to publish the Front Page.'
               );
             } finally {
-              mutationLock.current=false;
+              setMutationLocked(false);
               setBusy(
                 false
               );
@@ -1063,6 +1070,7 @@ export const FrontPageController =
             saveDraft,
             selections,
             versionCommand,
+            setMutationLocked,
           ]
         );
 
@@ -1073,7 +1081,7 @@ export const FrontPageController =
               return;
             }
 
-            mutationLock.current=true;
+            setMutationLocked(true);
             setBusy(true);
 
             setError(
@@ -1115,7 +1123,7 @@ export const FrontPageController =
                     : 'Unable to revert Front Page changes.'
               );
             } finally {
-              mutationLock.current=false;
+              setMutationLocked(false);
               setBusy(
                 false
               );
@@ -1132,12 +1140,12 @@ export const FrontPageController =
 
       const restoreVersion=useCallback(async(revision:number)=>{
        if(mutationLock.current||uncertain.current||versionRef.current===null)throw Error('Reload before changing the layout.');
-       mutationLock.current=true;setBusy(true);setError(null);
+       setMutationLocked(true);setBusy(true);setError(null);
        try{if(autosaveTimeout.current!==null){window.clearTimeout(autosaveTimeout.current);autosaveTimeout.current=null;}await autosaveTail.current.catch(()=>undefined);
         const state=await versionCommand('restore',null,revision);initialAutosave.current=true;setSelections(state.selections);setSaveStatus('saved');setSuccessMessage(locale==='es'?'Versión restaurada como borrador.':'Version restored as draft.');
        }catch(e){setError(locale==='es'?'No se pudo restaurar. Recargue.':'Unable to restore. Reload before retrying.');throw e;}
-       finally{mutationLock.current=false;setBusy(false);}
-      },[versionCommand,locale]);
+       finally{setMutationLocked(false);setBusy(false);}
+      },[versionCommand,locale,setMutationLocked]);
 
       useImperativeHandle(
         ref,
@@ -1272,6 +1280,7 @@ export const FrontPageController =
               </div>
             )}
 
+            {visibility&&<section className="mx-4 mb-3 rounded-lg border border-border bg-white p-3 sm:mx-6"><h2 className="font-headline text-lg font-semibold text-deep">{locale==='es'?'Visibilidad de secciones':'Section visibility'}</h2><p className="mt-1 text-xs text-muted-foreground">{locale==='es'?'Los cambios se guardan como borrador. Las historias se conservan al ocultar una sección. La cuadrícula principal siempre está visible.':'Changes are saved as a draft. Hidden sections retain their selections. The lead grid always remains visible.'}</p><div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">{HOME_SECTIONS.map(([key,en,es])=><label key={key} className="flex items-center justify-between gap-2 rounded-md border border-border p-2 text-sm"><span>{locale==='es'?es:en}{publishedVisibility&&publishedVisibility[key]!==visibility[key]&&<span className="ml-1 text-xs text-primary">{locale==='es'?'Sin publicar':'Unpublished'}</span>}</span><input type="checkbox" checked={visibility[key]} disabled={busy} onChange={e=>toggleSection(key,e.target.checked)}/></label>)}</div></section>}
             <FrontPageWorkspace
               locale={
                 locale

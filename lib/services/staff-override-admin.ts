@@ -1,5 +1,6 @@
 import 'server-only';
 
+import {EDITORIAL_OWN_PRIVILEGES} from '@/lib/permissions/capabilities';
 import {randomUUID} from 'node:crypto';
 import {createClient as createServiceClient} from '@supabase/supabase-js';
 import {createClient as createSessionClient} from '@/lib/db/supabase-server';
@@ -24,6 +25,7 @@ export async function applyStaffOverrideChange(input:OverrideChangeInput):Promis
   let validated;
   try{validated=validateOverrideChange(input);}
   catch{return {ok:false,code:'invalid'};}
+  if(validated.operation==='set'&&EDITORIAL_OWN_PRIVILEGES.has(validated.capability)&&process.env.CT_EDITORIAL_PRIVILEGES_ENABLED!=='true')return {ok:false,code:'disabled'};
 
   try{
     const session=createSessionClient();

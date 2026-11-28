@@ -1,7 +1,7 @@
 import 'server-only';
 import {createClient as createServiceClient} from '@supabase/supabase-js';
 import {createClient as createSessionClient} from '@/lib/db/supabase-server';
-import {CAPABILITY_KEYS,isCapability,resolveEffectivePermission,
+import {CAPABILITY_KEYS,EDITORIAL_OWN_PRIVILEGES,isCapability,resolveEffectivePermission,
   type Capability,type CapabilityGrant,type CapabilityOverride,
   type MembershipSnapshot,type AccessScope} from '@/lib/permissions/capabilities';
 import {getStaffTeamAccess} from '@/lib/services/staff-team-directory';
@@ -89,12 +89,13 @@ export async function loadEffectiveMemberPermissions(targetId:string):Promise<Me
       rules.some(p=>p.scope!=='all')
       ||denial.some(p=>p.scope!=='all')
       ||['story.view_assigned','story.edit_assigned',
-        'revision.edit_assigned','calendar.view_assigned',
+        'revision.edit_assigned','calendar.view_assigned','assignment.view_assigned','assignment.update_assigned',
         'media.edit_own'].includes(capability)
     );
     let state:'allowed'|'denied'|'conditional'='denied';
     let explanation:string=decision.reason;
-    if(globalDeny){state='denied';explanation='explicit_deny';}
+    if(EDITORIAL_OWN_PRIVILEGES.has(capability)){state=globalDeny?'denied':rules.length?'conditional':'denied';explanation=globalDeny?'explicit_deny':'dedicated_editorial_gate_required';}
+    else if(globalDeny){state='denied';explanation='explicit_deny';}
     else if(decision.allowed&&!contextDependent){state='allowed';explanation='grant_verified';}
     else if(contextDependent && rules.length>0
       &&member.status==='active'&&isLive(member.expires_at)){

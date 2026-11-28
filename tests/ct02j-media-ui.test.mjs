@@ -6,14 +6,19 @@ test('private media panel stays invisible until explicitly enabled with live sta
  const page=read('app/newsroom/(shell)/media/page.tsx');
  const library=read('components/editorial/media-library/MediaLibrary.tsx');
  assert.match(page,/privateDraftsEnabled=privateDraftMediaEnabled\(\)/);
- assert.match(page,/privateDraftsEnabled && \(!access\|\|access\.privateMedia\) && <PrivateDraftMediaPanel/);
- assert.match(page,/\(!access\|\|access\.fullMedia\)&&<MediaLibrary/);
+ assert.match(page,/privateDraftsEnabled&&access\.privateMedia\?<PrivateMediaWorkspace/);
+ assert.match(page,/if\(access&&\(!access\.allowed\|\|\(!access\.fullMedia&&!access\.privateMedia\)\)\)redirect/);
+ assert.match(page,/\(!access\|\|access\.fullMedia\)\?<MediaLibrary/);
  const policy=read('lib/permissions/workspace-policy.ts');
  assert.match(policy,/options\.privateMedia&&all\('media\.upload'\)/);
  assert.match(policy,/all\('media\.view_all','media\.upload','media\.edit_all','media\.approve','media\.delete'\)/);
  assert.match(library,/privateDraftsEnabled = false/);
  assert.match(library,/uploadOpen && !privateDraftsEnabled/);
- assert.match(library,/document\.getElementById\('ct-private-draft-panel'\)/);
+ assert.match(library,/privateDraftsEnabled&&<PrivateDraftMediaDialog open=\{uploadOpen\}/);
+ const dialog=read('components/editorial/media-library/PrivateDraftMediaDialog.tsx');
+ assert.match(dialog,/<Dialog open=\{open\}/);
+ assert.match(dialog,/if\(next\|\|!busy\)onOpenChange/);
+ assert.match(dialog,/<PrivateDraftMediaPanel canReview=\{canReview\}/);
 });
 test('Newsroom can upload privately, preview, review, approve and reject with explicit rights',()=>{
  const panel=read('components/editorial/media-library/PrivateDraftMediaPanel.tsx');

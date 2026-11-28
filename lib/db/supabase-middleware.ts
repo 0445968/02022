@@ -1,34 +1,32 @@
-import { createServerClient } from '@supabase/ssr';
+import { createServerClient, type SetAllCookies } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 import type { Database } from '@/lib/db/database.types';
 
-/**
- * Supabase client used inside middleware. Uses NextRequest cookies
- * (a readonly adapter) and mirrors session cookies onto the response
- * so the auth session persists across navigations.
+/** Preserve every session cookie chunk and forward refreshed request cookies.
+ * The response must be read AFTER auth.getUser(), since refresh can replace it.
+ * Neither this adapter nor middleware is an authorization decision.
  */
 export function createMiddlewareClient(request: NextRequest) {
-  const response = NextResponse.next({ request });
-
+  let response = NextResponse.next({ request });
   const client = createServerClient<Database>(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
-        get(name: string) {
-          return request.cookies.get(name)?.value;
+        getAll() {
+          return request.cookies.getAll();
         },
-        set(name: string, value: string, options: Record<string, unknown>) {
-          request.cookies.set({ name, value, ...options });
-          response.cookies.set({ name, value, ...options });
-        },
-        remove(name: string, options: Record<string, unknown>) {
-          request.cookies.set({ name, value: '', ...options });
-          response.cookies.set({ name, value: '', ...options });
+        setAll(cookiesToSet: Parameters<SetAllCookies>[0]) {
+          for (const {name,value} of cookiesToSet) request.cookies.set(name,value);
+          // Rebuild request header overrides AFTER cookie mutation so downstream
+          // route handlers see the same session as the response.
+          const previous = response.cookies.getAll();
+          response = NextResponse.next({ request });
+          for (const cookie of previous) response.cookies.set(cookie);
+          for (const {name,value,options} of cookiesToSet) response.cookies.set(name,value,options);
         },
       },
     }
   );
-
-  return { client, response };
+  return { client, getResponse: () => response };
 }

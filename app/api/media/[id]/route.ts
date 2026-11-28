@@ -641,14 +641,13 @@ function buildMediaUpdate(
 
 export async function GET(
   _request: Request,
-  {
-    params,
-  }: {
-    params: {
+  props: {
+    params: Promise<{
       id: string;
-    };
+    }>;
   }
 ) {
+  const params = await props.params;
   const user =
     await getCurrentUser();
 
@@ -692,14 +691,13 @@ export async function GET(
 
 export async function PATCH(
   request: Request,
-  {
-    params,
-  }: {
-    params: {
+  props: {
+    params: Promise<{
       id: string;
-    };
+    }>;
   }
 ) {
+  const params = await props.params;
   const user =
     await getCurrentUser();
 
@@ -958,14 +956,13 @@ export async function PATCH(
 
 export async function DELETE(
   request: Request,
-  {
-    params,
-  }: {
-    params: {
+  props: {
+    params: Promise<{
       id: string;
-    };
+    }>;
   }
 ) {
+  const params = await props.params;
   const user =
     await getCurrentUser();
 

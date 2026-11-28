@@ -5,9 +5,10 @@ export function availableCommentActions(item:Pick<ModerationItem,'canModerate'|'
  if(item.status==='published')return ['hide','remove'];
  return item.status==='hidden'?['restore','remove']:[];
 }
-export function commentQueueHref(status:ModerationFilter,storyId:string|null,query:string,page=0){
+export function commentQueueHref(status:ModerationFilter,storyId:string|null,query:string,page=0,view?:'article'|'comments'){
  const params=new URLSearchParams({status,page:String(page)});
  if(storyId)params.set('storyId',storyId);
  if(query)params.set('q',query);
+ if(view)params.set('view',view);
  return '/newsroom/comments?'+params.toString();
 }
