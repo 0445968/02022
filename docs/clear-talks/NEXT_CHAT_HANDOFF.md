@@ -1,3 +1,10 @@
+# CURRENT — CT16 R4e; migration 48 adopted, exact successor CI pending
+
+## CT16 R4e — adopt migration 48; editorial lifecycle guidance and delegated quota
+
+Exact predecessor 992acc089f06981bcf64aacf355c41eaebc3f65d passed all 43 workflows. Cumulative 46100908691 generated supabase/migrations/20261128030244_ct16_linked_poll_placements.sql, verified inheritance/deduplication/window/stale isolation and ordered archival; real platform 46100908930 recorded 585 PASS lines including Owner own publication, immutable creator, separate audit, linked Spanish article ballot and archive ordering. Adopt unchanged staged blob a6db0f75c3de09644458e057ebc8678c50a95df3 as migration 48, remove duplicate staged application/temporary CLI generation, and require exact 48-file manifest and byte equality. Add bilingual archive-order guidance in translation manager, and real JWT Owner grant/removal test of time-limited individual media quota exemption. Proposed coordinated access/unlink contract records safe policy boundaries and pending decisions; no access/unlink mutation or provider connection yet. Exact successor CI pending. No hosted SQL, production deployment, real-data transfer or feature activation.
+
+---
 # CURRENT — CT16 R4d; candidate 48 correction and exact successor CI pending
 
 ## CT16 R4d — enum correction, ordered translation retirement and Owner boundaries

@@ -48,12 +48,11 @@ try:
     manifest = (ROOT / "docs/clear-talks/CT15_FORWARD_MIGRATION_MANIFEST.md").read_text()
     forward = re.findall(r"^\d+\. `(supabase/migrations/202611[^\x60]+\.sql)`$", manifest, re.M)
     actual = sorted(str(p.relative_to(ROOT)) for p in (ROOT / "supabase/migrations").glob("202611*.sql"))
-    candidate = os.environ.get("CT16_LINKED_POLL_PLACEMENTS_CANDIDATE")
-    assert candidate and re.fullmatch(r"supabase/migrations/[0-9]{14}_ct16_linked_poll_placements\.sql", candidate) and actual[-1] == candidate
-    assert forward == actual[:-1] and len(forward) == 47, "Forward manifest mismatch"
-    assert (ROOT / candidate).read_bytes() == (ROOT / "supabase/staged/ct16_linked_poll_placements.sql").read_bytes(), "Candidate differs from staged source"
-    assert forward[-1] == "supabase/migrations/20261128005941_ct16_poll_translations.sql"
-    assert (ROOT / forward[-1]).read_bytes() == (ROOT / "supabase/staged/ct16_poll_translations.sql").read_bytes(), "Adopted poll migration differs from rehearsed source"
+    assert forward == actual and len(forward) == 48, "Forward manifest mismatch"
+    assert forward[-2] == "supabase/migrations/20261128005941_ct16_poll_translations.sql"
+    assert forward[-1] == "supabase/migrations/20261128030244_ct16_linked_poll_placements.sql"
+    assert (ROOT / forward[-2]).read_bytes() == (ROOT / "supabase/staged/ct16_poll_translations.sql").read_bytes(), "Adopted poll migration differs from rehearsed source"
+    assert (ROOT / forward[-1]).read_bytes() == (ROOT / "supabase/staged/ct16_linked_poll_placements.sql").read_bytes(), "Adopted linked placement migration differs from rehearsed source"
     apply("tests/fixtures/ct15-local-legacy-platform.sql")
     legacy = sorted(str(p.relative_to(ROOT)) for p in (ROOT / "supabase/migrations").glob("20260*.sql"))
     assert len(legacy) == 23
@@ -69,7 +68,6 @@ try:
     apply("tests/fixtures/ct15-local-legacy-seed.sql")
     for path in forward:
         apply(path)
-    apply(candidate)
     apply("tests/ct15-cumulative-postgres.sql")
     apply("tests/ct16-story-types-postgres.sql")
     apply("tests/ct16-work-assignments-postgres.sql")

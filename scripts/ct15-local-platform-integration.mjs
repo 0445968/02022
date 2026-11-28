@@ -89,7 +89,7 @@ try{
  "insert into public.story_revisions(story_id,headline,slug,author_id,created_by) values("+uuid(storyIds.public)+",'CT15 unpublished revision','ct15-public',"+uuid(users.legacy.id)+","+uuid(users.legacy.id)+");");
  const manifest=readFileSync('docs/clear-talks/CT15_FORWARD_MIGRATION_MANIFEST.md','utf8');
  const forward=[...manifest.matchAll(/^\d+\. \x60(supabase\/migrations\/202611[^\x60]+\.sql)\x60$/gm)].map(m=>m[1]);
- assert.deepEqual(forward,readdirSync('supabase/migrations').filter(x=>/^202611.*\.sql$/.test(x)).sort().map(x=>'supabase/migrations/'+x));assert.equal(forward.length,47);
+ assert.deepEqual(forward,readdirSync('supabase/migrations').filter(x=>/^202611.*\.sql$/.test(x)).sort().map(x=>'supabase/migrations/'+x));assert.equal(forward.length,48);
  function grantSql(role){
   const grants=PROPOSED_STAFF_ROLE_GRANTS[role];
   assert.ok(grants?.length);
@@ -105,8 +105,6 @@ try{
   }
   apply(path);
  }
- mark('CT16 staged linked poll placements rehearsal');
- apply('supabase/staged/ct16_linked_poll_placements.sql');
  mark('explicit disposable staff fixtures');
  const staff=roles.filter(x=>x!=='reader'&&x!=='legacy');
  const inserts=staff.map(role=>{
@@ -1429,6 +1427,27 @@ try{
   check('verified indefinite Owner quota exemption is effective',!quota.error&&quota.data.maxSlots===null&&quota.data.maxFileBytes===10485760);
   const capped=await free.rpc('staff_private_upload_quota');
   check('ordinary freelancer retains bounded quota',!capped.error&&capped.data.maxSlots===25);
+  // Verify time-limited, own-scope delegation through the real Owner endpoint and
+  // the same already-authenticated editor JWT before and after removal.
+  const delegate=users.editor.client;
+  const originalQuota=await delegate.rpc('staff_private_upload_quota');
+  check('editor starts with ordinary upload quota',!originalQuota.error&&originalQuota.data.maxSlots===25);
+  const grantContext=await adminTestContext(users.owner.email);
+  try{
+   const team=await (await grantContext.request.get(appOrigin+'/api/newsroom/team')).json();
+   const member=team.members.find(m=>m.roles.some(r=>r.roleKey==='editor'));
+   assert.ok(member);
+   const endpoint=appOrigin+'/api/newsroom/team/override-change';
+   const cmd={targetMembershipId:member.id,operation:'set',capability:'media.quota_exempt',scope:'own',effect:'allow',expiresAt:new Date(Date.now()+3600000).toISOString(),reason:'CT16 disposable individual quota exemption'};
+   const granted=await grantContext.request.post(endpoint,{headers:{Origin:appOrigin},data:cmd});
+   check('Owner grants time-limited individual quota exemption (HTTP '+granted.status()+')',granted.status()===200);
+   const afterGrant=await delegate.rpc('staff_private_upload_quota');
+   check('existing editor JWT receives delegated exemption',!afterGrant.error&&afterGrant.data.maxSlots===null&&afterGrant.data.maxFileBytes===10485760);
+   const removed=await grantContext.request.post(endpoint,{headers:{Origin:appOrigin},data:{...cmd,operation:'remove',effect:null,expiresAt:null,reason:'CT16 revoke disposable individual quota exemption'}});
+   check('Owner revokes temporary quota exemption (HTTP '+removed.status()+')',removed.status()===200);
+   const afterRemoval=await delegate.rpc('staff_private_upload_quota');
+   check('same editor JWT immediately returns to bounded quota',!afterRemoval.error&&afterRemoval.data.maxSlots===25);
+  }finally{await grantContext.close();}
   const ownId=randomUUID();
   const body={type:'doc',content:[{type:'paragraph',content:[{type:'text',text:'CT16 synthetic Owner-authored copy'}]}]};
   const inserted=await owner.from('stories').insert({id:ownId,slug:'ct16-owner-'+ownId,headline:'CT16 own synthetic article',body,status:'draft',language:'en',access_level:'public',author_id:users.owner.id,created_by:users.owner.id,updated_by:users.owner.id}).select('id').single();
